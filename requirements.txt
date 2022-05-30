@@ -1,0 +1,5 @@
+pyyaml
+ipydex
+# owlready2
+# rdflib
+# pydantic

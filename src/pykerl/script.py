@@ -11,10 +11,11 @@ activate_ips_on_exception()
 
 def main():
 
-
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "inputfile", help=f"input file", default=None,
+        "inputfile",
+        help=f"input file",
+        default=None,
     )
 
     args = parser.parse_args()

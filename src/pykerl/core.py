@@ -7,13 +7,13 @@ from addict import Dict as attr_dict
 from typing import Dict
 import yaml
 from ipydex import IPS, activate_ips_on_exception
+
 activate_ips_on_exception()
 
 
 """
-1/0 TODO:
-    relations als Instanzen modellieren
-    innere dicts sind in Listen gekapselt -> auflösen
+    TODO:
+    multiple assignments via list
     natural language representation
     Sanity-check: `R1__part_of` muss einen Fehler werfen
     content: dynamical_system can_be_represented_by mathematical_model
@@ -24,14 +24,14 @@ class Entity:
     """
     Abstract parent class for both Relations and Items
     """
-    pass
 
+    pass
 
 
 class RegistryMeta(type):
 
     # TODO: rename to RELATION_REGISTRY
-    _REGISTRY = {}
+    RELATION_REGISTRY = {}
     ITEM_REGISTRY = {}
 
     def __new__(cls, name, bases, dct):
@@ -45,7 +45,7 @@ class RegistryMeta(type):
         # register
         skip_registration = getattr(new, "__skip_registration", False)
         if not skip_registration:
-            RegistryMeta._REGISTRY[name] =  new
+            RegistryMeta.RELATION_REGISTRY[name] = new
 
         # this is standard again
         return new
@@ -85,11 +85,10 @@ class Manager(object):
     Omniscient Master object controlling knowledge representation.
     Will probably be refactored in the future.
     """
+
     def __init__(self, fpath: str):
 
-
-        self.name_mapping = dict(**RegistryMeta._REGISTRY, **RegistryMeta.ITEM_REGISTRY)
-
+        self.name_mapping = dict(**RegistryMeta.RELATION_REGISTRY, **RegistryMeta.ITEM_REGISTRY)
 
         self.ignore_list = "meta"
 
@@ -121,7 +120,7 @@ class Manager(object):
             if key in self.ignore_list:
                 continue
 
-            res, typ = self.process_key_str(key)
+            res, typ = process_key_str(key)
 
             if typ == "item":
                 self.process_item(res, value)
@@ -138,13 +137,12 @@ class Manager(object):
         # stage 2: create all objects
 
         for name in self.items.keys():
-            1/0
-            new_class = type(name, (Item,), {})
-            self.name_mapping[name] = new_class
+            new_item = create_item(item_key=name)
+            self.name_mapping[name] = new_item
 
         for name in self.relations.keys():
-            new_class = type(name, (Relation,), {})
-            self.name_mapping[name] = new_class
+            new_relation = create_relation(name)
+            self.name_mapping[name] = new_relation
 
         # now all keys exists
 
@@ -177,13 +175,11 @@ class Manager(object):
             # currently only relations make sense here
             assert isinstance(key_obj, Relation)
 
-
     def process_item(self, short_key, value):
         assert isinstance(value, dict)
 
         # TODO: assert that nothing gets overwritten
         self.items[short_key].update(**value)
-
 
     def process_relation(self, short_key, value):
         assert isinstance(value, dict)
@@ -192,70 +188,98 @@ class Manager(object):
         self.relations[short_key].update(**value)
 
 
-
-class Relation(metaclass=RegistryMeta):
-    # private class variable
-    __skip_registration = True
-
-
-class R1(Relation):
-    label = "has label"
-
-
-class R2(Relation):
-    label = "has natural language definition"
-
-
-class R3(Relation):
-    label = "subclass of"
-
-
-class R4(Relation):
-    label = "instance of"
-
-
-class R5(Relation):
-    label = "part of"
-
-
-#class AbstractItem(metaclass=RegistryMeta):
-    ## private class variable
-    #__skip_registration = True
-
-class Item:
-    def __init__(self, R1, **kwargs):
+# noinspection PyShadowingNames
+class Relation:
+    def __init__(self, rel_key, **kwargs):
 
         # set label
-        self.R1 = R1
-        for key, value in kwargs.items:
+        self.rel_key = rel_key
+        for key, value in kwargs.items():
             setattr(self, key, value)
 
+    def __repr__(self):
+        R1 = getattr(self, "R1", "no label").replace(" ", "_")
+        return f"<Relation {self.rel_key}__{R1}>"
 
-def new_item(name, **kwargs):
+
+def create_relation(rel_key, **kwargs):
 
     new_kwargs = {}
     for key, value in kwargs.items():
         short_key, typ = process_key_str(key)
 
         if typ != "relation":
-            msg = f"unexpected key: {key} during creation of item {name}."
+            msg = f"unexpected key: {key} during creation of item {rel_key}."
             raise ValueError(msg)
 
         new_kwargs[short_key] = value
 
-    n = Item(**new_kwargs)
-    RegistryMeta.ITEM_REGISTRY[name] = n
+    n = Relation(rel_key, **new_kwargs)
+    assert rel_key not in RegistryMeta.RELATION_REGISTRY
+    RegistryMeta.RELATION_REGISTRY[rel_key] = n
+    return n
 
 
-I1 = new_item("I1", R1="General Item")
-I2 = new_item("I2",
-         R1="Metaclass",
-         R2__has_natural_language_definition="Parent class for other classes; subclasses of this are also meta classes, instances are ordinary classes",
-         R3__subclass_of=I1
-         )
-I3 = new_item("I3", R1="Field of science")
-I4 = new_item("I4", R1="Mathematics", R4__instance_of=I3)
-I5 = new_item("I5", R1="Engineering")
+R1 = create_relation("R1", R1="has label")
+R2 = create_relation("R2", R1="has natural language definition")
+R3 = create_relation("R3", R1="subclass of")
+R4 = create_relation("R4", R1="instance of")
+R5 = create_relation("R5", R1="part of")
+
+
+# noinspection PyShadowingNames
+class Item:
+    def __init__(self, item_key: str, **kwargs):
+
+        self.item_key = item_key
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+
+    def __repr__(self):
+        R1 = getattr(self, "R1", "no label").replace(" ", "_")
+        return f"<Item {self.item_key}__{R1}>"
+
+
+# noinspection PyShadowingNames
+def create_item(item_key: str, **kwargs):
+    """
+
+    :param item_key:    unique key of this item (something like `I1234`)
+    :param kwargs:      further relations
+
+    :return:        newly created item
+    """
+
+    new_kwargs = {}
+    for dict_key, value in kwargs.items():
+        attr_short_key, typ = process_key_str(dict_key)
+
+        if typ != "relation":
+            msg = f"unexpected key: {dict_key} during creation of item {item_key}."
+            raise ValueError(msg)
+
+        new_kwargs[attr_short_key] = value
+
+    n = Item(item_key, **new_kwargs)
+    assert item_key not in RegistryMeta.ITEM_REGISTRY
+    RegistryMeta.ITEM_REGISTRY[item_key] = n
+    return n
+
+
+I1 = create_item("I1", R1="General Item")
+I2 = create_item(
+    "I2",
+    R1="Metaclass",
+    R2__has_natural_language_definition=(
+        "Parent class for other classes; subclasses of this are also meta classes"
+        "instances are ordinary classes",
+    ),
+    R3__subclass_of=I1,
+)
+
+I3 = create_item("I3", R1="Field of science")
+I4 = create_item("I4", R1="Mathematics", R4__instance_of=I3)
+I5 = create_item("I5", R1="Engineering", R4__instance_of=I3)
 
 
 def script_main(fpath):

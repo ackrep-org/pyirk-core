@@ -21,6 +21,11 @@ class TestCore(unittest.TestCase):
     def test_core1(self):
         m = pk.Manager(pjoin(TEST_DATA_PATH, "test1.yml"))
         self.assertTrue(len(m.raw_stmts_dict) > 3)
+        self.assertIn("R1", pk.ds.builtin_entities)
+        self.assertIn("R2", pk.ds.builtin_entities)
+
+        # TODO: decide whether in versioned_entities the object should be the same or a copy.
+        self.assertEqual(pk.ds.versioned_entities["I1001"].get(0), pk.ds.items.I1001)
         q = m.raw_stmts_dict[0]
         # IPS()
 

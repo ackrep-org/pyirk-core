@@ -1,12 +1,12 @@
 """
 Core module of pykerl
 """
-# from collections import defaultdict
+from collections import defaultdict
 from dataclasses import dataclass
-from enum import Enum
+from enum import Enum, unique
 import re
 from addict import Dict as attr_dict
-from typing import Dict
+from typing import Dict, Union
 import yaml
 from ipydex import IPS, activate_ips_on_exception
 
@@ -106,22 +106,29 @@ class PatchyPseudoDict:
         raise ValueError(msg)
 
 
-
 class DataStore:
     """
     Provides objects to store all data that would be global otherwise
     """
 
     def __init__(self):
-        self.items = {}
-        self.relations = {}
-        self.statements = {}
-        self.versioned_entities = {}
+        self.items = attr_dict()
+        self.relations = attr_dict()
+        self.statements = attr_dict()
+
+        # this dict contains everything which is predefined by hardcoding
+        self.builtin_entities = attr_dict()
+
+        # this dict contains a PatchyPseudoDict for every short key to store different versions of the same object
+        self.versioned_entities = defaultdict(PatchyPseudoDict)
 
 
 ds = DataStore()
 
+YAML_VALUE = Union[str, list, dict]
 
+
+@unique
 class EType(Enum):
     """
     Entity types.
@@ -132,6 +139,7 @@ class EType(Enum):
     LITERAL = 2
 
 
+@unique
 class SType(Enum):
     """
     Statement types.
@@ -139,6 +147,19 @@ class SType(Enum):
 
     CREATION = 0
     EXTENTION = 1
+    UNDEFINED = 2
+
+
+@unique
+class VType(Enum):
+    """
+    Dict value types.
+    """
+
+    LITERAL = 0
+    ENTITY = 1
+    LIST = 2
+    DICT = 3
 
 
 @dataclass
@@ -153,24 +174,72 @@ class ProcessedStmtKey:
     content: object = None
 
 
-class RawStatement:
+@dataclass
+class ProcessedDictValue:
+    """
+    Container for processed statement key
+    """
+
+    vtype: VType = None
+    content: object = None
+
+
+@dataclass
+class ProcessedInnerDict:
+    """
+    Container for processed inner dict of a statement dict
+    """
+
+    relation_dict: Dict[str, "Relation"] = None
+    reltarget_dict: Dict[str, ProcessedDictValue] = None
+
+
+class AbstractStatement:
+    """
+    Common ancestor of all statements
+    """
+    def __init__(self, label):
+        self.label = label
+        self.processed_key = None
+
+        # short key of the subject
+        self.short_key = None
+
+        # key of the statement
+        self.stm_key = None
+        self.stype = SType.UNDEFINED
+
+    def __repr__(self):
+        res = f"<{type(self)} {self.short_key}: {self.stype.name}"
+        return res
+
+
+class RawStatement(AbstractStatement):
     """
     Class representing an (quite) unprocessed statement (except the key).
     """
-    def __init__(self, raw_statement: dict, label=None):
-        assert isinstance(raw_statement, dict)
+    def __init__(self, raw_stm_dict: dict, label=None):
+        super().__init__(label=label)
+        assert isinstance(raw_stm_dict, dict)
 
         self.label = label
-        self.raw_statement = raw_statement
-        self.raw_key, self.raw_value = unpack_l1d(raw_statement)
+        self.raw_statement = raw_stm_dict
+        self.raw_key, self.raw_value = unpack_l1d(raw_stm_dict)
 
         self.processed_key = process_key_str(self.raw_key)
+        self.short_key = self.processed_key.short_key
 
         self.stype = self.processed_key.stype
 
-    def __repr__(self):
-        res = f"<S {self.processed_key.short_key}: {self.stype.name}"
-        return res
+
+class SemanticStatement(AbstractStatement):
+    """
+    Class representing a processed statement.
+    """
+
+    def __init__(self, raw_statement: RawStatement, label=None):
+        super().__init__(label=label)
+        assert isinstance(raw_statement, RawStatement)
 
 
 def unpack_l1d(l1d: Dict[str, object]):
@@ -211,6 +280,26 @@ def process_key_str(key_str: str) -> ProcessedStmtKey:
     return res
 
 
+def process_raw_value(raw_value: YAML_VALUE, stm_key) -> ProcessedDictValue:
+
+    res = ProcessedDictValue()
+    if isinstance(raw_value, str):
+        # it might be a key -> check
+        processed_key = process_key_str(raw_value)
+        if processed_key.etype is not EType.LITERAL:
+            res.vtype = VType.ENTITY
+            res.content = get_entity(processed_key.short_key, stm_key)
+
+        else:
+            res.vtype = VType.LITERAL
+            res.content = raw_value
+    else:
+        msg = "List, dict etc not yet implemented."
+        raise NotImplementedError(msg)
+
+    return res
+
+
 class Manager(object):
     """
     Omniscient Master object controlling knowledge representation.
@@ -223,6 +312,7 @@ class Manager(object):
 
         self.ignore_list = [
             "meta",
+            "iri",
         ]
 
         self.raw_data = self.load_yaml(fpath)
@@ -230,6 +320,8 @@ class Manager(object):
         # fill dict of all statements
         self.raw_stmts_dict: Dict[int, RawStatement] = dict()
         self.process_statements_stage1(self.raw_data)
+
+        self.process_all_creation_stmts()
 
         # simplify access
         self.n = attr_dict(self.name_mapping)
@@ -276,6 +368,7 @@ class Manager(object):
             if raw_stm.stype is not SType.CREATION:
                 continue
             self.process_creation_stmt(raw_stm, stm_key)
+            break
 
     def process_creation_stmt(self, raw_stm: RawStatement, stm_key):
         """
@@ -286,38 +379,65 @@ class Manager(object):
         """
 
         if raw_stm.processed_key.etype is EType.ITEM:
-            processed_inner_obj = self.process_inner_obj(raw_stm.raw_value)
-            # create_item(raw_stm.processed_key.short_key)
+            processed_inner_obj = self.process_inner_obj(raw_stm.raw_value, stm_key)
+            short_key = raw_stm.processed_key.short_key
+            item = create_item_from_processed_inner_obj(short_key, processed_inner_obj)
+            ds.versioned_entities[short_key].set(stm_key, item)
         elif raw_stm.processed_key.etype is EType.RELATION:
             pass
         else:
             msg = f"unexpected key type: {raw_stm.processed_key.etype} during processing of statement {raw_stm}."
             raise ValueError(msg)
 
-    def process_inner_obj(self, raw_inner_obj: dict) -> None:
+    def process_inner_obj(self, raw_inner_obj: dict, stm_key: int) -> ProcessedInnerDict:
         """
 
         :param raw_inner_obj:   dict like {"R1__has_label": "dynamical system"}
-        :return:
+        :param stm_key:
+
+        :return:                ProcessedInnerDict
         """
         assert isinstance(raw_inner_obj, dict)
+
+        res = ProcessedInnerDict()
+
+        # stores the versioned state of the relation object
+        res.relation_dict = {}
+
+        # stores the versioned (if not literal) state of the relation target of the triple
+        # (<subject> <relation> <reltarget>) (Note: we are avoiding the ambiguous term 'object' here)
+        res.reltarget_dict = {}
+
         for key, value in raw_inner_obj.items():
-            processed_key = process_key_str(self.key)
+            processed_key = process_key_str(key)
             assert processed_key.etype is EType.RELATION
             assert processed_key.stype is not SType.CREATION
 
-            relation = self
+            # get versioned relation
+            relation_object = get_entity(processed_key.short_key, stm_key)
+            res.relation_dict[processed_key.short_key] = relation_object
 
-    def get_obj(self, short_key, stm_key):
-        """
-        Returns the object corresponding to the pair (short_key, stm_key). If it does not exist return a FutureEntity.
+            # process the relation target
+            processed_value = process_raw_value(value, stm_key)
+            res.reltarget_dict[processed_key.short_key] = processed_value
 
-        :param short_key:
-        :param stm_key:
-        :return:
-        """
+        return res
 
 
+def get_entity(short_key, stm_key):
+    """
+    Returns the object corresponding to the pair (short_key, stm_key). If it does not exist return a FutureEntity.
+
+    :param short_key:
+    :param stm_key:
+    :return:
+    """
+
+    res = ds.builtin_entities.get(short_key, None)
+    if res is not None:
+        return res
+
+    raise NotImplementedError
 
 
 class FutureEntity:
@@ -330,10 +450,12 @@ class FutureEntity:
         self.stm_key = stm_key
 
 
+# noinspection PyShadowingNames
 class Item:
     def __init__(self, item_key: str, **kwargs):
 
         self.item_key = item_key
+        self._references = None
         for key, value in kwargs.items():
             setattr(self, key, value)
 
@@ -343,10 +465,11 @@ class Item:
 
 
 # noinspection PyShadowingNames
-def create_item(item_key: str, **kwargs):
+def create_item(item_key: str, **kwargs) -> Item:
     """
 
     :param item_key:    unique key of this item (something like `I1234`)
+    :param _references: versioned references of relations
     :param kwargs:      further relations
 
     :return:        newly created item
@@ -354,18 +477,100 @@ def create_item(item_key: str, **kwargs):
 
     new_kwargs = {}
     for dict_key, value in kwargs.items():
-        attr_short_key, typ = process_key_str(dict_key)
+        processed_key = process_key_str(dict_key)
 
-        if typ != "relation":
+        if processed_key.etype != EType.RELATION:
             msg = f"unexpected key: {dict_key} during creation of item {item_key}."
             raise ValueError(msg)
 
-        new_kwargs[attr_short_key] = value
+        new_kwargs[processed_key.short_key] = value
 
-    n = Item(item_key, **new_kwargs)
-    assert item_key not in RegistryMeta.ITEM_REGISTRY
-    RegistryMeta.ITEM_REGISTRY[item_key] = n
-    return n
+    itm = Item(item_key, **new_kwargs)
+    assert item_key not in ds.items
+    ds.items[item_key] = itm
+    return itm
+
+
+def create_item_from_processed_inner_obj(item_key: str, pio: ProcessedInnerDict) -> Item:
+
+    new_kwargs = {}
+    for key, processed_value in pio.reltarget_dict.items():
+        new_kwargs[key] = processed_value.content
+
+    itm = Item(item_key, **new_kwargs)
+
+    itm._relations = pio
+    assert item_key not in ds.items
+    ds.items[item_key] = itm
+
+    return itm
+
+
+# noinspection PyShadowingNames
+class Relation:
+    def __init__(self, rel_key, **kwargs):
+
+        # set label
+        self.rel_key = rel_key
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+
+    def __repr__(self):
+        R1 = getattr(self, "R1", "no label").replace(" ", "_")
+        return f"<Relation {self.rel_key}__{R1}>"
+
+
+def create_relation(rel_key, **kwargs) -> Relation:
+
+    new_kwargs = {}
+    for key, value in kwargs.items():
+        processed_key = process_key_str(key)
+
+        if processed_key.etype != EType.RELATION:
+            msg = f"unexpected key: {key} during creation of item {rel_key}."
+            raise ValueError(msg)
+
+        new_kwargs[processed_key.short_key] = value
+
+    rel = Relation(rel_key, **new_kwargs)
+    assert rel_key not in ds.relations
+    ds.relations[rel_key] = rel
+    return rel
+
+
+def create_builtin_item(*args, **kwargs) -> Item:
+    itm = create_item(*args, **kwargs)
+    ds.builtin_entities[itm.item_key] = itm
+    return itm
+
+
+def create_builtin_relation(*args, **kwargs) -> Relation:
+    rel = create_relation(*args, **kwargs)
+    ds.builtin_entities[rel.rel_key] = rel
+    return rel
+
+
+R1 = create_builtin_relation("R1", R1="has label")
+R2 = create_builtin_relation("R2", R1="has natural language definition")
+R3 = create_builtin_relation("R3", R1="subclass of")
+R4 = create_builtin_relation("R4", R1="instance of")
+R5 = create_builtin_relation("R5", R1="part of")
+
+I1 = create_builtin_item("I1", R1="General Item")
+I2 = create_builtin_item(
+    "I2",
+    R1="Metaclass",
+    R2__has_natural_language_definition=(
+        "Parent class for other classes; subclasses of this are also meta classes"
+        "instances are ordinary classes",
+    ),
+    R3__subclass_of=I1,
+)
+
+I3 = create_builtin_item("I3", R1="Field of science")
+I4 = create_builtin_item("I4", R1="Mathematics", R4__instance_of=I3)
+I5 = create_builtin_item("I5", R1="Engineering", R4__instance_of=I3)
+
 
 def script_main(fpath):
     m = Manager(fpath)

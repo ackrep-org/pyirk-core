@@ -6,17 +6,33 @@ import re
 from addict import Dict as attr_dict
 from typing import Dict
 import yaml
-from ipydex import IPS, activate_ips_on_exception
+from ipydex import IPS, activate_ips_on_exception, Container
 
 activate_ips_on_exception()
 
 
 """
     TODO:
-    multiple assignments via list
-    natural language representation
+    multiple assignments via list ✓
+    natural language representation of ordered atomic statements
+    SSD (sequential semantic documents)
+    Labels (als Listeneinträge)
+    DOMAIN und RANGE
+    
+    unittests 
     Sanity-check: `R1__part_of` muss einen Fehler werfen
+    
     content: dynamical_system can_be_represented_by mathematical_model
+    → Herausforderung: in OWL sind relationen nur zwischen Instanzen zulässig.
+    Damit ist die Angabe von DOMAIN und RANGE, relativ klar. Wenn die Grenze zwischen Klasse und Instanz verschwimmt
+    ist das nicht mehr so klar: Jede Instanz der Klasse <dynamical_system> ???
+    
+    anders: <can_be_represented_by> ist eine n:m Zuordnung von Instanzen der Klasse
+    <dynamical_system> zu Instanzen der Klasse <mathematical_model>
+    
+    komplexere Aussagen:
+    alle steuerbaren linearen ODE-systeme sind flach
+        
 """
 
 
@@ -92,11 +108,14 @@ class Manager(object):
 
         self.ignore_list = "meta"
 
-        self.items = defaultdict(dict)
-        self.relations = defaultdict(dict)
+        self.item_dict = defaultdict(dict)
+        self.relation_dict = defaultdict(dict)
 
         self.raw_data = self.load_yaml(fpath)
         self.process_all_data()
+
+        # simplify access
+        self.n = attr_dict(self.name_mapping)
 
     @staticmethod
     def load_yaml(fpath):
@@ -114,19 +133,24 @@ class Manager(object):
 
         # iterate over statements (represented as top level dict)
 
+        # to store the yet unprocessed raw_data-values along with the already processed keys
+        tmp_map = defaultdict(dict)
         # stage 1: create the complete dictionaries
+        # raw_data is a list of length_1_dicts (top_level_dicts, `tld`).
+        # Every tld has a dict as (only) value (`inner_object`).
         for tld in self.raw_data:
-            key, value = unpack_l1d(tld)
+
+            key, inner_object = unpack_l1d(tld)
             if key in self.ignore_list:
                 continue
 
-            res, typ = process_key_str(key)
+            short_key, typ = process_key_str(key)
 
             if typ == "item":
-                self.process_item(res, value)
+                self.process_item(short_key, inner_object)
             elif typ == "relation":
-                self.process_relation(res, value)
-                self.process_relation(res, value)
+                self.process_relation(short_key, inner_object)
+                self.process_relation(short_key, inner_object)
             elif typ == "literal":
                 msg = f"unexpected key in yaml file: {key}"
                 raise ValueError(msg)
@@ -134,58 +158,92 @@ class Manager(object):
                 msg = f"unexpected result type: {typ}"
                 raise ValueError(msg)
 
+            assert isinstance(inner_object, dict)
+            tmp_map[short_key].update(**inner_object)
+
         # stage 2: create all objects
 
-        for name in self.items.keys():
-            new_item = create_item(item_key=name)
-            self.name_mapping[name] = new_item
+        for short_key in self.item_dict.keys():
+            new_item = create_item(item_key=short_key)
+            self.name_mapping[short_key] = new_item
 
-        for name in self.relations.keys():
-            new_relation = create_relation(name)
-            self.name_mapping[name] = new_relation
+        for short_key in self.relation_dict.keys():
+            new_relation = create_relation(short_key)
+            self.name_mapping[short_key] = new_relation
 
         # now all keys exists
 
         # stage 3: fill internals
 
         # for simplicity we assume everything which does not match an object or relation
-        # to be a literar value
+        # to be a literal value
         # TODO: introduce DOMAIN and RANGE, to make this more robust.
 
-        for name, inner_dict in self.items.items():
-            new_obj = self.name_mapping[name]
-            pass
+        for short_key, inner_dict in list(self.item_dict.items()) + list(self.relation_dict.items()):
+            new_obj = self.name_mapping[short_key]
+            c_list = self.process_inner_dict(inner_dict)
+            for c in c_list:
+                if isinstance(c.key_obj, Relation):
+                    setattr(new_obj, c.key_res, c.value_obj)
 
-        for name, inner_dict in self.relations.items():
-            new_obj = self.name_mapping[name]
-            pass
+    def process_inner_dict(self, data_dict: dict, enforce_key_typ_in=("relation",)):
+        """
 
-    def process_inner_dict(self, data_dict: dict, referent: Entity = None):
+        :param data_dict:
+        :param enforce_key_typ_in:
+
+        :return:      list of Containers
+        """
+
+        res = []
 
         for key, value in data_dict.items():
-            key_res, key_typ = process_key_str(key)
-            value_res, value_typ = process_key_str(value)
+            c = Container()
 
-            if key_typ == "literal":
-                msg = f"unexpected key in yaml file: {key}"
+            # make key canonical
+            c.key_res, c.key_typ = process_key_str(key)
+
+            # the value migt contain: a literal, a keys, or a complex object
+            if isinstance(value, str):
+                # key or literal
+                c.value_res, c.value_typ = process_key_str(value)
+            elif isinstance(value, list):
+                # currently only support lists of keys
+                c.value_typ = "list"
+            else:
+                msg = f"unexpected type of value: {type(value)}"
+                raise TypeError(msg)
+
+            if c.key_typ not in enforce_key_typ_in:
+                msg = f"unexpected type of {key}: `{c.key_typ}` but expected one of {enforce_key_typ_in}"
                 raise ValueError(msg)
 
-            key_obj = self.name_mapping[key_res]
+            c.key_obj = self.name_mapping[c.key_res]
 
-            # currently only relations make sense here
-            assert isinstance(key_obj, Relation)
+            if c.value_typ == "literal":
+                # take the literal value directly
+                c.value_obj = value
+            elif c.value_typ == "list":
+                c.value_obj = [self.name_mapping[process_key_str(elt)[0]] for elt in value]
+            elif c.value_typ in ("item", "relation"):
+                c.value_obj = self.name_mapping[c.value_res]
 
-    def process_item(self, short_key, value):
-        assert isinstance(value, dict)
+            res.append(c)
+
+        return res
+
+
+    def process_item(self, short_key, inner_object):
+        assert isinstance(inner_object, dict)
 
         # TODO: assert that nothing gets overwritten
-        self.items[short_key].update(**value)
+        self.item_dict[short_key].update(**inner_object)
 
-    def process_relation(self, short_key, value):
-        assert isinstance(value, dict)
+    def process_relation(self, short_key, inner_object):
+        assert isinstance(inner_object, dict)
 
         # TODO: assert that nothing gets overwritten
-        self.relations[short_key].update(**value)
+        self.relation_dict[short_key].update(**inner_object)
 
 
 # noinspection PyShadowingNames

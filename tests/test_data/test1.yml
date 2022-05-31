@@ -1,0 +1,25 @@
+- meta: None
+
+- new I1001__Dynamical_System:
+    R1__has_label: "dynamical system"
+    R2__has_natural_language_definition: "system with the capability to change over time, optionally with explicit input and/or output"
+
+- I1001__Dynamical_System:
+    # this means: this Item is an ordinary class
+    R4__instance_of: I2__Metaclass
+
+- new I1002__Systems_Theory:
+    R1__has_label: "systems theory"
+    R2__has_natural_language_definition: "academic field; might be regarded as part of applied mathematics"
+
+- I1002__Systems_Theory:
+    R4__instance_of: I3__Field_of_science
+    R5__part_of:
+        - I4__Mathematics
+        - I5__Engineering
+- new R1001__studies:
+    R1__has_label: "studies"
+    R2_has_natural_language_definition: "object or class wich an academic field studies"
+
+- I1002__Systems_Theory:
+    R1001__studies: E1001__Dynamical_System

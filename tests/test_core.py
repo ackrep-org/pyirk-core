@@ -20,3 +20,23 @@ class TestCore(unittest.TestCase):
     # mark tests which only work for the "old core"
     def test_core1(self):
         m = pk.Manager(pjoin(TEST_DATA_PATH, "test1.yml"))
+        self.assertTrue(len(m.raw_stmts_dict) > 3)
+        q = m.raw_stmts_dict[0]
+        # IPS()
+
+    def test_patchy_dict1(self):
+        d = pk.PatchyPseudoDict()
+
+        self.assertRaises(TypeError, d.set, ("a", "b"))
+        d.set(10, "A")
+        d.set(20, "wrong value")
+        d.set(20, "B")
+        d.set(30, "C")
+        self.assertRaises(ValueError, d.set, 10, "A2")
+        self.assertEqual(d.get(10), "A")
+        self.assertEqual(d.get(11), "A")
+        self.assertEqual(d.get(19), "A")
+        self.assertEqual(d.get(21), "B")
+        self.assertEqual(d.get(31), "C")
+        self.assertEqual(d.get(800), "C")
+        self.assertRaises(KeyError, d.get, 9)

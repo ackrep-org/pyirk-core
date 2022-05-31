@@ -16,13 +16,13 @@ activate_ips_on_exception()
 
 """
     TODO:
-    multiple assignments via list ✓
-    natural language representation of ordered atomic statements
     SSD (sequential semantic documents)
+    multiple assignments via list
+    natural language representation of ordered atomic statements
     Labels (als Listeneinträge)
     DOMAIN und RANGE
     
-    unittests 
+    unittests ✓
     Sanity-check: `R1__part_of` muss einen Fehler werfen
     
     content: dynamical_system can_be_represented_by mathematical_model
@@ -47,6 +47,66 @@ class Entity:
     pass
 
 
+class PatchyPseudoDict:
+    """
+    Assumes keys to be numeric.
+
+    Setting value for key K:
+        like normal dict + additionally save K in an ordered list L of keys.
+    Getting value for key K: return self[Q] where Q is the largest element of L with Q <= K.
+    """
+
+    def __init__(self):
+        # do not allow initialization with data in the constructor
+        self.key_list = []
+        self.store = {}
+
+    def set(self, key: int, value: object) -> None:
+        if not isinstance(key, int):
+            msg = f"Expected int but got {type(key)}"
+            raise TypeError(msg)
+        if not self.key_list:
+            self.key_list.append(key)
+            self.store[key] = value
+            return
+
+        last_key = self.key_list[-1]
+        if key == last_key:
+            self.store[key] = value
+            return
+
+        # ensure ordering
+        # (this is for simplicity and could be extended in the future)
+        if not key > last_key:
+            msg = f"new key ({key}) must be bigger than last_ley ({last_key})."
+            raise ValueError(msg)
+        self.key_list.append(key)
+        self.store[key] = value
+
+    def get(self, key):
+        if not isinstance(key, int):
+            msg = f"Expected int but got {type(key)}"
+            raise TypeError(msg)
+        if not self.key_list:
+            raise KeyError(key)
+
+        # there is no data for such a small key
+        if key < self.key_list[0]:
+            msg = f"The smallest available key is {self.key_list[0]} but {key} was provided."
+            raise KeyError(msg)
+
+        # iterate from behind
+        # this probably could be speed up by some clever tricks
+        for q in reversed(self.key_list):
+            if q <= key:
+                return self.store[q]
+
+        # if this is reached something unexpected happened
+        msg = f"Could not find matching internal key for provided key {key}. This is unexpected."
+        raise ValueError(msg)
+
+
+
 class DataStore:
     """
     Provides objects to store all data that would be global otherwise
@@ -56,6 +116,7 @@ class DataStore:
         self.items = {}
         self.relations = {}
         self.statements = {}
+        self.versioned_entities = {}
 
 
 ds = DataStore()
@@ -92,7 +153,10 @@ class ProcessedStmtKey:
     content: object = None
 
 
-class Statement:
+class RawStatement:
+    """
+    Class representing an (quite) unprocessed statement (except the key).
+    """
     def __init__(self, raw_statement: dict, label=None):
         assert isinstance(raw_statement, dict)
 
@@ -164,8 +228,8 @@ class Manager(object):
         self.raw_data = self.load_yaml(fpath)
 
         # fill dict of all statements
-        self.stmts_dict = dict()
-        self.process_statements(self.raw_data)
+        self.raw_stmts_dict: Dict[int, RawStatement] = dict()
+        self.process_statements_stage1(self.raw_data)
 
         # simplify access
         self.n = attr_dict(self.name_mapping)
@@ -177,7 +241,13 @@ class Manager(object):
 
         return raw_data
 
-    def process_statements(self, raw_data: dict) -> None:
+    def process_statements_stage1(self, raw_data: dict) -> None:
+        """
+        Iterare over the the statement list, preprocess the keys and fill the raw_stmts_dict with content like
+        `{0: <RawStatment0>, ...}
+        :param raw_data:
+        :return:
+        """
 
         # iterate over statements, represented as list of length_1_dicts (`stmd`)
         # Every stmd is of the form {stm_key: stm_value}
@@ -192,10 +262,110 @@ class Manager(object):
                 next_label = value
                 continue
 
-            stm = Statement(stmd, next_label)
-            self.stmts_dict[stmt_counter] = stm
+            raw_stm = RawStatement(stmd, next_label)
+            self.raw_stmts_dict[stmt_counter] = raw_stm
             stmt_counter += 1
 
+    def process_all_creation_stmts(self):
+        """
+
+        :return:
+        """
+
+        for stm_key, raw_stm in self.raw_stmts_dict.items():
+            if raw_stm.stype is not SType.CREATION:
+                continue
+            self.process_creation_stmt(raw_stm, stm_key)
+
+    def process_creation_stmt(self, raw_stm: RawStatement, stm_key):
+        """
+
+        :param stm_key:
+        :param raw_stm:
+        :return:
+        """
+
+        if raw_stm.processed_key.etype is EType.ITEM:
+            processed_inner_obj = self.process_inner_obj(raw_stm.raw_value)
+            # create_item(raw_stm.processed_key.short_key)
+        elif raw_stm.processed_key.etype is EType.RELATION:
+            pass
+        else:
+            msg = f"unexpected key type: {raw_stm.processed_key.etype} during processing of statement {raw_stm}."
+            raise ValueError(msg)
+
+    def process_inner_obj(self, raw_inner_obj: dict) -> None:
+        """
+
+        :param raw_inner_obj:   dict like {"R1__has_label": "dynamical system"}
+        :return:
+        """
+        assert isinstance(raw_inner_obj, dict)
+        for key, value in raw_inner_obj.items():
+            processed_key = process_key_str(self.key)
+            assert processed_key.etype is EType.RELATION
+            assert processed_key.stype is not SType.CREATION
+
+            relation = self
+
+    def get_obj(self, short_key, stm_key):
+        """
+        Returns the object corresponding to the pair (short_key, stm_key). If it does not exist return a FutureEntity.
+
+        :param short_key:
+        :param stm_key:
+        :return:
+        """
+
+
+
+
+class FutureEntity:
+    """
+    Objects of this class serve as placeholder to reference Entities which will be defined later in the sequence of
+    statements.
+    """
+    def __init__(self, short_key, stm_key):
+        self.short_key = short_key
+        self.stm_key = stm_key
+
+
+class Item:
+    def __init__(self, item_key: str, **kwargs):
+
+        self.item_key = item_key
+        for key, value in kwargs.items():
+            setattr(self, key, value)
+
+    def __repr__(self):
+        R1 = getattr(self, "R1", "no label").replace(" ", "_")
+        return f"<Item {self.item_key}__{R1}>"
+
+
+# noinspection PyShadowingNames
+def create_item(item_key: str, **kwargs):
+    """
+
+    :param item_key:    unique key of this item (something like `I1234`)
+    :param kwargs:      further relations
+
+    :return:        newly created item
+    """
+
+    new_kwargs = {}
+    for dict_key, value in kwargs.items():
+        attr_short_key, typ = process_key_str(dict_key)
+
+        if typ != "relation":
+            msg = f"unexpected key: {dict_key} during creation of item {item_key}."
+            raise ValueError(msg)
+
+        new_kwargs[attr_short_key] = value
+
+    n = Item(item_key, **new_kwargs)
+    assert item_key not in RegistryMeta.ITEM_REGISTRY
+    RegistryMeta.ITEM_REGISTRY[item_key] = n
+    return n
 
 def script_main(fpath):
     m = Manager(fpath)

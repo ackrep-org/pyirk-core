@@ -24,8 +24,10 @@ class TestCore(unittest.TestCase):
         self.assertIn("R1", pk.ds.builtin_entities)
         self.assertIn("R2", pk.ds.builtin_entities)
 
-        # TODO: decide whether in versioned_entities the object should be the same or a copy.
-        self.assertEqual(pk.ds.versioned_entities["I1001"].get(0), pk.ds.items.I1001)
+        i1a = pk.ds.versioned_entities["I1001"].get(0)
+        i1b = pk.ds.items.I1001
+        self.assertNotEqual(i1a, i1b)
+        self.assertEqual(i1a.short_key, i1b.short_key)
         q = m.raw_stmts_dict[0]
         # IPS()
 

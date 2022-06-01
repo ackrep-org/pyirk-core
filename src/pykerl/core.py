@@ -3,6 +3,8 @@ Core module of pykerl
 """
 from collections import defaultdict
 from dataclasses import dataclass
+import abc
+import copy
 from enum import Enum, unique
 import re
 from addict import Dict as attr_dict
@@ -39,12 +41,15 @@ activate_ips_on_exception()
 """
 
 
-class Entity:
+class Entity(abc.ABC):
     """
     Abstract parent class for both Relations and Items
     """
 
-    pass
+    short_key: str = None
+
+    @abc.abstractmethod
+    def __init__(self): ...
 
 
 class PatchyPseudoDict:
@@ -121,6 +126,18 @@ class DataStore:
 
         # this dict contains a PatchyPseudoDict for every short key to store different versions of the same object
         self.versioned_entities = defaultdict(PatchyPseudoDict)
+
+    def save_entity_snapshot(self, entity: Entity, stm_key: int):
+        """
+        Saves a copy of the entity to the versioned_entities store.
+
+        :param entity:
+        :param stm_key:
+        :return:
+        """
+
+        copied_entity = copy.copy(entity)
+        self.versioned_entities[copied_entity.short_key].set(stm_key, copied_entity)
 
 
 ds = DataStore()
@@ -321,7 +338,7 @@ class Manager(object):
         self.raw_stmts_dict: Dict[int, RawStatement] = dict()
         self.process_statements_stage1(self.raw_data)
 
-        self.process_all_creation_stmts()
+        self.process_all_stmts()
 
         # simplify access
         self.n = attr_dict(self.name_mapping)
@@ -358,7 +375,7 @@ class Manager(object):
             self.raw_stmts_dict[stmt_counter] = raw_stm
             stmt_counter += 1
 
-    def process_all_creation_stmts(self):
+    def process_all_stmts(self):
         """
 
         :return:
@@ -382,7 +399,7 @@ class Manager(object):
             processed_inner_obj = self.process_inner_obj(raw_stm.raw_value, stm_key)
             short_key = raw_stm.processed_key.short_key
             item = create_item_from_processed_inner_obj(short_key, processed_inner_obj)
-            ds.versioned_entities[short_key].set(stm_key, item)
+            ds.save_entity_snapshot(item, stm_key)
         elif raw_stm.processed_key.etype is EType.RELATION:
             pass
         else:
@@ -451,17 +468,18 @@ class FutureEntity:
 
 
 # noinspection PyShadowingNames
-class Item:
+class Item(Entity):
     def __init__(self, item_key: str, **kwargs):
+        super().__init__()
 
-        self.item_key = item_key
+        self.short_key = item_key
         self._references = None
         for key, value in kwargs.items():
             setattr(self, key, value)
 
     def __repr__(self):
         R1 = getattr(self, "R1", "no label").replace(" ", "_")
-        return f"<Item {self.item_key}__{R1}>"
+        return f"<Item {self.short_key} ({R1})>"
 
 
 # noinspection PyShadowingNames
@@ -507,17 +525,18 @@ def create_item_from_processed_inner_obj(item_key: str, pio: ProcessedInnerDict)
 
 
 # noinspection PyShadowingNames
-class Relation:
+class Relation(Entity):
     def __init__(self, rel_key, **kwargs):
+        super().__init__()
 
         # set label
-        self.rel_key = rel_key
+        self.short_key = rel_key
         for key, value in kwargs.items():
             setattr(self, key, value)
 
     def __repr__(self):
         R1 = getattr(self, "R1", "no label").replace(" ", "_")
-        return f"<Relation {self.rel_key}__{R1}>"
+        return f"<Relation {self.short_key}__{R1}>"
 
 
 def create_relation(rel_key, **kwargs) -> Relation:
@@ -540,13 +559,13 @@ def create_relation(rel_key, **kwargs) -> Relation:
 
 def create_builtin_item(*args, **kwargs) -> Item:
     itm = create_item(*args, **kwargs)
-    ds.builtin_entities[itm.item_key] = itm
+    ds.builtin_entities[itm.short_key] = itm
     return itm
 
 
 def create_builtin_relation(*args, **kwargs) -> Relation:
     rel = create_relation(*args, **kwargs)
-    ds.builtin_entities[rel.rel_key] = rel
+    ds.builtin_entities[rel.short_key] = rel
     return rel
 
 

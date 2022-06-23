@@ -18,6 +18,9 @@ activate_ips_on_exception()
 
 """
     TODO:
+    create statements ✓
+    extend statements [ ]
+    rename kerl → ERK (easy representation of knowledge)
     SSD (sequential semantic documents)
     multiple assignments via list
     natural language representation of ordered atomic statements
@@ -186,8 +189,13 @@ class ProcessedStmtKey:
     """
 
     short_key: str = None
+    # entity type (enum)
     etype: EType = None
+    # statement type (enum)
     stype: SType = None
+    # value type (enum)
+    vtype: VType = None
+
     content: object = None
 
 
@@ -258,6 +266,8 @@ class SemanticStatement(AbstractStatement):
         super().__init__(label=label)
         assert isinstance(raw_statement, RawStatement)
 
+    # TODO: implement something like qualifiers: https://www.wikidata.org/wiki/Wikidata:SPARQL_tutorial#Qualifiers
+
 
 def unpack_l1d(l1d: Dict[str, object]):
     assert len(l1d) == 1
@@ -286,12 +296,15 @@ def process_key_str(key_str: str) -> ProcessedStmtKey:
     if match_itm:
         res.short_key = match_itm.group(1)
         res.etype = EType.ITEM
+        res.vtype = VType.ENTITY
     elif match_rel:
         res.short_key = match_rel.group(1)
         res.etype = EType.RELATION
+        res.vtype = VType.ENTITY
     else:
         res.short_key = None
         res.etype = EType.LITERAL
+        res.vtype = VType.LITERAL
         res.content = key_str
 
     return res
@@ -375,19 +388,37 @@ class Manager(object):
             self.raw_stmts_dict[stmt_counter] = raw_stm
             stmt_counter += 1
 
-    def process_all_stmts(self):
+    def process_all_stmts(self) -> None:
         """
 
         :return:
         """
 
         for stm_key, raw_stm in self.raw_stmts_dict.items():
-            if raw_stm.stype is not SType.CREATION:
-                continue
-            self.process_creation_stmt(raw_stm, stm_key)
-            break
+            if raw_stm.stype is SType.CREATION:
+                self.process_creation_stm(raw_stm, stm_key)
+            elif raw_stm.stype is SType.EXTENTION:
+                self.process_extension_stm(raw_stm, stm_key)
+                break
+            else:
+                msg = f"unexpected type of raw statement with key {stm_key} ({raw_stm}): {raw_stm.stype}"
+                raise ValueError(msg)
 
-    def process_creation_stmt(self, raw_stm: RawStatement, stm_key):
+    def process_extension_stm(self, raw_stm: RawStatement, stm_key):
+        """
+
+        :param stm_key:
+        :param raw_stm:
+        :return:
+        """
+
+        if raw_stm.processed_key.etype is EType.ITEM:
+            short_key = raw_stm.processed_key.short_key
+            item = ds.items[short_key]
+            processed_inner_obj = self.process_inner_obj(raw_stm.raw_value, stm_key)
+            item.apply_extension_statement(processed_inner_obj)
+
+    def process_creation_stm(self, raw_stm: RawStatement, stm_key):
         """
 
         :param stm_key:
@@ -401,7 +432,7 @@ class Manager(object):
             item = create_item_from_processed_inner_obj(short_key, processed_inner_obj)
             ds.save_entity_snapshot(item, stm_key)
         elif raw_stm.processed_key.etype is EType.RELATION:
-            pass
+            raise NotImplementedError
         else:
             msg = f"unexpected key type: {raw_stm.processed_key.etype} during processing of statement {raw_stm}."
             raise ValueError(msg)
@@ -438,6 +469,7 @@ class Manager(object):
             processed_value = process_raw_value(value, stm_key)
             res.reltarget_dict[processed_key.short_key] = processed_value
 
+        assert len(res.relation_dict) == len(res.relation_dict)
         return res
 
 
@@ -474,12 +506,44 @@ class Item(Entity):
 
         self.short_key = item_key
         self._references = None
+        self.relation_dict = {}
+        self.reltarget_dict = {}
         for key, value in kwargs.items():
-            setattr(self, key, value)
+            self._set_relation(key, value)
 
     def __repr__(self):
         R1 = getattr(self, "R1", "no label").replace(" ", "_")
         return f"<Item {self.short_key} ({R1})>"
+
+    def _set_relation(self, rel_key, rel_content):
+
+        rel = ds.relations[rel_key]
+        prk = process_key_str(rel_key)
+
+        # set the relation to the object
+        setattr(self, rel_key, rel_content)
+
+        # store relation for later usage
+        self.relation_dict[rel_key] = rel
+        self.reltarget_dict[rel_key] = ProcessedDictValue(vtype=prk.vtype, content=rel_content)
+
+    def create_copy(self):
+        NotImplementedError
+
+
+
+    def apply_extension_statement(self, processed_inner_obj: ProcessedInnerDict):
+
+        for rel_key, rel in processed_inner_obj.relation_dict.items():
+            rel_target = processed_inner_obj.reltarget_dict[rel_key]
+
+            # TODO: decide whether to support overwriting of relations
+            # make sure that the attribute is new
+            attr = getattr(self, rel_key, None)
+            assert attr is None
+            setattr(self, rel_key, rel_target.content)
+
+            IPS()
 
 
 # noinspection PyShadowingNames
@@ -569,18 +633,55 @@ def create_builtin_relation(*args, **kwargs) -> Relation:
     return rel
 
 
+def print_new_key(fname):
+    """
+    generate a new random integer and print it. Optionally check if it is already present in a file
+    and generate a new one, if necessary
+
+    :param fname:
+    :return:
+    """
+    import random
+
+    if fname:
+        with open(fname, "r") as myfile:
+            txt_data = myfile.read()
+    else:
+        txt_data = ""
+
+    for i in range(30):
+        while True:
+            k = str(random.randint(1000, 9999))
+            if k in txt_data:
+                # print("collision detected -> regenerate key")
+                continue
+            break
+
+        print(f"supposed key:    I{k}      R{k}")
+
+
+# !! defining that stuff on module level makes the script slow:
+
+
 R1 = create_builtin_relation("R1", R1="has label")
 R2 = create_builtin_relation("R2", R1="has natural language definition")
 R3 = create_builtin_relation("R3", R1="subclass of")
 R4 = create_builtin_relation("R4", R1="instance of")
 R5 = create_builtin_relation("R5", R1="part of")
+R6 = create_builtin_relation("R6", R1="has defining equation")
+R7 = create_builtin_relation("R7", R1="has arity")
+R8 = create_builtin_relation("R8", R1="has domain of argument 1")
+R9 = create_builtin_relation("R9", R1="has domain of argument 2")
+R10 = create_builtin_relation("R10", R1="has domain of argument 3")
+R11 = create_builtin_relation("R11", R1="has range of result")
+R12 = create_builtin_relation("R12", R1="is defined by means of")
 
 I1 = create_builtin_item("I1", R1="General Item")
 I2 = create_builtin_item(
     "I2",
     R1="Metaclass",
     R2__has_natural_language_definition=(
-        "Parent class for other classes; subclasses of this are also meta classes"
+        "Parent class for other classes; subclasses of this are also metaclasses"
         "instances are ordinary classes",
     ),
     R3__subclass_of=I1,
@@ -589,6 +690,11 @@ I2 = create_builtin_item(
 I3 = create_builtin_item("I3", R1="Field of science")
 I4 = create_builtin_item("I4", R1="Mathematics", R4__instance_of=I3)
 I5 = create_builtin_item("I5", R1="Engineering", R4__instance_of=I3)
+I6 = create_builtin_item("I6", R1="mathematical operation", R4__instance_of=I2)
+I7 = create_builtin_item("I7", R1="mathematical operation with arity 1", R3__subclass_of=I6, R7=1)
+I8 = create_builtin_item("I8", R1="mathematical operation with arity 2", R3__subclass_of=I6, R7=2)
+I9 = create_builtin_item("I9", R1="mathematical operation with arity 3", R3__subclass_of=I6, R7=3)
+
 
 
 def script_main(fpath):

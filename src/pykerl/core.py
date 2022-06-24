@@ -694,7 +694,14 @@ I6 = create_builtin_item("I6", R1="mathematical operation", R4__instance_of=I2)
 I7 = create_builtin_item("I7", R1="mathematical operation with arity 1", R3__subclass_of=I6, R7=1)
 I8 = create_builtin_item("I8", R1="mathematical operation with arity 2", R3__subclass_of=I6, R7=2)
 I9 = create_builtin_item("I9", R1="mathematical operation with arity 3", R3__subclass_of=I6, R7=3)
-
+I10 = create_builtin_item(
+    "I10", R1="abstract metaclass",
+    R3__subclass_of=I2,
+    R2__has_natural_language_definition=(
+        "Special metaclass. Instances of this class are abstract classes that should not be instantiated, ",
+        "but subclassed instead."
+    )
+)
 
 
 def script_main(fpath):

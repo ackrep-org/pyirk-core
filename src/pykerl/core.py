@@ -21,7 +21,10 @@ activate_ips_on_exception()
     create statements ✓
     extend statements [ ]
     rename kerl → ERK (easy representation of knowledge)
-    SSD (sequential semantic documents)
+    SPARQL interface
+    
+    
+    SSD (sequential semantic documents) (stalled)
     multiple assignments via list
     natural language representation of ordered atomic statements
     Labels (als Listeneinträge)
@@ -44,6 +47,31 @@ activate_ips_on_exception()
 """
 
 
+class EntityRelation:
+    """
+    This class models the application of a relation to an entity.
+    """
+
+    def __init__(self, entity, relation):
+        """
+
+        :param entity:          The entity to which self is assigned
+        :param relation:        The actual relation object
+        """
+        self.entity = entity
+        self.relation = relation
+        self.store = []
+
+    def __call__(self, arg) -> None:
+        """
+        Interpret a call as an assingment to store.
+
+        :param arg:
+        :return:
+        """
+        self.store.append(arg)
+
+
 class Entity(abc.ABC):
     """
     Abstract parent class for both Relations and Items
@@ -51,8 +79,34 @@ class Entity(abc.ABC):
 
     short_key: str = None
 
-    @abc.abstractmethod
-    def __init__(self): ...
+    def __init__(self):
+        # this will hold mappings like "R1234": EntityRelation(..., R1234)
+        self._rel_dict = {}
+
+    def __call__(self, adhoc_label):
+        # returning self allows to use I1234 and I1234("human readable item name") interchageably
+        # (once the object is created)
+
+        # TODO: check consistency between adhoc_label and self.label
+        return self
+
+    def __getattr__(self, attr_name):
+        try:
+            return self.__dict__[attr_name]
+        except KeyError:
+            pass
+        res = process_key_str(attr_name)
+        if not res.etype == EType.RELATION:
+            msg = f"Unexpected attribute name: '{attr_name}'"
+            raise KeyError(msg)
+
+        try:
+            etyrel = self._rel_dict[res.short_key]
+        except KeyError:
+            general_relation = ds.relations[res.short_key]
+            etyrel = EntityRelation(entity=self, relation=general_relation)
+            self._rel_dict[res.short_key] = etyrel
+        return etyrel
 
 
 class PatchyPseudoDict:
@@ -501,10 +555,13 @@ class FutureEntity:
 
 # noinspection PyShadowingNames
 class Item(Entity):
-    def __init__(self, item_key: str, **kwargs):
+    def __init__(self, key_str: str, **kwargs):
         super().__init__()
 
-        self.short_key = item_key
+        res = process_key_str(key_str)
+        assert res.etype == EType.ITEM
+
+        self.short_key = res.short_key
         self._references = None
         self.relation_dict = {}
         self.reltarget_dict = {}
@@ -512,8 +569,8 @@ class Item(Entity):
             self._set_relation(key, value)
 
     def __repr__(self):
-        R1 = getattr(self, "R1", "no label").replace(" ", "_")
-        return f"<Item {self.short_key} ({R1})>"
+        R1 = getattr(self, "R1", "no label")
+        return f'<Item {self.short_key}("{R1}")>'
 
     def _set_relation(self, rel_key, rel_content):
 
@@ -547,15 +604,20 @@ class Item(Entity):
 
 
 # noinspection PyShadowingNames
-def create_item(item_key: str, **kwargs) -> Item:
+def create_item(key_str: str = "", **kwargs) -> Item:
     """
 
-    :param item_key:    unique key of this item (something like `I1234`)
+    :param key_str:     "" or unique key of this item (something like `I1234`)
     :param _references: versioned references of relations
     :param kwargs:      further relations
 
     :return:        newly created item
     """
+
+    if key_str == "":
+        item_key = get_key_str_by_inspection()
+    else:
+        item_key = key_str
 
     new_kwargs = {}
     for dict_key, value in kwargs.items():
@@ -603,7 +665,19 @@ class Relation(Entity):
         return f"<Relation {self.short_key}__{R1}>"
 
 
-def create_relation(rel_key, **kwargs) -> Relation:
+def create_relation(key_str: str = "", **kwargs) -> Relation:
+    """
+
+    :param key_str:     "" or unique key of this item (something like `I1234`)
+    :param kwargs:      further relations
+
+    :return:        newly created relation
+    """
+
+    if key_str == "":
+        rel_key = get_key_str_by_inspection()
+    else:
+        rel_key = key_str
 
     new_kwargs = {}
     for key, value in kwargs.items():
@@ -702,6 +776,41 @@ I10 = create_builtin_item(
         "but subclassed instead."
     )
 )
+
+
+def get_key_str_by_inspection(upcount=1) -> str:
+    """
+    :param upcount:     int; how many frames to go up
+    :return:
+    """
+    import inspect
+
+    # get the topmost frame
+    frame = inspect.currentframe()
+    # + 1 because the we have to leave this frame first
+    i = upcount + 1
+    while True:
+        if frame.f_back is None:
+            break
+        frame = frame.f_back
+        i -= 1
+        if i == 0:
+            break
+
+    # this is strongly inspired by sympy.var
+    try:
+        fi = inspect.getframeinfo(frame)
+        code_context = fi.code_context
+    finally:
+        # we should explicitly break cyclic dependencies as stated in inspect
+        # doc
+        del frame
+
+    # !! TODO: parsing the assignment should be more robust (correct parsing of logical lines)
+    # assume that there is at least one `=` in the line
+    lhs, rhs = code_context[0].split("=")[:2]
+    return lhs.strip()
+
 
 
 def script_main(fpath):

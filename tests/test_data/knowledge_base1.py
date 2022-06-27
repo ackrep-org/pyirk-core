@@ -27,14 +27,8 @@ R1001 = c.create_relation(
     R2__has_definition="object or class wich an academic field studies"
 )
 
-I4466("Systems Theory").R1001__studies(I5948("dynamical system"))
+I4466("Systems Theory").set_relation(R1001("studies"), I5948("dynamical system"))
 
-
-I7725 = c.create_item(
-    R1__has_label="implication proposition",
-    R2__has_definition="proposition, where the premise (if-part) implies the assertion (then-part)",
-    # R3__subclass_of=I7723("general mathematical proposition")
-)
 
 R4347 = c.create_relation(
     R1__has_label="has context",
@@ -46,14 +40,14 @@ R4347 = c.create_relation(
 R4348 = c.create_relation(
     R1__has_label="has premise",
     R2__has_definition="establishes the premise (if-part) of an implication",
-    R8__has_domain_of_argument_1=I7725("implication proposition"),
+    R8__has_domain_of_argument_1=c.I15("implication proposition"),
     # R10__has_range_of_result=<!! container of statements>
 )
 
 R4349 = c.create_relation(
     R1__has_label="has assertion",
     R2__has_definition="establishes the assertion (then-part) of an implication",
-    R8__has_domain_of_argument_1=I7725("implication proposition"),
+    R8__has_domain_of_argument_1=c.I15("implication proposition"),
     # R10__has_range_of_result=<!! container of statements>
 )
 
@@ -70,7 +64,6 @@ I6886 = c.create_item(
     R4__instance_of=c.I2("Metaclass"),
     R6__has_defining_equation=r"$\dot x = f(x, u)$",
 )
-
 
 I5356 = c.create_item(
     R1__has_label="general system property",
@@ -94,7 +87,7 @@ I5358 = c.create_item(
 
 def create_I5847():
     R1__has_label = "Equivalence of flat systems and exact input-to-state linearizable systems"
-    R4__instance_of = I7725("implication proposition")
+    R4__instance_of = c.I15("implication proposition")
     R2__has_definition = (
                              "Establishes that differentially flat systems and exact input-to-state linearizable systems "
                              "are equivalent in the SISO case"
@@ -118,9 +111,157 @@ def create_I5847():
 I5847 = create_I5847()
 
 
+# attempt without writing code
+
+I2640 = c.create_item(
+    R1__has_label="transfer function representation",
+    R2__has_definition="...",
+    R4__instance_of=c.I2("Metaclass"),
+)
+
+I4235 = c.create_item(
+    R1__has_label="mathematical object",
+    R2__has_definition="...",
+    R4__instance_of=c.I2("Metaclass"),
+)
+
+# todo: what is the difference between an object and an expression?
+I4236 = c.create_item(
+    R1__has_label="mathematical expression",
+    R2__has_definition="...",
+    R3__subclass_of=I4235("mathematical object"),
+)
+
+I4237 = c.create_item(
+    R1__has_label="monovariate rational function",
+    R2__has_definition="...",
+    R3__subclass_of=I4236("mathematical expression"),
+)
+
+I4239 = c.create_item(
+    R1__has_label="monovariate polynomial",
+    R2__has_definition="...",
+    R3__subclass_of=I4236("mathematical expression"),
+)
+
+I5484 = c.create_item(
+    R1__has_label="finite set of complex numnbers",
+    R2__has_definition="...",
+    R3__subclass_of=c.I13("mathematical set"),
+)
+
+I2738 = c.create_item(
+    R1__has_label="field of complex numnbers",
+    R2__has_definition="field of complex numnbers",
+    R4__instance_of=I4235("mathematical object"),
+    R13__has_canonical_symbol=r"$\mathbb{C}$",
+    # todo: introduce algebraic structures and relation to set
+)
+
+I2739 = c.create_item(
+    R1__has_label="open left half plane",
+    R2__has_definition="set of all complex numbers with negative real part",
+    R4__instance_of=I4235("mathematical object"),
+    R14__is_subset_of=I2738("field of complex numnbers"),
+)
+
+R5323 = c.create_relation(
+    R1__has_label="has denominator",
+    R2__has_definition="...",
+    R8__has_domain_of_argument_1=I4237("monovariate rational function"),
+    R10__has_range_of_result=I4239("monovariate polynomial")
+)
+
+
+R5334 = c.create_relation(
+    R1__has_label="has representation",
+    R2__has_definition="relates an entity with an abstract mathematical representation",
+    # R8__has_domain_of_argument_1= ...
+    R10__has_range_of_result=I4235("mathematical object"),
+)
+
+R1757 = c.create_relation(
+    R1__has_label="has set of roots",
+    R2__has_definition="set of roots for a monovariate function",
+    R8__has_domain_of_argument_1=I4236("mathematical expression"),  # todo: this is too broad
+    R10__has_range_of_result=I5484("finite set of complex numbers")
+)
+
+I8181 = c.create_item(
+    R1__has_label="properness",
+    R2__has_definition=(
+        "applicable to monovariate rational functions; "
+        "satisfied if degree of denominator is not smaller than degree of numerator",
+    ),
+    R4__instance_of=c.I11("mathematical property")
+)
+
+I8182 = c.create_item(
+    R1__has_label="strict properness",
+    R2__has_definition=(
+        "satisfied if degree of denominator is greater than degree of numerator",
+    ),
+    R17__is_subproperty_of=I8181("properness")
+)
+
+I7206 = c.create_item(
+    R1__has_label="system-dynamical property",
+    R2__has_definition="base class for all systemdynamical properties",
+    R3__subclass_of=c.I11("mathematical property")
+)
+
+I7207 = c.create_item(
+    R1__has_label="stability",
+    R2__has_definition="tendency to stay close to some distinguished trajectory (e.g. equilibrium)",
+    R4__instance_of=I7206("system-dynamical property")
+)
+
+I7208 = c.create_item(
+    R1__has_label="BIBO stability",
+    R2__has_definition=(
+        "'bounded-input bounded-output stability'; "
+        "satisfied if the system responds to every bounded input signal with a bounded output signal",
+    ),
+    R17__is_subproperty_of=I7207("stability")
+)
+
+# <theorem>
+
+I3007 = c.create_item(
+    R1__has_label="stability theorem for a rational transfer function",
+    R2__has_definition="establishes the relation between BIBO-Stability and the poles of the transfer function",
+    R4__instance_of=c.I15("implication proposition"),
+)
+
+I3007.set_context_vars(
+    sys=c.instance_of(I5948("dynamical system")),
+    tf_rep=c.instance_of(I2640("transfer function representation")),
+    denom=c.instance_of(I4239("monovariate polynomial")),
+    set_of_poles=c.instance_of(I5484("finite set of complex numbers"))
+)
+
 from ipydex import IPS, activate_ips_on_exception
 activate_ips_on_exception()
 IPS()
+
+I3007.set_context_relations(
+    (I3007.sys, R5334("has representation"), I3007.tf_rep),
+    (I3007.tf_rep, R5323("has denominator"), I3007.denom),
+    (I3007.denom, R1757("has set of roots"), I3007.set_of_poles),
+)
+
+I3007.set_premise(c.AND(
+    (I3007.set_of_poles, c.R14("is subset of"), I2739("open left half plane")),
+    (I3007.tf_rep, c.R16("has property"), I8181("properness"))
+))
+
+I3007.set_assertion(
+    (I3007.sys, c.R16("has property"), I7208("BIBO stability"))
+)
+
+# </theorem>
+
+
 
 """
 

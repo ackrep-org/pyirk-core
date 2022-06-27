@@ -4,6 +4,7 @@ Core module of pykerl
 from collections import defaultdict
 from dataclasses import dataclass
 import inspect
+import types
 import abc
 import copy
 from enum import Enum, unique
@@ -75,7 +76,9 @@ class EntityRelation:
 
 class Entity(abc.ABC):
     """
-    Abstract parent class for both Relations and Items
+    Abstract parent class for both Relations and Items.
+
+    Do not forget to call self.__post_init__ at the end of __init__ in subclasses.
     """
 
     short_key: str = None
@@ -83,6 +86,9 @@ class Entity(abc.ABC):
     def __init__(self):
         # this will hold mappings like "R1234": EntityRelation(..., R1234)
         self._rel_dict = {}
+        self._method_prototypes = []
+        self.relation_dict = {}
+        self.reltarget_dict = {}
 
     def __call__(self, adhoc_label):
         # returning self allows to use I1234 and I1234("human readable item name") interchageably
@@ -104,10 +110,69 @@ class Entity(abc.ABC):
         try:
             etyrel = self._rel_dict[res.short_key]
         except KeyError:
-            general_relation = ds.relations[res.short_key]
-            etyrel = EntityRelation(entity=self, relation=general_relation)
-            self._rel_dict[res.short_key] = etyrel
+            msg = f"'{type(self)}' object has no attribute '{res.short_key}'"
+            raise AttributeError(msg)
+            # general_relation = ds.relations[res.short_key]
+            # etyrel = EntityRelation(entity=self, relation=general_relation)
+            # self._rel_dict[res.short_key] = etyrel
         return etyrel
+
+    def __post_init__(self):
+        # for a solution how to automate this see
+        # https://stackoverflow.com/questions/55183333/how-to-use-an-equivalent-to-post-init-method-with-normal-class
+        self._perform_inheritance()
+
+    def _perform_inheritance(self):
+
+        # this relates to R4__instance_of defined below
+        parent_class: Entity
+        try:
+            parent_class = self.R4
+        except AttributeError:
+            parent_class = None
+
+        if parent_class is not None:
+            for func in parent_class._method_prototypes:
+                self.add_method(func)
+
+    def add_method(self, func):
+        """
+        Add a method to this instance (self). If there are R4 relations pointing from child items to self,
+        this method is also inherited to those child items.
+
+        :param func:
+        :return:
+        """
+        self.__dict__[func.__name__] = types.MethodType(func, self)
+        self._method_prototypes.append(func)
+
+    def set_relation(self, relation, *args):
+        """
+        Allows to add a relation after the item was created.
+
+        :param relation:   Relation
+        :param args:
+        :return:
+        """
+
+        if isinstance(relation, Relation):
+            if not len(args) == 1:
+                raise NotImplementedError
+            self._set_relation(relation.short_key, *args)
+        else:
+            raise NotImplementedError
+
+    def _set_relation(self, rel_key: str, rel_content: object) -> None:
+
+        rel = ds.relations[rel_key]
+        prk = process_key_str(rel_key)
+
+        # set the relation to the object
+        setattr(self, rel_key, rel_content)
+
+        # store relation for later usage
+        self.relation_dict[rel_key] = rel
+        self.reltarget_dict[rel_key] = ProcessedDictValue(vtype=prk.vtype, content=rel_content)
 
 
 class PatchyPseudoDict:
@@ -564,31 +629,18 @@ class Item(Entity):
 
         self.short_key = res.short_key
         self._references = None
-        self.relation_dict = {}
-        self.reltarget_dict = {}
+
         for key, value in kwargs.items():
             self._set_relation(key, value)
+
+        self.__post_init__()
 
     def __repr__(self):
         R1 = getattr(self, "R1", "no label")
         return f'<Item {self.short_key}("{R1}")>'
 
-    def _set_relation(self, rel_key, rel_content):
-
-        rel = ds.relations[rel_key]
-        prk = process_key_str(rel_key)
-
-        # set the relation to the object
-        setattr(self, rel_key, rel_content)
-
-        # store relation for later usage
-        self.relation_dict[rel_key] = rel
-        self.reltarget_dict[rel_key] = ProcessedDictValue(vtype=prk.vtype, content=rel_content)
-
     def create_copy(self):
-        NotImplementedError
-
-
+        raise NotImplementedError
 
     def apply_extension_statement(self, processed_inner_obj: ProcessedInnerDict):
 
@@ -660,6 +712,8 @@ class Relation(Entity):
         self.short_key = rel_key
         for key, value in kwargs.items():
             setattr(self, key, value)
+
+        self.__post_init__()
 
     def __repr__(self):
         R1 = getattr(self, "R1", "no label").replace(" ", "_")
@@ -736,20 +790,47 @@ def print_new_key(fname):
 
 
 # !! defining that stuff on module level makes the script slow:
-
+# todo: move this to a separate module
 
 R1 = create_builtin_relation("R1", R1="has label")
 R2 = create_builtin_relation("R2", R1="has natural language definition")
-R3 = create_builtin_relation("R3", R1="subclass of")
-R4 = create_builtin_relation("R4", R1="instance of")
-R5 = create_builtin_relation("R5", R1="part of")
+R3 = create_builtin_relation("R3", R1="is subclass of")
+R4 = create_builtin_relation("R4", R1="is instance of")
+R5 = create_builtin_relation("R5", R1="is part of")
 R6 = create_builtin_relation("R6", R1="has defining equation")
 R7 = create_builtin_relation("R7", R1="has arity")
 R8 = create_builtin_relation("R8", R1="has domain of argument 1")
 R9 = create_builtin_relation("R9", R1="has domain of argument 2")
 R10 = create_builtin_relation("R10", R1="has domain of argument 3")
-R11 = create_builtin_relation("R11", R1="has range of result")
+R11 = create_builtin_relation("R11", R1="has range of result", R2="specifies the range of the result (last arg)")
 R12 = create_builtin_relation("R12", R1="is defined by means of")
+R13 = create_builtin_relation("R13", R1="has canonical symbol")
+R14 = create_builtin_relation("R14", R1="is subset of")
+R15 = create_builtin_relation("R15", R1="is element of", R2="states that arg1 is an element of arg2")
+R16 = create_builtin_relation(
+    key_str="R16",
+    R1="has property",
+    R2="relates an entity with a mathematical property",
+    # R8__has_domain_of_argument_1=I4235("mathematical object"),
+    # R10__has_range_of_result=...
+
+)
+R17 = create_builtin_relation(
+    key_str="R17",
+    R1="is subproperty of",
+    R2="specifies that arg1 is a sub property of arg2"
+)
+R18 = create_builtin_relation("R18", R1="has usage hints", R2="specifies hints on how this relation should be used")
+
+R19 = create_builtin_relation(
+    key_str="R19",
+    R1="defines method",
+    R2="specifies that an entity has a special method (defined by executeable code)"
+    # R10__has_range_of_result=callable !!
+)
+
+
+# Items
 
 I1 = create_builtin_item("I1", R1="General Item")
 I2 = create_builtin_item(
@@ -765,7 +846,7 @@ I2 = create_builtin_item(
 I3 = create_builtin_item("I3", R1="Field of science")
 I4 = create_builtin_item("I4", R1="Mathematics", R4__instance_of=I3)
 I5 = create_builtin_item("I5", R1="Engineering", R4__instance_of=I3)
-I6 = create_builtin_item("I6", R1="mathematical operation", R4__instance_of=I2)
+I6 = create_builtin_item("I6", R1="mathematical operation", R4__instance_of=I2("Metaclass"))
 I7 = create_builtin_item("I7", R1="mathematical operation with arity 1", R3__subclass_of=I6, R7=1)
 I8 = create_builtin_item("I8", R1="mathematical operation with arity 2", R3__subclass_of=I6, R7=2)
 I9 = create_builtin_item("I9", R1="mathematical operation with arity 3", R3__subclass_of=I6, R7=3)
@@ -776,6 +857,64 @@ I10 = create_builtin_item(
         "Special metaclass. Instances of this class are abstract classes that should not be instantiated, ",
         "but subclassed instead."
     )
+)
+I11 = create_builtin_item(
+    key_str="I11",
+    R1="mathematical property",
+    R2__has_definition="base class for all mathematical properties",
+    R4__instance_of=I2("Metaclass"),
+    R18__has_usage_hints=("Actual properties are instances of this class (not subclasses). ",
+                          "To create a taxonomy-like structure the relation R17__is_sub_property_of should be used."
+                          )
+)
+
+I12 = create_builtin_item(
+    key_str="I12",
+    R1__has_label="mathematical object",
+    R2__has_definition="base class for any knowledge object of interrest in the field of mathematics",
+    R4__instance_of=I2("Metaclass"),
+)
+
+I13 = create_builtin_item(
+    key_str="I13",
+    R1__has_label="mathematical set",
+    R2__has_definition="mathematical set",
+    R3__subclass_of=I12("mathematical object"),
+)
+
+
+I14 = create_builtin_item(
+    key_str="I14",
+    R1__has_label="mathematical proposition",
+    R2__has_definition="general mathematical proposition",
+    # R3__subclass_of=I7723("general mathematical proposition")
+)
+
+
+I15 = create_builtin_item(
+    key_str="I15",
+    R1__has_label="implication proposition",
+    R2__has_definition="proposition, where the premise (if-part) implies the assertion (then-part)",
+    R3__subclass_of=I14("mathematical proposition")
+)
+
+
+def set_context_vars(self, **kwargs):
+    for key, value in kwargs.items():
+        self.__dict__[key] = value
+
+
+I15.add_method(set_context_vars)
+
+
+
+
+
+I16 = create_builtin_item(
+    key_str="I16",
+    R1__has_label="equivalence proposition",
+    R2__has_definition="proposition, which establishes the equivalence of two or more statements",
+    R3__subclass_of=I14("mathematical proposition")
 )
 
 
@@ -852,6 +991,34 @@ def create_item_from_namespace():
         del frame
 
     return res
+
+
+class GenericInstance:
+    def __init__(self, cls):
+        self.cls = cls
+
+
+def instance_of(entity):
+    # todo: assert entity is a type (metaclass instance)
+    return GenericInstance(entity)
+
+
+class AndOperation:
+    def __init__(self, *args):
+        self.args = args
+
+
+def AND(*args):
+    return AndOperation(*args)
+
+
+class OrOperation:
+    def __init__(self, *args):
+        self.args = args
+
+
+def OR(*args):
+    return OrOperation(*args)
 
 
 def script_main(fpath):

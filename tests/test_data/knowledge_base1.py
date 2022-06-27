@@ -240,10 +240,6 @@ I3007.set_context_vars(
     set_of_poles=c.instance_of(I5484("finite set of complex numbers"))
 )
 
-from ipydex import IPS, activate_ips_on_exception
-activate_ips_on_exception()
-IPS()
-
 I3007.set_context_relations(
     (I3007.sys, R5334("has representation"), I3007.tf_rep),
     (I3007.tf_rep, R5323("has denominator"), I3007.denom),
@@ -261,6 +257,9 @@ I3007.set_assertion(
 
 # </theorem>
 
+from ipydex import IPS, activate_ips_on_exception
+activate_ips_on_exception()
+IPS()
 
 
 """

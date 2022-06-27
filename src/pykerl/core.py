@@ -105,7 +105,7 @@ class Entity(abc.ABC):
         res = process_key_str(attr_name)
         if not res.etype == EType.RELATION:
             msg = f"Unexpected attribute name: '{attr_name}'"
-            raise KeyError(msg)
+            raise AttributeError(msg)
 
         try:
             etyrel = self._rel_dict[res.short_key]
@@ -905,6 +905,36 @@ def set_context_vars(self, **kwargs):
 
 
 I15.add_method(set_context_vars)
+del set_context_vars
+
+
+def set_context_relations(self, *args, **kwargs):
+    context_relations = getattr(self, "_context_relations", [])
+
+    # todo: check nested types of args; should be tuple of tuples, where inner tuples have len > 2
+    context_relations.extend(args)
+    self._context_relations = context_relations
+
+
+I15.add_method(set_context_relations)
+del set_context_relations
+
+
+def set_premise(self, arg):
+    self._premise = arg
+
+
+I15.add_method(set_premise)
+del set_premise
+
+
+def set_assertion(self, arg):
+    self._assertion = arg
+
+
+I15.add_method(set_assertion)
+del set_assertion
+
 
 
 

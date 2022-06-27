@@ -58,22 +58,71 @@ R4349 = c.create_relation(
 )
 
 
-I3421 = c.create_item(
-    R1__has_label="theorem on flat and system output",
-    R2__has_definition="Establishes that the (arbitrary) system output can be parameterized by the flat output, using derivatives up to order n-r.",
-    R4__instance_of=I7725("implication proposition"),
-    R4347__has_context=(),
-    R4348__has_premise=(),
-    R4349__has_assertion=(),
+R9125 = c.create_relation(
+    R1__has_label="has input dimension",
+    # R8__has_domain_of_argument_1= generic dynamical system
+    # R10__has_range_of_result= nonnegative integer
 )
+
+I6886 = c.create_item(
+    R1__has_label="general ode state space representation",
+    R2__has_definition="explicit first order ODE system description of a dynamical system",
+    R4__instance_of=c.I2("Metaclass"),
+    R6__has_defining_equation=r"$\dot x = f(x, u)$",
+)
+
+
+I5356 = c.create_item(
+    R1__has_label="general system property",
+    R2__has_definition="general property of dynamical system (not of its representation)",
+    R4__instance_of=c.I2("Metaclass"),
+)
+
+I5357 = c.create_item(
+    R1__has_label="differential flatness",
+    R3__subclass_of=I5356("general system property"),
+    R2__has_definition="differential flatness",
+)
+
+I5358 = c.create_item(
+    R1__has_label="exact input-to-state linearizability",
+    R3__subclass_of=I5356("general system property"),
+    # TODO: it might be necessary to restrict this to ode-state-space-systems
+    R2__has_definition="exact input-to-state linearizability (via static state feedback)",
+)
+
+
+def create_I5847():
+    R1__has_label = "Equivalence of flat systems and exact input-to-state linearizable systems"
+    R4__instance_of = I7725("implication proposition")
+    R2__has_definition = (
+                             "Establishes that differentially flat systems and exact input-to-state linearizable systems "
+                             "are equivalent in the SISO case"
+                         )
+
+    def R4347__has_context():
+        ctx = c.Context()
+        ctx.sys = c.generic_instance(I6886("general_ode_state_space_representation"))
+        c.set_restriction(ctx.sys, R9125("has input dimension"), 1)
+        return ctx
+
+    def R4348__has_premise(ctx: c.Context):
+        ctx.sys.R
+
+    def R4349__has_assertion():
+        pass
+
+    return c.create_item_from_namespace()
+
+
+I5847 = create_I5847()
+
 
 from ipydex import IPS, activate_ips_on_exception
 activate_ips_on_exception()
 IPS()
 
 """
-
-
 
 # experimental formulation of a theorem
 

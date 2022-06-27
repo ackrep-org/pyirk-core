@@ -3,6 +3,7 @@ Core module of pykerl
 """
 from collections import defaultdict
 from dataclasses import dataclass
+import inspect
 import abc
 import copy
 from enum import Enum, unique
@@ -783,7 +784,6 @@ def get_key_str_by_inspection(upcount=1) -> str:
     :param upcount:     int; how many frames to go up
     :return:
     """
-    import inspect
 
     # get the topmost frame
     frame = inspect.currentframe()
@@ -811,6 +811,47 @@ def get_key_str_by_inspection(upcount=1) -> str:
     lhs, rhs = code_context[0].split("=")[:2]
     return lhs.strip()
 
+
+class Context:
+    """
+    Container class for context definitions
+    """
+
+    def __init__(self, *args, **kwargs):
+        pass
+
+
+def generic_instance(*args):
+    raise NotImplementedError
+
+
+def create_item_from_namespace():
+    frame = inspect.currentframe()
+
+    upcount = 1
+    i = upcount
+    while True:
+        if frame.f_back is None:
+            break
+        frame = frame.f_back
+        i -= 1
+        if i <= 0:
+            break
+
+    fi = inspect.getframeinfo(frame)
+    part1, key_str = fi.function.split("_")[:2]
+    assert part1 == "create"
+
+    key_res = process_key_str(key_str)
+    assert key_res.etype in [EType.ITEM, EType.RELATION]
+
+    try:
+        res = create_item(key_str=key_res.short_key, **frame.f_locals)
+    finally:
+        # we should explicitly break cyclic dependencies as stated in inspect doc
+        del frame
+
+    return res
 
 
 def script_main(fpath):

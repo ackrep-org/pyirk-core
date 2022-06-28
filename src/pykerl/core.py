@@ -21,8 +21,11 @@ activate_ips_on_exception()
 """
     TODO:
     create statements ✓
-    extend statements [ ]
     rename kerl → ERK (easy representation of knowledge)
+    autocompletion assistent (web based, with full text search in labels and definitions)
+    Lyapunov stability theorem
+    visualizing the results
+    has implementation (application to actual instances)
     SPARQL interface
     
     
@@ -1029,7 +1032,13 @@ class GenericInstance:
 
 
 def instance_of(entity):
-    # todo: assert entity is a type (metaclass instance)
+    has_super_class = getattr(entity, "R3", None) is not None
+    is_instance_of_metaclass = getattr(entity, "R4", None) == I2("Metaclass")
+
+    if (not has_super_class) and (not is_instance_of_metaclass):
+        msg = f"the entity '{entity}' is not a class, and thus could not be instantiated"
+        raise TypeError(msg)
+
     return GenericInstance(entity)
 
 

@@ -216,6 +216,7 @@ I7207 = c.create_item(
     R4__instance_of=I7206("system-dynamical property")
 )
 
+# todo: this entity should be made more precise whether it is global or local
 I7208 = c.create_item(
     R1__has_label="BIBO stability",
     R2__has_definition=(

@@ -7,7 +7,7 @@ import setuptools
 from setuptools import setup, find_packages
 
 
-packagename = "pykerl"  # this has to be renamed
+packagename = "pyerk"  # this has to be renamed
 
 # consider the path of `setup.py` as root directory:
 PROJECTROOT = os.path.dirname(sys.argv[0]) or "."
@@ -28,10 +28,16 @@ setup(
     package_dir={"": "src"},
     # url="https://codeberg.org/username/reponame",
     license="GPLv3",
-    description="Experimental code to parse the Eager Knowledge Representation Language (KERL)",
+    description="(Python based) Easy Representation of Knowledge (pyERK)",
     long_description="""
-    Experimental code to parse the Eager Knowledge Representation Language (KERL).
-    """,
+(Python based) Easy Representation of Knowledge (pyERK).
+
+- Inspired by OWL, but more expressive
+- Inspired by Wikidata, but much simpler
+- Inspired by SUO-KIF, but with less brackets
+- Represented directly in python
+- Designed to formally represent knowledge (including meta levels)
+""",
     install_requires=requirements,
     classifiers=[
         "Development Status :: 3 - Alpha",

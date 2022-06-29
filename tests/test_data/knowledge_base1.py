@@ -258,6 +258,13 @@ I3007.set_assertion(
 
 # </theorem>
 
+I4349 = c.create_item(
+    R1__has_label="equivalence of flatness and input-state-linearizability for SISO systems",
+    R2__has_definition="establishes the equivalence of flatness and input-state-linearizability for SISO systems",
+    R4__instance_of=c.I15("implication proposition"),
+
+)
+
 from ipydex import IPS, activate_ips_on_exception
 activate_ips_on_exception()
 IPS()

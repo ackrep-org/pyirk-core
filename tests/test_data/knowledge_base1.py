@@ -6,7 +6,7 @@ language first.
 
 """
 
-import pykerl.core as c
+import pyerk.core as c
 
 I5948 = c.create_item(
     R1__has_label="dynamical system",
@@ -264,10 +264,10 @@ I4349 = c.create_item(
     R4__instance_of=c.I15("implication proposition"),
 
 )
-
 from ipydex import IPS, activate_ips_on_exception
 activate_ips_on_exception()
-IPS()
+if __name__ == "__main__":
+    IPS()
 
 
 """

@@ -4,7 +4,7 @@ Command line interface for erk package
 
 import argparse
 from ipydex import IPS, activate_ips_on_exception
-from . import core
+from . import core, erkloader
 
 activate_ips_on_exception()
 
@@ -26,6 +26,12 @@ def main():
         action="store_true"
     )
 
+    parser.add_argument(
+        "--load-mod",
+        help=f"load module",
+        default=None,
+    )
+
     args = parser.parse_args()
 
     if args.new_key:
@@ -33,5 +39,12 @@ def main():
 
     elif args.inputfile is not None:
         core.script_main(args.inputfile)
+    elif args.load_mod is not None:
+        process_mod(path=args.load_mod)
     else:
         print("nothing to do, see option `--help` for more info")
+
+
+def process_mod(path):
+    mod = erkloader.load_mod_from_path(path, modname="kbase")
+    IPS()

@@ -1,5 +1,5 @@
 """
-Core module of pykerl
+Core module of pyerk
 """
 from collections import defaultdict
 from dataclasses import dataclass
@@ -21,8 +21,10 @@ activate_ips_on_exception()
 """
     TODO:
     create statements ✓
-    rename kerl → ERK (easy representation of knowledge)
+    rename kerl → ERK (easy representation of knowledge) ✓ 
     autocompletion assistent (web based, with full text search in labels and definitions)
+        - basic interface ✓
+        - simple data actualization 
     Lyapunov stability theorem
     visualizing the results
     has implementation (application to actual instances)

@@ -1,5 +1,5 @@
 """
-Command line interface for pykerl package
+Command line interface for erk package
 """
 
 import argparse

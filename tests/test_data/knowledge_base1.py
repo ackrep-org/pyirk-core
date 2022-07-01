@@ -1,12 +1,17 @@
 """
 This file is the attempt to represten knowledge directly as code.
 
-Motivation: this allows to explore formal knowledge representation without having to develop a domains specific
+Motivation: this allows to explore formal knowledge representation without having to develop a domain specific
 language first.
 
 """
 
 import pyerk.core as c
+
+__MOD_ID__ = "M2085"
+#__DEPENDENCIES__ = c.register()
+
+c.register_mod(__MOD_ID__)
 
 I5948 = c.create_item(
     R1__has_label="dynamical system",
@@ -84,7 +89,7 @@ I5358 = c.create_item(
     R2__has_definition="exact input-to-state linearizability (via static state feedback)",
 )
 
-
+"""
 def create_I5847():
     R1__has_label = "Equivalence of flat systems and exact input-to-state linearizable systems"
     R4__instance_of = c.I15("implication proposition")
@@ -109,6 +114,8 @@ def create_I5847():
 
 
 I5847 = create_I5847()
+
+"""
 
 
 # attempt without writing code

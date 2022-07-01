@@ -1,6 +1,7 @@
 """
 Core module of pyerk
 """
+import os
 from collections import defaultdict
 from dataclasses import dataclass
 import inspect
@@ -12,6 +13,9 @@ import re
 from addict import Dict as attr_dict
 from typing import Dict, Union
 import yaml
+
+from . import auxiliary as aux
+
 from ipydex import IPS, activate_ips_on_exception
 
 
@@ -23,6 +27,7 @@ activate_ips_on_exception()
     create statements ✓
     rename kerl → ERK (easy representation of knowledge) ✓ 
     clean up and removal of obsolete code
+    rename R2__has_definition to R2__has_description  
     autocompletion assistent (web based, with full text search in labels and definitions)
         - basic interface ✓
         - simple data actualization 
@@ -249,6 +254,12 @@ class DataStore:
         self.items = attr_dict()
         self.relations = attr_dict()
         self.statements = attr_dict()
+
+        # dict of lists store keys of the entities (not the entities itself, to simplify deletion)
+        self.entities_created_in_mod = defaultdict(list)
+
+        # mappings like .a = {"M1234": "/path/to/mod.py"} and .b = {"/path/to/mod.py": "M1234"}
+        self.mod_path_mapping = aux.OneToOneMapping()
 
         # this dict contains everything which is predefined by hardcoding
         self.builtin_entities = attr_dict()
@@ -678,6 +689,8 @@ def create_item(key_str: str = "", **kwargs) -> Item:
     else:
         item_key = key_str
 
+    mod_id = get_mod_name_by_inspection()
+
     new_kwargs = {}
     for dict_key, value in kwargs.items():
         processed_key = process_key_str(dict_key)
@@ -689,8 +702,11 @@ def create_item(key_str: str = "", **kwargs) -> Item:
         new_kwargs[processed_key.short_key] = value
 
     itm = Item(item_key, **new_kwargs)
-    assert item_key not in ds.items
+    assert item_key not in ds.items, f"Problematic key: {item_key}"
     ds.items[item_key] = itm
+
+    # acces the defaultdict(list)
+    ds.entities_created_in_mod[mod_id].append(item_key)
     return itm
 
 
@@ -740,6 +756,8 @@ def create_relation(key_str: str = "", **kwargs) -> Relation:
     else:
         rel_key = key_str
 
+    mod_id = get_mod_name_by_inspection()
+
     new_kwargs = {}
     for key, value in kwargs.items():
         processed_key = process_key_str(key)
@@ -753,6 +771,7 @@ def create_relation(key_str: str = "", **kwargs) -> Relation:
     rel = Relation(rel_key, **new_kwargs)
     assert rel_key not in ds.relations
     ds.relations[rel_key] = rel
+    ds.entities_created_in_mod[mod_id].append(rel_key)
     return rel
 
 
@@ -795,8 +814,184 @@ def print_new_key(fname):
         print(f"supposed key:    I{k}      R{k}")
 
 
+# ------------------
+
+
+def get_caller_frame(upcount: int) -> types.FrameType:
+    # get the topmost frame
+    frame = inspect.currentframe()
+    # + 1 because the we have to leave this frame first
+    i = upcount + 1
+    while True:
+        if frame.f_back is None:
+            break
+        frame = frame.f_back
+        i -= 1
+        if i == 0:
+            break
+
+    return frame
+
+
+def get_key_str_by_inspection(upcount=1) -> str:
+    """
+    :param upcount:     int; how many frames to go up
+    :return:
+    """
+
+    # get the topmost frame
+    frame = get_caller_frame(upcount=upcount + 1)
+
+    # this is strongly inspired by sympy.var
+    try:
+        fi = inspect.getframeinfo(frame)
+        code_context = fi.code_context
+    finally:
+        # we should explicitly break cyclic dependencies as stated in inspect
+        # doc
+        del frame
+
+    # !! TODO: parsing the assignment should be more robust (correct parsing of logical lines)
+    # assume that there is at least one `=` in the line
+    lhs, rhs = code_context[0].split("=")[:2]
+    return lhs.strip()
+
+
+def get_mod_name_by_inspection(upcount=1):
+    """
+    :param upcount:     int; how many frames to go up
+    :return:
+    """
+
+    frame = get_caller_frame(upcount=upcount + 1)
+
+    mod_id = frame.f_globals.get("__MOD_ID__")
+    return mod_id
+
+
+class Context:
+    """
+    Container class for context definitions
+    """
+
+    def __init__(self, *args, **kwargs):
+        pass
+
+
+def generic_instance(*args):
+    raise NotImplementedError
+
+
+def create_item_from_namespace():
+    frame = inspect.currentframe()
+
+    upcount = 1
+    i = upcount
+    while True:
+        if frame.f_back is None:
+            break
+        frame = frame.f_back
+        i -= 1
+        if i <= 0:
+            break
+
+    fi = inspect.getframeinfo(frame)
+    part1, key_str = fi.function.split("_")[:2]
+    assert part1 == "create"
+
+    key_res = process_key_str(key_str)
+    assert key_res.etype in [EType.ITEM, EType.RELATION]
+
+    try:
+        res = create_item(key_str=key_res.short_key, **frame.f_locals)
+    finally:
+        # we should explicitly break cyclic dependencies as stated in inspect doc
+        del frame
+
+    return res
+
+
+class GenericInstance:
+    def __init__(self, cls):
+        self.cls = cls
+
+
+def instance_of(entity):
+    has_super_class = getattr(entity, "R3", None) is not None
+    is_instance_of_metaclass = getattr(entity, "R4", None) == I2("Metaclass")
+
+    if (not has_super_class) and (not is_instance_of_metaclass):
+        msg = f"the entity '{entity}' is not a class, and thus could not be instantiated"
+        raise TypeError(msg)
+
+    return GenericInstance(entity)
+
+
+class AndOperation:
+    def __init__(self, *args):
+        self.args = args
+
+
+def AND(*args):
+    return AndOperation(*args)
+
+
+class OrOperation:
+    def __init__(self, *args):
+        self.args = args
+
+
+def OR(*args):
+    return OrOperation(*args)
+
+
+def unload_mod(mod_id: str, strict=True) -> None:
+    """
+    Delete all references to entities comming from a module with `mod_id`
+
+    :param mod_id:  str; key string like "M1234"
+    :param strict:  boolean; raise Exception if module seems be not loaded
+
+    :return:        None
+    """
+
+    # TODO: This might to check dependencies in the future
+
+    entity_keys = ds.entities_created_in_mod.pop(mod_id)
+
+    if not entity_keys and strict:
+        msg = f"Seems like no entities from {mod_id} have been loaded. This is unexpected."
+        raise KeyError(msg)
+
+    for ek in entity_keys:
+        res1 = ds.items.pop(ek, None)
+        res2 = ds.relations.pop(ek, None)
+
+        if res1 is None and res2 is None:
+            msg = f"No entity with key {ek} could be found. This is unexpected."
+            raise msg
+
+    ds.mod_path_mapping.remove_pair(key_a=mod_id)
+
+
+def register_mod(mod_id):
+    frame = get_caller_frame(upcount=1)
+    path = os.path.abspath(frame.f_globals["__file__"])
+    assert frame.f_globals.get("__MOD_ID__", None) == mod_id
+    ds.mod_path_mapping.add_pair(key_a=mod_id, key_b=path)
+
+
+def script_main(fpath):
+    m = Manager(fpath)
+    IPS()
+
+# ------------------
+
 # !! defining that stuff on module level makes the script slow:
 # todo: move this to a separate module
+
+
+__MOD_ID__ = "M1000"
 
 R1 = create_builtin_relation("R1", R1="has label")
 R2 = create_builtin_relation("R2", R1="has natural language definition")
@@ -942,127 +1137,9 @@ I15.add_method(set_assertion)
 del set_assertion
 
 
-
-
-
-
 I16 = create_builtin_item(
     key_str="I16",
     R1__has_label="equivalence proposition",
     R2__has_definition="proposition, which establishes the equivalence of two or more statements",
     R3__subclass_of=I14("mathematical proposition")
 )
-
-
-def get_key_str_by_inspection(upcount=1) -> str:
-    """
-    :param upcount:     int; how many frames to go up
-    :return:
-    """
-
-    # get the topmost frame
-    frame = inspect.currentframe()
-    # + 1 because the we have to leave this frame first
-    i = upcount + 1
-    while True:
-        if frame.f_back is None:
-            break
-        frame = frame.f_back
-        i -= 1
-        if i == 0:
-            break
-
-    # this is strongly inspired by sympy.var
-    try:
-        fi = inspect.getframeinfo(frame)
-        code_context = fi.code_context
-    finally:
-        # we should explicitly break cyclic dependencies as stated in inspect
-        # doc
-        del frame
-
-    # !! TODO: parsing the assignment should be more robust (correct parsing of logical lines)
-    # assume that there is at least one `=` in the line
-    lhs, rhs = code_context[0].split("=")[:2]
-    return lhs.strip()
-
-
-class Context:
-    """
-    Container class for context definitions
-    """
-
-    def __init__(self, *args, **kwargs):
-        pass
-
-
-def generic_instance(*args):
-    raise NotImplementedError
-
-
-def create_item_from_namespace():
-    frame = inspect.currentframe()
-
-    upcount = 1
-    i = upcount
-    while True:
-        if frame.f_back is None:
-            break
-        frame = frame.f_back
-        i -= 1
-        if i <= 0:
-            break
-
-    fi = inspect.getframeinfo(frame)
-    part1, key_str = fi.function.split("_")[:2]
-    assert part1 == "create"
-
-    key_res = process_key_str(key_str)
-    assert key_res.etype in [EType.ITEM, EType.RELATION]
-
-    try:
-        res = create_item(key_str=key_res.short_key, **frame.f_locals)
-    finally:
-        # we should explicitly break cyclic dependencies as stated in inspect doc
-        del frame
-
-    return res
-
-
-class GenericInstance:
-    def __init__(self, cls):
-        self.cls = cls
-
-
-def instance_of(entity):
-    has_super_class = getattr(entity, "R3", None) is not None
-    is_instance_of_metaclass = getattr(entity, "R4", None) == I2("Metaclass")
-
-    if (not has_super_class) and (not is_instance_of_metaclass):
-        msg = f"the entity '{entity}' is not a class, and thus could not be instantiated"
-        raise TypeError(msg)
-
-    return GenericInstance(entity)
-
-
-class AndOperation:
-    def __init__(self, *args):
-        self.args = args
-
-
-def AND(*args):
-    return AndOperation(*args)
-
-
-class OrOperation:
-    def __init__(self, *args):
-        self.args = args
-
-
-def OR(*args):
-    return OrOperation(*args)
-
-
-def script_main(fpath):
-    m = Manager(fpath)
-    IPS()

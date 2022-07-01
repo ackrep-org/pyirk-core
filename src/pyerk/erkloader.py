@@ -1,14 +1,25 @@
 import importlib.util
 import sys
+import os
+import pyerk
+
+from ipydex import IPS, activate_ips_on_exception
+activate_ips_on_exception()
 
 
-def load_mod_from_path(modpath: str, modname=None):
+def load_mod_from_path(modpath: str, modname=None, allow_reload=True):
     if modname is None:
         raise NotImplementedError
+
+    modpath = os.path.abspath(modpath)
+    old_mod_id = pyerk.ds.mod_path_mapping.b.get(modpath)
+    if allow_reload and old_mod_id:
+        pyerk.unload_mod(old_mod_id)
 
     spec = importlib.util.spec_from_file_location(modname, modpath)
     mod = importlib.util.module_from_spec(spec)
     sys.modules["module.name"] = mod
+    # noinspection PyUnresolvedReferences
     spec.loader.exec_module(mod)
 
     return mod

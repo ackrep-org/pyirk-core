@@ -32,7 +32,18 @@ def main():
         default=None,
     )
 
+    parser.add_argument(
+        "--dbg",
+        help=f"start debug routine",
+        default=None,
+        action="store_true"
+    )
+
     args = parser.parse_args()
+
+    if args.dbg:
+        debug()
+        exit()
 
     if args.new_key:
         core.print_new_key(args.inputfile)
@@ -46,5 +57,22 @@ def main():
 
 
 def process_mod(path):
-    mod = erkloader.load_mod_from_path(path, modname="kbase")
+    mod1 = erkloader.load_mod_from_path(path, modname="kbase")
+    mod2 = erkloader.load_mod_from_path(path, modname="kbase")
+
     IPS()
+
+
+def debug():
+    mod1 = erkloader.load_mod_from_path("../controltheory_experiments/knowledge_base1.py", "knowledge_base1")
+
+    # TODO: resolve problem of duplicates on reload
+
+
+    data1 = [repr(itm) for itm in mod1.c.ds.items.values()]
+
+    mod2 = erkloader.load_mod_from_path("../controltheory_experiments/knowledge_base1.py", "knowledge_base1")
+    data2 = [repr(itm) for itm in mod2.c.ds.items.values()]
+
+    IPS()
+

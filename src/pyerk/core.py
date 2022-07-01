@@ -1038,8 +1038,8 @@ I2 = create_builtin_item(
     "I2",
     R1="Metaclass",
     R2__has_natural_language_definition=(
-        "Parent class for other classes; subclasses of this are also metaclasses"
-        "instances are ordinary classes",
+        "Parent class for other classes; subclasses of this are also metaclasses "
+        "instances are ordinary classes"
     ),
     R3__subclass_of=I1,
 )
@@ -1055,7 +1055,7 @@ I10 = create_builtin_item(
     "I10", R1="abstract metaclass",
     R3__subclass_of=I2,
     R2__has_natural_language_definition=(
-        "Special metaclass. Instances of this class are abstract classes that should not be instantiated, ",
+        "Special metaclass. Instances of this class are abstract classes that should not be instantiated, "
         "but subclassed instead."
     )
 )
@@ -1064,9 +1064,10 @@ I11 = create_builtin_item(
     R1="mathematical property",
     R2__has_definition="base class for all mathematical properties",
     R4__instance_of=I2("Metaclass"),
-    R18__has_usage_hints=("Actual properties are instances of this class (not subclasses). ",
-                          "To create a taxonomy-like structure the relation R17__is_sub_property_of should be used."
-                          )
+    R18__has_usage_hints=(
+        "Actual properties are instances of this class (not subclasses). "
+        "To create a taxonomy-like structure the relation R17__is_sub_property_of should be used."
+   )
 )
 
 I12 = create_builtin_item(

@@ -58,9 +58,6 @@ def main():
 
 def process_mod(path):
     mod1 = erkloader.load_mod_from_path(path, modname="kbase")
-    mod2 = erkloader.load_mod_from_path(path, modname="kbase")
-
-    IPS()
 
 
 def debug():
@@ -74,5 +71,5 @@ def debug():
     mod2 = erkloader.load_mod_from_path("../controltheory_experiments/knowledge_base1.py", "knowledge_base1")
     data2 = [repr(itm) for itm in mod2.c.ds.items.values()]
 
-    IPS()
+    # IPS()
 

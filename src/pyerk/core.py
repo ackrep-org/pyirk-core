@@ -60,31 +60,6 @@ activate_ips_on_exception()
 """
 
 
-class EntityRelation:
-    """
-    This class models the application of a relation to an entity.
-    """
-
-    def __init__(self, entity, relation):
-        """
-
-        :param entity:          The entity to which self is assigned
-        :param relation:        The actual relation object
-        """
-        self.entity = entity
-        self.relation = relation
-        self.store = []
-
-    def __call__(self, arg) -> None:
-        """
-        Interpret a call as an assingment to store.
-
-        :param arg:
-        :return:
-        """
-        self.store.append(arg)
-
-
 class Entity(abc.ABC):
     """
     Abstract parent class for both Relations and Items.
@@ -99,6 +74,9 @@ class Entity(abc.ABC):
         self._rel_dict = {}
         self._method_prototypes = []
         self.relation_dict = {}
+
+        # TODO: this might become obsolete because we store this information globally
+        # (to prevent iteration over all entities)
         self.reltarget_dict = {}
 
     def __call__(self, adhoc_label):
@@ -208,18 +186,6 @@ class DataStore:
         # for every entity key store a list of its relation-edges
         self.relation_edges = defaultdict(list)
 
-    def save_entity_snapshot(self, entity: Entity, stm_key: int):
-        """
-        Saves a copy of the entity to the versioned_entities store.
-
-        :param entity:
-        :param stm_key:
-        :return:
-        """
-
-        copied_entity = copy.copy(entity)
-        self.versioned_entities[copied_entity.short_key].set(stm_key, copied_entity)
-
 
 ds = DataStore()
 
@@ -287,67 +253,12 @@ class ProcessedDictValue:
     content: object = None
 
 
-@dataclass
-class ProcessedInnerDict:
-    """
-    Container for processed inner dict of a statement dict
-    """
-
-    relation_dict: Dict[str, "Relation"] = None
-    reltarget_dict: Dict[str, ProcessedDictValue] = None
-
-
-class AbstractStatement:
-    """
-    Common ancestor of all statements
-    """
-    def __init__(self, label):
-        self.label = label
-        self.processed_key = None
-
-        # short key of the subject
-        self.short_key = None
-
-        # key of the statement
-        self.stm_key = None
-        self.stype = SType.UNDEFINED
-
-    def __repr__(self):
-        res = f"<{type(self)} {self.short_key}: {self.stype.name}"
-        return res
-
-
-class RawStatement(AbstractStatement):
-    """
-    Class representing an (quite) unprocessed statement (except the key).
-    """
-    def __init__(self, raw_stm_dict: dict, label=None):
-        super().__init__(label=label)
-        assert isinstance(raw_stm_dict, dict)
-
-        self.label = label
-        self.raw_statement = raw_stm_dict
-        self.raw_key, self.raw_value = unpack_l1d(raw_stm_dict)
-
-        self.processed_key = process_key_str(self.raw_key)
-        self.short_key = self.processed_key.short_key
-
-        self.stype = self.processed_key.stype
-
-
-class SemanticStatement(AbstractStatement):
-    """
-    Class representing a processed statement.
-    """
-
-    def __init__(self, raw_statement: RawStatement, label=None):
-        super().__init__(label=label)
-        assert isinstance(raw_statement, RawStatement)
-
-    # TODO: implement something like qualifiers: https://www.wikidata.org/wiki/Wikidata:SPARQL_tutorial#Qualifiers
-
-
 def unpack_l1d(l1d: Dict[str, object]):
+    """
+    unpack a dict of length 1
+    :param l1d:
+    :return:
+    """
     assert len(l1d) == 1
     return tuple(*l1d.items())
 
@@ -386,44 +297,6 @@ def process_key_str(key_str: str) -> ProcessedStmtKey:
         res.content = key_str
 
     return res
-
-
-def process_raw_value(raw_value: YAML_VALUE, stm_key) -> ProcessedDictValue:
-
-    res = ProcessedDictValue()
-    if isinstance(raw_value, str):
-        # it might be a key -> check
-        processed_key = process_key_str(raw_value)
-        if processed_key.etype is not EType.LITERAL:
-            res.vtype = VType.ENTITY
-            res.content = get_entity(processed_key.short_key, stm_key)
-
-        else:
-            res.vtype = VType.LITERAL
-            res.content = raw_value
-    else:
-        msg = "List, dict etc not yet implemented."
-        raise NotImplementedError(msg)
-
-    return res
-
-
-def get_entity(short_key, stm_key):
-    """
-    Returns the object corresponding to the pair (short_key, stm_key). If it does not exist return a FutureEntity.
-
-    :param short_key:
-    :param stm_key:
-    :return:
-    """
-
-    res = ds.builtin_entities.get(short_key, None)
-    if res is not None:
-        return res
-
-    raise NotImplementedError
-
-
 
 # noinspection PyShadowingNames
 class Item(Entity):
@@ -747,7 +620,6 @@ def register_mod(mod_id):
 
 
 def script_main(fpath):
-    m = Manager(fpath)
     IPS()
 
 # ------------------

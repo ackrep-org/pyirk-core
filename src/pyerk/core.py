@@ -214,6 +214,15 @@ class DataStore:
         # for every entity key store a list of its relation-edges
         self.relation_edges = defaultdict(list)
 
+    def get_entity(self, short_key):
+        if res := self.relations.get(short_key):
+            return res
+        if res := self.items.get(short_key):
+            return res
+        else:
+            msg = f"Could not find entity with key {short_key}"
+            raise KeyError(msg)
+
 
 ds = DataStore()
 
@@ -797,8 +806,17 @@ I15 = create_builtin_item(
 
 
 def set_context_vars(self, **kwargs):
+
+    if not hasattr(self, "_context_vars"):
+        self._context_vars = dict()
+
     for key, value in kwargs.items():
+        # allow simple access
+        # TODO: make this more robust: prevent accidental overwriting
         self.__dict__[key] = value
+
+        # keep track of added context vars
+        self._context_vars[key] = value
 
 
 I15.add_method(set_context_vars)

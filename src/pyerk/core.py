@@ -7,6 +7,7 @@ from dataclasses import dataclass
 import inspect
 import types
 import abc
+import random
 import copy
 from enum import Enum, unique
 import re
@@ -67,6 +68,8 @@ class Entity(abc.ABC):
     Do not forget to call self.__post_init__ at the end of __init__ in subclasses.
     """
 
+    # a "short_key" is something like "I1234" while for usability reasons we also allow keys like
+    # I1234__some_explanatory_label (which is a key but not a short key)
     short_key: str = None
 
     def __init__(self):
@@ -74,10 +77,6 @@ class Entity(abc.ABC):
         self._rel_dict = {}
         self._method_prototypes = []
         self.relation_dict = {}
-
-        # TODO: this might become obsolete because we store this information globally
-        # (to prevent iteration over all entities)
-        self.reltarget_dict = {}
 
     def __call__(self, adhoc_label):
         # returning self allows to use I1234 and I1234("human readable item name") interchageably
@@ -159,9 +158,38 @@ class Entity(abc.ABC):
         # set the relation to the object
         setattr(self, rel_key, rel_content)
 
+        # TODO: this might be obsolete
         # store relation for later usage
         self.relation_dict[rel_key] = rel
-        self.reltarget_dict[rel_key] = ProcessedDictValue(vtype=prk.vtype, content=rel_content)
+
+        # store this relation edge in the global store
+        if isinstance(rel_content, Entity):
+            corresponding_entity = rel_content
+            corresponding_literal = None
+        else:
+            corresponding_entity = None
+            corresponding_literal = repr(rel_content)
+
+        rledg = RelationEdge(
+            relation=rel,
+            relation_tuple=(self, rel, rel_content),
+            role=RelationRole.SUBJECT,
+            corresponding_entity=corresponding_entity,
+            corresponding_literal=corresponding_literal
+        )
+
+        ds.relation_edges[self.short_key].append(rledg)
+
+        # if the object is not a literal then also store the inverse relation
+        if rc_key := hasattr(rel_content, "short_key"):
+
+            inv_rledg = RelationEdge(
+                relation=rel,
+                relation_tuple=(self, rel, rel_content),
+                role=RelationRole.OBJECT,
+                corresponding_entity=self,
+            )
+            ds.relation_edges[rc_key].append(inv_rledg)
 
 
 class DataStore:
@@ -243,16 +271,6 @@ class ProcessedStmtKey:
     content: object = None
 
 
-@dataclass
-class ProcessedDictValue:
-    """
-    Container for processed statement key
-    """
-
-    vtype: VType = None
-    content: object = None
-
-
 def unpack_l1d(l1d: Dict[str, object]):
     """
     unpack a dict of length 1
@@ -297,6 +315,7 @@ def process_key_str(key_str: str) -> ProcessedStmtKey:
         res.content = key_str
 
     return res
+
 
 # noinspection PyShadowingNames
 class Item(Entity):
@@ -345,6 +364,7 @@ def create_item(key_str: str = "", **kwargs) -> Item:
     mod_id = get_mod_name_by_inspection()
 
     new_kwargs = {}
+    # prepare the kwargs to set relations
     for dict_key, value in kwargs.items():
         processed_key = process_key_str(dict_key)
 
@@ -378,6 +398,44 @@ class Relation(Entity):
     def __repr__(self):
         R1 = getattr(self, "R1", "no label").replace(" ", "_")
         return f"<Relation {self.short_key}__{R1}>"
+
+
+@unique
+class RelationRole(Enum):
+    """
+    Statement types.
+    """
+
+    SUBJECT = 0
+    PREDICATE = 1
+    OBJECT = 2
+
+
+available_re_key_numbers = list(range(1000, 9999))
+
+# passing seed (arg `x`) ensures "reproducible randomness" accross runs
+random.Random(x=1750).shuffle(available_re_key_numbers)
+
+
+class RelationEdge:
+    """
+    Models a conrete (instatiated) relation between entities. This is basically a dict.
+    """
+
+    def __init__(self,
+                 relation: Relation = None,
+                 relation_tuple: tuple = None,
+                 role: RelationRole = None,
+                 corresponding_entity: Entity = None,
+                 corresponding_literal=None
+                 ) -> None:
+
+        self.key_str = f"RE{available_re_key_numbers.pop()}"
+        self.relation = relation
+        self.relation_tuple = relation_tuple
+        self.role = role
+        self.corresponding_entity = corresponding_entity
+        self.corresponding_literal = corresponding_literal
 
 
 def create_relation(key_str: str = "", **kwargs) -> Relation:

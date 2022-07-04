@@ -186,65 +186,6 @@ class Entity(abc.ABC):
         self.reltarget_dict[rel_key] = ProcessedDictValue(vtype=prk.vtype, content=rel_content)
 
 
-class PatchyPseudoDict:
-    """
-    Assumes keys to be numeric.
-
-    Setting value for key K:
-        like normal dict + additionally save K in an ordered list L of keys.
-    Getting value for key K: return self[Q] where Q is the largest element of L with Q <= K.
-    """
-
-    def __init__(self):
-        # do not allow initialization with data in the constructor
-        self.key_list = []
-        self.store = {}
-
-    def set(self, key: int, value: object) -> None:
-        if not isinstance(key, int):
-            msg = f"Expected int but got {type(key)}"
-            raise TypeError(msg)
-        if not self.key_list:
-            self.key_list.append(key)
-            self.store[key] = value
-            return
-
-        last_key = self.key_list[-1]
-        if key == last_key:
-            self.store[key] = value
-            return
-
-        # ensure ordering
-        # (this is for simplicity and could be extended in the future)
-        if not key > last_key:
-            msg = f"new key ({key}) must be bigger than last_ley ({last_key})."
-            raise ValueError(msg)
-        self.key_list.append(key)
-        self.store[key] = value
-
-    def get(self, key):
-        if not isinstance(key, int):
-            msg = f"Expected int but got {type(key)}"
-            raise TypeError(msg)
-        if not self.key_list:
-            raise KeyError(key)
-
-        # there is no data for such a small key
-        if key < self.key_list[0]:
-            msg = f"The smallest available key is {self.key_list[0]} but {key} was provided."
-            raise KeyError(msg)
-
-        # iterate from behind
-        # this probably could be speed up by some clever tricks
-        for q in reversed(self.key_list):
-            if q <= key:
-                return self.store[q]
-
-        # if this is reached something unexpected happened
-        msg = f"Could not find matching internal key for provided key {key}. This is unexpected."
-        raise ValueError(msg)
-
-
 class DataStore:
     """
     Provides objects to store all data that would be global otherwise
@@ -264,8 +205,8 @@ class DataStore:
         # this dict contains everything which is predefined by hardcoding
         self.builtin_entities = attr_dict()
 
-        # this dict contains a PatchyPseudoDict for every short key to store different versions of the same object
-        self.versioned_entities = defaultdict(PatchyPseudoDict)
+        # for every entity key store a list of its relation-edges
+        self.relation_edges = defaultdict(list)
 
     def save_entity_snapshot(self, entity: Entity, stm_key: int):
         """
@@ -467,149 +408,6 @@ def process_raw_value(raw_value: YAML_VALUE, stm_key) -> ProcessedDictValue:
     return res
 
 
-class Manager(object):
-    """
-    Omniscient Master object controlling knowledge representation.
-    Will probably be refactored in the future.
-    """
-
-    def __init__(self, fpath: str):
-
-        self.name_mapping = dict(**ds.items, **ds.relations)
-
-        self.ignore_list = [
-            "meta",
-            "iri",
-        ]
-
-        self.raw_data = self.load_yaml(fpath)
-
-        # fill dict of all statements
-        self.raw_stmts_dict: Dict[int, RawStatement] = dict()
-        self.process_statements_stage1(self.raw_data)
-
-        self.process_all_stmts()
-
-        # simplify access
-        self.n = attr_dict(self.name_mapping)
-
-    @staticmethod
-    def load_yaml(fpath):
-        with open(fpath, "r") as myfile:
-            raw_data = yaml.safe_load(myfile)
-
-        return raw_data
-
-    def process_statements_stage1(self, raw_data: dict) -> None:
-        """
-        Iterare over the the statement list, preprocess the keys and fill the raw_stmts_dict with content like
-        `{0: <RawStatment0>, ...}
-        :param raw_data:
-        :return:
-        """
-
-        # iterate over statements, represented as list of length_1_dicts (`stmd`)
-        # Every stmd is of the form {stm_key: stm_value}
-
-        next_label = None
-        stmt_counter = 0
-        for stmd in raw_data:
-            key, value = unpack_l1d(stmd)
-            if key in self.ignore_list:
-                continue
-            if key == "LABEL":
-                next_label = value
-                continue
-
-            raw_stm = RawStatement(stmd, next_label)
-            self.raw_stmts_dict[stmt_counter] = raw_stm
-            stmt_counter += 1
-
-    def process_all_stmts(self) -> None:
-        """
-
-        :return:
-        """
-
-        for stm_key, raw_stm in self.raw_stmts_dict.items():
-            if raw_stm.stype is SType.CREATION:
-                self.process_creation_stm(raw_stm, stm_key)
-            elif raw_stm.stype is SType.EXTENTION:
-                self.process_extension_stm(raw_stm, stm_key)
-                break
-            else:
-                msg = f"unexpected type of raw statement with key {stm_key} ({raw_stm}): {raw_stm.stype}"
-                raise ValueError(msg)
-
-    def process_extension_stm(self, raw_stm: RawStatement, stm_key):
-        """
-
-        :param stm_key:
-        :param raw_stm:
-        :return:
-        """
-
-        if raw_stm.processed_key.etype is EType.ITEM:
-            short_key = raw_stm.processed_key.short_key
-            item = ds.items[short_key]
-            processed_inner_obj = self.process_inner_obj(raw_stm.raw_value, stm_key)
-            item.apply_extension_statement(processed_inner_obj)
-
-    def process_creation_stm(self, raw_stm: RawStatement, stm_key):
-        """
-
-        :param stm_key:
-        :param raw_stm:
-        :return:
-        """
-
-        if raw_stm.processed_key.etype is EType.ITEM:
-            processed_inner_obj = self.process_inner_obj(raw_stm.raw_value, stm_key)
-            short_key = raw_stm.processed_key.short_key
-            item = create_item_from_processed_inner_obj(short_key, processed_inner_obj)
-            ds.save_entity_snapshot(item, stm_key)
-        elif raw_stm.processed_key.etype is EType.RELATION:
-            raise NotImplementedError
-        else:
-            msg = f"unexpected key type: {raw_stm.processed_key.etype} during processing of statement {raw_stm}."
-            raise ValueError(msg)
-
-    def process_inner_obj(self, raw_inner_obj: dict, stm_key: int) -> ProcessedInnerDict:
-        """
-
-        :param raw_inner_obj:   dict like {"R1__has_label": "dynamical system"}
-        :param stm_key:
-
-        :return:                ProcessedInnerDict
-        """
-        assert isinstance(raw_inner_obj, dict)
-
-        res = ProcessedInnerDict()
-
-        # stores the versioned state of the relation object
-        res.relation_dict = {}
-
-        # stores the versioned (if not literal) state of the relation target of the triple
-        # (<subject> <relation> <reltarget>) (Note: we are avoiding the ambiguous term 'object' here)
-        res.reltarget_dict = {}
-
-        for key, value in raw_inner_obj.items():
-            processed_key = process_key_str(key)
-            assert processed_key.etype is EType.RELATION
-            assert processed_key.stype is not SType.CREATION
-
-            # get versioned relation
-            relation_object = get_entity(processed_key.short_key, stm_key)
-            res.relation_dict[processed_key.short_key] = relation_object
-
-            # process the relation target
-            processed_value = process_raw_value(value, stm_key)
-            res.reltarget_dict[processed_key.short_key] = processed_value
-
-        assert len(res.relation_dict) == len(res.relation_dict)
-        return res
-
-
 def get_entity(short_key, stm_key):
     """
     Returns the object corresponding to the pair (short_key, stm_key). If it does not exist return a FutureEntity.
@@ -625,15 +423,6 @@ def get_entity(short_key, stm_key):
 
     raise NotImplementedError
 
-
-class FutureEntity:
-    """
-    Objects of this class serve as placeholder to reference Entities which will be defined later in the sequence of
-    statements.
-    """
-    def __init__(self, short_key, stm_key):
-        self.short_key = short_key
-        self.stm_key = stm_key
 
 
 # noinspection PyShadowingNames
@@ -656,21 +445,12 @@ class Item(Entity):
         R1 = getattr(self, "R1", "no label")
         return f'<Item {self.short_key}("{R1}")>'
 
-    def create_copy(self):
-        raise NotImplementedError
-
-    def apply_extension_statement(self, processed_inner_obj: ProcessedInnerDict):
-
-        for rel_key, rel in processed_inner_obj.relation_dict.items():
-            rel_target = processed_inner_obj.reltarget_dict[rel_key]
-
-            # TODO: decide whether to support overwriting of relations
-            # make sure that the attribute is new
-            attr = getattr(self, rel_key, None)
-            assert attr is None
-            setattr(self, rel_key, rel_target.content)
-
-            IPS()
+    def get_relations(self):
+        """
+        Return all relations where this item is either subject (argument) or object (result)
+        :return:
+        """
+        pass
 
 
 # noinspection PyShadowingNames
@@ -707,21 +487,6 @@ def create_item(key_str: str = "", **kwargs) -> Item:
 
     # acces the defaultdict(list)
     ds.entities_created_in_mod[mod_id].append(item_key)
-    return itm
-
-
-def create_item_from_processed_inner_obj(item_key: str, pio: ProcessedInnerDict) -> Item:
-
-    new_kwargs = {}
-    for key, processed_value in pio.reltarget_dict.items():
-        new_kwargs[key] = processed_value.content
-
-    itm = Item(item_key, **new_kwargs)
-
-    itm._relations = pio
-    assert item_key not in ds.items
-    ds.items[item_key] = itm
-
     return itm
 
 
@@ -1136,6 +901,14 @@ def set_assertion(self, arg):
 
 I15.add_method(set_assertion)
 del set_assertion
+
+
+def set_assertions(self, *args):
+    self._assertion = AND(*args)
+
+
+I15.add_method(set_assertions)
+del set_assertions
 
 
 I16 = create_builtin_item(

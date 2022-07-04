@@ -271,6 +271,53 @@ I4349 = c.create_item(
     R4__instance_of=c.I15("implication proposition"),
 
 )
+
+# </theorem>
+
+# <statement>
+
+I4216 = c.create_item(
+    R1__has_label="statement about MPC for linear systems and the reducibility to quadratic problems",
+    R2__has_description=(
+        "for linear systems, the MPC problem can be reduced to a quadratic problem, for which the optimal control"
+        "over the admissible polyhedral set can be precomputed."
+    ),
+    R4__instance_of=c.I15("implication proposition"),
+
+)
+
+I4216.set_context_vars(
+    sys=c.instance_of(I5948("dynamical system")),
+    state_space_sys=c.instance_of(I6886("general ode state space representation")),
+    mpc_problem=c.instance_of(I5948("dynamical system")),
+    quadratic_problem=c.instance_of(I5948("dynamical system")),
+    mathematical_solution=c.instance_of(I5948("dynamical system")),
+    optimal_control_law=c.instance_of(I5948("dynamical system")),
+)
+
+R1234a = c.create_relation(R1="dummy")
+R1234b = c.create_relation(R1="dummy")
+
+
+I4216.set_context_relations(
+    (I4216.mpc_problem, R1234a("refers_to"), I4216.sys)
+)
+
+I4216.set_premise(
+    (I4216.sys, R1234a("refers_to"), I4216.sys),
+)
+
+I4216.set_assertion(
+    (I4216.mpc_problem, R1234b("can_be_reduced_to"), I4216.quadratic_problem),
+
+)
+"""
+Particularly for linear systems, the MPC problem can be reduced to a quadratic
+problem, for which the optimal control over the admissible polyhedral set can be
+precomputed.
+"""
+
+# </statement>
 from ipydex import IPS, activate_ips_on_exception
 activate_ips_on_exception()
 if __name__ == "__main__":

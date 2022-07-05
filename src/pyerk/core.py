@@ -77,6 +77,18 @@ class Entity(abc.ABC):
         self._rel_dict = {}
         self._method_prototypes = []
         self.relation_dict = {}
+        self._namespaces = {}
+
+    def _register_namespace(self, ns_name: str) -> dict:
+        assert ns_name.startswith("_ns_")
+        if (ns := getattr(self, ns_name, None)) is None:
+            # namespace is yet unknown
+            ns = dict()
+            setattr(self, ns_name, ns)
+            self._namespaces[ns_name] = ns
+
+        assert isinstance(ns, dict)
+        return ns
 
     def __call__(self, adhoc_label):
         # returning self allows to use I1234 and I1234("human readable item name") interchageably
@@ -214,7 +226,7 @@ class DataStore:
         # for every entity key store a list of its relation-edges
         self.relation_edges = defaultdict(list)
 
-    def get_entity(self, short_key):
+    def get_entity(self, short_key) -> Entity:
         if res := self.relations.get(short_key):
             return res
         if res := self.items.get(short_key):
@@ -805,18 +817,32 @@ I15 = create_builtin_item(
 )
 
 
-def set_context_vars(self, **kwargs):
+def ensure_existence(thedict, key, default):
+    """
+    Ensures the existence of a key-value pair in a dictionary.
 
-    if not hasattr(self, "_context_vars"):
-        self._context_vars = dict()
+    :param thedict:
+    :param key:
+    :param default:
+    :return:
+    """
+
+    if value := thedict.get(key) is None:
+        value = thedict[key] = default
+    return value
+
+
+def set_context_vars(self, **kwargs):
+    self: Entity
+    context = self._register_namespace("_ns_context")
 
     for key, value in kwargs.items():
-        # allow simple access
+        # allow simple access to the variables
         # TODO: make this more robust: prevent accidental overwriting
         self.__dict__[key] = value
 
         # keep track of added context vars
-        self._context_vars[key] = value
+        context[key] = value
 
 
 I15.add_method(set_context_vars)
@@ -824,35 +850,35 @@ del set_context_vars
 
 
 def set_context_relations(self, *args, **kwargs):
-    context_relations = getattr(self, "_context_relations", [])
+    self: Entity
+
+    context = self._register_namespace("_ns_context")
+    context_relations = ensure_existence(context, "_relations", [])
 
     # todo: check nested types of args; should be tuple of tuples, where inner tuples have len > 2
     context_relations.extend(args)
-    self._context_relations = context_relations
 
 
 I15.add_method(set_context_relations)
 del set_context_relations
 
 
-def set_premise(self, arg):
-    self._premise = arg
+def set_premises(self, *args):
+    self: Entity
+    ns_premises = self._register_namespace("_ns_premises")
+    premises = ensure_existence(ns_premises, "_premises", [])
+    premises.extend(args)
 
 
-I15.add_method(set_premise)
-del set_premise
-
-
-def set_assertion(self, arg):
-    self._assertion = arg
-
-
-I15.add_method(set_assertion)
-del set_assertion
+I15.add_method(set_premises)
+del set_premises
 
 
 def set_assertions(self, *args):
-    self._assertion = AND(*args)
+    self: Entity
+    ns_assertions = self._register_namespace("_ns_assertions")
+    assertions = ensure_existence(ns_assertions, "_assertions", [])
+    assertions.extend(args)
 
 
 I15.add_method(set_assertions)

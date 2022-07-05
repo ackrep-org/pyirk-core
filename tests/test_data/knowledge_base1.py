@@ -254,12 +254,12 @@ I3007.set_context_relations(
     (I3007.denom, R1757("has set of roots"), I3007.set_of_poles),
 )
 
-I3007.set_premise(c.AND(
+I3007.set_premises(
     (I3007.set_of_poles, c.R14("is subset of"), I2739("open left half plane")),
     (I3007.tf_rep, c.R16("has property"), I8181("properness"))
-))
+)
 
-I3007.set_assertion(
+I3007.set_assertions(
     (I3007.sys, c.R16("has property"), I7208("BIBO stability"))
 )
 
@@ -303,11 +303,11 @@ I4216.set_context_relations(
     (I4216.mpc_problem, R1234a("refers_to"), I4216.sys)
 )
 
-I4216.set_premise(
+I4216.set_premises(
     (I4216.sys, R1234a("refers_to"), I4216.sys),
 )
 
-I4216.set_assertion(
+I4216.set_assertions(
     (I4216.mpc_problem, R1234b("can_be_reduced_to"), I4216.quadratic_problem),
 
 )

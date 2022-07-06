@@ -10,9 +10,9 @@ import abc
 import random
 import copy
 from enum import Enum, unique
-import re
+import re as regex
 from addict import Dict as attr_dict
-from typing import Dict, Union
+from typing import Dict, Union, List
 import yaml
 
 from . import auxiliary as aux
@@ -74,21 +74,43 @@ class Entity(abc.ABC):
 
     def __init__(self):
         # this will hold mappings like "R1234": EntityRelation(..., R1234)
-        self._rel_dict = {}
-        self._method_prototypes = []
         self.relation_dict = {}
+        self._method_prototypes = []
         self._namespaces = {}
 
-    def _register_namespace(self, ns_name: str) -> dict:
-        assert ns_name.startswith("_ns_")
+    def _register_scope(self, name: str) -> (dict, "Item"):
+        """
+        Create a namespace-object (dict) and a Scope-Item
+        :param name:    the name of the scope
+        :return:
+        """
+
+        assert not name.startswith("_ns_") and not name.startswith("_scope_")
+        ns_name = f"_ns_{name}"
+        scope_name = f"_scope:'{name}'"
+        scope = getattr(self, scope_name, None)
+
         if (ns := getattr(self, ns_name, None)) is None:
-            # namespace is yet unknown
+            # namespace is yet unknown -> assume that scope is also unknown
+            assert scope is None
+
+            # create namespace
             ns = dict()
             setattr(self, ns_name, ns)
             self._namespaces[ns_name] = ns
 
+            # create scope
+            scope = instance_of(I16("Scope"), r1=scope_name, r2=f"scope of {self.R1}")
+            scope.set_relation(R21("is scope of"), self)
+
+            # prevent accidental overwriting
+            assert scope_name not in self.__dict__
+            self.__dict__[scope_name] = scope
+
         assert isinstance(ns, dict)
-        return ns
+        assert isinstance(scope, Item) and (scope.R21__is_scope_of == self)
+
+        return ns, scope
 
     def __call__(self, adhoc_label):
         # returning self allows to use I1234 and I1234("human readable item name") interchageably
@@ -108,14 +130,16 @@ class Entity(abc.ABC):
             raise AttributeError(msg)
 
         try:
-            etyrel = self._rel_dict[res.short_key]
+            etyrel = self._get_relation_contents(res.short_key)
         except KeyError:
             msg = f"'{type(self)}' object has no attribute '{res.short_key}'"
             raise AttributeError(msg)
             # general_relation = ds.relations[res.short_key]
             # etyrel = EntityRelation(entity=self, relation=general_relation)
-            # self._rel_dict[res.short_key] = etyrel
         return etyrel
+
+    def __eq__(self, other):
+        return id(self) == id(other)
 
     def __post_init__(self):
         # for a solution how to automate this see
@@ -125,15 +149,34 @@ class Entity(abc.ABC):
     def _perform_inheritance(self):
 
         # this relates to R4__instance_of defined below
-        parent_class: Entity
+        parent_class: Union[Entity, None]
         try:
             parent_class = self.R4
         except AttributeError:
             parent_class = None
 
-        if parent_class is not None:
+        if parent_class not in (None, []):
             for func in parent_class._method_prototypes:
                 self.add_method(func)
+
+    def _get_relation_contents(self, rel_key:str):
+
+        relation_edges: List[RelationEdge] = ds.get_relation_edges(self.short_key, rel_key)
+
+        relation = ds.relations[rel_key]
+
+        # this assumes the relation tuple to be a triple (sub, rel, obj)
+        res = [re.relation_tuple[2] for re in relation_edges if re.role is RelationRole.SUBJECT]
+
+        # R22__is_functional
+        if relation.R22:
+            if len(res) == 0:
+                return None
+            else:
+                assert len(res) == 1
+                return res[0]
+        else:
+            return res
 
     def add_method(self, func):
         """
@@ -146,23 +189,24 @@ class Entity(abc.ABC):
         self.__dict__[func.__name__] = types.MethodType(func, self)
         self._method_prototypes.append(func)
 
-    def set_relation(self, relation, *args):
+    def set_relation(self, relation: "Relation", *args, scope: "Entity" = None):
         """
         Allows to add a relation after the item was created.
 
-        :param relation:   Relation
-        :param args:
+        :param relation:    Relation-Entity
+        :param args:        target (object) of the relation
+        :param scope:       Entity for the scope in which the relation is defined
         :return:
         """
 
         if isinstance(relation, Relation):
             if not len(args) == 1:
                 raise NotImplementedError
-            self._set_relation(relation.short_key, *args)
+            self._set_relation(relation.short_key, *args, scope=scope)
         else:
             raise NotImplementedError
 
-    def _set_relation(self, rel_key: str, rel_content: object) -> None:
+    def _set_relation(self, rel_key: str, rel_content: object, scope: "Entity" = None) -> None:
 
         rel = ds.relations[rel_key]
         prk = process_key_str(rel_key)
@@ -170,7 +214,6 @@ class Entity(abc.ABC):
         # set the relation to the object
         setattr(self, rel_key, rel_content)
 
-        # TODO: this might be obsolete
         # store relation for later usage
         self.relation_dict[rel_key] = rel
 
@@ -187,21 +230,31 @@ class Entity(abc.ABC):
             relation_tuple=(self, rel, rel_content),
             role=RelationRole.SUBJECT,
             corresponding_entity=corresponding_entity,
-            corresponding_literal=corresponding_literal
+            corresponding_literal=corresponding_literal,
+            scope=scope,
         )
 
-        ds.relation_edges[self.short_key].append(rledg)
+        ds.set_relation_edge(self.short_key, rel.short_key, rledg)
+        if scope is not None:
+            ds.scope_relation_edges[scope.short_key].append(rledg)
 
         # if the object is not a literal then also store the inverse relation
-        if rc_key := hasattr(rel_content, "short_key"):
+        if isinstance(rel_content, Entity):
 
             inv_rledg = RelationEdge(
                 relation=rel,
                 relation_tuple=(self, rel, rel_content),
                 role=RelationRole.OBJECT,
                 corresponding_entity=self,
+                scope=scope,
             )
-            ds.relation_edges[rc_key].append(inv_rledg)
+            # ds.set_relation_edge(rel_content.short_key, rel.short_key, inv_rledg)
+            tmp_list = ds.inv_relation_edges[rel_content.short_key][rel.short_key]
+
+            # TODO: maybe check length here for inverse functional
+            tmp_list.append(inv_rledg)
+            if scope is not None:
+                ds.scope_relation_edges[scope.short_key].append(rledg)
 
 
 class DataStore:
@@ -223,8 +276,14 @@ class DataStore:
         # this dict contains everything which is predefined by hardcoding
         self.builtin_entities = attr_dict()
 
-        # for every entity key store a list of its relation-edges
-        self.relation_edges = defaultdict(list)
+        # for every entity key store a dict that maps relation keys to lists of corresponding relation-edges
+        self.relation_edges = defaultdict(dict)
+
+        # also do this for the inverse relations (for easy querying)
+        self.inv_relation_edges = defaultdict(lambda: defaultdict(list))
+
+        # for every scope-item key also store the relevant relation-edges
+        self.scope_relation_edges = defaultdict(list)
 
     def get_entity(self, short_key) -> Entity:
         if res := self.relations.get(short_key):
@@ -234,6 +293,41 @@ class DataStore:
         else:
             msg = f"Could not find entity with key {short_key}"
             raise KeyError(msg)
+
+    def get_relation_edges(self, entity_key: str, relation_key: str) -> List["RelationEdge"]:
+        """
+        self.relation_edges maps an entity_key to an inner_dict.
+        The inner_dict maps an relation_key to a RelationEdge or List[RelationEdge].
+
+        :param entity_key:
+        :param relation_key:
+        :return:
+        """
+
+        # We return an empty list if the entity has no such relation.
+        # TODO: model this as defaultdict?
+        return self.relation_edges[entity_key].get(relation_key, list())
+
+    def set_relation_edge(self, entity_key: str, relation_key: str, re_object: "RelationEdge") -> None:
+
+        relation = self.relations[relation_key]
+        inner_obj = self.relation_edges[entity_key].get(relation_key, None)
+
+        if inner_obj is None:
+            self.relation_edges[entity_key][relation_key] = [re_object]
+
+        elif isinstance(inner_obj, list):
+            # R22__is_functional
+            assert not relation.R22
+            inner_obj.append(re_object)
+
+        else:
+            msg = (
+                f"unexpected type ({type(inner_obj)}) of dict content for entity {entity_key} and "
+                f"relation {relation_key}. Expected list or None"
+            )
+
+
 
 
 ds = DataStore()
@@ -307,8 +401,8 @@ def process_key_str(key_str: str) -> ProcessedStmtKey:
     res = ProcessedStmtKey()
 
     # prepare regular expressions
-    re_itm = re.compile(r"^(I\d+)_?_?.*$")
-    re_rel = re.compile(r"^(R\d+)_?_?.*$")
+    re_itm = regex.compile(r"^(I\d+)_?_?.*$")
+    re_rel = regex.compile(r"^(R\d+)_?_?.*$")
 
     # determine statement type
     if key_str.startswith("new "):
@@ -420,6 +514,13 @@ class Relation(Entity):
         R1 = getattr(self, "R1", "no label").replace(" ", "_")
         return f"<Relation {self.short_key}__{R1}>"
 
+    def __call__(self, adhoc_label):
+        # we have to redefine this method to let PyCharm recognize the correct type
+        res = super().__call__(adhoc_label)
+
+        assert isinstance(res, Relation)
+        return res
+
 
 @unique
 class RelationRole(Enum):
@@ -450,15 +551,33 @@ class RelationEdge:
                  relation_tuple: tuple = None,
                  role: RelationRole = None,
                  corresponding_entity: Entity = None,
-                 corresponding_literal=None
+                 corresponding_literal=None,
+                 scope=None,
+                 qualifiers=None
                  ) -> None:
+        """
+
+        :param relation:
+        :param relation_tuple:
+        :param role:                    RelationRole.SUBJECT for normal and RelationRole.OBJECT for inverse edges
+        :param corresponding_entity:
+        :param corresponding_literal:
+        :param scope:
+        :param qualifiers:              list of relation edges, that describe `self` more precisely
+                                        (cf. wikidata qualifiers)
+        """
 
         self.key_str = f"RE{available_key_numbers.pop()}"
         self.relation = relation
         self.relation_tuple = relation_tuple
         self.role = role
+        self.scope = scope
         self.corresponding_entity = corresponding_entity
         self.corresponding_literal = corresponding_literal
+        if qualifiers is None:
+            qualifiers = []
+        assert isinstance(qualifiers, list)
+        self.qualifiers = qualifiers
 
 
 def create_relation(key_str: str = "", **kwargs) -> Relation:
@@ -477,7 +596,11 @@ def create_relation(key_str: str = "", **kwargs) -> Relation:
 
     mod_id = get_mod_name_by_inspection()
 
-    new_kwargs = {}
+    default_relations = {
+        "R22": None,  # R22__is_functional
+    }
+
+    new_kwargs = {**default_relations}
     for key, value in kwargs.items():
         processed_key = process_key_str(key)
 
@@ -616,6 +739,8 @@ def generic_instance(*args):
     raise NotImplementedError
 
 
+# TODO: obsolete?
+"""
 def create_item_from_namespace():
     frame = inspect.currentframe()
 
@@ -643,14 +768,18 @@ def create_item_from_namespace():
         del frame
 
     return res
+"""
 
 
+# TODO: obsolete?
+"""
 class GenericInstance:
     def __init__(self, cls):
         self.cls = cls
+"""
 
 
-def instance_of(entity, defining_context=None):
+def instance_of(entity, r1: str = None, r2: str = None, defining_scope: Entity = None):
     has_super_class = getattr(entity, "R3", None) is not None
     is_instance_of_metaclass = getattr(entity, "R4", None) == I2("Metaclass")
 
@@ -658,17 +787,24 @@ def instance_of(entity, defining_context=None):
         msg = f"the entity '{entity}' is not a class, and thus could not be instantiated"
         raise TypeError(msg)
 
+    if r1 is None:
+        r1 = f"{entity.R1} – instance"
+
+    if r2 is None:
+        r2 = f'generic instance of {entity.short_key}("{entity.R1}")'
+
     new_item = create_item(
         key_str=generate_new_key(prefix="I"),
-        R1__has_label=f"{entity.R1}–dynamical system",
-        R2__has_definition=f'generic instance of {entity}("{entity.R1}")',
+        R1__has_label=r1,
+        R2__has_definition=r2,
         R4__instance_of=entity
     )
 
     # _TODO: decide where this relation should be set
     # currently, this relation is set in `define_context_variables`
-    if defining_context is not None:
-        new_item.set_relation(R20("has defining context"), defining_context)
+    if defining_scope is not None:
+        1/0  # deprecated argument
+        new_item.set_relation(R20("has defining scope"), defining_scope)
 
     return new_item
 
@@ -727,6 +863,29 @@ def register_mod(mod_id):
     ds.mod_path_mapping.add_pair(key_a=mod_id, key_b=path)
 
 
+def add_relations_to_scope(relation_tuples: Union[list, tuple], scope: Entity):
+    """
+    Add relations defined by 3-tuples (sub, rel, obj) to the respective scope.
+
+    :param relation_tuples:
+    :param scope:
+    :return:
+    """
+
+    assert scope.R21__is_scope_of is not None
+    assert scope.R4__is_instance_of is I16("Scope")
+
+    for arg in relation_tuples:
+        assert isinstance(arg, tuple)
+        # this might become >= 3 in the future, if we support multivalued relations
+        assert len(arg) == 3
+
+        sub, rel, obj = arg
+        assert isinstance(sub, Entity)
+        assert isinstance(rel, Relation)
+        sub.set_relation(rel, obj, scope=scope)
+
+
 def script_main(fpath):
     IPS()
 
@@ -741,7 +900,7 @@ __MOD_ID__ = "M1000"
 R1 = create_builtin_relation("R1", R1="has label")
 R2 = create_builtin_relation("R2", R1="has natural language definition")
 R3 = create_builtin_relation("R3", R1="is subclass of")
-R4 = create_builtin_relation("R4", R1="is instance of")
+R4 = create_builtin_relation("R4", R1="is instance of", R22__is_funtional=True)
 R5 = create_builtin_relation("R5", R1="is part of")
 R6 = create_builtin_relation("R6", R1="has defining equation")
 R7 = create_builtin_relation("R7", R1="has arity")
@@ -764,7 +923,7 @@ R16 = create_builtin_relation(
 R17 = create_builtin_relation(
     key_str="R17",
     R1="is subproperty of",
-    R2="specifies that arg1 is a sub property of arg2"
+    R2="specifies that arg1 (subj) is a subproperty of arg2 (obj)"
 )
 R18 = create_builtin_relation("R18", R1="has usage hints", R2="specifies hints on how this relation should be used")
 
@@ -777,9 +936,28 @@ R19 = create_builtin_relation(
 
 R20 = create_builtin_relation(
     key_str="R20",
-    R1="has defining context",
-    R2="specifies the context in which an entity is defined (e.g. the premise of a theorem)"
+    R1="has defining scope",
+    R2="specifies the scope in which an entity is defined (e.g. the premise of a theorem)",
+    R18="Note: one Entity can be parent of multiple scopes, (e.g. a theorem has 'context', 'premises', 'assertions')",
+    R22__is_funtional=True,
 )
+
+R21 = create_builtin_relation(
+    key_str="R21",
+    R1="is scope of",
+    R2="specifies that the subject of that relation is a scope-item of the object",
+    R18="This relation is used to bind scope items to its 'semantic parents'",
+    R22__is_funtional=True,
+)
+
+
+# TODO: apply this to all relations where it belongs
+R22 = create_builtin_relation(
+    key_str="R22",
+    R1="is functional",
+    R2="specifies that the subject entity is a relation which has at most one value per item",
+)
+
 
 # Items
 
@@ -851,6 +1029,14 @@ I15 = create_builtin_item(
 )
 
 
+I16 = create_builtin_item(
+    key_str="I16",
+    R1__has_label="Scope",
+    R2__has_definition="auxiliary class; an instance defines the scope of statements (RelationEdge-objects)",
+    R3__instance_of=I2("Metaclass")
+)
+
+
 def ensure_existence(thedict, key, default):
     """
     Ensures the existence of a key-value pair in a dictionary.
@@ -868,7 +1054,7 @@ def ensure_existence(thedict, key, default):
 
 def define_context_variables(self, **kwargs):
     self: Entity
-    context = self._register_namespace("_ns_context")
+    context_ns, context_scope = self._register_scope("context")
 
     for variable_name, variable_object in kwargs.items():
         variable_object: Entity
@@ -881,11 +1067,11 @@ def define_context_variables(self, **kwargs):
         self.__dict__[variable_name] = variable_object
 
         # keep track of added context vars
-        context[variable_name] = variable_object
+        context_ns[variable_name] = variable_object
 
         # indicate that the variable object is defined in the context of `self`
         assert getattr(variable_object, "R20", None) is None
-        variable_object.set_relation(R20("has_defining_context"), self)
+        variable_object.set_relation(R20("has_defining_scope"), context_scope)
 
 
 I15.add_method(define_context_variables)
@@ -893,13 +1079,19 @@ del define_context_variables
 
 
 def set_context_relations(self, *args, **kwargs):
+    """
+
+    :param self:    the entity to which this method will be bound
+    :param args:    tuple like (subj, rel, obj)
+    :param kwargs:  yet unused
+    :return:
+    """
     self: Entity
 
-    context = self._register_namespace("_ns_context")
-    context_relations = ensure_existence(context, "_relations", [])
+    _, context_scope = self._register_scope("context")
+    # context_relations = ensure_existence(context, "_relations", [])
 
-    # todo: check nested types of args; should be tuple of tuples, where inner tuples have len > 2
-    context_relations.extend(args)
+    add_relations_to_scope(args, context_scope)
 
 
 I15.add_method(set_context_relations)
@@ -908,9 +1100,8 @@ del set_context_relations
 
 def set_premises(self, *args):
     self: Entity
-    ns_premises = self._register_namespace("_ns_premises")
-    premises = ensure_existence(ns_premises, "_premises", [])
-    premises.extend(args)
+    _, premises_scope = self._register_scope("premises")
+    add_relations_to_scope(args, premises_scope)
 
 
 I15.add_method(set_premises)
@@ -919,17 +1110,16 @@ del set_premises
 
 def set_assertions(self, *args):
     self: Entity
-    ns_assertions = self._register_namespace("_ns_assertions")
-    assertions = ensure_existence(ns_assertions, "_assertions", [])
-    assertions.extend(args)
+    _, assertions_scope = self._register_scope("assertions")
+    add_relations_to_scope(args, assertions_scope)
 
 
 I15.add_method(set_assertions)
 del set_assertions
 
 
-I16 = create_builtin_item(
-    key_str="I16",
+I17 = create_builtin_item(
+    key_str="I17",
     R1__has_label="equivalence proposition",
     R2__has_definition="proposition, which establishes the equivalence of two or more statements",
     R3__subclass_of=I14("mathematical proposition")

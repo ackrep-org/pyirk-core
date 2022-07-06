@@ -432,10 +432,12 @@ class RelationRole(Enum):
     OBJECT = 2
 
 
-available_re_key_numbers = list(range(1000, 9999))
+# for now we want unique numbers for keys for relations and items etc (although this is not necessary)
 
 # passing seed (arg `x`) ensures "reproducible randomness" accross runs
-random.Random(x=1750).shuffle(available_re_key_numbers)
+random_ng = random.Random(x=1750)
+available_key_numbers = list(range(1000, 9999))
+random_ng.shuffle(available_key_numbers)
 
 
 class RelationEdge:
@@ -451,7 +453,7 @@ class RelationEdge:
                  corresponding_literal=None
                  ) -> None:
 
-        self.key_str = f"RE{available_re_key_numbers.pop()}"
+        self.key_str = f"RE{available_key_numbers.pop()}"
         self.relation = relation
         self.relation_tuple = relation_tuple
         self.role = role
@@ -502,6 +504,21 @@ def create_builtin_relation(*args, **kwargs) -> Relation:
     rel = create_relation(*args, **kwargs)
     ds.builtin_entities[rel.short_key] = rel
     return rel
+
+
+def generate_new_key(prefix):
+
+    assert prefix in ("I", "R")
+
+    while True:
+        key = f"{prefix}{available_key_numbers.pop()}"
+        try:
+            ds.get_entity(key)
+        except KeyError:
+            # the key was new -> now problem
+            return key
+        else:
+            continue
 
 
 def print_new_key(fname):
@@ -633,7 +650,7 @@ class GenericInstance:
         self.cls = cls
 
 
-def instance_of(entity):
+def instance_of(entity, defining_context=None):
     has_super_class = getattr(entity, "R3", None) is not None
     is_instance_of_metaclass = getattr(entity, "R4", None) == I2("Metaclass")
 
@@ -641,7 +658,19 @@ def instance_of(entity):
         msg = f"the entity '{entity}' is not a class, and thus could not be instantiated"
         raise TypeError(msg)
 
-    return GenericInstance(entity)
+    new_item = create_item(
+        key_str=generate_new_key(prefix="I"),
+        R1__has_label=f"{entity.R1}–dynamical system",
+        R2__has_definition=f'generic instance of {entity}("{entity.R1}")',
+        R4__instance_of=entity
+    )
+
+    # _TODO: decide where this relation should be set
+    # currently, this relation is set in `define_context_variables`
+    if defining_context is not None:
+        new_item.set_relation(R20("has defining context"), defining_context)
+
+    return new_item
 
 
 class AndOperation:
@@ -746,6 +775,11 @@ R19 = create_builtin_relation(
     # R10__has_range_of_result=callable !!
 )
 
+R20 = create_builtin_relation(
+    key_str="R20",
+    R1="has defining context",
+    R2="specifies the context in which an entity is defined (e.g. the premise of a theorem)"
+)
 
 # Items
 
@@ -832,21 +866,30 @@ def ensure_existence(thedict, key, default):
     return value
 
 
-def set_context_vars(self, **kwargs):
+def define_context_variables(self, **kwargs):
     self: Entity
     context = self._register_namespace("_ns_context")
 
-    for key, value in kwargs.items():
-        # allow simple access to the variables
-        # TODO: make this more robust: prevent accidental overwriting
-        self.__dict__[key] = value
+    for variable_name, variable_object in kwargs.items():
+        variable_object: Entity
+
+        # this reflects a dessign assumption which might be generalized later
+        assert isinstance(variable_object, Entity)
+
+        # allow simple access to the variables → put them into dict (after checking that the name is still free)
+        assert variable_name not in self.__dict__
+        self.__dict__[variable_name] = variable_object
 
         # keep track of added context vars
-        context[key] = value
+        context[variable_name] = variable_object
+
+        # indicate that the variable object is defined in the context of `self`
+        assert getattr(variable_object, "R20", None) is None
+        variable_object.set_relation(R20("has_defining_context"), self)
 
 
-I15.add_method(set_context_vars)
-del set_context_vars
+I15.add_method(define_context_variables)
+del define_context_variables
 
 
 def set_context_relations(self, *args, **kwargs):

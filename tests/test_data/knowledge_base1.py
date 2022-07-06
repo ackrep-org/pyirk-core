@@ -241,7 +241,7 @@ I3007 = c.create_item(
     R4__instance_of=c.I15("implication proposition"),
 )
 
-I3007.set_context_vars(
+I3007.define_context_variables(
     sys=c.instance_of(I5948("dynamical system")),
     tf_rep=c.instance_of(I2640("transfer function representation")),
     denom=c.instance_of(I4239("monovariate polynomial")),
@@ -286,7 +286,7 @@ I4216 = c.create_item(
 
 )
 
-I4216.set_context_vars(
+I4216.define_context_variables(
     sys=c.instance_of(I5948("dynamical system")),
     state_space_sys=c.instance_of(I6886("general ode state space representation")),
     mpc_problem=c.instance_of(I5948("dynamical system")),

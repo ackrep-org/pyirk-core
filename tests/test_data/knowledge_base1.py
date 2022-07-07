@@ -228,7 +228,7 @@ I7208 = c.create_item(
     R1__has_label="BIBO stability",
     R2__has_definition=(
         "'bounded-input bounded-output stability'; "
-        "satisfied if the system responds to every bounded input signal with a bounded output signal",
+        "satisfied if the system responds to every bounded input signal with a bounded output signal"
     ),
     R17__is_subproperty_of=I7207("stability")
 )

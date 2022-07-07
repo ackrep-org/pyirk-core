@@ -257,8 +257,6 @@ class Entity(abc.ABC):
 
             # TODO: maybe check length here for inverse functional
             tmp_list.append(inv_rledg)
-            if scope is not None:
-                ds.scope_relation_edges[scope.short_key].append(rledg)
 
 
 class DataStore:
@@ -856,6 +854,7 @@ def add_relations_to_scope(relation_tuples: Union[list, tuple], scope: Entity):
         assert isinstance(rel, Relation)
         sub.set_relation(rel, obj, scope=scope)
 
+
 ###############################################################################
 # auxiliary functions based on core
 ###############################################################################
@@ -865,6 +864,13 @@ def add_relations_to_scope(relation_tuples: Union[list, tuple], scope: Entity):
 
 
 def get_scopes(entity: Entity) -> List[Entity]:
+    """
+    Return a list of all scope-items which are associated with this entity like
+    [<scope:context>, <scope:premise>, <scope:assertion>] for a proposition-item.
+
+    :param entity:
+    :return:
+    """
     assert isinstance(entity, Entity)
     # R21__is_scope_of
     scope_relation_edges = ds.inv_relation_edges[entity.short_key]["R21"]

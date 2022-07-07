@@ -88,9 +88,10 @@ class Entity(abc.ABC):
         :return:
         """
 
+        # TODO: obsolete assert?
         assert not name.startswith("_ns_") and not name.startswith("_scope_")
         ns_name = f"_ns_{name}"
-        scope_name = f"_scope:'{name}'"
+        scope_name = f"scope:{name}"
         scope = getattr(self, scope_name, None)
 
         if (ns := getattr(self, ns_name, None)) is None:
@@ -581,6 +582,13 @@ class RelationEdge:
         assert isinstance(qualifiers, list)
         self.qualifiers = qualifiers
 
+    def __repr__(self):
+
+        # fixme: this breaks if self.role is not a valid enum-value in (0, 2)
+
+        res = f"RE[{self.role.name[0]}]{self.relation_tuple}"
+        return res
+
 
 def create_relation(key_str: str = "", **kwargs) -> Relation:
     """
@@ -737,7 +745,16 @@ class Context:
         pass
 
 
-def instance_of(entity, r1: str = None, r2: str = None, defining_scope: Entity = None):
+def instance_of(entity, r1: str = None, r2: str = None) -> Item:
+    """
+    Create an instance of an item. Try to obtain the label by inspection of the calling context (if r1 is None).
+
+    :param entity:
+    :param r1:      the label; if None use inspection to fetch it from the left hand side of the assingnment
+    :param r2:
+    :return:
+    """
+
     has_super_class = getattr(entity, "R3", None) is not None
     is_instance_of_metaclass = getattr(entity, "R4", None) == I2("Metaclass")
 
@@ -746,7 +763,12 @@ def instance_of(entity, r1: str = None, r2: str = None, defining_scope: Entity =
         raise TypeError(msg)
 
     if r1 is None:
-        r1 = f"{entity.R1} – instance"
+        try:
+            r1 = get_key_str_by_inspection()
+        # TODO: make this except clause more specific
+        except:
+            # note this fallback naming can be avoided by explicitly passing r1=...  as kwarg
+            r1 = f"{entity.R1} – instance"
 
     if r2 is None:
         r2 = f'generic instance of {entity.short_key}("{entity.R1}")'
@@ -754,12 +776,6 @@ def instance_of(entity, r1: str = None, r2: str = None, defining_scope: Entity =
     new_item = create_item(
         key_str=generate_new_key(prefix="I"), R1__has_label=r1, R2__has_definition=r2, R4__instance_of=entity
     )
-
-    # _TODO: decide where this relation should be set
-    # currently, this relation is set in `define_context_variables`
-    if defining_scope is not None:
-        1 / 0  # deprecated argument
-        new_item.set_relation(R20("has defining scope"), defining_scope)
 
     return new_item
 
@@ -840,6 +856,32 @@ def add_relations_to_scope(relation_tuples: Union[list, tuple], scope: Entity):
         assert isinstance(rel, Relation)
         sub.set_relation(rel, obj, scope=scope)
 
+###############################################################################
+# auxiliary functions based on core
+###############################################################################
+
+# These function will be moved to an auxiliary module in the future. However, this will depend on core and thus
+# circular imports have to be avoided
+
+
+def get_scopes(entity: Entity) -> List[Entity]:
+    assert isinstance(entity, Entity)
+    # R21__is_scope_of
+    scope_relation_edges = ds.inv_relation_edges[entity.short_key]["R21"]
+    re: RelationEdge
+    res = [re.relation_tuple[0] for re in scope_relation_edges]
+    return res
+
+
+def get_items_defined_in_scope(scope: Item) -> List[Entity]:
+
+    assert scope.R4__is_subclass_of == I16("Scope")
+    # R20__has_defining_scope
+    re_list = ds.inv_relation_edges[scope.short_key]["R20"]
+    re: RelationEdge
+    entities = [re.relation_tuple[0] for re in re_list]
+    return entities
+
 
 def script_main(fpath):
     IPS()
@@ -897,9 +939,12 @@ R20 = create_builtin_relation(
 
 R21 = create_builtin_relation(
     key_str="R21",
-    R1="is scope of",
-    R2="specifies that the subject of that relation is a scope-item of the object",
-    R18="This relation is used to bind scope items to its 'semantic parents'",
+    R1="is scope of statement",
+    R2="specifies that the subject of that relation is a scope-item of the object (complex-statement-item)",
+    R18=(
+        "This relation is used to bind scope items to its 'semantic parents'. "
+        "This is *not* the inverse relation to R20",
+    ),
     R22__is_funtional=True,
 )
 
@@ -909,6 +954,13 @@ R22 = create_builtin_relation(
     key_str="R22",
     R1="is functional",
     R2="specifies that the subject entity is a relation which has at most one value per item",
+)
+
+R23 = create_builtin_relation(
+    key_str="R23",
+    R1="has name in scope",
+    R2="specifies that the subject entity has the object-literal as local name",
+    R22__is_funtional=True,
 )
 
 
@@ -1025,6 +1077,9 @@ def define_context_variables(self, **kwargs):
         # indicate that the variable object is defined in the context of `self`
         assert getattr(variable_object, "R20", None) is None
         variable_object.set_relation(R20("has_defining_scope"), context_scope)
+
+        # todo: evaluate if this makes the namespaces obsolete
+        variable_object.set_relation(R23("has_name_in_scope"), variable_name)
 
 
 I15.add_method(define_context_variables)

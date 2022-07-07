@@ -25,20 +25,23 @@ activate_ips_on_exception()
 
 """
     TODO:
-    create statements ✓
-    rename kerl → ERK (easy representation of knowledge) ✓ 
     clean up and removal of obsolete code
     rename R2__has_definition to R2__has_description  
-    autocompletion assistent (web based, with full text search in labels and definitions)
+    autocompletion assistent (web based, with full text search in labels and description)
         - basic interface ✓
-        - simple data actualization 
+        - simple data actualization
+        - text search in description ✓
+    entity detail page:
+        - display scopes
+        - create href for Relation objects
+        
+         
     Lyapunov stability theorem
     visualizing the results
     has implementation (application to actual instances)
     SPARQL interface
     
     
-    SSD (sequential semantic documents) (stalled)
     multiple assignments via list
     natural language representation of ordered atomic statements
     Labels (als Listeneinträge)
@@ -159,7 +162,7 @@ class Entity(abc.ABC):
             for func in parent_class._method_prototypes:
                 self.add_method(func)
 
-    def _get_relation_contents(self, rel_key:str):
+    def _get_relation_contents(self, rel_key: str):
 
         relation_edges: List[RelationEdge] = ds.get_relation_edges(self.short_key, rel_key)
 
@@ -326,8 +329,6 @@ class DataStore:
                 f"unexpected type ({type(inner_obj)}) of dict content for entity {entity_key} and "
                 f"relation {relation_key}. Expected list or None"
             )
-
-
 
 
 ds = DataStore()
@@ -546,15 +547,16 @@ class RelationEdge:
     Models a conrete (instatiated) relation between entities. This is basically a dict.
     """
 
-    def __init__(self,
-                 relation: Relation = None,
-                 relation_tuple: tuple = None,
-                 role: RelationRole = None,
-                 corresponding_entity: Entity = None,
-                 corresponding_literal=None,
-                 scope=None,
-                 qualifiers=None
-                 ) -> None:
+    def __init__(
+        self,
+        relation: Relation = None,
+        relation_tuple: tuple = None,
+        role: RelationRole = None,
+        corresponding_entity: Entity = None,
+        corresponding_literal=None,
+        scope=None,
+        qualifiers=None,
+    ) -> None:
         """
 
         :param relation:
@@ -735,50 +737,6 @@ class Context:
         pass
 
 
-def generic_instance(*args):
-    raise NotImplementedError
-
-
-# TODO: obsolete?
-"""
-def create_item_from_namespace():
-    frame = inspect.currentframe()
-
-    upcount = 1
-    i = upcount
-    while True:
-        if frame.f_back is None:
-            break
-        frame = frame.f_back
-        i -= 1
-        if i <= 0:
-            break
-
-    fi = inspect.getframeinfo(frame)
-    part1, key_str = fi.function.split("_")[:2]
-    assert part1 == "create"
-
-    key_res = process_key_str(key_str)
-    assert key_res.etype in [EType.ITEM, EType.RELATION]
-
-    try:
-        res = create_item(key_str=key_res.short_key, **frame.f_locals)
-    finally:
-        # we should explicitly break cyclic dependencies as stated in inspect doc
-        del frame
-
-    return res
-"""
-
-
-# TODO: obsolete?
-"""
-class GenericInstance:
-    def __init__(self, cls):
-        self.cls = cls
-"""
-
-
 def instance_of(entity, r1: str = None, r2: str = None, defining_scope: Entity = None):
     has_super_class = getattr(entity, "R3", None) is not None
     is_instance_of_metaclass = getattr(entity, "R4", None) == I2("Metaclass")
@@ -794,16 +752,13 @@ def instance_of(entity, r1: str = None, r2: str = None, defining_scope: Entity =
         r2 = f'generic instance of {entity.short_key}("{entity.R1}")'
 
     new_item = create_item(
-        key_str=generate_new_key(prefix="I"),
-        R1__has_label=r1,
-        R2__has_definition=r2,
-        R4__instance_of=entity
+        key_str=generate_new_key(prefix="I"), R1__has_label=r1, R2__has_definition=r2, R4__instance_of=entity
     )
 
     # _TODO: decide where this relation should be set
     # currently, this relation is set in `define_context_variables`
     if defining_scope is not None:
-        1/0  # deprecated argument
+        1 / 0  # deprecated argument
         new_item.set_relation(R20("has defining scope"), defining_scope)
 
     return new_item
@@ -889,6 +844,7 @@ def add_relations_to_scope(relation_tuples: Union[list, tuple], scope: Entity):
 def script_main(fpath):
     IPS()
 
+
 # ------------------
 
 # !! defining that stuff on module level makes the script slow:
@@ -918,12 +874,9 @@ R16 = create_builtin_relation(
     R2="relates an entity with a mathematical property",
     # R8__has_domain_of_argument_1=I4235("mathematical object"),
     # R10__has_range_of_result=...
-
 )
 R17 = create_builtin_relation(
-    key_str="R17",
-    R1="is subproperty of",
-    R2="specifies that arg1 (subj) is a subproperty of arg2 (obj)"
+    key_str="R17", R1="is subproperty of", R2="specifies that arg1 (subj) is a subproperty of arg2 (obj)"
 )
 R18 = create_builtin_relation("R18", R1="has usage hints", R2="specifies hints on how this relation should be used")
 
@@ -966,8 +919,7 @@ I2 = create_builtin_item(
     "I2",
     R1="Metaclass",
     R2__has_natural_language_definition=(
-        "Parent class for other classes; subclasses of this are also metaclasses "
-        "instances are ordinary classes"
+        "Parent class for other classes; subclasses of this are also metaclasses " "instances are ordinary classes"
     ),
     R3__subclass_of=I1,
 )
@@ -980,12 +932,13 @@ I7 = create_builtin_item("I7", R1="mathematical operation with arity 1", R3__sub
 I8 = create_builtin_item("I8", R1="mathematical operation with arity 2", R3__subclass_of=I6, R7=2)
 I9 = create_builtin_item("I9", R1="mathematical operation with arity 3", R3__subclass_of=I6, R7=3)
 I10 = create_builtin_item(
-    "I10", R1="abstract metaclass",
+    "I10",
+    R1="abstract metaclass",
     R3__subclass_of=I2,
     R2__has_natural_language_definition=(
         "Special metaclass. Instances of this class are abstract classes that should not be instantiated, "
         "but subclassed instead."
-    )
+    ),
 )
 I11 = create_builtin_item(
     key_str="I11",
@@ -995,7 +948,7 @@ I11 = create_builtin_item(
     R18__has_usage_hints=(
         "Actual properties are instances of this class (not subclasses). "
         "To create a taxonomy-like structure the relation R17__is_sub_property_of should be used."
-   )
+    ),
 )
 
 I12 = create_builtin_item(
@@ -1025,7 +978,7 @@ I15 = create_builtin_item(
     key_str="I15",
     R1__has_label="implication proposition",
     R2__has_definition="proposition, where the premise (if-part) implies the assertion (then-part)",
-    R3__subclass_of=I14("mathematical proposition")
+    R3__subclass_of=I14("mathematical proposition"),
 )
 
 
@@ -1033,7 +986,7 @@ I16 = create_builtin_item(
     key_str="I16",
     R1__has_label="Scope",
     R2__has_definition="auxiliary class; an instance defines the scope of statements (RelationEdge-objects)",
-    R3__instance_of=I2("Metaclass")
+    R3__instance_of=I2("Metaclass"),
 )
 
 
@@ -1122,5 +1075,5 @@ I17 = create_builtin_item(
     key_str="I17",
     R1__has_label="equivalence proposition",
     R2__has_definition="proposition, which establishes the equivalence of two or more statements",
-    R3__subclass_of=I14("mathematical proposition")
+    R3__subclass_of=I14("mathematical proposition"),
 )

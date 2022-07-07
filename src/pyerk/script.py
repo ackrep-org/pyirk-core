@@ -19,12 +19,7 @@ def main():
         default=None,
     )
 
-    parser.add_argument(
-        "--new-key",
-        help=f"generate new key",
-        default=None,
-        action="store_true"
-    )
+    parser.add_argument("--new-key", help=f"generate new key", default=None, action="store_true")
 
     parser.add_argument(
         "--load-mod",
@@ -32,12 +27,7 @@ def main():
         default=None,
     )
 
-    parser.add_argument(
-        "--dbg",
-        help=f"start debug routine",
-        default=None,
-        action="store_true"
-    )
+    parser.add_argument("--dbg", help=f"start debug routine", default=None, action="store_true")
 
     args = parser.parse_args()
 
@@ -65,11 +55,9 @@ def debug():
 
     # TODO: resolve problem of duplicates on reload
 
-
     data1 = [repr(itm) for itm in mod1.c.ds.items.values()]
 
     mod2 = erkloader.load_mod_from_path("../controltheory_experiments/knowledge_base1.py", "knowledge_base1")
     data2 = [repr(itm) for itm in mod2.c.ds.items.values()]
 
     # IPS()
-

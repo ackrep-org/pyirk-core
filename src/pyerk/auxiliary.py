@@ -29,4 +29,3 @@ class OneToOneMapping(object):
         else:
             msg = "Both keys are not allowed to be `None` at the the same time."
             raise ValueError(msg)
-

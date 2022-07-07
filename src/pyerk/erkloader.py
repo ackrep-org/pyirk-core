@@ -4,6 +4,7 @@ import os
 import pyerk
 
 from ipydex import IPS, activate_ips_on_exception
+
 activate_ips_on_exception()
 
 

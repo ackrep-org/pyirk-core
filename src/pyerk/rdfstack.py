@@ -4,14 +4,15 @@ This module serves to perform integrity checks on the knowledge base
 
 from . import core as pyerk, auxiliary as aux
 
-from ipydex import IPS, activate_ips_on_exception
-from rdflib import Graph, Literal, RDF, URIRef
+from ipydex import IPS
+from rdflib import Graph, Literal, URIRef
 
 
-def create_rdf_triples():
+def create_rdf_triples() -> Graph:
+
+    # based on https://rdflib.readthedocs.io/en/stable/gettingstarted.html
     g = Graph()
 
-    triple_list = []
     for re in pyerk.ds.relation_edge_list:
         row = []
         for entity in re.relation_tuple:
@@ -20,11 +21,14 @@ def create_rdf_triples():
             else:
                 # no entity but a literal value
                 row.append(Literal(entity))
+        # noinspection PyTypeChecker
         g.add(row)
     return g
 
 
 def check_subclass(entity, class_item):
+
+    # wip!
 
     # Hier müsste man prüfen ob es eine instanz-subklassen*-Beziehung gibt
     # das wird insbesondere dann spannend, wenn es sowas wie pseudo-mehrfachvererbung gibt
@@ -33,10 +37,19 @@ def check_subclass(entity, class_item):
     res.extend(aux.ensure_list(entity.R3__is_subclass_of))
 
 
-def check_all_relation_types():
-    rdfgraph = create_rdf_triples()
+def perform_sparql_query(qsrc: str) -> list:
 
-    query = """
+    if pyerk.ds.rdfgraph is None:
+        pyerk.ds.rdfgraph = create_rdf_triples()
+
+    res = pyerk.ds.rdfgraph.query(qsrc)
+
+    return list(res)
+
+
+def get_sparql_example_query():
+
+    qsrc = """
     
         PREFIX : <erk:/>
         SELECT *
@@ -44,12 +57,20 @@ def check_all_relation_types():
             ?s :R4 ?o.
         }
     """
-    res = rdfgraph.query(query)
+    return qsrc
 
+
+def check_all_relation_types():
+    rdfgraph = create_rdf_triples()
+
+    query = get_sparql_example_query()
+    res = rdfgraph.query(query)
+    print(res)
 
     IPS()
-    return
 
+
+"""
     for rel_key, re_list in pyerk.ds.relation_relation_edges.items():
         for re in re_list:
             re: pyerk.RelationEdge
@@ -65,5 +86,4 @@ def check_all_relation_types():
             for expected_entity_type in expected_domain1_list:
                 IPS()
                 pass
-
-
+"""

@@ -294,6 +294,9 @@ class DataStore:
         # store a list of all relation edges (to maintain the order)
         self.relation_edge_list = []
 
+        # this will be set on demand
+        self.rdfgraph = None
+
     def get_entity(self, short_key) -> Entity:
         if res := self.relations.get(short_key):
             return res

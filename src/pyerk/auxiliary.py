@@ -29,3 +29,9 @@ class OneToOneMapping(object):
         else:
             msg = "Both keys are not allowed to be `None` at the the same time."
             raise ValueError(msg)
+
+
+def ensure_list(arg):
+    if not isinstance(arg, list):
+        return [arg]
+    else: return arg

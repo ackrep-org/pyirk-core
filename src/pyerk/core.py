@@ -239,6 +239,7 @@ class Entity(abc.ABC):
         )
 
         ds.set_relation_edge(self.short_key, rel.short_key, rledg)
+
         if scope is not None:
             ds.scope_relation_edges[scope.short_key].append(rledg)
 
@@ -284,8 +285,14 @@ class DataStore:
         # also do this for the inverse relations (for easy querying)
         self.inv_relation_edges = defaultdict(lambda: defaultdict(list))
 
-        # for every scope-item key also store the relevant relation-edges
+        # for every scope-item key store the relevant relation-edges
         self.scope_relation_edges = defaultdict(list)
+
+        # for every relation key store the relevant relation-edges
+        self.relation_relation_edges = defaultdict(list)
+
+        # store a list of all relation edges (to maintain the order)
+        self.relation_edge_list = []
 
     def get_entity(self, short_key) -> Entity:
         if res := self.relations.get(short_key):
@@ -311,6 +318,9 @@ class DataStore:
         return self.relation_edges[entity_key].get(relation_key, list())
 
     def set_relation_edge(self, entity_key: str, relation_key: str, re_object: "RelationEdge") -> None:
+
+        self.relation_relation_edges[relation_key].append(re_object)
+        self.relation_edge_list.append(re_object)
 
         relation = self.relations[relation_key]
         inner_obj = self.relation_edges[entity_key].get(relation_key, None)
@@ -863,7 +873,7 @@ def add_relations_to_scope(relation_tuples: Union[list, tuple], scope: Entity):
 # circular imports have to be avoided
 
 
-def get_scopes(entity: Entity) -> List[Entity]:
+def get_scopes(entity: Entity) -> List[Item]:
     """
     Return a list of all scope-items which are associated with this entity like
     [<scope:context>, <scope:premise>, <scope:assertion>] for a proposition-item.

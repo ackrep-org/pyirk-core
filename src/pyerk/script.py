@@ -4,7 +4,7 @@ Command line interface for erk package
 
 import argparse
 from ipydex import IPS, activate_ips_on_exception
-from . import core, erkloader
+from . import core, erkloader, rdfstack
 
 activate_ips_on_exception()
 
@@ -48,6 +48,7 @@ def main():
 
 def process_mod(path):
     mod1 = erkloader.load_mod_from_path(path, modname="kbase")
+    rdfstack.check_all_relation_types()
 
 
 def debug():

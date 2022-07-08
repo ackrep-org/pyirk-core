@@ -1,3 +1,5 @@
+from typing import Iterable
+
 """
 Some auxiliary classes for pyerk.
 """
@@ -34,4 +36,16 @@ class OneToOneMapping(object):
 def ensure_list(arg):
     if not isinstance(arg, list):
         return [arg]
-    else: return arg
+    else:
+        return arg
+
+
+def apply_func_to_table_cells(func: callable, table: Iterable, *args, **kwargs) -> list:
+    res = []
+    for row in table:
+        new_row = []
+        for cell in row:
+            new_row.append(func(cell, *args, **kwargs))
+        res.append(new_row)
+
+    return res

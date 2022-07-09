@@ -1,12 +1,13 @@
 """
 This module serves to perform integrity checks on the knowledge base
 """
-from typing import Iterable
+from typing import Iterable, Union
 
 from . import core as pyerk, auxiliary as aux
 
 from ipydex import IPS
 from rdflib import Graph, Literal, URIRef
+from rdflib.plugins.sparql.processor import SPARQLResult
 
 # noinspection PyUnresolvedReferences  # imported to be used in gui-view
 from pyparsing import ParseException
@@ -44,7 +45,10 @@ def check_subclass(entity, class_item):
     res.extend(aux.ensure_list(entity.R3__is_subclass_of))
 
 
-def perform_sparql_query(qsrc: str, return_raw=False) -> Iterable:
+Sparql_results_type = Union[aux.ListWithAttributes, SPARQLResult]
+
+
+def perform_sparql_query(qsrc: str, return_raw=False) -> Sparql_results_type:
 
     if pyerk.ds.rdfgraph is None:
         pyerk.ds.rdfgraph = create_rdf_triples()
@@ -54,7 +58,9 @@ def perform_sparql_query(qsrc: str, return_raw=False) -> Iterable:
     if return_raw:
         return res
     else:
-        return aux.apply_func_to_table_cells(convert_from_rdf_to_pyerk, res)
+        res2 = aux.apply_func_to_table_cells(convert_from_rdf_to_pyerk, res)
+        res2.vars = res.vars
+        return res2
 
 
 def convert_from_rdf_to_pyerk(rdfnode) -> object:
@@ -77,7 +83,7 @@ def get_sparql_example_query():
         PREFIX : <{ERK_URI}>
         SELECT *
         WHERE {{
-            ?s ?p ?o.
+            ?s :R5 ?o.
         }}
     """
     return qsrc

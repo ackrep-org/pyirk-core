@@ -40,8 +40,15 @@ def ensure_list(arg):
         return arg
 
 
-def apply_func_to_table_cells(func: callable, table: Iterable, *args, **kwargs) -> list:
-    res = []
+class ListWithAttributes(list):
+    """
+    This subclass of list can have attributes
+    """
+    var: Iterable
+
+
+def apply_func_to_table_cells(func: callable, table: Iterable, *args, **kwargs) -> ListWithAttributes:
+    res = ListWithAttributes()
     for row in table:
         new_row = []
         for cell in row:

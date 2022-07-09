@@ -4,7 +4,7 @@ Command line interface for erk package
 
 import argparse
 from ipydex import IPS, activate_ips_on_exception
-from . import core, erkloader, rdfstack
+from . import core, erkloader, rdfstack, auxiliary as aux
 
 activate_ips_on_exception()
 
@@ -53,12 +53,9 @@ def process_mod(path):
 
 def debug():
     mod1 = erkloader.load_mod_from_path("../controltheory_experiments/knowledge_base1.py", "knowledge_base1")
-
-    # TODO: resolve problem of duplicates on reload
-
-    data1 = [repr(itm) for itm in mod1.c.ds.items.values()]
-
-    mod2 = erkloader.load_mod_from_path("../controltheory_experiments/knowledge_base1.py", "knowledge_base1")
-    data2 = [repr(itm) for itm in mod2.c.ds.items.values()]
-
-    # IPS()
+    ds = core.ds
+    ds.rdfgraph = rdfstack.create_rdf_triples()
+    qsrc = rdfstack.get_sparql_example_query()
+    res = ds.rdfgraph.query(qsrc)
+    z = aux.apply_func_to_table_cells(rdfstack.convert_from_rdf_to_pyerk, res)
+    IPS()

@@ -12,7 +12,7 @@ import copy
 from enum import Enum, unique
 import re as regex
 from addict import Dict as attr_dict
-from typing import Dict, Union, List
+from typing import Dict, Union, List, Iterable
 import yaml
 
 from . import auxiliary as aux
@@ -193,20 +193,34 @@ class Entity(abc.ABC):
         self.__dict__[func.__name__] = types.MethodType(func, self)
         self._method_prototypes.append(func)
 
-    def set_relation(self, relation: "Relation", *args, scope: "Entity" = None):
+    def set_relation(self, relation: Union["Relation", str], *args, scope: "Entity" = None) -> None:
         """
         Allows to add a relation after the item was created.
 
-        :param relation:    Relation-Entity
+        :param relation:    Relation-Entity (or its short_key)
         :param args:        target (object) of the relation
         :param scope:       Entity for the scope in which the relation is defined
         :return:
         """
 
+        if isinstance(relation, str):
+            # assume we got the short key of the relation
+            relation = ds.get_entity(relation)
+
         if isinstance(relation, Relation):
             if not len(args) == 1:
                 raise NotImplementedError
-            self._set_relation(relation.short_key, *args, scope=scope)
+            arg0 = args[0]
+            if isinstance(arg0, (tuple, list)):
+                for elt in arg0:
+                    self._set_relation(relation.short_key, elt, scope=scope)
+            elif isinstance(arg0, str):
+                self._set_relation(relation.short_key, arg0, scope=scope)
+            elif isinstance(arg0, Iterable):
+                msg = f"Unsupported iterable type ({type(arg0)}) of {arg0}, while setting relation {relation.short_key}"
+                raise TypeError(msg)
+            else:
+                self._set_relation(relation.short_key, *args, scope=scope)
         else:
             raise NotImplementedError
 
@@ -457,7 +471,7 @@ class Item(Entity):
         self._references = None
 
         for key, value in kwargs.items():
-            self._set_relation(key, value)
+            self.set_relation(key, value)
 
         self.__post_init__()
 

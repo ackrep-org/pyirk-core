@@ -56,20 +56,18 @@ def perform_sparql_query(qsrc: str, return_raw=False) -> Iterable:
     else:
         return aux.apply_func_to_table_cells(convert_from_rdf_to_pyerk, res)
 
-    return list(res)
-
 
 def convert_from_rdf_to_pyerk(rdfnode) -> object:
     if isinstance(rdfnode, URIRef):
         short_key = rdfnode.lstrip(ERK_URI)
         entity_object = pyerk.ds.get_entity(short_key)
+    elif isinstance(rdfnode, Literal):
+        entity_object = rdfnode.value
     else:
-        IPS()
-        1/0
+        msg = f"Unexpected Type: {type(rdfnode)} of object {rdfnode} while parsing rdf graph."
+        raise TypeError(msg)
 
-    res = entity_object
-
-    return res
+    return entity_object
 
 
 def get_sparql_example_query():
@@ -79,7 +77,7 @@ def get_sparql_example_query():
         PREFIX : <{ERK_URI}>
         SELECT *
         WHERE {{
-            ?s :R4 ?o.
+            ?s ?p ?o.
         }}
     """
     return qsrc

@@ -9,7 +9,8 @@ language first.
 import pyerk.core as c
 
 __MOD_ID__ = "M2085"
-#__DEPENDENCIES__ = c.register()
+# __DEPENDENCIES__ = c.register()
+
 
 c.register_mod(__MOD_ID__)
 
@@ -24,7 +25,7 @@ I4466 = c.create_item(
     R1__has_label="Systems Theory",
     R2__has_definition="academic field; might be regarded as part of applied mathematics",
     R4__instance_of=c.I3("Field_of_science"),
-    R5__part_of=[c.I4("Mathematics"), c.I5("Engineering")]
+    R5__is_part_of=[c.I4("Mathematics"), c.I5("Engineering")]
 )
 
 R1001 = c.create_relation(
@@ -198,7 +199,7 @@ I8181 = c.create_item(
     R1__has_label="properness",
     R2__has_definition=(
         "applicable to monovariate rational functions; "
-        "satisfied if degree of denominator is not smaller than degree of numerator",
+        "satisfied if degree of denominator is not smaller than degree of numerator"
     ),
     R4__instance_of=c.I11("mathematical property")
 )
@@ -206,7 +207,7 @@ I8181 = c.create_item(
 I8182 = c.create_item(
     R1__has_label="strict properness",
     R2__has_definition=(
-        "satisfied if degree of denominator is greater than degree of numerator",
+        "satisfied if degree of denominator is greater than degree of numerator"
     ),
     R17__is_subproperty_of=I8181("properness")
 )

@@ -26,7 +26,7 @@ activate_ips_on_exception()
 """
     TODO:
     clean up and removal of obsolete code
-    rename R2__has_definition to R2__has_description  
+    rename R2__has_definition to R2__has_description ✓  
     autocompletion assistent (web based, with full text search in labels and description)
         - basic interface ✓
         - simple data actualization
@@ -772,7 +772,7 @@ class Context:
 
 def instance_of(entity, r1: str = None, r2: str = None) -> Item:
     """
-    Create an instance of an item. Try to obtain the label by inspection of the calling context (if r1 is None).
+    Create an instance (R4) of an item. Try to obtain the label by inspection of the calling context (if r1 is None).
 
     :param entity:
     :param r1:      the label; if None use inspection to fetch it from the left hand side of the assingnment
@@ -799,7 +799,7 @@ def instance_of(entity, r1: str = None, r2: str = None) -> Item:
         r2 = f'generic instance of {entity.short_key}("{entity.R1}")'
 
     new_item = create_item(
-        key_str=generate_new_key(prefix="I"), R1__has_label=r1, R2__has_definition=r2, R4__instance_of=entity
+        key_str=generate_new_key(prefix="I"), R1__has_label=r1, R2__has_description=r2, R4__instance_of=entity
     )
 
     return new_item
@@ -929,7 +929,7 @@ def script_main(fpath):
 __MOD_ID__ = "M1000"
 
 R1 = create_builtin_relation("R1", R1="has label")
-R2 = create_builtin_relation("R2", R1="has natural language definition")
+R2 = create_builtin_relation("R2", R1="has description", R2="specifies a natural language description")
 R3 = create_builtin_relation("R3", R1="is subclass of")
 R4 = create_builtin_relation("R4", R1="is instance of", R22__is_funtional=True)
 R5 = create_builtin_relation("R5", R1="is part of")
@@ -1003,7 +1003,7 @@ I1 = create_builtin_item("I1", R1="General Item")
 I2 = create_builtin_item(
     "I2",
     R1="Metaclass",
-    R2__has_natural_language_definition=(
+    R2__has_description=(
         "Parent class for other classes; subclasses of this are also metaclasses " "instances are ordinary classes"
     ),
     R3__subclass_of=I1,
@@ -1020,7 +1020,7 @@ I10 = create_builtin_item(
     "I10",
     R1="abstract metaclass",
     R3__subclass_of=I2,
-    R2__has_natural_language_definition=(
+    R2__has_description=(
         "Special metaclass. Instances of this class are abstract classes that should not be instantiated, "
         "but subclassed instead."
     ),
@@ -1028,7 +1028,7 @@ I10 = create_builtin_item(
 I11 = create_builtin_item(
     key_str="I11",
     R1="mathematical property",
-    R2__has_definition="base class for all mathematical properties",
+    R2__has_description="base class for all mathematical properties",
     R4__instance_of=I2("Metaclass"),
     R18__has_usage_hints=(
         "Actual properties are instances of this class (not subclasses). "
@@ -1039,14 +1039,14 @@ I11 = create_builtin_item(
 I12 = create_builtin_item(
     key_str="I12",
     R1__has_label="mathematical object",
-    R2__has_definition="base class for any knowledge object of interrest in the field of mathematics",
+    R2__has_description="base class for any knowledge object of interrest in the field of mathematics",
     R4__instance_of=I2("Metaclass"),
 )
 
 I13 = create_builtin_item(
     key_str="I13",
     R1__has_label="mathematical set",
-    R2__has_definition="mathematical set",
+    R2__has_description="mathematical set",
     R3__subclass_of=I12("mathematical object"),
 )
 
@@ -1054,7 +1054,7 @@ I13 = create_builtin_item(
 I14 = create_builtin_item(
     key_str="I14",
     R1__has_label="mathematical proposition",
-    R2__has_definition="general mathematical proposition",
+    R2__has_description="general mathematical proposition",
     # R3__subclass_of=I7723("general mathematical proposition")
 )
 
@@ -1062,7 +1062,7 @@ I14 = create_builtin_item(
 I15 = create_builtin_item(
     key_str="I15",
     R1__has_label="implication proposition",
-    R2__has_definition="proposition, where the premise (if-part) implies the assertion (then-part)",
+    R2__has_description="proposition, where the premise (if-part) implies the assertion (then-part)",
     R3__subclass_of=I14("mathematical proposition"),
 )
 
@@ -1070,7 +1070,7 @@ I15 = create_builtin_item(
 I16 = create_builtin_item(
     key_str="I16",
     R1__has_label="Scope",
-    R2__has_definition="auxiliary class; an instance defines the scope of statements (RelationEdge-objects)",
+    R2__has_description="auxiliary class; an instance defines the scope of statements (RelationEdge-objects)",
     R3__instance_of=I2("Metaclass"),
 )
 
@@ -1162,6 +1162,6 @@ del set_assertions
 I17 = create_builtin_item(
     key_str="I17",
     R1__has_label="equivalence proposition",
-    R2__has_definition="proposition, which establishes the equivalence of two or more statements",
+    R2__has_description="proposition, which establishes the equivalence of two or more statements",
     R3__subclass_of=I14("mathematical proposition"),
 )

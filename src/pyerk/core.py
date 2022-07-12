@@ -25,21 +25,16 @@ activate_ips_on_exception()
 
 """
     TODO:
-    clean up and removal of obsolete code
-    rename R2__has_definition to R2__has_description ✓  
-    autocompletion assistent (web based, with full text search in labels and description)
-        - basic interface ✓
-        - simple data actualization
-        - text search in description ✓
-    entity detail page:
-        - display scopes
-        - create href for Relation objects
-        
+    
+    model sets as type? and elements as instances?
+    manually trigger reload in gui
+
+    Caylay-Hamilton-Theorem
+    qualifier rleations, e.g. for universal quantification
          
     Lyapunov stability theorem
     visualizing the results
     has implementation (application to actual instances)
-    SPARQL interface
     
     
     multiple assignments via list
@@ -696,12 +691,7 @@ def print_new_key(fname):
         txt_data = ""
 
     for i in range(30):
-        while True:
-            k = str(random.randint(1000, 9999))
-            if k in txt_data:
-                # print("collision detected -> regenerate key")
-                continue
-            break
+        k = generate_new_key("I")[1:]
 
         print(f"supposed key:    I{k}      R{k}")
 

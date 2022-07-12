@@ -148,8 +148,16 @@ I4237 = c.create_item(
 
 I4239 = c.create_item(
     R1__has_label="monovariate polynomial",
-    R2__has_description="...",
+    R2__has_description=(
+        "abstract monovariate polynomial (argument might be a complex-valued scalar, a matrix, an operator, etc.)"
+    ),
     R3__subclass_of=I4236("mathematical expression"),
+)
+
+I4240 = c.create_item(
+    R1__has_label="matrix polynomial",
+    R2__has_description="monovariate polynomial of quadratic matrices",
+    R3__subclass_of=I4239("monovariate polynomial"),
 )
 
 I5484 = c.create_item(
@@ -266,6 +274,79 @@ I3007.set_assertions(
 
 # </theorem>
 
+
+# preparation for next theorem
+
+# Note, it might be worthwile to introduce the set of all (non-negative/positive) integer numbers as a separate item
+I4463 = c.create_item(
+    R1__has_label="non-negative integer",
+    R2__has_description="mathematical type equivalent to Nat (from type theory): non-negative integer number",
+    R4__is_instance_of=c.I2("Metaclass")  # this means: this Item is an ordinary class
+)
+
+I4464 = c.create_item(
+    R1__has_label="positive integer",
+    R2__has_description="mathematical type equivalent to Nat+ (from type theory): positive integer number",
+    R3__is_subclass_of=I4463("non-negative integer number"),
+)
+
+# todo: this needs more generalization
+I9904 = c.create_item(
+    R1__has_label="matrix",
+    R2__has_description="matrix of (in general) complex numbers, i.e. matrix over the field of complex numbers",
+    R4__is_instance_of=I4235("mathematical object"),
+)
+
+I9905 = c.create_item(
+    R1__has_label="zero matrix",
+    R2__has_description="like its superclass but with all entries equal to zero",
+    R3__is_subclass_of=I9904("matrix"),
+)
+
+
+I000 = c.create_item(
+    R1__has_label="dummy item",
+    R2__has_description="used during development as placeholder for items which will be defined later",
+    R4__instance_of=c.I2("Metaclass")  # this means: this Item is an ordinary class
+
+)
+
+R000 = c.create_relation(
+    R1__has_label="dummy relation",
+    R2__has_description="used during development as placeholder for relations which will be defined later",
+)
+# <theorem>
+
+I3749 = c.create_item(
+    R1__has_label="Cayley-Hamilton Theorem",
+    R2__has_description="establishes that every quadratic matrix is a root of its own characteristic polynomial",
+    R4__instance_of=c.I15("implication proposition"),
+)
+
+I3749("Cayley-Hamilton Theorem").define_context_variables(
+    A=c.instance_of(I9904("matrix")),
+    n=c.instance_of(I4464("positve integer")),
+    P=c.instance_of(I4240("matrix polynomial")),
+    Z=c.instance_of(I9905("zero matrix")),
+)
+
+I3749("Cayley-Hamilton Theorem").set_context_relations(
+    (I3749.A, R000("has_row_number"), I3749.n),
+    (I3749.A, R000("has_column_number"), I3749.n),
+    (I3749.A, R000("has_characteristic_polynomial"), I3749.P),
+    (I3749.Z, R000("has_row_number"), I3749.n),
+    (I3749.Z, R000("has_column_number"), I3749.n),
+    (I3749.Z, R000("has_latex_representation"), r"\mathbf{0}"),
+)
+
+
+I3749("Cayley-Hamilton Theorem").set_assertions(
+    # todo: this has to be implemented
+    I3007.new_equation("P(A) = Z")
+)
+
+
+# </theorem>
 I4349 = c.create_item(
     R1__has_label="equivalence of flatness and input-state-linearizability for SISO systems",
     R2__has_description="establishes the equivalence of flatness and input-state-linearizability for SISO systems",
@@ -277,6 +358,7 @@ I4349 = c.create_item(
 
 # <statement>
 
+# this is still unfinished work in progress:
 I4216 = c.create_item(
     R1__has_label="statement about MPC for linear systems and the reducibility to quadratic problems",
     R2__has_description=(

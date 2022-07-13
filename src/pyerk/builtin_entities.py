@@ -56,7 +56,7 @@ R2 = create_builtin_relation("R2", R1="has description", R2="specifies a natural
 R3 = create_builtin_relation("R3", R1="is subclass of")
 R4 = create_builtin_relation("R4", R1="is instance of", R22__is_funtional=True)
 R5 = create_builtin_relation("R5", R1="is part of")
-R6 = create_builtin_relation("R6", R1="has defining equation")
+R6 = create_builtin_relation("R6", R1="has defining equation", R22__is_funtional=True)
 R7 = create_builtin_relation("R7", R1="has arity")
 R8 = create_builtin_relation("R8", R1="has domain of argument 1")
 R9 = create_builtin_relation("R9", R1="has domain of argument 2")
@@ -123,6 +123,7 @@ R24 = create_builtin_relation(
     key_str="R24",
     R1="has LaTeX string",
     R2="specifies that the subject is associated with a string of LaTeX source",
+    R22__is_funtional=True,
 )
 
 
@@ -384,4 +385,15 @@ I18 = create_builtin_item(
     R3__instance_of=I2("Metaclass"),
 )
 
-R24.set_relation(R8("has domain of argument 1"), I18("Formula"))
+R24("has LaTeX string").set_relation(R8("has domain of argument 1"), I18("Formula"))
+R24("has LaTeX string").set_relation(R11("has range of result"), str)
+
+
+def create_formula(latex_src: str, r1: str = None, r2: str = None) -> Item:
+    if r1 is None:
+        r1 = f"generic formula ({latex_src})"
+    formula_item = instance_of(I18("Formula"), r1=r1, r2=2)
+
+    formula_item.set_relation(R24("has LaTeX string"), latex_src)
+
+    return formula_item

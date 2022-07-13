@@ -17,10 +17,13 @@ class TestCore(unittest.TestCase):
     def setUp(self):
         pass
 
-    # mark tests which only work for the "old core"
     def test_core1(self):
         mod1 = p.erkloader.load_mod_from_path(f"{TEST_DATA_PATH}/knowledge_base1.py", "knowledge_base1")
         self.assertEqual(mod1.I3749.R1, "Cayley-Hamilton theorem")
+
+        def_eq_item = mod1.I6886.R6__has_defining_equation
+        self.assertEqual(def_eq_item.R4__is_instance_of, p.I18("Formula"))
+        self.assertEqual(def_eq_item.R24__has_LaTeX_string, r"$\dot x = f(x, u)$")
 
     def test_sparql_query(self):
         mod1 = p.erkloader.load_mod_from_path(f"{TEST_DATA_PATH}/knowledge_base1.py", "knowledge_base1")

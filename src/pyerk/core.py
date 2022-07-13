@@ -335,13 +335,15 @@ class DataStore:
         self.relation_edge_list.append(re_object)
 
         relation = self.relations[relation_key]
+
+        # inner_obj will be either a list of relation_edges or None
         inner_obj = self.relation_edges[entity_key].get(relation_key, None)
 
         if inner_obj is None:
             self.relation_edges[entity_key][relation_key] = [re_object]
 
         elif isinstance(inner_obj, list):
-            # R22__is_functional
+            # R22__is_functional, this means there can only be one value for this relation and this item
             assert not relation.R22
             inner_obj.append(re_object)
 
@@ -838,6 +840,29 @@ def unload_mod(mod_id: str, strict=True) -> None:
         if res1 is None and res2 is None:
             msg = f"No entity with key {ek} could be found. This is unexpected."
             raise msg
+
+        # for every entity key it stores a dict that maps relation keys to lists of corresponding relation-edges
+        re_dict = ds.relation_edges.pop(ek, {})
+        inv_re_dict = ds.inv_relation_edges.pop(ek, {})
+
+        # in case res1 is a scope-item we delete all corressponding relation edges, otherwise nothing happens
+        ds.scope_relation_edges.pop(ek, None)
+
+        for rel_key, re_list in list(re_dict.items()) + list(inv_re_dict.items()):
+            for re in re_list:
+                try:
+                    # ds.relation_relation_edges: for every relation key stores a list of relevant relation-edges
+                    ds.relation_relation_edges[rel_key].remove(re)
+                except ValueError:
+                    # this happens if there was no entity in the list
+                    pass
+
+                try:
+                    # ds.store a list of all relation edges (to maintain the order)
+                    ds.relation_edge_list.remove(re)
+                except ValueError:
+                    # this happens if there was no entity in the list
+                    pass
 
     ds.mod_path_mapping.remove_pair(key_a=mod_id)
 

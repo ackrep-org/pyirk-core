@@ -1007,8 +1007,14 @@ R22 = create_builtin_relation(
 R23 = create_builtin_relation(
     key_str="R23",
     R1="has name in scope",
-    R2="specifies that the subject entity has the object-literal as local name",
+    R2="specifies that the subject entity has the object-literal as unique local name",
     R22__is_funtional=True,
+)
+
+R24 = create_builtin_relation(
+    key_str="R24",
+    R1="has LaTeX string",
+    R2="specifies that the subject is associated with a string of LaTeX source",
 )
 
 
@@ -1090,6 +1096,8 @@ I16 = create_builtin_item(
 )
 
 
+'''
+# obsolete
 def ensure_existence(thedict, key, default):
     """
     Ensures the existence of a key-value pair in a dictionary.
@@ -1103,6 +1111,7 @@ def ensure_existence(thedict, key, default):
     if value := thedict.get(key) is None:
         value = thedict[key] = default
     return value
+'''
 
 
 def define_context_variables(self, **kwargs):
@@ -1180,3 +1189,15 @@ I17 = create_builtin_item(
     R2__has_description="proposition, which establishes the equivalence of two or more statements",
     R3__subclass_of=I14("mathematical proposition"),
 )
+
+
+I18 = create_builtin_item(
+    key_str="I18",
+    R1__has_label="Formula",
+    R2__has_description=(
+        "mathematical formula, e.g. represented by a LaTeX-string; this might change in the future to MathMl"
+    ),
+    R3__instance_of=I2("Metaclass"),
+)
+
+R24.set_relation(R8("has domain of argument 1"), I18("Formula"))

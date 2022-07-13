@@ -8,6 +8,9 @@ language first.
 
 import pyerk.core as c
 
+# noinspection PyUnresolvedReferences
+from ipydex import IPS, activate_ips_on_exception
+
 __MOD_ID__ = "M2085"
 # __DEPENDENCIES__ = c.register()
 
@@ -342,11 +345,33 @@ I3749("Cayley-Hamilton Theorem").set_context_relations(
 
 I3749("Cayley-Hamilton Theorem").set_assertions(
     # todo: this has to be implemented
-    I3007.new_equation("P(A) = Z")
+    # I3007.new_equation("P(A) = Z")
 )
-
-
 # </theorem>
+
+# how to model the sequence y, \dot y, ..., y^(k):
+
+
+class Sequence:
+    r"""
+    Models a sequence like y, `\dot y, ..., y^(k)`
+    """
+
+    def __init__(self, base, prop, link_op, start, stop):
+        # Sequence item with the respective relations and conveniently create all necessary auxiliary items
+        # runnig index of `prop` and running index of the sequence object have to be connected
+        self.base = base
+        self.prop = prop
+        self.link_op = link_op
+        self.start = start
+        self.stop = stop
+
+Sequence("y", I000("time derivative of order i"), link_op=I000("listing"), start=0, stop="k")
+
+# → it would be nice if one could interactively execute/write out such a sequence for given variable values
+
+
+
 I4349 = c.create_item(
     R1__has_label="equivalence of flatness and input-state-linearizability for SISO systems",
     R2__has_description="establishes the equivalence of flatness and input-state-linearizability for SISO systems",

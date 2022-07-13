@@ -4,6 +4,8 @@ try:
     from .core import *
     from .builtin_entities import *
     from . import erkloader
+    from . import rdfstack
+    from . import auxiliary as aux
 except ImportError:
     # this might be relevant during the installation process
     pass

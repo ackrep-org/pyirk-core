@@ -81,7 +81,7 @@ def get_sparql_example_query():
     qsrc = f"""
     
         PREFIX : <{ERK_URI}>
-        SELECT *
+        SELECT ?s ?o
         WHERE {{
             ?s :R5 ?o.
         }}

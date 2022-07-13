@@ -19,7 +19,16 @@ class TestCore(unittest.TestCase):
 
     # mark tests which only work for the "old core"
     def test_core1(self):
-        pass
+        mod1 = p.erkloader.load_mod_from_path(f"{TEST_DATA_PATH}/knowledge_base1.py", "knowledge_base1")
+        self.assertEqual(mod1.I3749.R1, "Cayley-Hamilton theorem")
+
+    def test_sparql_query(self):
+        mod1 = p.erkloader.load_mod_from_path(f"{TEST_DATA_PATH}/knowledge_base1.py", "knowledge_base1")
+        p.ds.rdfgraph = p.rdfstack.create_rdf_triples()
+        qsrc = p.rdfstack.get_sparql_example_query()
+        res = p.ds.rdfgraph.query(qsrc)
+        res2 = p.aux.apply_func_to_table_cells(p.rdfstack.convert_from_rdf_to_pyerk, res)
+        self.assertEqual(res2, [[mod1.I4466, p.I4], [mod1.I4466, p.I5]])
 
     def test_builtins1(self):
         """

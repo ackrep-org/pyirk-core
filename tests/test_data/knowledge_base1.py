@@ -321,19 +321,19 @@ R000 = p.create_relation(
 # <theorem>
 
 I3749 = p.create_item(
-    R1__has_label="Cayley-Hamilton Theorem",
+    R1__has_label="Cayley-Hamilton theorem",
     R2__has_description="establishes that every quadratic matrix is a root of its own characteristic polynomial",
     R4__instance_of=p.I15("implication proposition"),
 )
 
-I3749("Cayley-Hamilton Theorem").define_context_variables(
+I3749("Cayley-Hamilton theorem").define_context_variables(
     A=p.instance_of(I9904("matrix")),
     n=p.instance_of(I4464("positve integer")),
     P=p.instance_of(I4240("matrix polynomial")),
     Z=p.instance_of(I9905("zero matrix")),
 )
 
-I3749("Cayley-Hamilton Theorem").set_context_relations(
+I3749("Cayley-Hamilton theorem").set_context_relations(
     (I3749.A, R000("has_row_number"), I3749.n),
     (I3749.A, R000("has_column_number"), I3749.n),
     (I3749.A, R000("has_characteristic_polynomial"), I3749.P),
@@ -343,7 +343,7 @@ I3749("Cayley-Hamilton Theorem").set_context_relations(
 )
 
 
-I3749("Cayley-Hamilton Theorem").set_assertions(
+I3749("Cayley-Hamilton theorem").set_assertions(
     # todo: this has to be implemented
     # I3007.new_equation("P(A) = Z")
 )

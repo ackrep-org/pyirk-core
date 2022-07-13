@@ -4,7 +4,7 @@ import os
 from os.path import join as pjoin
 # noinspection PyUnresolvedReferences
 from ipydex import IPS, activate_ips_on_exception
-import pykerl as pk
+import pyerk as p
 
 activate_ips_on_exception()
 
@@ -19,31 +19,33 @@ class TestCore(unittest.TestCase):
 
     # mark tests which only work for the "old core"
     def test_core1(self):
-        m = pk.Manager(pjoin(TEST_DATA_PATH, "test1.yml"))
-        self.assertTrue(len(m.raw_stmts_dict) > 3)
-        self.assertIn("R1", pk.ds.builtin_entities)
-        self.assertIn("R2", pk.ds.builtin_entities)
+        pass
 
-        i1a = pk.ds.versioned_entities["I1001"].get(0)
-        i1b = pk.ds.items.I1001
-        self.assertNotEqual(i1a, i1b)
-        self.assertEqual(i1a.short_key, i1b.short_key)
-        q = m.raw_stmts_dict[0]
-        # IPS()
+    def test_builtins1(self):
+        """
+        Test the mechanism to endow the Entity class with custom methods (on class and on instance level)
+        :return:
+        """
+        # class level
+        def example_func(slf, a):
+            return f"{slf.R1}--{a}"
+        p.Entity.add_method_to_class(example_func)
 
-    def test_patchy_dict1(self):
-        d = pk.PatchyPseudoDict()
+        res = p.I12.example_func("test")
+        self.assertEqual("mathematical object--test", res)
 
-        self.assertRaises(TypeError, d.set, ("a", "b"))
-        d.set(10, "A")
-        d.set(20, "wrong value")
-        d.set(20, "B")
-        d.set(30, "C")
-        self.assertRaises(ValueError, d.set, 10, "A2")
-        self.assertEqual(d.get(10), "A")
-        self.assertEqual(d.get(11), "A")
-        self.assertEqual(d.get(19), "A")
-        self.assertEqual(d.get(21), "B")
-        self.assertEqual(d.get(31), "C")
-        self.assertEqual(d.get(800), "C")
-        self.assertRaises(KeyError, d.get, 9)
+        # instance level
+        itm = p.Item(key_str=p.generate_new_key("I"), R1="test item")
+        itm2 = p.Item(key_str=p.generate_new_key("I"), R1="test item2")
+
+        def example_func2(slf, a):
+            return f"{slf.R1}::{a}"
+        itm.add_method(example_func2)
+
+        res2 = itm.example_func2(1234)
+        self.assertEqual("test item::1234", res2)
+        self.assertIsInstance(itm2, p.Entity)
+
+        # ensure that this method is not available to generic other instances of Entity
+        with self.assertRaises(AttributeError):
+            itm2.example_func2(1234)

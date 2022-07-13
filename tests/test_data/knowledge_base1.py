@@ -6,7 +6,7 @@ language first.
 
 """
 
-import pyerk.core as c
+import pyerk as p
 
 # noinspection PyUnresolvedReferences
 from ipydex import IPS, activate_ips_on_exception
@@ -15,23 +15,23 @@ __MOD_ID__ = "M2085"
 # __DEPENDENCIES__ = c.register()
 
 
-c.register_mod(__MOD_ID__)
+p.register_mod(__MOD_ID__)
 
-I5948 = c.create_item(
+I5948 = p.create_item(
     R1__has_label="dynamical system",
     R2__has_description="system with the capability to change over time, optionally with explicit input and/or output",
-    R4__instance_of=c.I2("Metaclass")  # this means: this Item is an ordinary class
+    R4__instance_of=p.I2("Metaclass")  # this means: this Item is an ordinary class
 )
 
 
-I4466 = c.create_item(
+I4466 = p.create_item(
     R1__has_label="Systems Theory",
     R2__has_description="academic field; might be regarded as part of applied mathematics",
-    R4__instance_of=c.I3("Field_of_science"),
-    R5__is_part_of=[c.I4("Mathematics"), c.I5("Engineering")]
+    R4__instance_of=p.I3("Field_of_science"),
+    R5__is_part_of=[p.I4("Mathematics"), p.I5("Engineering")]
 )
 
-R1001 = c.create_relation(
+R1001 = p.create_relation(
     R1__has_label="studies",
     R2__has_description="object or class wich an academic field studies"
 )
@@ -39,54 +39,54 @@ R1001 = c.create_relation(
 I4466("Systems Theory").set_relation(R1001("studies"), I5948("dynamical system"))
 
 
-R4347 = c.create_relation(
+R4347 = p.create_relation(
     R1__has_label="has context",
     R2__has_description="establishes the context of a statement",
     # R8__has_domain_of_argument_1=I7723("general mathematical proposition"),
     # R10__has_range_of_result=<!! container of definition-items>
 )
 
-R4348 = c.create_relation(
+R4348 = p.create_relation(
     R1__has_label="has premise",
     R2__has_description="establishes the premise (if-part) of an implication",
-    R8__has_domain_of_argument_1=c.I15("implication proposition"),
+    R8__has_domain_of_argument_1=p.I15("implication proposition"),
     # R10__has_range_of_result=<!! container of statements>
 )
 
-R4349 = c.create_relation(
+R4349 = p.create_relation(
     R1__has_label="has assertion",
     R2__has_description="establishes the assertion (then-part) of an implication",
-    R8__has_domain_of_argument_1=c.I15("implication proposition"),
+    R8__has_domain_of_argument_1=p.I15("implication proposition"),
     # R10__has_range_of_result=<!! container of statements>
 )
 
 
-R9125 = c.create_relation(
+R9125 = p.create_relation(
     R1__has_label="has input dimension",
     # R8__has_domain_of_argument_1= generic dynamical system
     # R10__has_range_of_result= nonnegative integer
 )
 
-I6886 = c.create_item(
+I6886 = p.create_item(
     R1__has_label="general ode state space representation",
     R2__has_description="explicit first order ODE system description of a dynamical system",
-    R4__instance_of=c.I2("Metaclass"),
+    R4__instance_of=p.I2("Metaclass"),
     R6__has_defining_equation=r"$\dot x = f(x, u)$",
 )
 
-I5356 = c.create_item(
+I5356 = p.create_item(
     R1__has_label="general system property",
     R2__has_description="general property of dynamical system (not of its representation)",
-    R4__instance_of=c.I2("Metaclass"),
+    R4__instance_of=p.I2("Metaclass"),
 )
 
-I5357 = c.create_item(
+I5357 = p.create_item(
     R1__has_label="differential flatness",
     R3__subclass_of=I5356("general system property"),
     R2__has_description="differential flatness",
 )
 
-I5358 = c.create_item(
+I5358 = p.create_item(
     R1__has_label="exact input-to-state linearizability",
     R3__subclass_of=I5356("general system property"),
     # TODO: it might be necessary to restrict this to ode-state-space-systems
@@ -124,32 +124,32 @@ I5847 = create_I5847()
 
 # attempt without writing code
 
-I2640 = c.create_item(
+I2640 = p.create_item(
     R1__has_label="transfer function representation",
     R2__has_description="...",
-    R4__instance_of=c.I2("Metaclass"),
+    R4__instance_of=p.I2("Metaclass"),
 )
 
-I4235 = c.create_item(
+I4235 = p.create_item(
     R1__has_label="mathematical object",
     R2__has_description="...",
-    R4__instance_of=c.I2("Metaclass"),
+    R4__instance_of=p.I2("Metaclass"),
 )
 
 # todo: what is the difference between an object and an expression?
-I4236 = c.create_item(
+I4236 = p.create_item(
     R1__has_label="mathematical expression",
     R2__has_description="...",
     R3__subclass_of=I4235("mathematical object"),
 )
 
-I4237 = c.create_item(
+I4237 = p.create_item(
     R1__has_label="monovariate rational function",
     R2__has_description="...",
     R3__subclass_of=I4236("mathematical expression"),
 )
 
-I4239 = c.create_item(
+I4239 = p.create_item(
     R1__has_label="monovariate polynomial",
     R2__has_description=(
         "abstract monovariate polynomial (argument might be a complex-valued scalar, a matrix, an operator, etc.)"
@@ -157,19 +157,19 @@ I4239 = c.create_item(
     R3__subclass_of=I4236("mathematical expression"),
 )
 
-I4240 = c.create_item(
+I4240 = p.create_item(
     R1__has_label="matrix polynomial",
     R2__has_description="monovariate polynomial of quadratic matrices",
     R3__subclass_of=I4239("monovariate polynomial"),
 )
 
-I5484 = c.create_item(
+I5484 = p.create_item(
     R1__has_label="finite set of complex numnbers",
     R2__has_description="...",
-    R3__subclass_of=c.I13("mathematical set"),
+    R3__subclass_of=p.I13("mathematical set"),
 )
 
-I2738 = c.create_item(
+I2738 = p.create_item(
     R1__has_label="field of complex numnbers",
     R2__has_description="field of complex numnbers",
     R4__instance_of=I4235("mathematical object"),
@@ -177,14 +177,14 @@ I2738 = c.create_item(
     # todo: introduce algebraic structures and relation to set
 )
 
-I2739 = c.create_item(
+I2739 = p.create_item(
     R1__has_label="open left half plane",
     R2__has_description="set of all complex numbers with negative real part",
     R4__instance_of=I4235("mathematical object"),
     R14__is_subset_of=I2738("field of complex numnbers"),
 )
 
-R5323 = c.create_relation(
+R5323 = p.create_relation(
     R1__has_label="has denominator",
     R2__has_description="...",
     R8__has_domain_of_argument_1=I4237("monovariate rational function"),
@@ -192,30 +192,30 @@ R5323 = c.create_relation(
 )
 
 
-R5334 = c.create_relation(
+R5334 = p.create_relation(
     R1__has_label="has representation",
     R2__has_description="relates an entity with an abstract mathematical representation",
     # R8__has_domain_of_argument_1= ...
     R10__has_range_of_result=I4235("mathematical object"),
 )
 
-R1757 = c.create_relation(
+R1757 = p.create_relation(
     R1__has_label="has set of roots",
     R2__has_description="set of roots for a monovariate function",
     R8__has_domain_of_argument_1=I4236("mathematical expression"),  # todo: this is too broad
     R10__has_range_of_result=I5484("finite set of complex numbers")
 )
 
-I8181 = c.create_item(
+I8181 = p.create_item(
     R1__has_label="properness",
     R2__has_description=(
         "applicable to monovariate rational functions; "
         "satisfied if degree of denominator is not smaller than degree of numerator"
     ),
-    R4__instance_of=c.I11("mathematical property")
+    R4__instance_of=p.I11("mathematical property")
 )
 
-I8182 = c.create_item(
+I8182 = p.create_item(
     R1__has_label="strict properness",
     R2__has_description=(
         "satisfied if degree of denominator is greater than degree of numerator"
@@ -223,20 +223,20 @@ I8182 = c.create_item(
     R17__is_subproperty_of=I8181("properness")
 )
 
-I7206 = c.create_item(
+I7206 = p.create_item(
     R1__has_label="system-dynamical property",
     R2__has_description="base class for all systemdynamical properties",
-    R3__subclass_of=c.I11("mathematical property")
+    R3__subclass_of=p.I11("mathematical property")
 )
 
-I7207 = c.create_item(
+I7207 = p.create_item(
     R1__has_label="stability",
     R2__has_description="tendency to stay close to some distinguished trajectory (e.g. equilibrium)",
     R4__instance_of=I7206("system-dynamical property")
 )
 
 # todo: this entity should be made more precise whether it is global or local
-I7208 = c.create_item(
+I7208 = p.create_item(
     R1__has_label="BIBO stability",
     R2__has_description=(
         "'bounded-input bounded-output stability'; "
@@ -247,17 +247,17 @@ I7208 = c.create_item(
 
 # <theorem>
 
-I3007 = c.create_item(
+I3007 = p.create_item(
     R1__has_label="stability theorem for a rational transfer function",
     R2__has_description="establishes the relation between BIBO-Stability and the poles of the transfer function",
-    R4__instance_of=c.I15("implication proposition"),
+    R4__instance_of=p.I15("implication proposition"),
 )
 
 I3007.define_context_variables(
-    sys=c.instance_of(I5948("dynamical system")),
-    tf_rep=c.instance_of(I2640("transfer function representation")),
-    denom=c.instance_of(I4239("monovariate polynomial")),
-    set_of_poles=c.instance_of(I5484("finite set of complex numbers"))
+    sys=p.instance_of(I5948("dynamical system")),
+    tf_rep=p.instance_of(I2640("transfer function representation")),
+    denom=p.instance_of(I4239("monovariate polynomial")),
+    set_of_poles=p.instance_of(I5484("finite set of complex numbers"))
 )
 
 I3007.set_context_relations(
@@ -267,12 +267,12 @@ I3007.set_context_relations(
 )
 
 I3007.set_premises(
-    (I3007.set_of_poles, c.R14("is subset of"), I2739("open left half plane")),
-    (I3007.tf_rep, c.R16("has property"), I8181("properness"))
+    (I3007.set_of_poles, p.R14("is subset of"), I2739("open left half plane")),
+    (I3007.tf_rep, p.R16("has property"), I8181("properness"))
 )
 
 I3007.set_assertions(
-    (I3007.sys, c.R16("has property"), I7208("BIBO stability"))
+    (I3007.sys, p.R16("has property"), I7208("BIBO stability"))
 )
 
 # </theorem>
@@ -281,56 +281,56 @@ I3007.set_assertions(
 # preparation for next theorem
 
 # Note, it might be worthwile to introduce the set of all (non-negative/positive) integer numbers as a separate item
-I4463 = c.create_item(
+I4463 = p.create_item(
     R1__has_label="non-negative integer",
     R2__has_description="mathematical type equivalent to Nat (from type theory): non-negative integer number",
-    R4__is_instance_of=c.I2("Metaclass")  # this means: this Item is an ordinary class
+    R4__is_instance_of=p.I2("Metaclass")  # this means: this Item is an ordinary class
 )
 
-I4464 = c.create_item(
+I4464 = p.create_item(
     R1__has_label="positive integer",
     R2__has_description="mathematical type equivalent to Nat+ (from type theory): positive integer number",
     R3__is_subclass_of=I4463("non-negative integer number"),
 )
 
 # todo: this needs more generalization
-I9904 = c.create_item(
+I9904 = p.create_item(
     R1__has_label="matrix",
     R2__has_description="matrix of (in general) complex numbers, i.e. matrix over the field of complex numbers",
     R4__is_instance_of=I4235("mathematical object"),
 )
 
-I9905 = c.create_item(
+I9905 = p.create_item(
     R1__has_label="zero matrix",
     R2__has_description="like its superclass but with all entries equal to zero",
     R3__is_subclass_of=I9904("matrix"),
 )
 
 
-I000 = c.create_item(
+I000 = p.create_item(
     R1__has_label="dummy item",
     R2__has_description="used during development as placeholder for items which will be defined later",
-    R4__instance_of=c.I2("Metaclass")  # this means: this Item is an ordinary class
+    R4__instance_of=p.I2("Metaclass")  # this means: this Item is an ordinary class
 
 )
 
-R000 = c.create_relation(
+R000 = p.create_relation(
     R1__has_label="dummy relation",
     R2__has_description="used during development as placeholder for relations which will be defined later",
 )
 # <theorem>
 
-I3749 = c.create_item(
+I3749 = p.create_item(
     R1__has_label="Cayley-Hamilton Theorem",
     R2__has_description="establishes that every quadratic matrix is a root of its own characteristic polynomial",
-    R4__instance_of=c.I15("implication proposition"),
+    R4__instance_of=p.I15("implication proposition"),
 )
 
 I3749("Cayley-Hamilton Theorem").define_context_variables(
-    A=c.instance_of(I9904("matrix")),
-    n=c.instance_of(I4464("positve integer")),
-    P=c.instance_of(I4240("matrix polynomial")),
-    Z=c.instance_of(I9905("zero matrix")),
+    A=p.instance_of(I9904("matrix")),
+    n=p.instance_of(I4464("positve integer")),
+    P=p.instance_of(I4240("matrix polynomial")),
+    Z=p.instance_of(I9905("zero matrix")),
 )
 
 I3749("Cayley-Hamilton Theorem").set_context_relations(
@@ -372,10 +372,10 @@ Sequence("y", I000("time derivative of order i"), link_op=I000("listing"), start
 
 
 
-I4349 = c.create_item(
+I4349 = p.create_item(
     R1__has_label="equivalence of flatness and input-state-linearizability for SISO systems",
     R2__has_description="establishes the equivalence of flatness and input-state-linearizability for SISO systems",
-    R4__instance_of=c.I15("implication proposition"),
+    R4__instance_of=p.I15("implication proposition"),
 
 )
 
@@ -384,27 +384,27 @@ I4349 = c.create_item(
 # <statement>
 
 # this is still unfinished work in progress:
-I4216 = c.create_item(
+I4216 = p.create_item(
     R1__has_label="statement about MPC for linear systems and the reducibility to quadratic problems",
     R2__has_description=(
         "for linear systems, the MPC problem can be reduced to a quadratic problem, for which the optimal control"
         "over the admissible polyhedral set can be precomputed."
     ),
-    R4__instance_of=c.I15("implication proposition"),
+    R4__instance_of=p.I15("implication proposition"),
 
 )
 
 I4216.define_context_variables(
-    sys=c.instance_of(I5948("dynamical system")),
-    state_space_sys=c.instance_of(I6886("general ode state space representation")),
-    mpc_problem=c.instance_of(I5948("dynamical system")),
-    quadratic_problem=c.instance_of(I5948("dynamical system")),
-    mathematical_solution=c.instance_of(I5948("dynamical system")),
-    optimal_control_law=c.instance_of(I5948("dynamical system")),
+    sys=p.instance_of(I5948("dynamical system")),
+    state_space_sys=p.instance_of(I6886("general ode state space representation")),
+    mpc_problem=p.instance_of(I5948("dynamical system")),
+    quadratic_problem=p.instance_of(I5948("dynamical system")),
+    mathematical_solution=p.instance_of(I5948("dynamical system")),
+    optimal_control_law=p.instance_of(I5948("dynamical system")),
 )
 
-R1234a = c.create_relation(R1="dummy")
-R1234b = c.create_relation(R1="dummy")
+R1234a = p.create_relation(R1="dummy")
+R1234b = p.create_relation(R1="dummy")
 
 
 I4216.set_context_relations(

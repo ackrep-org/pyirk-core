@@ -2,6 +2,8 @@ import unittest
 import sys
 import os
 from os.path import join as pjoin
+
+import rdflib
 # noinspection PyUnresolvedReferences
 from ipydex import IPS, activate_ips_on_exception
 import pyerk as p
@@ -24,6 +26,12 @@ class TestCore(unittest.TestCase):
         def_eq_item = mod1.I6886.R6__has_defining_equation
         self.assertEqual(def_eq_item.R4__is_instance_of, p.I18("Formula"))
         self.assertEqual(def_eq_item.R24__has_LaTeX_string, r"$\dot x = f(x, u)$")
+
+        teststring1 = "this is english text"@mod1.p.en
+        teststring2 = "das ist deutsch"@mod1.p.de
+
+        self.assertIsInstance(teststring1, rdflib.Literal)
+        self.assertIsInstance(teststring2, rdflib.Literal)
 
     def test_sparql_query(self):
         mod1 = p.erkloader.load_mod_from_path(f"{TEST_DATA_PATH}/knowledge_base1.py", "knowledge_base1")

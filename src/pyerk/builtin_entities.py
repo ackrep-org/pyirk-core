@@ -1,5 +1,7 @@
 from typing import List, Union
 
+from rdflib import  Literal
+
 from .core import (
     create_builtin_relation,
     create_builtin_item,
@@ -418,3 +420,36 @@ def create_formula(latex_src: str, r1: str = None, r2: str = None) -> Item:
     formula_item.set_relation(R24("has LaTeX string"), latex_src)
 
     return formula_item
+
+
+I19 = create_builtin_item(
+    key_str="I19",
+    R1__has_label="multilingual string literal",
+    R2__has_description=(
+        "used to encode strings that depend on natural languages"
+    ),
+    R3__instance_of=I2("Metaclass"),
+)
+
+
+class LangaguageCode:
+    # for now we only support a subset of languages with wich the authors are familiar
+    # if you miss a language please consider contributing
+    valid_tags = ["en", "de"]
+    # https://en.wikipedia.org/wiki/IETF_language_tag
+
+    def __init__(self, langtag):
+        assert langtag in self.valid_tags
+
+        self.langtag = langtag
+
+    def __rmatmul__(self, arg: str) -> str:
+        assert isinstance(arg, str)
+
+        res = Literal(arg, self.langtag)
+
+        return res
+
+
+en = LangaguageCode("en")
+de = LangaguageCode("de")

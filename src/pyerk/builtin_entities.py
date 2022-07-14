@@ -385,6 +385,25 @@ I18 = create_builtin_item(
     R3__instance_of=I2("Metaclass"),
 )
 
+
+def get_ui_short_representation(self) -> str:
+    """
+    This function returns a string which can be used as a replacement for the label
+    :param self:
+
+    :return: mathjax-ready LaTeX source code
+    """
+    latex_src = self.R24
+    assert latex_src.startswith("$")
+    assert latex_src.endswith("$")
+
+    # latex make recognizable for mathjax
+    res = f"\\({latex_src[1:-1]}\\)"
+    return res
+
+
+I18.add_method(get_ui_short_representation)
+del get_ui_short_representation
 R24("has LaTeX string").set_relation(R8("has domain of argument 1"), I18("Formula"))
 R24("has LaTeX string").set_relation(R11("has range of result"), str)
 
@@ -392,7 +411,9 @@ R24("has LaTeX string").set_relation(R11("has range of result"), str)
 def create_formula(latex_src: str, r1: str = None, r2: str = None) -> Item:
     if r1 is None:
         r1 = f"generic formula ({latex_src})"
-    formula_item = instance_of(I18("Formula"), r1=r1, r2=2)
+
+    # TODO: hide such automatically created instances in search results by default (because there will be many)
+    formula_item = instance_of(I18("Formula"), r1=r1, r2=r2)
 
     formula_item.set_relation(R24("has LaTeX string"), latex_src)
 

@@ -44,6 +44,7 @@ class ListWithAttributes(list):
     """
     This subclass of list can have attributes
     """
+
     var: Iterable
 
 

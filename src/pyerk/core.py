@@ -8,12 +8,10 @@ import inspect
 import types
 import abc
 import random
-import copy
 from enum import Enum, unique
 import re as regex
 from addict import Dict as attr_dict
 from typing import Dict, Union, List, Iterable
-import yaml
 
 from . import auxiliary as aux
 
@@ -191,7 +189,6 @@ class Entity(abc.ABC):
     def _set_relation(self, rel_key: str, rel_content: object, scope: "Entity" = None) -> None:
 
         rel = ds.relations[rel_key]
-        prk = process_key_str(rel_key)
 
         # set the relation to the object
         setattr(self, rel_key, rel_content)
@@ -321,6 +318,7 @@ class DataStore:
                 f"unexpected type ({type(inner_obj)}) of dict content for entity {entity_key} and "
                 f"relation {relation_key}. Expected list or None"
             )
+            raise TypeError(msg)
 
 
 ds = DataStore()
@@ -458,7 +456,6 @@ def create_item(key_str: str = "", **kwargs) -> Item:
     """
 
     :param key_str:     "" or unique key of this item (something like `I1234`)
-    :param _references: versioned references of relations
     :param kwargs:      further relations
 
     :return:        newly created item
@@ -645,21 +642,12 @@ def generate_new_key(prefix):
             continue
 
 
-def print_new_key(fname):
+def print_new_key():
     """
-    generate a new random integer and print it. Optionally check if it is already present in a file
-    and generate a new one, if necessary
+    print random integer keys from the pregenerated list.
 
-    :param fname:
     :return:
     """
-    import random
-
-    if fname:
-        with open(fname, "r") as myfile:
-            txt_data = myfile.read()
-    else:
-        txt_data = ""
 
     for i in range(30):
         k = generate_new_key("I")[1:]
@@ -731,24 +719,6 @@ class Context:
         pass
 
 
-class AndOperation:
-    def __init__(self, *args):
-        self.args = args
-
-
-def AND(*args):
-    return AndOperation(*args)
-
-
-class OrOperation:
-    def __init__(self, *args):
-        self.args = args
-
-
-def OR(*args):
-    return OrOperation(*args)
-
-
 def unload_mod(mod_id: str, strict=True) -> None:
     """
     Delete all references to entities comming from a module with `mod_id`
@@ -810,10 +780,3 @@ def register_mod(mod_id):
 
 def script_main(fpath):
     IPS()
-
-
-# ------------------
-
-# !! defining that stuff on module level makes the script slow:
-# todo: move this to a separate module
-

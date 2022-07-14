@@ -1,6 +1,6 @@
 from typing import List, Union
 
-from rdflib import  Literal
+from rdflib import Literal
 
 from .core import (
     create_builtin_relation,
@@ -425,9 +425,7 @@ def create_formula(latex_src: str, r1: str = None, r2: str = None) -> Item:
 I19 = create_builtin_item(
     key_str="I19",
     R1__has_label="multilingual string literal",
-    R2__has_description=(
-        "used to encode strings that depend on natural languages"
-    ),
+    R2__has_description=("used to encode strings that depend on natural languages"),
     R3__instance_of=I2("Metaclass"),
 )
 

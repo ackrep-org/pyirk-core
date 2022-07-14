@@ -101,6 +101,7 @@ def check_all_relation_types():
     res2 = aux.apply_func_to_table_cells(convert_from_rdf_to_pyerk, res)
     IPS()
 
+
 """
     for rel_key, re_list in pyerk.ds.relation_relation_edges.items():
         for re in re_list:

@@ -306,6 +306,34 @@ I9905 = p.create_item(
     R3__is_subclass_of=I9904("matrix"),
 )
 
+I9906 = p.create_item(
+    R1__has_label="square matrix",
+    R2__has_description="a matrix for which the number of rows and columns are equal",
+    R3__is_subclass_of=I9904("matrix"),
+    # TODO: formalize the condition inspired by OWL
+)
+
+R5938 = p.create_relation(
+    R1__has_label="has row number",
+    R2__has_description="specifies the number of rows of a matrix",
+    R8__has_domain_of_argument_1=I9904("matrix"),
+    R10__has_range_of_result=I4463("non-negative integer")
+)
+
+R5939 = p.create_relation(
+    R1__has_label="has column number",
+    R2__has_description="specifies the number of columns of a matrix",
+    R8__has_domain_of_argument_1=I9904("matrix"),
+    R10__has_range_of_result=I4463("non-negative integer")
+)
+
+R5940 = p.create_relation(
+    R1__has_label="has characteristic polynomial",
+    R2__has_description="specifies the characteristic polynomial of a square matrix A, i.e. det(s·I-A)",
+    R8__has_domain_of_argument_1=I9906("square matrix"),
+    R10__has_range_of_result=I4239("monovariate polynomial")
+)
+
 # <theorem>
 
 I3749 = p.create_item(
@@ -322,12 +350,12 @@ I3749("Cayley-Hamilton theorem").define_context_variables(
 )
 
 I3749("Cayley-Hamilton theorem").set_context_relations(
-    (I3749.A, p.R000("has_row_number"), I3749.n),
-    (I3749.A, p.R000("has_column_number"), I3749.n),
-    (I3749.A, p.R000("has_characteristic_polynomial"), I3749.P),
-    (I3749.Z, p.R000("has_row_number"), I3749.n),
-    (I3749.Z, p.R000("has_column_number"), I3749.n),
-    (I3749.Z, p.R000("has_latex_representation"), r"\mathbf{0}"),
+    (I3749.A, R5938("has row number"), I3749.n),
+    (I3749.A, R5939("has column number"), I3749.n),
+    (I3749.A, R5940("has characteristic polynomial"), I3749.P),
+    (I3749.Z, R5938("has row number"), I3749.n),
+    (I3749.Z, R5939("has column number"), I3749.n),
+    (I3749.Z, p.R24("has LaTeX string"), r"\mathbf{0}"),
 )
 
 

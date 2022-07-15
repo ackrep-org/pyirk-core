@@ -128,6 +128,12 @@ R24 = create_builtin_relation(
     R22__is_funtional=True,
 )
 
+R25 = create_builtin_relation(
+    key_str="R25",
+    R1="has language specified string",
+    R2="...",
+)
+
 
 # Items
 
@@ -422,10 +428,13 @@ def create_formula(latex_src: str, r1: str = None, r2: str = None) -> Item:
     return formula_item
 
 
+# todo: docs: currently ordinary strings can be used where such an Item is expected
+# they are interpreted as in the default language
+# todo: this entity is obsolete, we use a construction with RDF-Literals instead
 I19 = create_builtin_item(
     key_str="I19",
     R1__has_label="multilingual string literal",
-    R2__has_description=("used to encode strings that depend on natural languages"),
+    R2__has_description="used to encode strings that depend on natural languages",
     R3__instance_of=I2("Metaclass"),
 )
 
@@ -444,10 +453,18 @@ class LangaguageCode:
     def __rmatmul__(self, arg: str) -> str:
         assert isinstance(arg, str)
 
-        res = Literal(arg, self.langtag)
+        res = Literal(arg, lang=self.langtag)
 
         return res
 
 
 en = LangaguageCode("en")
 de = LangaguageCode("de")
+
+
+I20 = create_builtin_item(
+    key_str="I20",
+    R1__has_label="test item mit label auf deutsch",
+    R2__has_description="used for testing during development",
+    R3__instance_of=I2("Metaclass"),
+)

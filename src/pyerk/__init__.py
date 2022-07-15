@@ -3,6 +3,7 @@
 try:
     from .core import *
     from .builtin_entities import *
+    from .settings import *
     from . import erkloader
     from . import rdfstack
     from . import auxiliary as aux

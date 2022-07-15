@@ -12,8 +12,11 @@ from enum import Enum, unique
 import re as regex
 from addict import Dict as attr_dict
 from typing import Dict, Union, List, Iterable
+from rdflib import Literal
+
 
 from . import auxiliary as aux
+from . import settings
 
 from ipydex import IPS, activate_ips_on_exception
 
@@ -776,6 +779,25 @@ def register_mod(mod_id):
     path = os.path.abspath(frame.f_globals["__file__"])
     assert frame.f_globals.get("__MOD_ID__", None) == mod_id
     ds.mod_path_mapping.add_pair(key_a=mod_id, key_b=path)
+
+
+class LangaguageCode:
+
+    def __init__(self, langtag):
+        assert langtag in settings.SUPPORTED_LANGUAGES
+
+        self.langtag = langtag
+
+    def __rmatmul__(self, arg: str) -> str:
+        assert isinstance(arg, str)
+
+        res = Literal(arg, lang=self.langtag)
+
+        return res
+
+
+en = LangaguageCode("en")
+de = LangaguageCode("de")
 
 
 def script_main(fpath):

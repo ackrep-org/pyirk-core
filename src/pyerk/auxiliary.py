@@ -1,4 +1,6 @@
-from typing import Iterable
+from typing import Iterable, Union
+from rdflib import Literal
+from . import settings
 
 """
 Some auxiliary classes for pyerk.
@@ -55,5 +57,23 @@ def apply_func_to_table_cells(func: callable, table: Iterable, *args, **kwargs) 
         for cell in row:
             new_row.append(func(cell, *args, **kwargs))
         res.append(new_row)
+
+    return res
+
+
+def ensure_rdf_str_literal(arg, allow_none=True) -> Union[Literal, None]:
+
+    if allow_none and arg is None:
+        return arg
+
+    # note: rdflib.Literal is a subclass of str (also if the value is e.g. a float)
+    if isinstance(arg, Literal):
+        assert arg.language in settings.SUPPORTED_LANGUAGES
+        res = arg
+    elif isinstance(arg, str):
+        res = Literal(arg, lang=settings.DEFAULT_DATA_LANGUAGE)
+    else:
+        msg = f"Unexpected type {type(arg)} of object {arg}."
+        raise TypeError(msg)
 
     return res

@@ -1,7 +1,5 @@
 from typing import List, Union
 
-from rdflib import Literal
-
 from .core import (
     create_builtin_relation,
     create_builtin_item,
@@ -9,6 +7,8 @@ from .core import (
     Relation,
     Item,
     RelationEdge,
+    de,
+    en,
 )
 
 # it is OK to access ds here in the builtin module, but this import should not be copied to other knowledge modules
@@ -435,36 +435,19 @@ I19 = create_builtin_item(
     key_str="I19",
     R1__has_label="multilingual string literal",
     R2__has_description="used to encode strings that depend on natural languages",
-    R3__instance_of=I2("Metaclass"),
+    R3__is_instance_of=I2("Metaclass"),
 )
 
-
-class LangaguageCode:
-    # for now we only support a subset of languages with wich the authors are familiar
-    # if you miss a language please consider contributing
-    valid_tags = ["en", "de"]
-    # https://en.wikipedia.org/wiki/IETF_language_tag
-
-    def __init__(self, langtag):
-        assert langtag in self.valid_tags
-
-        self.langtag = langtag
-
-    def __rmatmul__(self, arg: str) -> str:
-        assert isinstance(arg, str)
-
-        res = Literal(arg, lang=self.langtag)
-
-        return res
-
-
-en = LangaguageCode("en")
-de = LangaguageCode("de")
-
-
-I20 = create_builtin_item(
-    key_str="I20",
-    R1__has_label="test item mit label auf deutsch",
+# annoying: pycharm does not recognize that "str"@some_LangaguageCode_obj is valid because str does not
+# implement __matmul__
+# noinspection PyUnresolvedReferences
+I900 = create_builtin_item(
+    key_str="I900",
+    R1__has_label="test item mit label auf deutsch"@de,
     R2__has_description="used for testing during development",
-    R3__instance_of=I2("Metaclass"),
+    R3__is_instance_of=I2("Metaclass"),
+    R18__has_usage_hints="This item serves only for unittesting labels in different languages",
 )
+
+# noinspection PyUnresolvedReferences
+I900.set_relation(R1("has label"), "test item with english label"@en)

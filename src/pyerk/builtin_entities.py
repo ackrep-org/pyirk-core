@@ -451,3 +451,34 @@ I900 = create_builtin_item(
 
 # noinspection PyUnresolvedReferences
 I900.set_relation(R1("has label"), "test item with english label"@en)
+
+
+I000 = create_builtin_item(
+    key_str="I000",
+    R1__has_label="dummy item",
+    R2__has_description="used during development as placeholder for items which will be defined later",
+    R4__instance_of=I2("Metaclass")  # this means: this Item is an ordinary class
+
+)
+
+R000 = create_builtin_relation(
+    key_str="R000",
+    R1__has_label="dummy relation",
+    R2__has_description="used during development as placeholder for relations which will be defined later",
+)
+
+
+# TODO: evaluate the necessity of this class
+class Sequence:
+    r"""
+    Models a sequence like y, `\dot y, ..., y^(k)`
+    """
+
+    def __init__(self, base, prop, link_op, start, stop):
+        # Sequence item with the respective relations and conveniently create all necessary auxiliary items
+        # runnig index of `prop` and running index of the sequence object have to be connected
+        self.base = base
+        self.prop = prop
+        self.link_op = link_op
+        self.start = start
+        self.stop = stop

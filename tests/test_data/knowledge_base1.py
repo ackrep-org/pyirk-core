@@ -306,18 +306,6 @@ I9905 = p.create_item(
     R3__is_subclass_of=I9904("matrix"),
 )
 
-
-I000 = p.create_item(
-    R1__has_label="dummy item",
-    R2__has_description="used during development as placeholder for items which will be defined later",
-    R4__instance_of=p.I2("Metaclass")  # this means: this Item is an ordinary class
-
-)
-
-R000 = p.create_relation(
-    R1__has_label="dummy relation",
-    R2__has_description="used during development as placeholder for relations which will be defined later",
-)
 # <theorem>
 
 I3749 = p.create_item(
@@ -334,12 +322,12 @@ I3749("Cayley-Hamilton theorem").define_context_variables(
 )
 
 I3749("Cayley-Hamilton theorem").set_context_relations(
-    (I3749.A, R000("has_row_number"), I3749.n),
-    (I3749.A, R000("has_column_number"), I3749.n),
-    (I3749.A, R000("has_characteristic_polynomial"), I3749.P),
-    (I3749.Z, R000("has_row_number"), I3749.n),
-    (I3749.Z, R000("has_column_number"), I3749.n),
-    (I3749.Z, R000("has_latex_representation"), r"\mathbf{0}"),
+    (I3749.A, p.R000("has_row_number"), I3749.n),
+    (I3749.A, p.R000("has_column_number"), I3749.n),
+    (I3749.A, p.R000("has_characteristic_polynomial"), I3749.P),
+    (I3749.Z, p.R000("has_row_number"), I3749.n),
+    (I3749.Z, p.R000("has_column_number"), I3749.n),
+    (I3749.Z, p.R000("has_latex_representation"), r"\mathbf{0}"),
 )
 
 
@@ -349,27 +337,10 @@ I3749("Cayley-Hamilton theorem").set_assertions(
 )
 # </theorem>
 
-# how to model the sequence y, \dot y, ..., y^(k):
 
-
-class Sequence:
-    r"""
-    Models a sequence like y, `\dot y, ..., y^(k)`
-    """
-
-    def __init__(self, base, prop, link_op, start, stop):
-        # Sequence item with the respective relations and conveniently create all necessary auxiliary items
-        # runnig index of `prop` and running index of the sequence object have to be connected
-        self.base = base
-        self.prop = prop
-        self.link_op = link_op
-        self.start = start
-        self.stop = stop
-
-Sequence("y", I000("time derivative of order i"), link_op=I000("listing"), start=0, stop="k")
+p.Sequence("y", p.I000("time derivative of order i"), link_op=p.I000("listing"), start=0, stop="k")
 
 # → it would be nice if one could interactively execute/write out such a sequence for given variable values
-
 
 
 I4349 = p.create_item(

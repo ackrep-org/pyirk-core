@@ -21,6 +21,8 @@ def load_mod_from_path(modpath: str, modname=None, allow_reload=True, omit_reloa
     if allow_reload and old_mod_id:
         pyerk.unload_mod(old_mod_id)
 
+    pyerk.core.available_key_numbers = pyerk.generate_key_numbers()
+
     spec = importlib.util.spec_from_file_location(modname, modpath)
     mod = importlib.util.module_from_spec(spec)
     sys.modules["module.name"] = mod

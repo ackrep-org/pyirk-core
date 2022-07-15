@@ -36,7 +36,7 @@ def main():
         exit()
 
     if args.new_key:
-        core.print_new_key(args.inputfile)
+        core.print_new_key()
 
     elif args.inputfile is not None:
         core.script_main(args.inputfile)

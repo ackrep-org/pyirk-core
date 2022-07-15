@@ -528,10 +528,24 @@ class RelationRole(Enum):
 
 # for now we want unique numbers for keys for relations and items etc (although this is not necessary)
 
-# passing seed (arg `x`) ensures "reproducible randomness" accross runs
-random_ng = random.Random(x=1750)
-available_key_numbers = list(range(1000, 9999))
-random_ng.shuffle(available_key_numbers)
+def generate_key_numbers() -> list:
+    """
+    Creates a reaservoir of keynumbers, e.g. for automatically created entities. Due to the hardcoded seed value
+    these numbers are stable between runs of the software, which simplifies development and debugging.
+
+    This function is also called after unloading a module because the respective keys are "free" again
+
+    :return:    list of integers
+    """
+    # passing seed (arg `x`) ensures "reproducible randomness" accross runs
+    random_ng = random.Random(x=1750)
+    _available_key_numbers = list(range(1000, 9999))
+    random_ng.shuffle(_available_key_numbers)
+
+    return _available_key_numbers
+
+
+available_key_numbers = generate_key_numbers()
 
 
 class RelationEdge:

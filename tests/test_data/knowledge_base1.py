@@ -286,7 +286,7 @@ I3007.set_assertions(
 I4463 = p.create_item(
     R1__has_label="non-negative integer",
     R2__has_description="mathematical type equivalent to Nat (from type theory): non-negative integer number",
-    R4__is_instance_of=p.I2("Metaclass")  # this means: this Item is an ordinary class
+    R4__is_instance_of=p.I12("mathematical object")
 )
 
 I4464 = p.create_item(
@@ -346,8 +346,8 @@ I9907 = p.create_item(
 
 I9907.define_context_variables(
     M=p.instance_of(I9904("matrix")),
-    nr=p.instance_of(I4463("positive integer")),
-    nc=p.instance_of(I4463("positive integer")),
+    nr=p.instance_of(I4464("positive integer")),
+    nc=p.instance_of(I4464("positive integer")),
 )
 
 I9907.set_context_relations(

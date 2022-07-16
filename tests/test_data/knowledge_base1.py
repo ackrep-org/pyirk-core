@@ -71,6 +71,8 @@ I6886 = p.create_item(
     R1__has_label="general ode state space representation",
     R2__has_description="explicit first order ODE system description of a dynamical system",
     R4__instance_of=p.I2("Metaclass"),
+
+    # TODO: this has to use create_equation (to be implemented)
     R6__has_defining_equation=p.create_formula(r"$\dot x = f(x, u)$"),
 )
 

@@ -382,9 +382,9 @@ I17 = create_builtin_item(
 
 I18 = create_builtin_item(
     key_str="I18",
-    R1__has_label="Formula",
+    R1__has_label="mathematical expression",
     R2__has_description=(
-        "mathematical formula, e.g. represented by a LaTeX-string; this might change in the future to MathMl"
+        "mathematical expression, e.g. represented by a LaTeX-string; this might change in the future to MathMl"
     ),
     R3__instance_of=I2("Metaclass"),
 )
@@ -408,20 +408,20 @@ def get_ui_short_representation(self) -> str:
 
 I18.add_method(get_ui_short_representation)
 del get_ui_short_representation
-R24("has LaTeX string").set_relation(R8("has domain of argument 1"), I18("Formula"))
+R24("has LaTeX string").set_relation(R8("has domain of argument 1"), I18("mathematical expression"))
 R24("has LaTeX string").set_relation(R11("has range of result"), str)
 
 
-def create_formula(latex_src: str, r1: str = None, r2: str = None) -> Item:
+def create_expression(latex_src: str, r1: str = None, r2: str = None) -> Item:
     if r1 is None:
-        r1 = f"generic formula ({latex_src})"
+        r1 = f"generic expression ({latex_src})"
 
     # TODO: hide such automatically created instances in search results by default (because there will be many)
-    formula_item = instance_of(I18("Formula"), r1=r1, r2=r2)
+    expression = instance_of(I18("mathematical expression"), r1=r1, r2=r2)
 
-    formula_item.set_relation(R24("has LaTeX string"), latex_src)
+    expression.set_relation(R24("has LaTeX string"), latex_src)
 
-    return formula_item
+    return expression
 
 
 # todo: docs: currently ordinary strings can be used where such an Item is expected

@@ -147,12 +147,13 @@ class Entity(abc.ABC):
     def add_method_to_class(cls, func):
         setattr(cls, func.__name__, func)
 
-    def add_method(self, func):
+    def add_method(self, func: callable, name: str):
         """
         Add a method to this instance (self). If there are R4 relations pointing from child items to self,
         this method is also inherited to those child items.
 
         :param func:
+        :param name:    the name under which the callable object should be accessed
         :return:
         """
         self.__dict__[func.__name__] = types.MethodType(func, self)

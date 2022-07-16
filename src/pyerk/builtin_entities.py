@@ -307,7 +307,7 @@ def get_items_defined_in_scope(scope: Item) -> List[Entity]:
     return entities
 
 
-def define_context_variables(self, **kwargs):
+def _proposition_define_context_variables(self, **kwargs):
     self: Entity
     context_ns, context_scope = self._register_scope("context")
 
@@ -332,11 +332,10 @@ def define_context_variables(self, **kwargs):
         variable_object.set_relation(R23("has_name_in_scope"), variable_name)
 
 
-I15.add_method(define_context_variables)
-del define_context_variables
+I15("implication proposition").add_method(_proposition_define_context_variables, name="define_context_variables")
 
 
-def set_context_relations(self, *args, **kwargs):
+def _proposition_set_context_relations(self, *args, **kwargs):
     """
 
     :param self:    the entity to which this method will be bound
@@ -352,28 +351,25 @@ def set_context_relations(self, *args, **kwargs):
     add_relations_to_scope(args, context_scope)
 
 
-I15.add_method(set_context_relations)
-del set_context_relations
+I15("implication proposition").add_method(_proposition_set_context_relations, "set_context_relations")
 
 
-def set_premises(self, *args):
+def _proposition_set_premises(self, *args):
     self: Entity
     _, premises_scope = self._register_scope("premises")
     add_relations_to_scope(args, premises_scope)
 
 
-I15.add_method(set_premises)
-del set_premises
+I15("implication proposition").add_method(_proposition_set_premises, "set_premises")
 
 
-def set_assertions(self, *args):
+def _proposition_set_assertions(self, *args):
     self: Entity
     _, assertions_scope = self._register_scope("assertions")
     add_relations_to_scope(args, assertions_scope)
 
 
-I15.add_method(set_assertions)
-del set_assertions
+I15("implication proposition").add_method(_proposition_set_assertions, "set_assertions")
 
 
 I17 = create_builtin_item(

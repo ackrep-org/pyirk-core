@@ -434,6 +434,127 @@ I19 = create_builtin_item(
     R3__is_instance_of=I2("Metaclass"),
 )
 
+
+I20 = create_builtin_item(
+    key_str="I20",
+    R1__has_label="mathematical definition",
+    R2__has_description="mathematical definition statement (structurally similar to other propositions)",
+    R3__is_subclass_of=I14("mathematical proposition"),
+
+    # TODO: ensure this restriction via quality checks
+    R18__has_usage_hint=(
+        "We model a definition in the same way as an implication proposition; However the assertion must only contain "
+        'R3("is_instance_of relations").'
+    ),
+)
+
+I21 = create_builtin_item(
+    key_str="I21",
+    R1__has_label="mathematical relation",
+    R2__has_description="establishes that two mathematical expressions (I18) are in a relation, e.g. equalness",
+)
+
+
+R26 = create_builtin_relation(
+    key_str="R26",
+    R1__has_label="has lhs",
+    R2__has_description="specifies the left hand side of an equation",
+)
+
+R27 = create_builtin_relation(
+    key_str="R26",
+    R1__has_label="has rhs",
+    R2__has_description="specifies the right hand side of an equation",
+)
+
+R26("has lhs").set_relation(R8("has domain of argument 1"), I21("mathematical relation"))
+R27("has rhs").set_relation(R8("has domain of argument 1"), I21("mathematical relation"))
+
+I22 = create_builtin_item(
+    key_str="I22",
+    R1__has_label="mathematical knowledge artifact",
+    R2__has_description="(class for) something like an equation or a theorem",
+    R3__is_subclass_of=I2("Metaclass"),
+)
+
+
+I14("mathematical proposition").set_relation(R3("is subclass of"), I22("mathematical knowledge artifact"))
+I21("mathematical relation").set_relation(R3("is subclass of"), I22("mathematical knowledge artifact"))
+
+
+I23 = create_builtin_item(
+    key_str="I23",
+    R1__has_label="equation",
+    R2__has_description="mathematical relation that specifies that lhs and rhs are equal",
+    R3__is_subclass_of=I21("mathematical relation"),
+)
+
+# inequalities are based on: https://en.wikipedia.org/wiki/Inequality_(mathematics)
+
+I24 = create_builtin_item(
+    key_str="I24",
+    R1__has_label="inequation",
+    R2__has_description="mathematical relation that specifies that lhs is unequal to rhs",
+    R3__is_subclass_of=I21("mathematical relation"),
+    R18__has_usage_hints=(
+        "This item is different from inquality (I25): lhs and rhs need to be members of the same ordered set."
+    ),
+)
+
+I25 = create_builtin_item(
+    key_str="I25",
+    R1__has_label="general inequality",
+    R2__has_description="superclass for strict and non-strict inequality",
+    R3__is_subclass_of=I21("mathematical relation"),
+)
+
+I26 = create_builtin_item(
+    key_str="I26",
+    R1__has_label="strict inequality",
+    R2__has_description=(
+        "mathematical relation that specifies that lhs is either strictly greater or strictly less than rhs"
+    ),
+    R3__is_subclass_of=I25("general inequality"),
+)
+
+I27 = create_builtin_item(
+    key_str="I27",
+    R1__has_label="non-strict inequality",
+    R2__has_description=(
+        "super class for greater-than-or-equal-to and less-than-or-equal-to"
+    ),
+    R3__is_subclass_of=I25("general inequality"),
+)
+
+I28 = create_builtin_item(
+    key_str="I28",
+    R1__has_label="greater-than-relation",
+    R2__has_description="mathematical relation that specifies that lhs is strictly greater than rhs",
+    R3__is_subclass_of=I26("strict inequality"),
+)
+
+I29 = create_builtin_item(
+    key_str="I29",
+    R1__has_label="less-than-relation",
+    R2__has_description="mathematical relation that specifies that lhs is strictly less than rhs",
+    R3__is_subclass_of=I26("strict inequality"),
+)
+
+I30 = create_builtin_item(
+    key_str="I28",
+    R1__has_label="greater-than-relation",
+    R2__has_description="mathematical relation that specifies that lhs is strictly greater than rhs",
+    R3__is_subclass_of=I27("non-strict inequality"),
+)
+
+I31 = create_builtin_item(
+    key_str="I29",
+    R1__has_label="less-than-relation",
+    R2__has_description="mathematical relation that specifies that lhs is strictly less than rhs",
+    R3__is_subclass_of=I27("non-strict inequality"),
+)
+
+
 # annoying: pycharm does not recognize that "str"@some_LangaguageCode_obj is valid because str does not
 # implement __matmul__
 # noinspection PyUnresolvedReferences

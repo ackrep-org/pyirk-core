@@ -315,6 +315,7 @@ I9906 = p.create_item(
     # TODO: formalize the condition inspired by OWL
 )
 
+
 R5938 = p.create_relation(
     R1__has_label="has row number",
     R2__has_description="specifies the number of rows of a matrix",
@@ -335,6 +336,28 @@ R5940 = p.create_relation(
     R8__has_domain_of_argument_1=I9906("square matrix"),
     R10__has_range_of_result=I4239("monovariate polynomial")
 )
+
+# <definition>
+I9907 = p.create_item(
+    R1__has_label="definition of square matrix",
+    R2__has_description="the defining statement of what a square matrix is",
+    R3__is_subclass_of=p.I20("mathematical definition"),
+)
+
+I9907.define_context_variables(
+    M=p.instance_of(I9904("matrix")),
+    nr=p.instance_of(I4463("positive integer")),
+    nc=p.instance_of(I4463("positive integer")),
+)
+
+I9907.set_context_relations(
+    (I9907.M, R5938("has row number"), I9907.nr),
+    (I9907.M, R5939("has column number"), I9907.nc),
+)
+
+# to be continued
+
+# </definition>
 
 # <theorem>
 

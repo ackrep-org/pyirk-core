@@ -77,11 +77,17 @@ class Entity(abc.ABC):
         self._method_prototypes = []
         self._namespaces = {}
 
-    def __call__(self, adhoc_label):
+    def __call__(self, *args, **kwargs):
         # returning self allows to use I1234 and I1234("human readable item name") interchageably
         # (once the object is created)
 
-        raise NotImplementedError
+        custom_call_method = getattr(self, "_custom_call", None)
+        if custom_call_method is None:
+            msg = f"entity {self} has not defined a _custom_call-method and thus cannot be called"
+            raise TypeError(msg)
+        else:
+            assert callable(custom_call_method)
+            return custom_call_method(*args, **kwargs)
 
     def idoc(self, adhoc_label: str):
         """
@@ -143,10 +149,33 @@ class Entity(abc.ABC):
         # for a solution how to automate this see
         # https://stackoverflow.com/questions/55183333/how-to-use-an-equivalent-to-post-init-method-with-normal-class
         self._perform_inheritance()
+        self._perform_instantiation()
 
     def _perform_inheritance(self):
+        """
+        Transfer method prototypes from parent to child classes
 
-        # this relates to R4__instance_of defined below
+        :return:
+        """
+        # this relates to R3__is_subclass_of defined in builtin_entities
+        parent_class: Union[Entity, None]
+        try:
+            parent_class = self.R3
+        except AttributeError:
+            parent_class = None
+
+        if parent_class not in (None, []):
+            assert isinstance(parent_class, Item)
+            # TODO: assert metaclass-property of `parent_class`
+            self._method_prototypes.extend(parent_class._method_prototypes)
+
+    def _perform_instantiation(self):
+        """
+        Convert all method prototypes from class-item into methods of instance-item
+        :return:
+        """
+
+        # this relates to R4__is_instance_of defined builtin_entities
         parent_class: Union[Entity, None]
         try:
             parent_class = self.R4
@@ -546,13 +575,6 @@ class Relation(Entity):
     def __repr__(self):
         R1 = getattr(self, "R1", "no label").replace(" ", "_")
         return f"<Relation {self.short_key}__{R1}>"
-
-    def __call__(self, adhoc_label):
-        # we have to redefine this method to let PyCharm recognize the correct type
-        res = super().__call__(adhoc_label)
-
-        assert isinstance(res, Relation)
-        return res
 
 
 @unique

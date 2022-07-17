@@ -151,12 +151,14 @@ I4237 = p.create_item(
     R3__subclass_of=I4236["mathematical expression"],
 )
 
+I4237["monovariate rational function"].add_method(p.custom_call__create_evaluated_mapping, "_custom_call")
+
 I4239 = p.create_item(
     R1__has_label="monovariate polynomial",
     R2__has_description=(
         "abstract monovariate polynomial (argument might be a complex-valued scalar, a matrix, an operator, etc.)"
     ),
-    R3__subclass_of=I4236["mathematical expression"],
+    R3__subclass_of=I4237["monovariate rational function"],
 )
 
 I4240 = p.create_item(

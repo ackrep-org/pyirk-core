@@ -562,6 +562,41 @@ I31 = create_builtin_item(
     R3__is_subclass_of=I27["non-strict inequality"],
 )
 
+I32 = create_builtin_item(
+    key_str="I32",
+    R1__has_label="evaluated mapping",
+    R2__has_description="this item type symbolically represents arbitrary evaluated mappings",
+    R3__is_subclass_of=I2["Metaclass"],
+)
+
+R28 = create_builtin_relation(
+    key_str="R28",
+    R1__has_label="has mapping item",
+    R2__has_description='specifies the concrete mapping item of an I32["evaluated mapping"] item',
+    R22_is_functional=True,
+)
+
+R29 = create_builtin_relation(
+    key_str="R29",
+    R1__has_label="has argument",
+    R2__has_description='specifies the concrete argument item of an I32["evaluated mapping"] item',
+    # todo: currently we only need univariate mappings. However, once we have multivariate mappings
+    #  this needs be reflected here (maybe use qulifiers or a seperate relation for each argument)
+)
+
+
+def create_evaluated_mapping(mapping: Item, arg: Entity) -> Item:
+
+    r1 = f"mapping '{mapping}' applied to '{arg}'"
+    em = instance_of(I32["evaluated mapping"], r1=r1)
+    return em
+
+
+# TODO: doc: this mechanism needs documentation
+# this function can be added to mapping objects as needed
+def custom_call__create_evaluated_mapping(self, arg):
+    return create_evaluated_mapping(mapping=self, arg=arg)
+
 
 # annoying: pycharm does not recognize that "str"@some_LangaguageCode_obj is valid because str does not
 # implement __matmul__

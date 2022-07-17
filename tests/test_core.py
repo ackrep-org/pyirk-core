@@ -11,7 +11,7 @@ import pyerk as p
 activate_ips_on_exception()
 
 current_dir = os.path.dirname(os.path.abspath(sys.modules.get(__name__).__file__))
-TEST_DATA_PATH = pjoin(current_dir, "test_data")
+TEST_DATA_PATH = pjoin(current_dir, "test_data", "knowledge_base1.py")
 
 
 # noinspection PyPep8Naming
@@ -20,7 +20,7 @@ class TestCore(unittest.TestCase):
         pass
 
     def test_core1(self):
-        mod1 = p.erkloader.load_mod_from_path(f"{TEST_DATA_PATH}/knowledge_base1.py", "knowledge_base1")
+        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH, "knowledge_base1")
         self.assertEqual(mod1.I3749.R1, "Cayley-Hamilton theorem")
 
         def_eq_item = mod1.I6886.R6__has_defining_equation
@@ -34,7 +34,7 @@ class TestCore(unittest.TestCase):
         self.assertIsInstance(teststring2, rdflib.Literal)
 
     def test_sparql_query(self):
-        mod1 = p.erkloader.load_mod_from_path(f"{TEST_DATA_PATH}/knowledge_base1.py", "knowledge_base1")
+        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH, "knowledge_base1")
         p.ds.rdfgraph = p.rdfstack.create_rdf_triples()
         qsrc = p.rdfstack.get_sparql_example_query()
         res = p.ds.rdfgraph.query(qsrc)
@@ -69,3 +69,17 @@ class TestCore(unittest.TestCase):
         # ensure that this method is not available to generic other instances of Entity
         with self.assertRaises(AttributeError):
             itm2.example_func2(1234)
+
+    def test_evaluated_mapping(self):
+        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH, "knowledge_base1")
+        poly1 = p.instance_of(mod1.I4239["monovariate polynomial"])
+
+        # test that an arbitrary item is *not* callable
+        self.assertRaises(TypeError, mod1.I2738["field of complex numnbers"], 0)
+
+        # test that some special items are callable (note that its parent class is a subclass of one which has
+        # a _custom_call-method defined)
+        res = poly1(0)
+
+        self.assertEqual(res.R4__is_instace_of, p.I32["evaluated mapping"])
+

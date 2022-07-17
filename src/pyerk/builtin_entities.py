@@ -1,5 +1,8 @@
 from typing import List, Union
 
+from ipydex import IPS, activate_ips_on_exception
+activate_ips_on_exception()
+
 from .core import (
     create_builtin_relation,
     create_builtin_item,
@@ -448,6 +451,11 @@ I20 = create_builtin_item(
     ),
 )
 
+I20("mathematical definition").add_method(_proposition_define_context_variables, name="define_context_variables")
+I20("mathematical definition").add_method(_proposition_set_context_relations, name="set_context_relations")
+I20("mathematical definition").add_method(_proposition_set_premises, name="set_premises")
+I20("mathematical definition").add_method(_proposition_set_assertions, name="set_assertions")
+
 I21 = create_builtin_item(
     key_str="I21",
     R1__has_label="mathematical relation",
@@ -462,7 +470,7 @@ R26 = create_builtin_relation(
 )
 
 R27 = create_builtin_relation(
-    key_str="R26",
+    key_str="R27",
     R1__has_label="has rhs",
     R2__has_description="specifies the right hand side of an equation",
 )
@@ -541,14 +549,14 @@ I29 = create_builtin_item(
 )
 
 I30 = create_builtin_item(
-    key_str="I28",
+    key_str="I30",
     R1__has_label="greater-than-relation",
     R2__has_description="mathematical relation that specifies that lhs is strictly greater than rhs",
     R3__is_subclass_of=I27("non-strict inequality"),
 )
 
 I31 = create_builtin_item(
-    key_str="I29",
+    key_str="I31",
     R1__has_label="less-than-relation",
     R2__has_description="mathematical relation that specifies that lhs is strictly less than rhs",
     R3__is_subclass_of=I27("non-strict inequality"),

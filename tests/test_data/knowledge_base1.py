@@ -73,7 +73,7 @@ I6886 = p.create_item(
     R4__instance_of=p.I2("Metaclass"),
 
     # TODO: this has to use create_equation (to be implemented)
-    R6__has_defining_equation=p.create_formula(r"$\dot x = f(x, u)$"),
+    R6__has_defining_equation=p.create_expression(r"$\dot x = f(x, u)$"),
 )
 
 I5356 = p.create_item(
@@ -341,7 +341,7 @@ R5940 = p.create_relation(
 I9907 = p.create_item(
     R1__has_label="definition of square matrix",
     R2__has_description="the defining statement of what a square matrix is",
-    R3__is_subclass_of=p.I20("mathematical definition"),
+    R4__is_instance_of=p.I20("mathematical definition"),
 )
 
 I9907.define_context_variables(

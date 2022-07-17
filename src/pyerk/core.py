@@ -11,7 +11,7 @@ import random
 from enum import Enum, unique
 import re as regex
 from addict import Dict as attr_dict
-from typing import Dict, Union, List, Iterable
+from typing import Dict, Union, List, Iterable, Optional
 from rdflib import Literal
 
 
@@ -91,7 +91,13 @@ class Entity(abc.ABC):
             pass
         res = process_key_str(attr_name)
         if not res.etype == EType.RELATION:
-            msg = f"Unexpected attribute name: '{attr_name}'"
+            r3 = getattr(self, "R3", None)
+            r4 = getattr(self, "R4", None)
+            msg = (
+                f"Unexpected attribute name: '{attr_name}' of entity {self}\n",
+                f'Type hint: self.R3("is_subclass_of"): {r3}\n',
+                f'Type hint: self.R4("is_instance_of"): {r4}\n',
+            )
             raise AttributeError(msg)
 
         try:
@@ -147,7 +153,7 @@ class Entity(abc.ABC):
     def add_method_to_class(cls, func):
         setattr(cls, func.__name__, func)
 
-    def add_method(self, func: callable, name: str):
+    def add_method(self, func: callable, name: Optional[str] = None):
         """
         Add a method to this instance (self). If there are R4 relations pointing from child items to self,
         this method is also inherited to those child items.
@@ -156,7 +162,13 @@ class Entity(abc.ABC):
         :param name:    the name under which the callable object should be accessed
         :return:
         """
-        self.__dict__[func.__name__] = types.MethodType(func, self)
+        if name is None:
+            name = getattr(func, "given_name", func.__name__)
+
+        # ensure that the func object has a `.given_name` attribute
+        func.given_name = name
+
+        self.__dict__[name] = types.MethodType(func, self)
         self._method_prototypes.append(func)
 
     def set_relation(self, relation: Union["Relation", str], *args, scope: "Entity" = None) -> None:

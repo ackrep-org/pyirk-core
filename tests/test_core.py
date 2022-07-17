@@ -24,7 +24,7 @@ class TestCore(unittest.TestCase):
         self.assertEqual(mod1.I3749.R1, "Cayley-Hamilton theorem")
 
         def_eq_item = mod1.I6886.R6__has_defining_equation
-        self.assertEqual(def_eq_item.R4__is_instance_of, p.I18["Formula"])
+        self.assertEqual(def_eq_item.R4__is_instance_of, p.I18["mathematical expression"])
         self.assertEqual(def_eq_item.R24__has_LaTeX_string, r"$\dot x = f(x, u)$")
 
         teststring1 = "this is english text"@mod1.p.en

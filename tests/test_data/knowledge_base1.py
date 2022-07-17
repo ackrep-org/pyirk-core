@@ -27,7 +27,7 @@ I5948 = p.create_item(
 I4466 = p.create_item(
     R1__has_label="Systems Theory",
     R2__has_description="academic field; might be regarded as part of applied mathematics",
-    R4__instance_of=p.I3["Field_of_science"],
+    R4__instance_of=p.I3["Field of science"],
     R5__is_part_of=[p.I4["Mathematics"], p.I5["Engineering"]]
 )
 
@@ -166,7 +166,7 @@ I4240 = p.create_item(
 )
 
 I5484 = p.create_item(
-    R1__has_label="finite set of complex numnbers",
+    R1__has_label="finite set of complex numbers",
     R2__has_description="...",
     R3__subclass_of=p.I13["mathematical set"],
 )
@@ -293,7 +293,7 @@ I4463 = p.create_item(
 I4464 = p.create_item(
     R1__has_label="positive integer",
     R2__has_description="mathematical type equivalent to Nat+ (from type theory): positive integer number",
-    R3__is_subclass_of=I4463["non-negative integer number"],
+    R3__is_subclass_of=I4463["non-negative integer"],
 )
 
 # todo: this needs more generalization
@@ -370,7 +370,7 @@ I3749 = p.create_item(
 
 I3749["Cayley-Hamilton theorem"].define_context_variables(
     A=p.instance_of(I9904["matrix"]),
-    n=p.instance_of(I4464["positve integer"]),
+    n=p.instance_of(I4464["positive integer"]),
     P=p.instance_of(I4240["matrix polynomial"]),
     Z=p.instance_of(I9905["zero matrix"]),
 )
@@ -428,20 +428,17 @@ I4216.define_context_variables(
     optimal_control_law=p.instance_of(I5948["dynamical system"]),
 )
 
-R1234a = p.create_relation(R1="dummy")
-R1234b = p.create_relation(R1="dummy")
-
 
 I4216.set_context_relations(
-    (I4216.mpc_problem, R1234a["refers_to"], I4216.sys)
+    (I4216.mpc_problem, p.R000["refers to"], I4216.sys)
 )
 
 I4216.set_premises(
-    (I4216.sys, R1234a["refers_to"], I4216.sys),
+    (I4216.sys, p.R000["refers to"], I4216.sys),
 )
 
 I4216.set_assertions(
-    (I4216.mpc_problem, R1234b["can_be_reduced_to"], I4216.quadratic_problem),
+    (I4216.mpc_problem, p.R000["can be reduced to"], I4216.quadratic_problem),
 
 )
 """

@@ -100,8 +100,8 @@ R20 = create_builtin_relation(
 
 R21 = create_builtin_relation(
     key_str="R21",
-    R1="is scope of statement",
-    R2="specifies that the subject of that relation is a scope-item of the object (complex-statement-item)",
+    R1="is scope of",
+    R2="specifies that the subject of that relation is a scope-item of the object (statement-item)",
     R18=(
         "This relation is used to bind scope items to its 'semantic parents'. "
         "This is *not* the inverse relation to R20",
@@ -329,10 +329,10 @@ def _proposition_define_context_variables(self, **kwargs):
 
         # indicate that the variable object is defined in the context of `self`
         assert getattr(variable_object, "R20", None) is None
-        variable_object.set_relation(R20["has_defining_scope"], context_scope)
+        variable_object.set_relation(R20["has defining scope"], context_scope)
 
         # todo: evaluate if this makes the namespaces obsolete
-        variable_object.set_relation(R23["has_name_in_scope"], variable_name)
+        variable_object.set_relation(R23["has name in scope"], variable_name)
 
 
 I15["implication proposition"].add_method(_proposition_define_context_variables, name="define_context_variables")
@@ -591,6 +591,11 @@ R000 = create_builtin_relation(
     R1__has_label="dummy relation",
     R2__has_description="used during development as placeholder for relations which will be defined later",
 )
+
+# this allows to use I000("with any label") witout triggering an exception in I000.idoc
+I000._ignore_mismatching_adhoc_label = True
+# ... same for R000
+R000._ignore_mismatching_adhoc_label = True
 
 
 # TODO: evaluate the necessity of this class

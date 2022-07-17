@@ -32,7 +32,7 @@ def instance_of(entity, r1: str = None, r2: str = None) -> Item:
     """
 
     has_super_class = getattr(entity, "R3", None) is not None
-    is_instance_of_metaclass = getattr(entity, "R4", None) == I2("Metaclass")
+    is_instance_of_metaclass = getattr(entity, "R4", None) == I2["Metaclass"]
 
     if (not has_super_class) and (not is_instance_of_metaclass):
         msg = f"the entity '{entity}' is not a class, and thus could not be instantiated"
@@ -153,7 +153,7 @@ I2 = create_builtin_item(
 I3 = create_builtin_item("I3", R1="Field of science")
 I4 = create_builtin_item("I4", R1="Mathematics", R4__instance_of=I3)
 I5 = create_builtin_item("I5", R1="Engineering", R4__instance_of=I3)
-I6 = create_builtin_item("I6", R1="mathematical operation", R4__instance_of=I2("Metaclass"))
+I6 = create_builtin_item("I6", R1="mathematical operation", R4__instance_of=I2["Metaclass"])
 I7 = create_builtin_item("I7", R1="mathematical operation with arity 1", R3__subclass_of=I6, R7=1)
 I8 = create_builtin_item("I8", R1="mathematical operation with arity 2", R3__subclass_of=I6, R7=2)
 I9 = create_builtin_item("I9", R1="mathematical operation with arity 3", R3__subclass_of=I6, R7=3)
@@ -170,7 +170,7 @@ I11 = create_builtin_item(
     key_str="I11",
     R1="mathematical property",
     R2__has_description="base class for all mathematical properties",
-    R4__instance_of=I2("Metaclass"),
+    R4__instance_of=I2["Metaclass"],
     R18__has_usage_hints=(
         "Actual properties are instances of this class (not subclasses). "
         "To create a taxonomy-like structure the relation R17__is_sub_property_of should be used."
@@ -181,14 +181,14 @@ I12 = create_builtin_item(
     key_str="I12",
     R1__has_label="mathematical object",
     R2__has_description="base class for any knowledge object of interrest in the field of mathematics",
-    R4__instance_of=I2("Metaclass"),
+    R4__instance_of=I2["Metaclass"],
 )
 
 I13 = create_builtin_item(
     key_str="I13",
     R1__has_label="mathematical set",
     R2__has_description="mathematical set",
-    R3__subclass_of=I12("mathematical object"),
+    R3__subclass_of=I12["mathematical object"],
 )
 
 
@@ -196,7 +196,7 @@ I14 = create_builtin_item(
     key_str="I14",
     R1__has_label="mathematical proposition",
     R2__has_description="general mathematical proposition",
-    # R3__subclass_of=I7723("general mathematical proposition")
+    # R3__subclass_of=I7723["general mathematical proposition"]
 )
 
 
@@ -204,7 +204,7 @@ I15 = create_builtin_item(
     key_str="I15",
     R1__has_label="implication proposition",
     R2__has_description="proposition, where the premise (if-part) implies the assertion (then-part)",
-    R3__subclass_of=I14("mathematical proposition"),
+    R3__subclass_of=I14["mathematical proposition"],
 )
 
 
@@ -212,7 +212,7 @@ I16 = create_builtin_item(
     key_str="I16",
     R1__has_label="Scope",
     R2__has_description="auxiliary class; an instance defines the scope of statements (RelationEdge-objects)",
-    R3__instance_of=I2("Metaclass"),
+    R3__instance_of=I2["Metaclass"],
 )
 
 ###############################################################################
@@ -245,8 +245,8 @@ def _register_scope(self, name: str) -> (dict, "Item"):
         self._namespaces[ns_name] = ns
 
         # create scope
-        scope = instance_of(I16("Scope"), r1=scope_name, r2=f"scope of {self.R1}")
-        scope.set_relation(R21("is scope of"), self)
+        scope = instance_of(I16["Scope"], r1=scope_name, r2=f"scope of {self.R1}")
+        scope.set_relation(R21["is scope of"], self)
 
         # prevent accidental overwriting
         assert scope_name not in self.__dict__
@@ -271,7 +271,7 @@ def add_relations_to_scope(relation_tuples: Union[list, tuple], scope: Entity):
     """
 
     assert scope.R21__is_scope_of is not None
-    assert scope.R4__is_instance_of is I16("Scope")
+    assert scope.R4__is_instance_of is I16["Scope"]
 
     for arg in relation_tuples:
         assert isinstance(arg, tuple)
@@ -329,13 +329,13 @@ def _proposition_define_context_variables(self, **kwargs):
 
         # indicate that the variable object is defined in the context of `self`
         assert getattr(variable_object, "R20", None) is None
-        variable_object.set_relation(R20("has_defining_scope"), context_scope)
+        variable_object.set_relation(R20["has_defining_scope"], context_scope)
 
         # todo: evaluate if this makes the namespaces obsolete
-        variable_object.set_relation(R23("has_name_in_scope"), variable_name)
+        variable_object.set_relation(R23["has_name_in_scope"], variable_name)
 
 
-I15("implication proposition").add_method(_proposition_define_context_variables, name="define_context_variables")
+I15["implication proposition"].add_method(_proposition_define_context_variables, name="define_context_variables")
 
 
 def _proposition_set_context_relations(self, *args, **kwargs):
@@ -354,7 +354,7 @@ def _proposition_set_context_relations(self, *args, **kwargs):
     add_relations_to_scope(args, context_scope)
 
 
-I15("implication proposition").add_method(_proposition_set_context_relations, "set_context_relations")
+I15["implication proposition"].add_method(_proposition_set_context_relations, "set_context_relations")
 
 
 def _proposition_set_premises(self, *args):
@@ -363,7 +363,7 @@ def _proposition_set_premises(self, *args):
     add_relations_to_scope(args, premises_scope)
 
 
-I15("implication proposition").add_method(_proposition_set_premises, "set_premises")
+I15["implication proposition"].add_method(_proposition_set_premises, "set_premises")
 
 
 def _proposition_set_assertions(self, *args):
@@ -372,14 +372,14 @@ def _proposition_set_assertions(self, *args):
     add_relations_to_scope(args, assertions_scope)
 
 
-I15("implication proposition").add_method(_proposition_set_assertions, "set_assertions")
+I15["implication proposition"].add_method(_proposition_set_assertions, "set_assertions")
 
 
 I17 = create_builtin_item(
     key_str="I17",
     R1__has_label="equivalence proposition",
     R2__has_description="proposition, which establishes the equivalence of two or more statements",
-    R3__subclass_of=I14("mathematical proposition"),
+    R3__subclass_of=I14["mathematical proposition"],
 )
 
 
@@ -389,7 +389,7 @@ I18 = create_builtin_item(
     R2__has_description=(
         "mathematical expression, e.g. represented by a LaTeX-string; this might change in the future to MathMl"
     ),
-    R3__instance_of=I2("Metaclass"),
+    R3__instance_of=I2["Metaclass"],
 )
 
 
@@ -411,8 +411,8 @@ def get_ui_short_representation(self) -> str:
 
 I18.add_method(get_ui_short_representation)
 del get_ui_short_representation
-R24("has LaTeX string").set_relation(R8("has domain of argument 1"), I18("mathematical expression"))
-R24("has LaTeX string").set_relation(R11("has range of result"), str)
+R24["has LaTeX string"].set_relation(R8["has domain of argument 1"], I18["mathematical expression"])
+R24["has LaTeX string"].set_relation(R11["has range of result"], str)
 
 
 def create_expression(latex_src: str, r1: str = None, r2: str = None) -> Item:
@@ -420,9 +420,9 @@ def create_expression(latex_src: str, r1: str = None, r2: str = None) -> Item:
         r1 = f"generic expression ({latex_src})"
 
     # TODO: hide such automatically created instances in search results by default (because there will be many)
-    expression = instance_of(I18("mathematical expression"), r1=r1, r2=r2)
+    expression = instance_of(I18["mathematical expression"], r1=r1, r2=r2)
 
-    expression.set_relation(R24("has LaTeX string"), latex_src)
+    expression.set_relation(R24["has LaTeX string"], latex_src)
 
     return expression
 
@@ -434,7 +434,7 @@ I19 = create_builtin_item(
     key_str="I19",
     R1__has_label="multilingual string literal",
     R2__has_description="used to encode strings that depend on natural languages",
-    R3__is_instance_of=I2("Metaclass"),
+    R3__is_instance_of=I2["Metaclass"],
 )
 
 
@@ -442,19 +442,19 @@ I20 = create_builtin_item(
     key_str="I20",
     R1__has_label="mathematical definition",
     R2__has_description="mathematical definition statement (structurally similar to other propositions)",
-    R3__is_subclass_of=I14("mathematical proposition"),
+    R3__is_subclass_of=I14["mathematical proposition"],
 
     # TODO: ensure this restriction via quality checks
     R18__has_usage_hint=(
         "We model a definition in the same way as an implication proposition; However the assertion must only contain "
-        'R3("is_instance_of relations").'
+        'R3["is_instance_of relations"].'
     ),
 )
 
-I20("mathematical definition").add_method(_proposition_define_context_variables, name="define_context_variables")
-I20("mathematical definition").add_method(_proposition_set_context_relations, name="set_context_relations")
-I20("mathematical definition").add_method(_proposition_set_premises, name="set_premises")
-I20("mathematical definition").add_method(_proposition_set_assertions, name="set_assertions")
+I20["mathematical definition"].add_method(_proposition_define_context_variables, name="define_context_variables")
+I20["mathematical definition"].add_method(_proposition_set_context_relations, name="set_context_relations")
+I20["mathematical definition"].add_method(_proposition_set_premises, name="set_premises")
+I20["mathematical definition"].add_method(_proposition_set_assertions, name="set_assertions")
 
 I21 = create_builtin_item(
     key_str="I21",
@@ -475,26 +475,26 @@ R27 = create_builtin_relation(
     R2__has_description="specifies the right hand side of an equation",
 )
 
-R26("has lhs").set_relation(R8("has domain of argument 1"), I21("mathematical relation"))
-R27("has rhs").set_relation(R8("has domain of argument 1"), I21("mathematical relation"))
+R26["has lhs"].set_relation(R8["has domain of argument 1"], I21["mathematical relation"])
+R27["has rhs"].set_relation(R8["has domain of argument 1"], I21["mathematical relation"])
 
 I22 = create_builtin_item(
     key_str="I22",
     R1__has_label="mathematical knowledge artifact",
     R2__has_description="(class for) something like an equation or a theorem",
-    R3__is_subclass_of=I2("Metaclass"),
+    R3__is_subclass_of=I2["Metaclass"],
 )
 
 
-I14("mathematical proposition").set_relation(R3("is subclass of"), I22("mathematical knowledge artifact"))
-I21("mathematical relation").set_relation(R3("is subclass of"), I22("mathematical knowledge artifact"))
+I14["mathematical proposition"].set_relation(R3["is subclass of"], I22["mathematical knowledge artifact"])
+I21["mathematical relation"].set_relation(R3["is subclass of"], I22["mathematical knowledge artifact"])
 
 
 I23 = create_builtin_item(
     key_str="I23",
     R1__has_label="equation",
     R2__has_description="mathematical relation that specifies that lhs and rhs are equal",
-    R3__is_subclass_of=I21("mathematical relation"),
+    R3__is_subclass_of=I21["mathematical relation"],
 )
 
 # inequalities are based on: https://en.wikipedia.org/wiki/Inequality_(mathematics)
@@ -503,7 +503,7 @@ I24 = create_builtin_item(
     key_str="I24",
     R1__has_label="inequation",
     R2__has_description="mathematical relation that specifies that lhs is unequal to rhs",
-    R3__is_subclass_of=I21("mathematical relation"),
+    R3__is_subclass_of=I21["mathematical relation"],
     R18__has_usage_hints=(
         "This item is different from inquality (I25): lhs and rhs need to be members of the same ordered set."
     ),
@@ -513,7 +513,7 @@ I25 = create_builtin_item(
     key_str="I25",
     R1__has_label="general inequality",
     R2__has_description="superclass for strict and non-strict inequality",
-    R3__is_subclass_of=I21("mathematical relation"),
+    R3__is_subclass_of=I21["mathematical relation"],
 )
 
 I26 = create_builtin_item(
@@ -522,7 +522,7 @@ I26 = create_builtin_item(
     R2__has_description=(
         "mathematical relation that specifies that lhs is either strictly greater or strictly less than rhs"
     ),
-    R3__is_subclass_of=I25("general inequality"),
+    R3__is_subclass_of=I25["general inequality"],
 )
 
 I27 = create_builtin_item(
@@ -531,35 +531,35 @@ I27 = create_builtin_item(
     R2__has_description=(
         "super class for greater-than-or-equal-to and less-than-or-equal-to"
     ),
-    R3__is_subclass_of=I25("general inequality"),
+    R3__is_subclass_of=I25["general inequality"],
 )
 
 I28 = create_builtin_item(
     key_str="I28",
     R1__has_label="greater-than-relation",
     R2__has_description="mathematical relation that specifies that lhs is strictly greater than rhs",
-    R3__is_subclass_of=I26("strict inequality"),
+    R3__is_subclass_of=I26["strict inequality"],
 )
 
 I29 = create_builtin_item(
     key_str="I29",
     R1__has_label="less-than-relation",
     R2__has_description="mathematical relation that specifies that lhs is strictly less than rhs",
-    R3__is_subclass_of=I26("strict inequality"),
+    R3__is_subclass_of=I26["strict inequality"],
 )
 
 I30 = create_builtin_item(
     key_str="I30",
     R1__has_label="greater-than-relation",
     R2__has_description="mathematical relation that specifies that lhs is strictly greater than rhs",
-    R3__is_subclass_of=I27("non-strict inequality"),
+    R3__is_subclass_of=I27["non-strict inequality"],
 )
 
 I31 = create_builtin_item(
     key_str="I31",
     R1__has_label="less-than-relation",
     R2__has_description="mathematical relation that specifies that lhs is strictly less than rhs",
-    R3__is_subclass_of=I27("non-strict inequality"),
+    R3__is_subclass_of=I27["non-strict inequality"],
 )
 
 
@@ -570,19 +570,19 @@ I900 = create_builtin_item(
     key_str="I900",
     R1__has_label="test item mit label auf deutsch"@de,
     R2__has_description="used for testing during development",
-    R3__is_instance_of=I2("Metaclass"),
+    R3__is_instance_of=I2["Metaclass"],
     R18__has_usage_hints="This item serves only for unittesting labels in different languages",
 )
 
 # noinspection PyUnresolvedReferences
-I900.set_relation(R1("has label"), "test item with english label"@en)
+I900.set_relation(R1["has label"], "test item with english label"@en)
 
 
 I000 = create_builtin_item(
     key_str="I000",
     R1__has_label="dummy item",
     R2__has_description="used during development as placeholder for items which will be defined later",
-    R4__instance_of=I2("Metaclass")  # this means: this Item is an ordinary class
+    R4__instance_of=I2["Metaclass"]  # this means: this Item is an ordinary class
 
 )
 

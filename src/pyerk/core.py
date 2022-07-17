@@ -81,8 +81,32 @@ class Entity(abc.ABC):
         # returning self allows to use I1234 and I1234("human readable item name") interchageably
         # (once the object is created)
 
+        raise NotImplementedError
+
+    def idoc(self, adhoc_label: str):
+        """
+        idoc means "inline doc". This function allows to attach a label to entities when using them in code
+        because it returns just the Entity-object itself. Thus one can use the following expressions interchageably:
+        `I1234` and `I1234.idoc("human readable item name")`
+
+        Note that there is a shortcut to this function: `I1234["human readable item name"]
+
+        :return:    self
+        """
+
+        assert isinstance(adhoc_label, str)
+
         # TODO: check consistency between adhoc_label and self.label
         return self
+
+    def __getitem__(self, adhoc_label):
+        """
+        This magic method overloads the [...]-operator. See docs for `idoc` for more information.
+
+        :param adhoc_label:
+        :return:   self
+        """
+        return self.idoc(adhoc_label)
 
     def __getattr__(self, attr_name):
         try:

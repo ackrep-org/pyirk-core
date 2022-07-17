@@ -513,7 +513,7 @@ class Item(Entity):
 
     def __repr__(self):
         R1 = getattr(self, "R1", "no label")
-        return f'<Item {self.short_key}("{R1}")>'
+        return f'<Item {self.short_key}["{R1}"]>'
 
     def get_relations(self):
         """
@@ -573,8 +573,8 @@ class Relation(Entity):
         self.__post_init__()
 
     def __repr__(self):
-        R1 = getattr(self, "R1", "no label").replace(" ", "_")
-        return f"<Relation {self.short_key}__{R1}>"
+        R1 = getattr(self, "R1", "no label")
+        return f'<Relation {self.short_key}["{R1}"]>'
 
 
 @unique

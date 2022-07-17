@@ -210,7 +210,7 @@ I15 = create_builtin_item(
 
 I16 = create_builtin_item(
     key_str="I16",
-    R1__has_label="Scope",
+    R1__has_label="scope",
     R2__has_description="auxiliary class; an instance defines the scope of statements (RelationEdge-objects)",
     R3__instance_of=I2["Metaclass"],
 )
@@ -245,7 +245,7 @@ def _register_scope(self, name: str) -> (dict, "Item"):
         self._namespaces[ns_name] = ns
 
         # create scope
-        scope = instance_of(I16["Scope"], r1=scope_name, r2=f"scope of {self.R1}")
+        scope = instance_of(I16["scope"], r1=scope_name, r2=f"scope of {self.R1}")
         scope.set_relation(R21["is scope of"], self)
 
         # prevent accidental overwriting
@@ -271,7 +271,7 @@ def add_relations_to_scope(relation_tuples: Union[list, tuple], scope: Entity):
     """
 
     assert scope.R21__is_scope_of is not None
-    assert scope.R4__is_instance_of is I16["Scope"]
+    assert scope.R4__is_instance_of is I16["scope"]
 
     for arg in relation_tuples:
         assert isinstance(arg, tuple)
@@ -302,12 +302,47 @@ def get_scopes(entity: Entity) -> List[Item]:
 
 def get_items_defined_in_scope(scope: Item) -> List[Entity]:
 
-    assert scope.R4__is_subclass_of == I16("Scope")
+    assert scope.R4__is_instance_of == I16("scope")
     # R20__has_defining_scope
     re_list = core.ds.inv_relation_edges[scope.short_key]["R20"]
     re: RelationEdge
     entities = [re.relation_tuple[0] for re in re_list]
     return entities
+
+
+def add_scope_to_defining_relation_edge(ent: Entity, scope: Item) -> None:
+    """
+
+    :param ent:
+    :param scope:
+    :return:        None
+
+    The motivation for this function is a usage pattern like:
+    ```
+    I000.define_context_variables(
+        M=p.instance_of(I000["matrix"]),
+    )
+    ```
+
+    ideally the `instance_of` function would notice that it was called from within a python-context which defines a
+    scope item. But this seems hardly achievable in a clean way. Thus this function is called afterwards.
+
+    """
+
+    assert isinstance(ent, Entity)
+    assert isinstance(scope, Item)
+    assert scope.R4__is_instance_of == I16["scope"]
+
+    # for every entity key this dict stores a dict that maps relation keys to lists of corresponding relation-edges
+    re_dict = core.ds.relation_edges[ent.short_key]
+
+    # for now all defining_relations are R4-relations (R4__is_instance_of) (there should be exactly 1)
+    r4_list = re_dict["R4"]
+    assert len(r4_list) == 1
+
+    re = r4_list[0]
+    assert isinstance(re, RelationEdge)
+    re.scope = scope
 
 
 def _proposition_define_context_variables(self, **kwargs):
@@ -316,6 +351,8 @@ def _proposition_define_context_variables(self, **kwargs):
 
     for variable_name, variable_object in kwargs.items():
         variable_object: Entity
+        # TODO: add scope to defining relation
+        add_scope_to_defining_relation_edge(variable_object, context_scope)
 
         # this reflects a dessign assumption which might be generalized later
         assert isinstance(variable_object, Entity)
@@ -596,6 +633,21 @@ def create_evaluated_mapping(mapping: Item, arg: Entity) -> Item:
 # this function can be added to mapping objects as needed
 def custom_call__create_evaluated_mapping(self, arg):
     return create_evaluated_mapping(mapping=self, arg=arg)
+
+
+def new_equation(lhs: Item, rhs: Item, doc=None):
+
+    if doc is not None:
+        assert isinstance(doc, str)
+    eq = instance_of(I23["equation"])
+
+    # TODO: perform type checking
+    # assert check_is_instance_of(lhs, I23("mathematical term"))
+
+    eq.set_relation(R26["has lhs"], lhs)
+    eq.set_relation(R27["has rhs"], rhs)
+
+    return eq
 
 
 # annoying: pycharm does not recognize that "str"@some_LangaguageCode_obj is valid because str does not

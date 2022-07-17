@@ -358,7 +358,14 @@ I9907.set_context_relations(
     (I9907.M, R5939["has column number"], I9907.nc),
 )
 
-# to be continued
+I9907.set_premises(
+    # todo: make this work
+    # p.new_equation(lhs=I9907.nr, rhs=I9907.nr)
+)
+
+I9907.set_assertions(
+    (I9907.M, p.R4["is instance of"], I9906["square matrix"])
+)
 
 # </definition>
 

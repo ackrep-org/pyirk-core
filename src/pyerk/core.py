@@ -18,7 +18,7 @@ from rdflib import Literal
 from . import auxiliary as aux
 from . import settings
 
-from ipydex import IPS, activate_ips_on_exception
+from ipydex import IPS, activate_ips_on_exception, set_trace
 
 
 activate_ips_on_exception()
@@ -195,8 +195,16 @@ class Entity(abc.ABC):
         # this assumes the relation tuple to be a triple (sub, rel, obj)
         res = [re.relation_tuple[2] for re in relation_edges if re.role is RelationRole.SUBJECT]
 
-        # R22__is_functional
-        if relation.R22:
+        # the following logic decides whether to e.g. return a list of length 1 or the contained entity itself
+        # this depends on whether self is a functional relation (->  R22__is_functional)
+
+        # if rel_key == "R22" -> we are asking whether self is functional;
+        # this must be  handled separately to avoid infinite recursion:
+        # (note that R22 itself is also a functional relation: only one of {True, False} is meaningful)
+        #
+        # in the following or-expression the second operand is only evaluated if the first ist false
+
+        if rel_key == "R22" or relation.R22:
             if len(res) == 0:
                 return None
             else:
@@ -226,6 +234,17 @@ class Entity(abc.ABC):
 
         self.__dict__[name] = types.MethodType(func, self)
         self._method_prototypes.append(func)
+
+    def _set_relations_from_init_kwargs(self, **kwargs):
+        """
+        This method is called explicitly from the __init__-method of subclasses after preprocessing the kwargs
+
+        :param kwargs:
+        :return:
+        """
+
+        for key, value in kwargs.items():
+            self.set_relation(key, value)
 
     def set_relation(self, relation: Union["Relation", str], *args, scope: "Entity" = None) -> None:
         """
@@ -258,7 +277,14 @@ class Entity(abc.ABC):
         else:
             raise NotImplementedError
 
-    def _set_relation(self, rel_key: str, rel_content: object, scope: "Entity" = None) -> None:
+    def _set_relation(
+        self,
+        rel_key: str,
+        rel_content: object,
+        scope: Optional["Entity"] = None,
+        qualifiers: Optional[list] = None,
+        proxyitem: Optional["Item"] = None
+    ) -> None:
 
         rel = ds.relations[rel_key]
 
@@ -283,6 +309,8 @@ class Entity(abc.ABC):
             corresponding_entity=corresponding_entity,
             corresponding_literal=corresponding_literal,
             scope=scope,
+            qualifiers=qualifiers,
+            proxyitem=proxyitem,
         )
 
         ds.set_relation_edge(self.short_key, rel.short_key, rledg)
@@ -299,6 +327,8 @@ class Entity(abc.ABC):
                 role=RelationRole.OBJECT,
                 corresponding_entity=self,
                 scope=scope,
+                qualifiers=qualifiers,
+                proxyitem=proxyitem,
             )
             # ds.set_relation_edge(rel_content.short_key, rel.short_key, inv_rledg)
             tmp_list = ds.inv_relation_edges[rel_content.short_key][rel.short_key]
@@ -382,7 +412,12 @@ class DataStore:
 
         elif isinstance(inner_obj, list):
             # R22__is_functional, this means there can only be one value for this relation and this item
-            assert not relation.R22
+            if relation.R22:
+                msg = (
+                    f"for entity {entity_key} there already exists a RelationEdge for functional relation "
+                    f"with key {relation_key}. Another one is not allowed."
+                )
+                raise ValueError(msg)
             inner_obj.append(re_object)
 
         else:
@@ -504,10 +539,7 @@ class Item(Entity):
         assert res.etype == EType.ITEM
 
         self.short_key = res.short_key
-        self._references = None
-
-        for key, value in kwargs.items():
-            self.set_relation(key, value)
+        self._set_relations_from_init_kwargs(**kwargs)
 
         self.__post_init__()
 
@@ -567,8 +599,7 @@ class Relation(Entity):
 
         # set label
         self.short_key = rel_key
-        for key, value in kwargs.items():
-            setattr(self, key, value)
+        self._set_relations_from_init_kwargs(**kwargs)
 
         self.__post_init__()
 
@@ -624,17 +655,20 @@ class RelationEdge:
         corresponding_literal=None,
         scope=None,
         qualifiers=None,
+        proxyitem: Optional[Item] = None,
     ) -> None:
         """
 
         :param relation:
         :param relation_tuple:
         :param role:                    RelationRole.SUBJECT for normal and RelationRole.OBJECT for inverse edges
-        :param corresponding_entity:
-        :param corresponding_literal:
-        :param scope:
+        :param corresponding_entity:    This is the entity on the "other side" of the relation (depending of `role`) or
+                                        None in case that other side is a literal
+        :param corresponding_literal:   This is the literal on the "other side" of the relation (depending of `role`) or
+        :param scope:                   None in case that other side is an Entity
         :param qualifiers:              list of relation edges, that describe `self` more precisely
                                         (cf. wikidata qualifiers)
+        :param proxyitem:               associated item; e.g. a equation-item
         """
 
         self.key_str = f"RE{available_key_numbers.pop()}"
@@ -648,6 +682,7 @@ class RelationEdge:
             qualifiers = []
         assert isinstance(qualifiers, list)
         self.qualifiers = qualifiers
+        self.proxyitem = proxyitem
 
     def __repr__(self):
 
@@ -660,8 +695,10 @@ class RelationEdge:
 def create_relation(key_str: str = "", **kwargs) -> Relation:
     """
 
-    :param key_str:     "" or unique key of this item (something like `I1234`)
-    :param kwargs:      further relations
+    :param key_str:     "" or unique key of this relation (something like `R1234`); if empty key will be retrieved
+                        via inspection of the caller code
+
+    :param kwargs:      further relations (e.g. R1__has_label etc.)
 
     :return:        newly created relation
     """
@@ -674,7 +711,7 @@ def create_relation(key_str: str = "", **kwargs) -> Relation:
     mod_id = get_mod_name_by_inspection()
 
     default_relations = {
-        "R22": None,  # R22__is_functional
+        # "R22": None,  # R22__is_functional
     }
 
     new_kwargs = {**default_relations}

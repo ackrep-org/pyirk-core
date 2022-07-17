@@ -1,6 +1,6 @@
 from typing import List, Union
 
-from ipydex import IPS, activate_ips_on_exception
+from ipydex import IPS, activate_ips_on_exception, set_trace
 activate_ips_on_exception()
 
 from .core import (
@@ -56,12 +56,14 @@ def instance_of(entity, r1: str = None, r2: str = None) -> Item:
     return new_item
 
 
-R1 = create_builtin_relation("R1", R1="has label")
-R2 = create_builtin_relation("R2", R1="has description", R2="specifies a natural language description")
+R1 = create_builtin_relation("R1")
+R1.set_relation(R1, "has label")
+R2 = create_builtin_relation("R2", R1="has description")
+R2.set_relation(R2, "specifies a natural language description")
 R3 = create_builtin_relation("R3", R1="is subclass of")
-R4 = create_builtin_relation("R4", R1="is instance of", R22__is_funtional=True)
+R4 = create_builtin_relation("R4", R1="is instance of")
 R5 = create_builtin_relation("R5", R1="is part of")
-R6 = create_builtin_relation("R6", R1="has defining equation", R22__is_funtional=True)
+R6 = create_builtin_relation("R6", R1="has defining equation")
 R7 = create_builtin_relation("R7", R1="has arity")
 R8 = create_builtin_relation("R8", R1="has domain of argument 1")
 R9 = create_builtin_relation("R9", R1="has domain of argument 2")
@@ -95,7 +97,6 @@ R20 = create_builtin_relation(
     R1="has defining scope",
     R2="specifies the scope in which an entity is defined (e.g. the premise of a theorem)",
     R18="Note: one Entity can be parent of multiple scopes, (e.g. a theorem has 'context', 'premises', 'assertions')",
-    R22__is_funtional=True,
 )
 
 R21 = create_builtin_relation(
@@ -106,16 +107,20 @@ R21 = create_builtin_relation(
         "This relation is used to bind scope items to its 'semantic parents'. "
         "This is *not* the inverse relation to R20",
     ),
-    R22__is_funtional=True,
 )
 
 
-# TODO: apply this to all relations where it belongs
 R22 = create_builtin_relation(
     key_str="R22",
     R1="is functional",
     R2="specifies that the subject entity is a relation which has at most one value per item",
 )
+
+R4["is instance of"].set_relation(R22["is functional"], True)
+R6["has defining equation"].set_relation(R22["is functional"], True)
+R20["has defining scope"].set_relation(R22["is functional"], True)
+R21["is scope of"].set_relation(R22["is functional"], True)
+R22["is functional"].set_relation(R22["is functional"], True)
 
 R23 = create_builtin_relation(
     key_str="R23",
@@ -273,15 +278,44 @@ def add_relations_to_scope(relation_tuples: Union[list, tuple], scope: Entity):
     assert scope.R21__is_scope_of is not None
     assert scope.R4__is_instance_of is I16["scope"]
 
-    for arg in relation_tuples:
-        assert isinstance(arg, tuple)
+    for rel_tup in relation_tuples:
+        assert isinstance(rel_tup, tuple)
         # this might become >= 3 in the future, if we support multivalued relations
-        assert len(arg) == 3
+        assert len(rel_tup) == 3
 
-        sub, rel, obj = arg
+        sub, rel, obj = rel_tup
         assert isinstance(sub, Entity)
         assert isinstance(rel, Relation)
         sub.set_relation(rel, obj, scope=scope)
+
+
+# TODO: this is obsolete
+'''
+def handle_relations_with_R22__is_functional(rel_tup, scope):
+    """
+    This function handles the situation where an entity gets (seemingly conflicting) functional relation edge.
+    Example: a new (more precise) R4__is_instance_of relation in the assertion scope, when there already was a
+    more general R4-relation in the context scope
+
+    :param rel_tup:
+    :param scope:
+    :return:
+    """
+    sub: Item
+    rel: Relation
+    sub, rel, obj = rel_tup
+
+    if not rel.R22__is_functional:
+        # nothing to do
+        return
+    inner_obj: Union[List[RelationEdge], None] = core.ds.relation_edges[sub.short_key].get(rel.short_key)
+    if not inner_obj:
+        # no relation clash
+        return
+
+    # we might have a specialization or a conflict
+    IPS()
+'''
 
 
 def get_scopes(entity: Entity) -> List[Item]:
@@ -648,6 +682,19 @@ def new_equation(lhs: Item, rhs: Item, doc=None):
     eq.set_relation(R27["has rhs"], rhs)
 
     return eq
+
+
+R30 = create_builtin_relation(
+    key_str="R30",
+    R1__has_label="is secondary instance of",
+    R2__has_description=(
+        'specifies that the subject is an instance of a class-item,in addtioin to its unambiguous parent class.'
+    ),
+    R18__has_usage_hints=(
+        "Note that this relation is not functional. This construction allows to combine single (R4) "
+        "and multiple inheritance."
+    ),
+)
 
 
 # annoying: pycharm does not recognize that "str"@some_LangaguageCode_obj is valid because str does not

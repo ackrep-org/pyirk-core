@@ -364,7 +364,7 @@ I9907.set_premises(
 )
 
 I9907.set_assertions(
-    (I9907.M, p.R4["is instance of"], I9906["square matrix"])
+    (I9907.M, p.R30["is secondary instance of"], I9906["square matrix"])
 )
 
 # </definition>

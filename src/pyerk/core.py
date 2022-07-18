@@ -801,6 +801,9 @@ def get_caller_frame(upcount: int) -> types.FrameType:
 
 def get_key_str_by_inspection(upcount=1) -> str:
     """
+    Retrieve the name of an entity from a code line like
+      `cm.new_var(M=p.instance_of(I9904["matrix"]))`
+
     :param upcount:     int; how many frames to go up
     :return:
     """
@@ -820,7 +823,9 @@ def get_key_str_by_inspection(upcount=1) -> str:
     # !! TODO: parsing the assignment should be more robust (correct parsing of logical lines)
     # assume that there is at least one `=` in the line
     lhs, rhs = code_context[0].split("=")[:2]
-    return lhs.strip()
+    res: str = lhs.split("(")[-1].strip()
+    assert res.isidentifier()
+    return res
 
 
 def get_mod_name_by_inspection(upcount=1):

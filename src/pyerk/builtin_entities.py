@@ -307,7 +307,7 @@ def get_scopes(entity: Entity) -> List[Item]:
 
 def get_items_defined_in_scope(scope: Item) -> List[Entity]:
 
-    assert scope.R4__is_instance_of == I16("scope")
+    assert scope.R4__is_instance_of == I16["scope"]
     # R20__has_defining_scope
     re_list = core.ds.inv_relation_edges[scope.short_key]["R20"]
     re: RelationEdge

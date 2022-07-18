@@ -350,6 +350,96 @@ def add_scope_to_defining_relation_edge(ent: Entity, scope: Item) -> None:
     re.scope = scope
 
 
+class _proposition__CM:
+
+    def __init__(self, itm: Item, namespace: dict, scope: Item):
+        self.item = itm
+        self.namespace = namespace
+        self.scope = scope
+
+    def __enter__(self):
+        """
+        implicitly called in the head of the with statemet
+        :return:
+        """
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        # this is the place to handle exceptions
+        pass
+
+    def new_var(self, **kwargs) -> None:
+        """
+        create and register a new variable to the respective scope
+
+        :param kwargs:      dict of len 1
+        :return:
+        """
+
+        assert self.namespace is not None
+        assert self.scope is not None
+
+        # for now we only accept on kwarg per call
+        assert len(kwargs) == 1
+
+        variable_name, variable_object = list(kwargs.items())[0]
+        variable_object: Entity
+        # TODO: add scope to defining relation
+        add_scope_to_defining_relation_edge(variable_object, self.scope)
+
+        # this reflects a dessign assumption which might be generalized later
+        assert isinstance(variable_object, Entity)
+
+        # allow simple access to the variables → put them into dict (after checking that the name is still free)
+        assert variable_name not in self.__dict__
+        self.item.__dict__[variable_name] = variable_object
+
+        # keep track of added context vars
+        self.namespace[variable_name] = variable_object
+
+        # indicate that the variable object is defined in the context of `self`
+        assert getattr(variable_object, "R20", None) is None
+        variable_object.set_relation(R20["has defining scope"], self.scope)
+
+        # todo: evaluate if this makes the namespaces obsolete
+        variable_object.set_relation(R23["has name in scope"], variable_name)
+
+    def new_rel(self, sub, pred, obj) -> None:
+        assert isinstance(sub, Entity)
+        assert isinstance(pred, Relation)
+        sub.set_relation(pred, obj, scope=self.scope)
+
+    def new_equation(self, lhs: Item, rhs: Item):
+        """
+        convenience method to create a equation-related RelationEdge
+
+        :param lhs:
+        :param rhs:
+        :return:
+        """
+        eq = new_equation(lhs, rhs, scope=self.scope)
+
+        self.new_rel(*eq.rel_tup)
+
+
+def _proposition__scope(self: Entity, scope_name: str):
+    """
+    This function will be used as a method for proposition-Items. It will return a ContextManager. See examples.
+
+    :param self:
+    :param scope_name:
+    :return:
+    """
+    namespace, scope = self._register_scope(scope_name)
+
+    cm = _proposition__CM(itm=self, namespace=namespace, scope=scope)
+
+    return cm
+
+
+I15["implication proposition"].add_method(_proposition__scope, name="scope")
+
+
 def _proposition_define_context_variables(self, **kwargs):
     self: Entity
     context_ns, context_scope = self._register_scope("context")
@@ -497,6 +587,8 @@ I20["mathematical definition"].add_method(_proposition_define_context_variables,
 I20["mathematical definition"].add_method(_proposition_set_context_relations, name="set_context_relations")
 I20["mathematical definition"].add_method(_proposition_set_premises, name="set_premises")
 I20["mathematical definition"].add_method(_proposition_set_assertions, name="set_assertions")
+
+I20["mathematical definition"].add_method(_proposition__scope, name="scope")
 
 I21 = create_builtin_item(
     key_str="I21",

@@ -347,25 +347,19 @@ I9907 = p.create_item(
     R4__is_instance_of=p.I20["mathematical definition"],
 )
 
-I9907.define_context_variables(
-    M=p.instance_of(I9904["matrix"]),
-    nr=p.instance_of(I4464["positive integer"]),
-    nc=p.instance_of(I4464["positive integer"]),
-)
+with I9907.scope("context") as cm:
+    cm.new_var(M=p.instance_of(I9904["matrix"]))
+    cm.new_var(nr=p.instance_of(I4464["positive integer"]))
+    cm.new_var(nc=p.instance_of(I4464["positive integer"]))
 
-I9907.set_context_relations(
-    (I9907.M, R5938["has row number"], I9907.nr),
-    (I9907.M, R5939["has column number"], I9907.nc),
-)
+    cm.new_rel(I9907.M, R5938["has row number"], I9907.nr)
+    cm.new_rel(I9907.M, R5939["has column number"], I9907.nc)
 
-I9907.set_premises(
-    # todo: make this work
-    # p.new_equation(lhs=I9907.nr, rhs=I9907.nr)
-)
+with I9907.scope("premises") as cm:
+    cm.new_equation(lhs=I9907.nr, rhs=I9907.nr)
 
-I9907.set_assertions(
-    (I9907.M, p.R30["is secondary instance of"], I9906["square matrix"])
-)
+with I9907.scope("assertions") as cm:
+    cm.new_rel(I9907.M, p.R30["is secondary instance of"], I9906["square matrix"])
 
 # </definition>
 

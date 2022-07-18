@@ -246,13 +246,20 @@ class Entity(abc.ABC):
         for key, value in kwargs.items():
             self.set_relation(key, value)
 
-    def set_relation(self, relation: Union["Relation", str], *args, scope: "Entity" = None) -> None:
+    def set_relation(
+        self,
+        relation: Union["Relation", str],
+        *args,
+        scope: "Entity" = None,
+        proxyitem: Optional["Item"] = None
+    ) -> "RelationEdge":
         """
         Allows to add a relation after the item was created.
 
         :param relation:    Relation-Entity (or its short_key)
         :param args:        target (object) of the relation
         :param scope:       Entity for the scope in which the relation is defined
+        :param proxyitem:   optional item to which the RelationEdge is associated (e.g. an equation-instance)
         :return:
         """
 
@@ -266,16 +273,17 @@ class Entity(abc.ABC):
             arg0 = args[0]
             if isinstance(arg0, (tuple, list)):
                 for elt in arg0:
-                    self._set_relation(relation.short_key, elt, scope=scope)
+                    return self._set_relation(relation.short_key, elt, scope=scope, proxyitem=proxyitem)
             elif isinstance(arg0, str):
-                self._set_relation(relation.short_key, arg0, scope=scope)
+                return self._set_relation(relation.short_key, arg0, scope=scope, proxyitem=proxyitem)
             elif isinstance(arg0, Iterable):
                 msg = f"Unsupported iterable type ({type(arg0)}) of {arg0}, while setting relation {relation.short_key}"
                 raise TypeError(msg)
             else:
-                self._set_relation(relation.short_key, *args, scope=scope)
+                return self._set_relation(relation.short_key, *args, scope=scope, proxyitem=proxyitem)
         else:
-            raise NotImplementedError
+            msg = f"unexpected type: {type(relation)} of relation object {relation}, with {self} as subject"
+            raise TypeError(msg)
 
     def _set_relation(
         self,
@@ -284,7 +292,7 @@ class Entity(abc.ABC):
         scope: Optional["Entity"] = None,
         qualifiers: Optional[list] = None,
         proxyitem: Optional["Item"] = None
-    ) -> None:
+    ) -> "RelationEdge":
 
         rel = ds.relations[rel_key]
 
@@ -335,6 +343,7 @@ class Entity(abc.ABC):
 
             # TODO: maybe check length here for inverse functional
             tmp_list.append(inv_rledg)
+        return rledg
 
 
 class DataStore:

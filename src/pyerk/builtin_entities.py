@@ -1,4 +1,4 @@
-from typing import List, Union
+from typing import List, Union, Optional
 
 from ipydex import IPS, activate_ips_on_exception, set_trace
 activate_ips_on_exception()
@@ -287,35 +287,6 @@ def add_relations_to_scope(relation_tuples: Union[list, tuple], scope: Entity):
         assert isinstance(sub, Entity)
         assert isinstance(rel, Relation)
         sub.set_relation(rel, obj, scope=scope)
-
-
-# TODO: this is obsolete
-'''
-def handle_relations_with_R22__is_functional(rel_tup, scope):
-    """
-    This function handles the situation where an entity gets (seemingly conflicting) functional relation edge.
-    Example: a new (more precise) R4__is_instance_of relation in the assertion scope, when there already was a
-    more general R4-relation in the context scope
-
-    :param rel_tup:
-    :param scope:
-    :return:
-    """
-    sub: Item
-    rel: Relation
-    sub, rel, obj = rel_tup
-
-    if not rel.R22__is_functional:
-        # nothing to do
-        return
-    inner_obj: Union[List[RelationEdge], None] = core.ds.relation_edges[sub.short_key].get(rel.short_key)
-    if not inner_obj:
-        # no relation clash
-        return
-
-    # we might have a specialization or a conflict
-    IPS()
-'''
 
 
 def get_scopes(entity: Entity) -> List[Item]:
@@ -669,21 +640,6 @@ def custom_call__create_evaluated_mapping(self, arg):
     return create_evaluated_mapping(mapping=self, arg=arg)
 
 
-def new_equation(lhs: Item, rhs: Item, doc=None):
-
-    if doc is not None:
-        assert isinstance(doc, str)
-    eq = instance_of(I23["equation"])
-
-    # TODO: perform type checking
-    # assert check_is_instance_of(lhs, I23("mathematical term"))
-
-    eq.set_relation(R26["has lhs"], lhs)
-    eq.set_relation(R27["has rhs"], rhs)
-
-    return eq
-
-
 R30 = create_builtin_relation(
     key_str="R30",
     R1__has_label="is secondary instance of",
@@ -695,6 +651,37 @@ R30 = create_builtin_relation(
         "and multiple inheritance."
     ),
 )
+
+
+R31 = create_builtin_relation(
+    key_str="R31",
+    R1__has_label="is in mathematical relation with",
+    R2__has_description=(
+        'specifies that the subject is related to the object via an instance of I25["mathematical relation"].'
+    ),
+    R18__has_usage_hints=(
+        "The actual type of the relation can be tretrieved by the .proxyitem attribute of the "
+        "corresponding RelationEdge."
+    ),
+)
+
+
+def new_equation(lhs: Item, rhs: Item, doc=None, scope: Optional[Item] = None):
+
+    if doc is not None:
+        assert isinstance(doc, str)
+    eq = instance_of(I23["equation"])
+
+    # TODO: perform type checking
+    # assert check_is_instance_of(lhs, I23("mathematical term"))
+
+    eq.set_relation(R26["has lhs"], lhs)
+    eq.set_relation(R27["has rhs"], rhs)
+    re = lhs.set_relation(R31["is in mathematical relation with"], rhs, scope=scope, proxyitem=eq)
+
+    eq.rel_tup = re.relation_tuple
+
+    return eq
 
 
 # annoying: pycharm does not recognize that "str"@some_LangaguageCode_obj is valid because str does not

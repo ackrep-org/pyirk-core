@@ -105,7 +105,7 @@ R21 = create_builtin_relation(
     R2="specifies that the subject of that relation is a scope-item of the object (statement-item)",
     R18=(
         "This relation is used to bind scope items to its 'semantic parents'. "
-        "This is *not* the inverse relation to R20",
+        "This is *not* the inverse relation to R20"
     ),
 )
 

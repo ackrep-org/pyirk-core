@@ -251,35 +251,29 @@ I7208 = p.create_item(
 )
 
 # <theorem>
-
+# todo this should be an equivalence instead of an implication
 I3007 = p.create_item(
     R1__has_label="stability theorem for a rational transfer function",
     R2__has_description="establishes the relation between BIBO-Stability and the poles of the transfer function",
     R4__instance_of=p.I15["implication proposition"],
 )
 
-I3007.define_context_variables(
-    sys=p.instance_of(I5948["dynamical system"]),
-    tf_rep=p.instance_of(I2640["transfer function representation"]),
-    denom=p.instance_of(I4239["monovariate polynomial"]),
-    set_of_poles=p.instance_of(I5484["finite set of complex numbers"])
-)
+with I3007.scope("context") as cm:
+    cm.new_var(sys=p.instance_of(I5948["dynamical system"]))
+    cm.new_var(tf_rep=p.instance_of(I2640["transfer function representation"]))
+    cm.new_var(denom=p.instance_of(I4239["monovariate polynomial"]))
+    cm.new_var(set_of_poles=p.instance_of(I5484["finite set of complex numbers"]))
 
-I3007.set_context_relations(
-    (I3007.sys, R5334["has representation"], I3007.tf_rep),
-    (I3007.tf_rep, R5323["has denominator"], I3007.denom),
-    (I3007.denom, R1757["has set of roots"], I3007.set_of_poles),
-)
+    cm.new_rel(I3007.sys, R5334["has representation"], I3007.tf_rep)
+    cm.new_rel(I3007.tf_rep, R5323["has denominator"], I3007.denom)
+    cm.new_rel(I3007.denom, R1757["has set of roots"], I3007.set_of_poles)
 
-I3007.set_premises(
-    (I3007.set_of_poles, p.R14["is subset of"], I2739["open left half plane"]),
-    (I3007.tf_rep, p.R16["has property"], I8181["properness"])
-)
+with I3007.scope("premises") as cm:
+    cm.new_rel(I3007.set_of_poles, p.R14["is subset of"], I2739["open left half plane"])
+    cm.new_rel(I3007.tf_rep, p.R16["has property"], I8181["properness"])
 
-I3007.set_assertions(
-    (I3007.sys, p.R16["has property"], I7208["BIBO stability"])
-)
-
+with I3007.scope("assertions") as cm:
+    cm.new_rel(I3007.sys, p.R16["has property"], I7208["BIBO stability"])
 # </theorem>
 
 
@@ -371,27 +365,21 @@ I3749 = p.create_item(
     R4__instance_of=p.I15["implication proposition"],
 )
 
-I3749["Cayley-Hamilton theorem"].define_context_variables(
-    A=p.instance_of(I9904["matrix"]),
-    n=p.instance_of(I4464["positive integer"]),
-    P=p.instance_of(I4240["matrix polynomial"]),
-    Z=p.instance_of(I9905["zero matrix"]),
-)
+with I3749["Cayley-Hamilton theorem"].scope("context") as cm:
+    cm.new_var(A=p.instance_of(I9906["square matrix"]))
+    cm.new_var(n=p.instance_of(I4464["positive integer"]))
+    cm.new_var(P=p.instance_of(I4240["matrix polynomial"]))
+    cm.new_var(Z=p.instance_of(I9905["zero matrix"]))
 
-I3749["Cayley-Hamilton theorem"].set_context_relations(
-    (I3749.A, R5938["has row number"], I3749.n),
-    (I3749.A, R5939["has column number"], I3749.n),
-    (I3749.A, R5940["has characteristic polynomial"], I3749.P),
-    (I3749.Z, R5938["has row number"], I3749.n),
-    (I3749.Z, R5939["has column number"], I3749.n),
-    (I3749.Z, p.R24["has LaTeX string"], r"\mathbf{0}"),
-)
+    cm.new_rel(I3749.A, R5938["has row number"], I3749.n)
+    cm.new_rel(I3749.A, R5940["has characteristic polynomial"], I3749.P)
+    cm.new_rel(I3749.Z, R5938["has row number"], I3749.n)
+    cm.new_rel(I3749.Z, R5939["has column number"], I3749.n)
+    cm.new_rel(I3749.Z, p.R24["has LaTeX string"], r"\mathbf{0}")
 
+with I3749["Cayley-Hamilton theorem"].scope("assertions") as cm:
+    cm.new_equation(lhs=I3749.P(I3749.A), rhs=I3749.Z)
 
-I3749["Cayley-Hamilton theorem"].set_assertions(
-    # todo: this has to be implemented
-    # I3007.new_equation("P(A) = Z")
-)
 # </theorem>
 
 
@@ -419,31 +407,26 @@ I4216 = p.create_item(
         "over the admissible polyhedral set can be precomputed."
     ),
     R4__instance_of=p.I15["implication proposition"],
-
-)
-
-I4216.define_context_variables(
-    sys=p.instance_of(I5948["dynamical system"]),
-    state_space_sys=p.instance_of(I6886["general ode state space representation"]),
-    mpc_problem=p.instance_of(I5948["dynamical system"]),
-    quadratic_problem=p.instance_of(I5948["dynamical system"]),
-    mathematical_solution=p.instance_of(I5948["dynamical system"]),
-    optimal_control_law=p.instance_of(I5948["dynamical system"]),
 )
 
 
-I4216.set_context_relations(
-    (I4216.mpc_problem, p.R000["refers to"], I4216.sys)
-)
+with I4216.scope("context") as cm:
+    cm.new_var(sys=p.instance_of(I5948["dynamical system"]))
+    cm.new_var(state_space_sys=p.instance_of(I6886["general ode state space representation"]))
+    cm.new_var(mpc_problem=p.instance_of(I5948["dynamical system"]))
+    cm.new_var(quadratic_problem=p.instance_of(I5948["dynamical system"]))
+    cm.new_var(mathematical_solution=p.instance_of(I5948["dynamical system"]))
+    cm.new_var(optimal_control_law=p.instance_of(I5948["dynamical system"]))
 
-I4216.set_premises(
-    (I4216.sys, p.R000["refers to"], I4216.sys),
-)
+    cm.new_rel(I4216.mpc_problem, p.R000["refers to"], I4216.sys)
 
-I4216.set_assertions(
-    (I4216.mpc_problem, p.R000["can be reduced to"], I4216.quadratic_problem),
+with I4216.scope("premises") as cm:
+    cm.new_rel(I4216.sys, p.R000["refers to"], I4216.sys)
 
-)
+with I4216.scope("assertions") as cm:
+    cm.new_rel(I4216.mpc_problem, p.R000["can be reduced to"], I4216.quadratic_problem)
+
+
 """
 Particularly for linear systems, the MPC problem can be reduced to a quadratic
 problem, for which the optimal control over the admissible polyhedral set can be
@@ -451,11 +434,6 @@ precomputed.
 """
 
 # </statement>
-from ipydex import IPS, activate_ips_on_exception
-activate_ips_on_exception()
-if __name__ == "__main__":
-    IPS()
-
 
 """
 

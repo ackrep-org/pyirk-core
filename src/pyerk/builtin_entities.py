@@ -324,14 +324,14 @@ def add_scope_to_defining_relation_edge(ent: Entity, scope: Item) -> None:
 
     The motivation for this function is a usage pattern like:
     ```
-    I000.define_context_variables(
-        M=p.instance_of(I000["matrix"]),
+    with I3007.scope("context") as cm:
+        cm.new_var(sys=p.instance_of(I5948["dynamical system"]))
     )
     ```
 
     ideally the `instance_of` function would notice that it was called from within a python-context which defines a
-    scope item. But this seems hardly achievable in a clean way. Thus this function is called afterwards.
-
+    scope item. But this seems hardly achievable in a clean way. Thus, this function is called after p.instance_of,
+    inside cm.new_var(...).
     """
 
     assert isinstance(ent, Entity)
@@ -351,6 +351,10 @@ def add_scope_to_defining_relation_edge(ent: Entity, scope: Item) -> None:
 
 
 class _proposition__CM:
+    """
+    Context manager to for creating ("atomic") statements in the scope of other (bigger statements).
+    E.g. establishing a relationship between two items as part of the assertions of a theorem-item
+    """
 
     def __init__(self, itm: Item, namespace: dict, scope: Item):
         self.item = itm
@@ -422,9 +426,10 @@ class _proposition__CM:
         self.new_rel(*eq.rel_tup)
 
 
-def _proposition__scope(self: Entity, scope_name: str):
+def _proposition__scope(self: Item, scope_name: str):
     """
-    This function will be used as a method for proposition-Items. It will return a ContextManager. See examples.
+    This function will be used as a method for proposition-Items. It will return a __proposition__CM instance.
+    (see above). For details see examples
 
     :param self:
     :param scope_name:
@@ -438,73 +443,6 @@ def _proposition__scope(self: Entity, scope_name: str):
 
 
 I15["implication proposition"].add_method(_proposition__scope, name="scope")
-
-
-def _proposition_define_context_variables(self, **kwargs):
-    self: Entity
-    context_ns, context_scope = self._register_scope("context")
-
-    for variable_name, variable_object in kwargs.items():
-        variable_object: Entity
-        # TODO: add scope to defining relation
-        add_scope_to_defining_relation_edge(variable_object, context_scope)
-
-        # this reflects a dessign assumption which might be generalized later
-        assert isinstance(variable_object, Entity)
-
-        # allow simple access to the variables → put them into dict (after checking that the name is still free)
-        assert variable_name not in self.__dict__
-        self.__dict__[variable_name] = variable_object
-
-        # keep track of added context vars
-        context_ns[variable_name] = variable_object
-
-        # indicate that the variable object is defined in the context of `self`
-        assert getattr(variable_object, "R20", None) is None
-        variable_object.set_relation(R20["has defining scope"], context_scope)
-
-        # todo: evaluate if this makes the namespaces obsolete
-        variable_object.set_relation(R23["has name in scope"], variable_name)
-
-
-I15["implication proposition"].add_method(_proposition_define_context_variables, name="define_context_variables")
-
-
-def _proposition_set_context_relations(self, *args, **kwargs):
-    """
-
-    :param self:    the entity to which this method will be bound
-    :param args:    tuple like (subj, rel, obj)
-    :param kwargs:  yet unused
-    :return:
-    """
-    self: Entity
-
-    _, context_scope = self._register_scope("context")
-    # context_relations = ensure_existence(context, "_relations", [])
-
-    add_relations_to_scope(args, context_scope)
-
-
-I15["implication proposition"].add_method(_proposition_set_context_relations, "set_context_relations")
-
-
-def _proposition_set_premises(self, *args):
-    self: Entity
-    _, premises_scope = self._register_scope("premises")
-    add_relations_to_scope(args, premises_scope)
-
-
-I15["implication proposition"].add_method(_proposition_set_premises, "set_premises")
-
-
-def _proposition_set_assertions(self, *args):
-    self: Entity
-    _, assertions_scope = self._register_scope("assertions")
-    add_relations_to_scope(args, assertions_scope)
-
-
-I15["implication proposition"].add_method(_proposition_set_assertions, "set_assertions")
 
 
 I17 = create_builtin_item(
@@ -582,11 +520,6 @@ I20 = create_builtin_item(
         'R3["is_instance_of relations"].'
     ),
 )
-
-I20["mathematical definition"].add_method(_proposition_define_context_variables, name="define_context_variables")
-I20["mathematical definition"].add_method(_proposition_set_context_relations, name="set_context_relations")
-I20["mathematical definition"].add_method(_proposition_set_premises, name="set_premises")
-I20["mathematical definition"].add_method(_proposition_set_assertions, name="set_assertions")
 
 I20["mathematical definition"].add_method(_proposition__scope, name="scope")
 

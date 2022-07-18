@@ -94,4 +94,19 @@ class TestCore(unittest.TestCase):
         itm = p.ds.get_entity("I9662")
         self.assertEqual(itm.R1, "M")
 
+    def test_relations_with_sequence_as_argument(self):
+        I001x = p.create_item(R1__has_label="test item")
+
+        # check that assigning sequences is not allowed
+        with self.assertRaises(TypeError):
+            I001x.set_relation(p.R5["is part of"], [p.I4["Mathematics"], p.I5["Engineering"]])
+
+        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH, "knowledge_base1")
+        itm = p.ds.get_entity("I4466")  # I4466["Systems Theory"]
+        # construction: R5__is_part_of=[p.I4["Mathematics"], p.I5["Engineering"]]
+        res = itm.R5
+        IPS()
+        self.assertEqual(len(res), 2)
+        self.assertIn(p.I4["Mathematics"], res)
+        self.assertIn(p.I5["Engineering"], res)
 

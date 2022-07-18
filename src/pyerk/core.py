@@ -244,12 +244,18 @@ class Entity(abc.ABC):
         """
 
         for key, value in kwargs.items():
-            self.set_relation(key, value)
+            if isinstance(value, (tuple, list)):
+                # this conveniently allows to add several relations at once during entity creation
+                # this is unpacked to "scalar relations"
+                for elt in value:
+                    self.set_relation(key, elt)
+            else:
+                self.set_relation(key, value)
 
     def set_relation(
         self,
         relation: Union["Relation", str],
-        *args,
+        obj,
         scope: "Entity" = None,
         proxyitem: Optional["Item"] = None
     ) -> "RelationEdge":
@@ -257,7 +263,7 @@ class Entity(abc.ABC):
         Allows to add a relation after the item was created.
 
         :param relation:    Relation-Entity (or its short_key)
-        :param args:        target (object) of the relation
+        :param obj:         target (object) of the relation (where self is the subject)
         :param scope:       Entity for the scope in which the relation is defined
         :param proxyitem:   optional item to which the RelationEdge is associated (e.g. an equation-instance)
         :return:
@@ -267,20 +273,21 @@ class Entity(abc.ABC):
             # assume we got the short key of the relation
             relation = ds.get_entity(relation)
 
+        allowed_types = (str, bool, float, int, complex)
         if isinstance(relation, Relation):
-            if not len(args) == 1:
-                raise NotImplementedError
-            arg0 = args[0]
-            if isinstance(arg0, (tuple, list)):
-                for elt in arg0:
-                    return self._set_relation(relation.short_key, elt, scope=scope, proxyitem=proxyitem)
-            elif isinstance(arg0, str):
-                return self._set_relation(relation.short_key, arg0, scope=scope, proxyitem=proxyitem)
-            elif isinstance(arg0, Iterable):
-                msg = f"Unsupported iterable type ({type(arg0)}) of {arg0}, while setting relation {relation.short_key}"
-                raise TypeError(msg)
+
+            if isinstance(obj, (Entity, *allowed_types)) or obj in allowed_types:
+                return self._set_relation(relation.short_key, obj, scope=scope, proxyitem=proxyitem)
+            # Todo: remove obsolete code:
+            # elif isinstance(obj, Iterable):
+            #     msg = f"Unsupported iterable type ({type(obj)}) of {obj}, while setting relation {relation.short_key}"
+            #     raise TypeError(msg)
+            # elif isinstance(obj, (Entity, str, bool, float, int, complex)):
+            #     # obj is eithter an entity or a literal
+            #     return self._set_relation(relation.short_key, obj, scope=scope, proxyitem=proxyitem)
             else:
-                return self._set_relation(relation.short_key, *args, scope=scope, proxyitem=proxyitem)
+                msg = f"Unsupported type ({type(obj)}) of {obj}, while setting relation {relation.short_key} of {self}"
+                raise TypeError(msg)
         else:
             msg = f"unexpected type: {type(relation)} of relation object {relation}, with {self} as subject"
             raise TypeError(msg)

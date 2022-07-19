@@ -33,6 +33,13 @@ class TestCore(unittest.TestCase):
         self.assertIsInstance(teststring1, rdflib.Literal)
         self.assertIsInstance(teststring2, rdflib.Literal)
 
+        # R1 should return the default
+        self.assertEqual(p.I900.R1.language, p.settings.DEFAULT_DATA_LANGUAGE)
+
+        # ensure that R32["is functional for each language"] works as expected (return str/Literal but not [str] ...)
+        self.assertNotIsInstance(p.I12.R2, list)
+        self.assertNotIsInstance(p.I900.R2, list)
+
     def test_sparql_query(self):
         mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH, "knowledge_base1")
         p.ds.rdfgraph = p.rdfstack.create_rdf_triples()
@@ -105,7 +112,6 @@ class TestCore(unittest.TestCase):
         itm = p.ds.get_entity("I4466")  # I4466["Systems Theory"]
         # construction: R5__is_part_of=[p.I4["Mathematics"], p.I5["Engineering"]]
         res = itm.R5
-        IPS()
         self.assertEqual(len(res), 2)
         self.assertIn(p.I4["Mathematics"], res)
         self.assertIn(p.I5["Engineering"], res)

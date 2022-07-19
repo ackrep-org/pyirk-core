@@ -239,7 +239,7 @@ class Entity(abc.ABC):
             if len(filtered_res) == 0:
                 return None
             elif len(filtered_res) == 1:
-                return res[0]
+                return filtered_res[0]
             else:
                 msg = (
                     f"unexpectedly found more then one object for relation {relation.short_key} "

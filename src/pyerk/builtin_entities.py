@@ -69,7 +69,7 @@ R1 = create_builtin_relation("R1", R32=True)
 R1.set_relation(R1, "has label")
 R32.set_relation(R1, "is functional for each language")
 
-R2 = create_builtin_relation("R2", R1="has description")
+R2 = create_builtin_relation("R2", R1="has description", R32=True)
 R2.set_relation(R2, "specifies a natural language description")
 R1.set_relation(R2, "specifies a short natural language label")
 R32.set_relation(

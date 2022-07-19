@@ -100,6 +100,7 @@ class Entity(abc.ABC):
         :return:    self
         """
 
+        # check if the used label matches the description
         assert isinstance(adhoc_label, str)
         if adhoc_label != self.R1 and not getattr(self, "_ignore_mismatching_adhoc_label", False):
             msg = f"got mismatiching label for Entity {self}: '{adhoc_label}'"
@@ -192,24 +193,61 @@ class Entity(abc.ABC):
 
         relation = ds.relations[rel_key]
 
-        # this assumes the relation tuple to be a triple (sub, rel, obj)
+        # for each of the relation edges get a list of the result-objects
+        # (this assumes the relation tuple to be a triple (sub, rel, obj))
         res = [re.relation_tuple[2] for re in relation_edges if re.role is RelationRole.SUBJECT]
 
         # the following logic decides whether to e.g. return a list of length 1 or the contained entity itself
         # this depends on whether self is a functional relation (->  R22__is_functional)
 
-        # if rel_key == "R22" -> we are asking whether self is functional;
-        # this must be  handled separately to avoid infinite recursion:
-        # (note that R22 itself is also a functional relation: only one of {True, False} is meaningful)
+        # if rel_key == "R22" -> relation is the R22-entity: we are asking whether self is functional;
+        # this must be handled separately to avoid infinite recursion:
+        # (note that R22 itself is also a functional relation: only one of {True, False} is meaningful, same holds for
+        # R32["is functional for each language"]). R32 also must be handled separately because
+        #
         #
         # in the following or-expression the second operand is only evaluated if the first ist false
 
-        if rel_key == "R22" or relation.R22:
+        hardcode_functional_relations = ["R22", "R32"]
+        hardcode_functional_fnc4elang_relations = ["R1"]
+
+        # if rel_key in ["R22", "R32"] or relation.R22:
+        if rel_key in hardcode_functional_relations or relation.R22:
             if len(res) == 0:
                 return None
             else:
                 assert len(res) == 1
                 return res[0]
+
+        #  is a similar situation
+        # if rel_key == "R32" this means that self 'is functional for each language'
+
+        elif rel_key in hardcode_functional_fnc4elang_relations or relation.R32:
+            # TODO: handle multilingual situations more flexible
+
+            # todo: specify currently relevant language here (influences the return value); for now: using default
+            language = settings.DEFAULT_DATA_LANGUAGE
+
+            filtered_res = []
+            for elt in res:
+
+                # if no language is defined (e.g. ordinary string) -> use default
+                lng = getattr(elt, "language", settings.DEFAULT_DATA_LANGUAGE)
+                if lng == language:
+                    filtered_res.append(elt)
+
+            if len(filtered_res) == 0:
+                return None
+            elif len(filtered_res) == 1:
+                return res[0]
+            else:
+                msg = (
+                    f"unexpectedly found more then one object for relation {relation.short_key} "
+                    f"and language {language}."
+                )
+
+                raise ValueError(msg)
+
         else:
             return res
 
@@ -302,9 +340,6 @@ class Entity(abc.ABC):
     ) -> "RelationEdge":
 
         rel = ds.relations[rel_key]
-
-        # set the relation to the object
-        setattr(self, rel_key, rel_content)
 
         # store relation for later usage
         self.relation_dict[rel_key] = rel
@@ -434,6 +469,9 @@ class DataStore:
                     f"with key {relation_key}. Another one is not allowed."
                 )
                 raise ValueError(msg)
+            elif relation.R30:
+                # TODO: handle multiple laguages here !!qa
+                pass
             inner_obj.append(re_object)
 
         else:

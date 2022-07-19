@@ -91,7 +91,7 @@ class TestCore(unittest.TestCase):
 
         # this tests for a bug with labels of scope vars
         mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH, "knowledge_base1")
-        itm = p.ds.get_entity("I9662")
+        itm = p.ds.get_entity("I4468")
         self.assertEqual(itm.R1, "M")
 
     def test_relations_with_sequence_as_argument(self):

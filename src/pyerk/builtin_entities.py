@@ -31,8 +31,11 @@ def instance_of(entity, r1: str = None, r2: str = None) -> Item:
     :return:
     """
 
-    has_super_class = getattr(entity, "R3", None) is not None
-    is_instance_of_metaclass = getattr(entity, "R4", None) == I2["Metaclass"]
+    has_super_class = entity.R3 is not None
+
+    # TODO !! indirect_instance_checking (with iterated R3 and R4)
+    # is_instance_of_metaclass = entity.R4 == I2["Metaclass"]
+    is_instance_of_metaclass = True  # !!!
 
     if (not has_super_class) and (not is_instance_of_metaclass):
         msg = f"the entity '{entity}' is not a class, and thus could not be instantiated"
@@ -55,22 +58,47 @@ def instance_of(entity, r1: str = None, r2: str = None) -> Item:
 
     return new_item
 
+# the bootstrapping of relations is slightly unintuitive because
+# a) labels and descriptions are introduced with some delay and
+# b) because keys reflect historical development
 
-R1 = create_builtin_relation("R1")
+
+R32 = create_builtin_relation(key_str="R32")  # will be R32["is functional for each language"]
+
+R1 = create_builtin_relation("R1", R32=True)
 R1.set_relation(R1, "has label")
+R32.set_relation(R1, "is functional for each language")
+
 R2 = create_builtin_relation("R2", R1="has description")
 R2.set_relation(R2, "specifies a natural language description")
-R3 = create_builtin_relation("R3", R1="is subclass of")
-R4 = create_builtin_relation("R4", R1="is instance of")
+R1.set_relation(R2, "specifies a short natural language label")
+R32.set_relation(
+    R2,
+    "specifies that for each subject there is at most one 'R30-RelationEdge' for a given language tag (e.g. en)"
+)
+
+R22 = create_builtin_relation(
+    key_str="R22",
+    R1="is functional",
+    R2="specifies that the subject entity is a relation which has at most one value per item",
+)
+
+R22["is functional"].set_relation(R22["is functional"], True)
+R32["is functional for each language"].set_relation(R22["is functional"], True)
+
+# Note that R1, R22, and R32 are used extensively to control the behavior in pyerk.core
+
+R3 = create_builtin_relation("R3", R1="is subclass of", R22__is_funtional=True)
+R4 = create_builtin_relation("R4", R1="is instance of", R22__is_funtional=True)
 R5 = create_builtin_relation("R5", R1="is part of")
-R6 = create_builtin_relation("R6", R1="has defining equation")
-R7 = create_builtin_relation("R7", R1="has arity")
+R6 = create_builtin_relation("R6", R1="has defining equation", R22__is_funtional=True)
+R7 = create_builtin_relation("R7", R1="has arity", R22__is_funtional=True)
 R8 = create_builtin_relation("R8", R1="has domain of argument 1")
 R9 = create_builtin_relation("R9", R1="has domain of argument 2")
 R10 = create_builtin_relation("R10", R1="has domain of argument 3")
 R11 = create_builtin_relation("R11", R1="has range of result", R2="specifies the range of the result (last arg)")
 R12 = create_builtin_relation("R12", R1="is defined by means of")
-R13 = create_builtin_relation("R13", R1="has canonical symbol")
+R13 = create_builtin_relation("R13", R1="has canonical symbol", R22__is_funtional=True)
 R14 = create_builtin_relation("R14", R1="is subset of")
 R15 = create_builtin_relation("R15", R1="is element of", R2="states that arg1 is an element of arg2")
 R16 = create_builtin_relation(
@@ -97,6 +125,7 @@ R20 = create_builtin_relation(
     R1="has defining scope",
     R2="specifies the scope in which an entity is defined (e.g. the premise of a theorem)",
     R18="Note: one Entity can be parent of multiple scopes, (e.g. a theorem has 'context', 'premises', 'assertions')",
+    R22__is_funtional=True,
 )
 
 R21 = create_builtin_relation(
@@ -107,20 +136,9 @@ R21 = create_builtin_relation(
         "This relation is used to bind scope items to its 'semantic parents'. "
         "This is *not* the inverse relation to R20"
     ),
+    R22__is_funtional=True,
 )
 
-
-R22 = create_builtin_relation(
-    key_str="R22",
-    R1="is functional",
-    R2="specifies that the subject entity is a relation which has at most one value per item",
-)
-
-R4["is instance of"].set_relation(R22["is functional"], True)
-R6["has defining equation"].set_relation(R22["is functional"], True)
-R20["has defining scope"].set_relation(R22["is functional"], True)
-R21["is scope of"].set_relation(R22["is functional"], True)
-R22["is functional"].set_relation(R22["is functional"], True)
 
 R23 = create_builtin_relation(
     key_str="R23",
@@ -719,6 +737,11 @@ I900 = create_builtin_item(
     R3__is_instance_of=I2["Metaclass"],
     R18__has_usage_hints="This item serves only for unittesting labels in different languages",
 )
+
+
+# reminder that R32["is functional for each language"] already is defined
+assert R32 is not None
+
 
 # noinspection PyUnresolvedReferences
 I900.set_relation(R1["has label"], "test item with english label"@en)

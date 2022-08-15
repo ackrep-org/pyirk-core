@@ -469,7 +469,7 @@ class DataStore:
                     f"with key {relation_key}. Another one is not allowed."
                 )
                 raise ValueError(msg)
-            elif relation.R30:
+            elif relation.R32:
                 # TODO: handle multiple laguages here !!qa
                 pass
             inner_obj.append(re_object)

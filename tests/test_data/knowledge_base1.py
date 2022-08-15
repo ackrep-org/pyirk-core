@@ -296,7 +296,7 @@ I4464 = p.create_item(
 I9904 = p.create_item(
     R1__has_label="matrix",
     R2__has_description="matrix of (in general) complex numbers, i.e. matrix over the field of complex numbers",
-    R4__is_instance_of=I4235["mathematical object"],
+    R3__is_subclass_of=I4235["mathematical object"],
 )
 
 I9905 = p.create_item(

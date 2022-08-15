@@ -21,6 +21,26 @@ from . import core
 __MOD_ID__ = "M1000"
 
 
+def is_instance_of_generalized_metaclass(entity) -> bool:
+    """
+    Check if `entity` is a metaclass or a subclass of metaclass
+
+    :param entity:
+    :return:        bool
+    """
+
+    test_entity = entity
+
+    while test_entity is not None:
+        if test_entity.R4__is_instance_of == I2["Metaclass"]:
+            return True
+
+        test_entity = test_entity.R3__is_subclass_of
+
+    # the loop was finished
+    return False
+
+
 def instance_of(entity, r1: str = None, r2: str = None) -> Item:
     """
     Create an instance (R4) of an item. Try to obtain the label by inspection of the calling context (if r1 is None).
@@ -33,9 +53,9 @@ def instance_of(entity, r1: str = None, r2: str = None) -> Item:
 
     has_super_class = entity.R3 is not None
 
-    # TODO !! indirect_instance_checking (with iterated R3 and R4)
-    # is_instance_of_metaclass = entity.R4 == I2["Metaclass"]
-    is_instance_of_metaclass = True  # !!!
+    # we have to determine if `entity` is a metaclass or a subclass of metaclass
+
+    is_instance_of_metaclass = is_instance_of_generalized_metaclass(entity)
 
     if (not has_super_class) and (not is_instance_of_metaclass):
         msg = f"the entity '{entity}' is not a class, and thus could not be instantiated"

@@ -116,3 +116,20 @@ class TestCore(unittest.TestCase):
         self.assertIn(p.I4["Mathematics"], res)
         self.assertIn(p.I5["Engineering"], res)
 
+    def test_metaclass(self):
+        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH, "knowledge_base1")
+
+        itm1 = p.ds.get_entity("I2")  # I2["Metaclass"]
+        itm2 = p.ds.get_entity("I4235")  # I4235["mathematical object"]
+        itm3 = p.ds.get_entity("I4239")  # I4239["monovariate polynomial"]->I4236["mathematical expression"]->I4235
+
+        # metaclass itself is not an instance of metaclass
+        self.assertFalse(p.is_instance_of_generalized_metaclass(itm1))
+
+        self.assertTrue(p.is_instance_of_generalized_metaclass(itm2))
+        self.assertTrue(p.is_instance_of_generalized_metaclass(itm3))
+
+        itm4 = p.instance_of(itm3)
+        self.assertFalse(p.is_instance_of_generalized_metaclass(itm4))
+
+

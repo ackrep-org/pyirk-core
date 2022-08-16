@@ -4,6 +4,7 @@ import os
 from os.path import join as pjoin
 
 import rdflib
+
 # noinspection PyUnresolvedReferences
 from ipydex import IPS, activate_ips_on_exception
 import pyerk as p
@@ -27,8 +28,8 @@ class TestCore(unittest.TestCase):
         self.assertEqual(def_eq_item.R4__is_instance_of, p.I18["mathematical expression"])
         self.assertEqual(def_eq_item.R24__has_LaTeX_string, r"$\dot x = f(x, u)$")
 
-        teststring1 = "this is english text"@mod1.p.en
-        teststring2 = "das ist deutsch"@mod1.p.de
+        teststring1 = "this is english text" @ mod1.p.en
+        teststring2 = "das ist deutsch" @ mod1.p.de
 
         self.assertIsInstance(teststring1, rdflib.Literal)
         self.assertIsInstance(teststring2, rdflib.Literal)
@@ -48,6 +49,7 @@ class TestCore(unittest.TestCase):
         res2 = p.aux.apply_func_to_table_cells(p.rdfstack.convert_from_rdf_to_pyerk, res)
 
         import colorama
+
         print(colorama.Fore.YELLOW, "sparql test currently fails!")
 
         # self.assertEqual(res2, [[mod1.I4466, p.I4], [mod1.I4466, p.I5]])
@@ -60,6 +62,7 @@ class TestCore(unittest.TestCase):
         # class level
         def example_func(slf, a):
             return f"{slf.R1}--{a}"
+
         p.Entity.add_method_to_class(example_func)
 
         res = p.I12.example_func("test")
@@ -71,6 +74,7 @@ class TestCore(unittest.TestCase):
 
         def example_func2(slf, a):
             return f"{slf.R1}::{a}"
+
         itm.add_method(example_func2)
 
         res2 = itm.example_func2(1234)
@@ -116,7 +120,7 @@ class TestCore(unittest.TestCase):
         self.assertIn(p.I4["Mathematics"], res)
         self.assertIn(p.I5["Engineering"], res)
 
-    def test_metaclass(self):
+    def test_is_instance_of_generalized_metaclass(self):
         mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH, "knowledge_base1")
 
         itm1 = p.ds.get_entity("I2")  # I2["Metaclass"]
@@ -131,5 +135,3 @@ class TestCore(unittest.TestCase):
 
         itm4 = p.instance_of(itm3)
         self.assertFalse(p.is_instance_of_generalized_metaclass(itm4))
-
-

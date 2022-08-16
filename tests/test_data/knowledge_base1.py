@@ -20,7 +20,7 @@ p.register_mod(__MOD_ID__)
 I5948 = p.create_item(
     R1__has_label="dynamical system",
     R2__has_description="system with the capability to change over time, optionally with explicit input and/or output",
-    R4__instance_of=p.I2["Metaclass"]  # this means: this Item is an ordinary class
+    R4__instance_of=p.I2["Metaclass"],  # this means: this Item is an ordinary class
 )
 
 
@@ -28,13 +28,10 @@ I4466 = p.create_item(
     R1__has_label="Systems Theory",
     R2__has_description="academic field; might be regarded as part of applied mathematics",
     R4__instance_of=p.I3["Field of science"],
-    R5__is_part_of=[p.I4["Mathematics"], p.I5["Engineering"]]
+    R5__is_part_of=[p.I4["Mathematics"], p.I5["Engineering"]],
 )
 
-R1001 = p.create_relation(
-    R1__has_label="studies",
-    R2__has_description="object or class wich an academic field studies"
-)
+R1001 = p.create_relation(R1__has_label="studies", R2__has_description="object or class wich an academic field studies")
 
 I4466["Systems Theory"].set_relation(R1001["studies"], I5948["dynamical system"])
 
@@ -71,7 +68,6 @@ I6886 = p.create_item(
     R1__has_label="general ode state space representation",
     R2__has_description="explicit first order ODE system description of a dynamical system",
     R4__instance_of=p.I2["Metaclass"],
-
     # TODO: this has to use create_equation (to be implemented)
     R6__has_defining_equation=p.create_expression(r"$\dot x = f(x, u)$"),
 )
@@ -193,7 +189,7 @@ R5323 = p.create_relation(
     R1__has_label="has denominator",
     R2__has_description="...",
     R8__has_domain_of_argument_1=I4237["monovariate rational function"],
-    R10__has_range_of_result=I4239["monovariate polynomial"]
+    R10__has_range_of_result=I4239["monovariate polynomial"],
 )
 
 
@@ -208,7 +204,7 @@ R1757 = p.create_relation(
     R1__has_label="has set of roots",
     R2__has_description="set of roots for a monovariate function",
     R8__has_domain_of_argument_1=I4236["mathematical expression"],  # todo: this is too broad
-    R10__has_range_of_result=I5484["finite set of complex numbers"]
+    R10__has_range_of_result=I5484["finite set of complex numbers"],
 )
 
 I8181 = p.create_item(
@@ -217,27 +213,25 @@ I8181 = p.create_item(
         "applicable to monovariate rational functions; "
         "satisfied if degree of denominator is not smaller than degree of numerator"
     ),
-    R4__instance_of=p.I11["mathematical property"]
+    R4__instance_of=p.I11["mathematical property"],
 )
 
 I8182 = p.create_item(
     R1__has_label="strict properness",
-    R2__has_description=(
-        "satisfied if degree of denominator is greater than degree of numerator"
-    ),
-    R17__is_subproperty_of=I8181["properness"]
+    R2__has_description="satisfied if degree of denominator is greater than degree of numerator",
+    R17__is_subproperty_of=I8181["properness"],
 )
 
 I7206 = p.create_item(
     R1__has_label="system-dynamical property",
     R2__has_description="base class for all systemdynamical properties",
-    R3__subclass_of=p.I11["mathematical property"]
+    R3__subclass_of=p.I11["mathematical property"],
 )
 
 I7207 = p.create_item(
     R1__has_label="stability",
     R2__has_description="tendency to stay close to some distinguished trajectory (e.g. equilibrium)",
-    R4__instance_of=I7206["system-dynamical property"]
+    R4__instance_of=I7206["system-dynamical property"],
 )
 
 # todo: this entity should be made more precise whether it is global or local
@@ -247,7 +241,7 @@ I7208 = p.create_item(
         "'bounded-input bounded-output stability'; "
         "satisfied if the system responds to every bounded input signal with a bounded output signal"
     ),
-    R17__is_subproperty_of=I7207["stability"]
+    R17__is_subproperty_of=I7207["stability"],
 )
 
 # <theorem>
@@ -283,7 +277,7 @@ with I3007.scope("assertions") as cm:
 I4463 = p.create_item(
     R1__has_label="non-negative integer",
     R2__has_description="mathematical type equivalent to Nat (from type theory): non-negative integer number",
-    R4__is_instance_of=p.I12["mathematical object"]
+    R4__is_instance_of=p.I12["mathematical object"],
 )
 
 I4464 = p.create_item(
@@ -317,21 +311,21 @@ R5938 = p.create_relation(
     R1__has_label="has row number",
     R2__has_description="specifies the number of rows of a matrix",
     R8__has_domain_of_argument_1=I9904["matrix"],
-    R10__has_range_of_result=I4463["non-negative integer"]
+    R10__has_range_of_result=I4463["non-negative integer"],
 )
 
 R5939 = p.create_relation(
     R1__has_label="has column number",
     R2__has_description="specifies the number of columns of a matrix",
     R8__has_domain_of_argument_1=I9904["matrix"],
-    R10__has_range_of_result=I4463["non-negative integer"]
+    R10__has_range_of_result=I4463["non-negative integer"],
 )
 
 R5940 = p.create_relation(
     R1__has_label="has characteristic polynomial",
     R2__has_description="specifies the characteristic polynomial of a square matrix A, i.e. det(s·I-A)",
     R8__has_domain_of_argument_1=I9906["square matrix"],
-    R10__has_range_of_result=I4239["monovariate polynomial"]
+    R10__has_range_of_result=I4239["monovariate polynomial"],
 )
 
 # <definition>
@@ -392,7 +386,6 @@ I4349 = p.create_item(
     R1__has_label="equivalence of flatness and input-state-linearizability for SISO systems",
     R2__has_description="establishes the equivalence of flatness and input-state-linearizability for SISO systems",
     R4__instance_of=p.I15["implication proposition"],
-
 )
 
 # </theorem>
@@ -435,7 +428,7 @@ precomputed.
 
 # </statement>
 
-"""
+r"""
 
 # experimental formulation of a theorem
 

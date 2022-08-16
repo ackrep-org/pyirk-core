@@ -31,7 +31,7 @@ activate_ips_on_exception()
     manually trigger reload in gui
 
     Caylay-Hamilton-Theorem
-    qualifier rleations, e.g. for universal quantification
+    qualifier relations, e.g. for universal quantification
          
     Lyapunov stability theorem
     visualizing the results
@@ -291,11 +291,7 @@ class Entity(abc.ABC):
                 self.set_relation(key, value)
 
     def set_relation(
-        self,
-        relation: Union["Relation", str],
-        obj,
-        scope: "Entity" = None,
-        proxyitem: Optional["Item"] = None
+        self, relation: Union["Relation", str], obj, scope: "Entity" = None, proxyitem: Optional["Item"] = None
     ) -> "RelationEdge":
         """
         Allows to add a relation after the item was created.
@@ -336,7 +332,7 @@ class Entity(abc.ABC):
         rel_content: object,
         scope: Optional["Entity"] = None,
         qualifiers: Optional[list] = None,
-        proxyitem: Optional["Item"] = None
+        proxyitem: Optional["Item"] = None,
     ) -> "RelationEdge":
 
         rel = ds.relations[rel_key]
@@ -675,6 +671,7 @@ class RelationRole(Enum):
 
 # for now we want unique numbers for keys for relations and items etc (although this is not necessary)
 
+
 def generate_key_numbers() -> list:
     """
     Creates a reaservoir of keynumbers, e.g. for automatically created entities. Due to the hardcoded seed value
@@ -954,7 +951,6 @@ def register_mod(mod_id):
 
 
 class LangaguageCode:
-
     def __init__(self, langtag):
         assert langtag in settings.SUPPORTED_LANGUAGES
 

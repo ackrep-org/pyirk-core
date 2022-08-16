@@ -1,6 +1,7 @@
 from typing import List, Union, Optional
 
 from ipydex import IPS, activate_ips_on_exception, set_trace
+
 activate_ips_on_exception()
 
 from .core import (
@@ -78,6 +79,7 @@ def instance_of(entity, r1: str = None, r2: str = None) -> Item:
 
     return new_item
 
+
 # the bootstrapping of relations is slightly unintuitive because
 # a) labels and descriptions are introduced with some delay and
 # b) because keys reflect historical development
@@ -93,8 +95,7 @@ R2 = create_builtin_relation("R2", R1="has description", R32=True)
 R2.set_relation(R2, "specifies a natural language description")
 R1.set_relation(R2, "specifies a short natural language label")
 R32.set_relation(
-    R2,
-    "specifies that for each subject there is at most one 'R30-RelationEdge' for a given language tag (e.g. en)"
+    R2, "specifies that for each subject there is at most one 'R30-RelationEdge' for a given language tag (e.g. en)"
 )
 
 R22 = create_builtin_relation(
@@ -551,7 +552,6 @@ I20 = create_builtin_item(
     R1__has_label="mathematical definition",
     R2__has_description="mathematical definition statement (structurally similar to other propositions)",
     R3__is_subclass_of=I14["mathematical proposition"],
-
     # TODO: ensure this restriction via quality checks
     R18__has_usage_hint=(
         "We model a definition in the same way as an implication proposition; However the assertion must only contain "
@@ -633,9 +633,7 @@ I26 = create_builtin_item(
 I27 = create_builtin_item(
     key_str="I27",
     R1__has_label="non-strict inequality",
-    R2__has_description=(
-        "super class for greater-than-or-equal-to and less-than-or-equal-to"
-    ),
+    R2__has_description=("super class for greater-than-or-equal-to and less-than-or-equal-to"),
     R3__is_subclass_of=I25["general inequality"],
 )
 
@@ -707,7 +705,7 @@ R30 = create_builtin_relation(
     key_str="R30",
     R1__has_label="is secondary instance of",
     R2__has_description=(
-        'specifies that the subject is an instance of a class-item,in addtioin to its unambiguous parent class.'
+        "specifies that the subject is an instance of a class-item,in addtioin to its unambiguous parent class."
     ),
     R18__has_usage_hints=(
         "Note that this relation is not functional. This construction allows to combine single (R4) "
@@ -752,7 +750,7 @@ def new_equation(lhs: Item, rhs: Item, doc=None, scope: Optional[Item] = None):
 # noinspection PyUnresolvedReferences
 I900 = create_builtin_item(
     key_str="I900",
-    R1__has_label="test item mit label auf deutsch"@de,
+    R1__has_label="test item mit label auf deutsch" @ de,
     R2__has_description="used for testing during development",
     R3__is_instance_of=I2["Metaclass"],
     R18__has_usage_hints="This item serves only for unittesting labels in different languages",
@@ -764,15 +762,14 @@ assert R32 is not None
 
 
 # noinspection PyUnresolvedReferences
-I900.set_relation(R1["has label"], "test item with english label"@en)
+I900.set_relation(R1["has label"], "test item with english label" @ en)
 
 
 I000 = create_builtin_item(
     key_str="I000",
     R1__has_label="dummy item",
     R2__has_description="used during development as placeholder for items which will be defined later",
-    R4__instance_of=I2["Metaclass"]  # this means: this Item is an ordinary class
-
+    R4__instance_of=I2["Metaclass"],  # this means: this Item is an ordinary class
 )
 
 R000 = create_builtin_relation(

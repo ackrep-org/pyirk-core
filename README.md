@@ -3,9 +3,14 @@
 
 # (Python based) Easy Representation of Knowledge (pyERK)
 
-- Currently in pre-alpha-phase
+- Currently in alpha-phase
 - Inspired by OWL, but more expressive
 - Inspired by Wikidata, but much simpler
 - Inspired by SUO-KIF, but with less brackets
 - Represented directly in python
 - Designed to formally represent knowledge (including meta levels)
+
+
+# Coding style
+
+We use `black -l 120 ./` to ensure coding style consistency.

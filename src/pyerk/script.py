@@ -35,13 +35,16 @@ def main():
         debug()
         exit()
 
+    if args.load_mod is not None:
+        process_mod(path=args.load_mod)
+
     if args.new_key:
+        if not args.load_mod:
+            print(aux.byellow("No module loaded. There might be key clashes. Use `--load-mod` to prevent this."))
         core.print_new_key()
 
     elif args.inputfile is not None:
         core.script_main(args.inputfile)
-    elif args.load_mod is not None:
-        process_mod(path=args.load_mod)
     else:
         print("nothing to do, see option `--help` for more info")
 

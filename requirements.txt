@@ -1,5 +1,6 @@
 pyyaml
 ipydex
+colorama
 # owlready2
 # rdflib
 # pydantic

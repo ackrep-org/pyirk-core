@@ -1,9 +1,10 @@
 from typing import Iterable, Union
 from rdflib import Literal
+from colorama import Style, Fore
 from . import settings
 
 """
-Some auxiliary classes for pyerk.
+Some auxiliary classes and functions for pyerk.
 """
 
 
@@ -77,3 +78,19 @@ def ensure_rdf_str_literal(arg, allow_none=True) -> Union[Literal, None]:
         raise TypeError(msg)
 
     return res
+
+
+def bright(txt):
+    return f"{Style.BRIGHT}{txt}{Style.RESET_ALL}"
+
+
+def bgreen(txt):
+    return f"{Fore.GREEN}{Style.BRIGHT}{txt}{Style.RESET_ALL}"
+
+
+def bred(txt):
+    return f"{Fore.RED}{Style.BRIGHT}{txt}{Style.RESET_ALL}"
+
+
+def byellow(txt):
+    return f"{Fore.YELLOW}{Style.BRIGHT}{txt}{Style.RESET_ALL}"

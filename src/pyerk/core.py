@@ -191,8 +191,6 @@ class Entity(abc.ABC):
 
         relation_edges: List[RelationEdge] = ds.get_relation_edges(self.short_key, rel_key)
 
-        relation = ds.relations[rel_key]
-
         # for each of the relation edges get a list of the result-objects
         # (this assumes the relation tuple to be a triple (sub, rel, obj))
         res = [re.relation_tuple[2] for re in relation_edges if re.role is RelationRole.SUBJECT]
@@ -203,14 +201,13 @@ class Entity(abc.ABC):
         # if rel_key == "R22" -> relation is the R22-entity: we are asking whether self is functional;
         # this must be handled separately to avoid infinite recursion:
         # (note that R22 itself is also a functional relation: only one of {True, False} is meaningful, same holds for
-        # R32["is functional for each language"]). R32 also must be handled separately because
-        #
-        #
-        # in the following or-expression the second operand is only evaluated if the first ist false
+        # R32["is functional for each language"]). R32 also must be handled separately
 
+        relation = ds.relations[rel_key]
         hardcode_functional_relations = ["R22", "R32"]
         hardcode_functional_fnc4elang_relations = ["R1"]
 
+        # in the following or-expression the second operand is only evaluated if the first ist false
         # if rel_key in ["R22", "R32"] or relation.R22:
         if rel_key in hardcode_functional_relations or relation.R22:
             if len(res) == 0:
@@ -594,7 +591,10 @@ class Item(Entity):
         self.__post_init__()
 
     def __repr__(self):
-        R1 = getattr(self, "R1", "no label")
+        try:
+            R1 = getattr(self, "R1", "no label")
+        except ValueError:
+            R1 = "<<ValueError while retrieving R1>>"
         return f'<Item {self.short_key}["{R1}"]>'
 
     def get_relations(self):
@@ -910,37 +910,47 @@ def unload_mod(mod_id: str, strict=True) -> None:
         raise KeyError(msg)
 
     for ek in entity_keys:
-        res1 = ds.items.pop(ek, None)
-        res2 = ds.relations.pop(ek, None)
-
-        if res1 is None and res2 is None:
-            msg = f"No entity with key {ek} could be found. This is unexpected."
-            raise msg
-
-        # for every entity key it stores a dict that maps relation keys to lists of corresponding relation-edges
-        re_dict = ds.relation_edges.pop(ek, {})
-        inv_re_dict = ds.inv_relation_edges.pop(ek, {})
-
-        # in case res1 is a scope-item we delete all corressponding relation edges, otherwise nothing happens
-        ds.scope_relation_edges.pop(ek, None)
-
-        for rel_key, re_list in list(re_dict.items()) + list(inv_re_dict.items()):
-            for re in re_list:
-                try:
-                    # ds.relation_relation_edges: for every relation key stores a list of relevant relation-edges
-                    ds.relation_relation_edges[rel_key].remove(re)
-                except ValueError:
-                    # this happens if there was no entity in the list
-                    pass
-
-                try:
-                    # ds.store a list of all relation edges (to maintain the order)
-                    ds.relation_edge_list.remove(re)
-                except ValueError:
-                    # this happens if there was no entity in the list
-                    pass
+        _unlink_entity(ek)
 
     ds.mod_path_mapping.remove_pair(key_a=mod_id)
+
+
+def _unlink_entity(ek: str) -> None:
+    """
+    Remove the occurrence of this the respective entitiy from all relevant data structures
+
+    :param ek:     entity key
+    :return:        None
+    """
+    res1 = ds.items.pop(ek, None)
+    res2 = ds.relations.pop(ek, None)
+
+    if res1 is None and res2 is None:
+        msg = f"No entity with key {ek} could be found. This is unexpected."
+        raise KeyError(msg)
+
+    # for every entity key it stores a dict that maps relation keys to lists of corresponding relation-edges
+    re_dict = ds.relation_edges.pop(ek, {})
+    inv_re_dict = ds.inv_relation_edges.pop(ek, {})
+
+    # in case res1 is a scope-item we delete all corressponding relation edges, otherwise nothing happens
+    ds.scope_relation_edges.pop(ek, None)
+
+    for rel_key, re_list in list(re_dict.items()) + list(inv_re_dict.items()):
+        for re in re_list:
+            try:
+                # ds.relation_relation_edges: for every relation key stores a list of relevant relation-edges
+                ds.relation_relation_edges[rel_key].remove(re)
+            except ValueError:
+                # this happens if there was no entity in the list
+                pass
+
+            try:
+                # ds.store a list of all relation edges (to maintain the order)
+                ds.relation_edge_list.remove(re)
+            except ValueError:
+                # this happens if there was no entity in the list
+                pass
 
 
 def register_mod(mod_id):

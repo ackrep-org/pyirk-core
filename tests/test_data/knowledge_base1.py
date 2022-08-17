@@ -389,6 +389,16 @@ I4349 = p.create_item(
 )
 
 # </theorem>
+# <statement preparation>
+I2277 = p.create_item(
+    R1__has_label="statement",
+    R2__has_description=(
+        "models an 'ordinary statement' e.g. of a publication which is not distinguished as a formal theorem",
+    ),
+    R3__subclass_of=p.I15["implication proposition"],
+)
+
+# </statement preparation>
 
 # <statement>
 
@@ -399,7 +409,7 @@ I4216 = p.create_item(
         "for linear systems, the MPC problem can be reduced to a quadratic problem, for which the optimal control"
         "over the admissible polyhedral set can be precomputed."
     ),
-    R4__instance_of=p.I15["implication proposition"],
+    R4__instance_of=I2277["statement"],
 )
 
 

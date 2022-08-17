@@ -69,8 +69,10 @@ class TestCore(unittest.TestCase):
         self.assertEqual("mathematical object--test", res)
 
         # instance level
-        itm = p.Item(key_str=p.generate_new_key("I"), R1="test item")
-        itm2 = p.Item(key_str=p.generate_new_key("I"), R1="test item2")
+        # Note: this creates items with keys which might conflict with recently added keys to builtin entities
+        # explicitly unlinking them at the end
+        itm = p.create_item(key_str=p.generate_new_key("I"), R1="unit test item")
+        itm2 = p.create_item(key_str=p.generate_new_key("I"), R1="unit test item2")
 
         def example_func2(slf, a):
             return f"{slf.R1}::{a}"
@@ -78,12 +80,16 @@ class TestCore(unittest.TestCase):
         itm.add_method(example_func2)
 
         res2 = itm.example_func2(1234)
-        self.assertEqual("test item::1234", res2)
+        self.assertEqual("unit test item::1234", res2)
         self.assertIsInstance(itm2, p.Entity)
 
         # ensure that this method is not available to generic other instances of Entity
         with self.assertRaises(AttributeError):
             itm2.example_func2(1234)
+
+        # explicitly unklink the created entities to avoid inferrence with future tests
+        p.core._unlink_entity(itm.short_key)
+        p.core._unlink_entity(itm2.short_key)
 
     def test_evaluated_mapping(self):
         mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH, "knowledge_base1")

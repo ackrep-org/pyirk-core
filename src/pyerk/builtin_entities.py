@@ -738,6 +738,8 @@ def new_equation(lhs: Item, rhs: Item, doc=None, scope: Optional[Item] = None):
 
     eq.set_relation(R26["has lhs"], lhs)
     eq.set_relation(R27["has rhs"], rhs)
+
+    # TODO: proxyitem should be specified by a qualifier
     re = lhs.set_relation(R31["is in mathematical relation with"], rhs, scope=scope, proxyitem=eq)
 
     eq.rel_tup = re.relation_tuple

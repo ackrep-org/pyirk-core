@@ -423,8 +423,8 @@ R1833 = p.create_relation(
 )
 
 # TODO: add qualifiers `start-date` and `end-date` here
-I2746["Rudolf Kalman"].set_relation(R1833["has employer"], I9942["Stanford University"])
-I2746["Rudolf Kalman"].set_relation(R1833["has employer"], I7301["ETH Zürich"])
+I2746["Rudolf Kalman"].set_relation(R1833["has employer"], I9942["Stanford University"])  # 1964 until 1971
+I2746["Rudolf Kalman"].set_relation(R1833["has employer"], I7301["ETH Zürich"])  # 1973 - 1997
 
 # End of qualifier-testing code
 

@@ -288,7 +288,12 @@ class Entity(abc.ABC):
                 self.set_relation(key, value)
 
     def set_relation(
-        self, relation: Union["Relation", str], obj, scope: "Entity" = None, proxyitem: Optional["Item"] = None
+        self,
+        relation: Union["Relation", str],
+        obj,
+        scope: "Entity" = None,
+        proxyitem: Optional["Item"] = None,
+        qualifiers: Optional[List["RawQualifier"]] = None,
     ) -> "RelationEdge":
         """
         Allows to add a relation after the item was created.
@@ -297,6 +302,7 @@ class Entity(abc.ABC):
         :param obj:         target (object) of the relation (where self is the subject)
         :param scope:       Entity for the scope in which the relation is defined
         :param proxyitem:   optional item to which the RelationEdge is associated (e.g. an equation-instance)
+        :param qualifiers:  optional list of RawQualifiers (see docstring of this class)
         :return:
         """
 
@@ -692,9 +698,41 @@ def generate_key_numbers() -> list:
 available_key_numbers = generate_key_numbers()
 
 
+class RawQualifier:
+    """
+    Precursor to a real Qualifier (which is a RelationEdge) where the subject is yet unspecified
+    (will be the qualified RelationEdge). Instances of this class are produced by QualifierFactory
+    """
+
+    def __init__(self, rel: Relation, obj: Union[Literal, Entity]):
+        self.rel = rel
+        self.obj = obj
+
+
+class QualifierFactory:
+    """
+    Convenience class to create an RawQualifier.
+    This allows syntax like:
+
+    ```
+    start_date = QualifierFactory(R1234["start date"])
+    # ...
+    I2746["Rudolf Kalman"].set_relation(R1833["has employer"], I7301["ETH Zürich"], qualifiers=[start_date(1973)])
+    ```
+    """
+
+    # TODO: rename this class
+
+    def __init__(self, relation: Relation):
+        self.relation = relation
+
+    def __call__(self, obj):
+        return RawQualifier(self.relation, obj)
+
+
 class RelationEdge:
     """
-    Models a conrete (instatiated) relation between entities. This is basically a dict.
+    Models a conrete (instantiated/applied) relation between entities. This is basically a dict.
     """
 
     def __init__(
@@ -705,7 +743,7 @@ class RelationEdge:
         corresponding_entity: Entity = None,
         corresponding_literal=None,
         scope=None,
-        qualifiers=None,
+        qualifiers: Optional[List[RawQualifier]] = None,
         proxyitem: Optional[Item] = None,
     ) -> None:
         """
@@ -729,10 +767,10 @@ class RelationEdge:
         self.scope = scope
         self.corresponding_entity = corresponding_entity
         self.corresponding_literal = corresponding_literal
-        if qualifiers is None:
-            qualifiers = []
-        assert isinstance(qualifiers, list)
-        self.qualifiers = qualifiers
+        self.qualifiers = []
+        self._process_qualifiers(qualifiers)
+
+        # TODO: replace this by qualifier
         self.proxyitem = proxyitem
 
     def __repr__(self):
@@ -741,6 +779,33 @@ class RelationEdge:
 
         res = f"RE[{self.role.name[0]}]{self.relation_tuple}"
         return res
+
+    def _process_qualifiers(self, qlist: List[RawQualifier], scope: Optional["Entity"] = None) -> None:
+
+        if qlist is None:
+            # nothing to do
+            return
+
+        for qf in qlist:
+
+            if isinstance(qf.obj, Entity):
+                corresponding_entity = qf.obj
+                corresponding_literal = None
+            else:
+                corresponding_entity = None
+                corresponding_literal = repr(qf.obj)
+
+            rledg = RelationEdge(
+                relation=qf.rel,
+                relation_tuple=(self, qf.rel, qf.obj),
+                role=RelationRole.SUBJECT,
+                corresponding_entity=corresponding_entity,
+                corresponding_literal=corresponding_literal,
+                scope=scope,
+                qualifiers=None,
+                proxyitem=None,
+            )
+            self.qualifiers.append(rledg)
 
 
 def create_relation(key_str: str = "", **kwargs) -> Relation:

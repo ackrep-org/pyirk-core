@@ -173,6 +173,12 @@ class TestCore(unittest.TestCase):
         rhs = eq.R27__has__rhs
         self.assertEqual(rhs, Z)
 
+        # ensure reproducible results of applied mappings
+        lhs = eq.R26__has_lhs
+        P: p.Item = itm1.scope("context").namespace["P"]
+        A: p.Item = itm1.scope("context").namespace["A"]
+        self.assertEqual(lhs, P(A))
+
 
 class TestCore2(unittest.TestCase):
     def setUp(self):

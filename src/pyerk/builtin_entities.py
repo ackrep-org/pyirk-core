@@ -691,15 +691,35 @@ R29 = create_builtin_relation(
     R1__has_label="has argument",
     R2__has_description='specifies the concrete argument item of an I32["evaluated mapping"] item',
     # todo: currently we only need univariate mappings. However, once we have multivariate mappings
-    #  this needs be reflected here (maybe use qulifiers or a seperate relation for each argument)
+    #  this needs be reflected here (maybe use qualifiers or a seperate relation for each argument)
 )
 
 
 def create_evaluated_mapping(mapping: Item, arg: Entity) -> Item:
 
     r1 = f"mapping '{mapping}' applied to '{arg}'"
-    em = instance_of(I32["evaluated mapping"], r1=r1)
-    return em
+
+    # achieve determinism: if this mapping-item was already evaluated with this arg-item we want to return
+    # the same evaluated-mapping-item again
+
+    i32_instance_rels = I32["evaluated mapping"].get_inv_relations("R4__is_instance_of")
+
+    # Note: this could be speed up by caching, however it is unclear where the cache should live
+    # and how it relates to RDF representation
+
+    for i32_inst_rel in i32_instance_rels:
+        i32_instance = i32_inst_rel.relation_tuple[0]
+
+        # TODO: adapt this for multivariant mappings
+        if i32_instance.R35__is_applied_mapping_of == mapping and i32_instance.R36__has_argument[0] == arg:
+            return i32_instance
+
+    # for loop finished regularly -> the application `mapping(arg)` has not been created before -> create new item
+    ev_mapping = instance_of(I32["evaluated mapping"], r1=r1)
+    ev_mapping.set_relation(R35["is applied mapping of"], mapping)
+    ev_mapping.set_relation(R36["has argument"], arg)
+
+    return ev_mapping
 
 
 # TODO: doc: this mechanism needs documentation
@@ -789,6 +809,32 @@ R34 = create_builtin_relation(
 )
 
 proxy_item = QualifierFactory(R34["has proxy item"])
+
+
+R35 = create_builtin_relation(
+    key_str="R35",
+    R1__has_label="is applied mapping of",
+    R2__has_description=(
+        'specifies the mapping entitiy for which the subject is an application'
+    ),
+    R8__has_domain_of_argument_1=I32["evaluated mapping"],
+    R22__is_functional=True,
+    R18__has_usage_hints=(
+        "Example: if subj = P(A) then we have: subj.R4__is_instance_of = I32; subj.R35 = P; subj.R36 = A"
+    ),
+)
+
+R36 = create_builtin_relation(
+    key_str="R36",
+    R1__has_label="has argument",
+    R2__has_description=(
+        'specifies the/an argument entitiy of the subject'
+    ),
+    R8__has_domain_of_argument_1=I32["evaluated mapping"],
+    R18__has_usage_hints=(
+        "Example: if subj = P(A) then we have: subj.R4__is_instance_of = I32; subj.R35 = P; subj.R36 = A"
+    ),
+)
 
 
 # noinspection PyUnresolvedReferences

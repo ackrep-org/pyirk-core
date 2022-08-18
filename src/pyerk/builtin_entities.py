@@ -760,6 +760,15 @@ I900 = create_builtin_item(
 # reminder that R32["is functional for each language"] already is defined
 assert R32 is not None
 
+R33 = create_builtin_relation(
+    key_str="R33",
+    R1__has_label="has corresponding wikidata entity",
+    R2__has_description=(
+        'specifies the corresponding wikidata item or relation'
+    ),
+    R22_is_functional=True,
+)
+
 
 # noinspection PyUnresolvedReferences
 I900.set_relation(R1["has label"], "test item with english label" @ en)

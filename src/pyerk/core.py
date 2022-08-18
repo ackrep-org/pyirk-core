@@ -590,6 +590,20 @@ def process_key_str(key_str: str) -> ProcessedStmtKey:
     return res
 
 
+def pk(key_str: str) -> str:
+    """
+    Convenience function converting "I1234__my_label"  to "I1234". Intended for usage in unittests
+
+    :param key_str:
+    :return:
+    """
+
+    processed_key = process_key_str(key_str)
+    assert processed_key.short_key is not None
+    return processed_key.short_key
+
+
+
 # noinspection PyShadowingNames
 class Item(Entity):
     def __init__(self, key_str: str, **kwargs):
@@ -610,12 +624,12 @@ class Item(Entity):
             R1 = "<<ValueError while retrieving R1>>"
         return f'<Item {self.short_key}["{R1}"]>'
 
-    def get_relations(self):
+    def get_relations(self) -> Dict[str, list]:
         """
-        Return all relations where this item is either subject (argument) or object (result)
+        Return all relations where this item is subject
         :return:
         """
-        pass
+        return ds.relation_edges[self.short_key]
 
 
 # noinspection PyShadowingNames

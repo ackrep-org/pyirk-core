@@ -605,7 +605,6 @@ def pk(key_str: str) -> str:
     return processed_key.short_key
 
 
-
 # noinspection PyShadowingNames
 class Item(Entity):
     def __init__(self, key_str: str, **kwargs):
@@ -626,12 +625,33 @@ class Item(Entity):
             R1 = "<<ValueError while retrieving R1>>"
         return f'<Item {self.short_key}["{R1}"]>'
 
-    def get_relations(self) -> Dict[str, list]:
+    def get_relations(self, key_str: Optional[str] = None) -> Union[Dict[str, list], list]:
         """
         Return all relations where this item is subject
-        :return:
+        :param key_str:     if passed return only the result for this key
+        :return:            either the whole dict or just one value (of type list)
         """
-        return ds.relation_edges[self.short_key]
+
+        rel_dict = ds.relation_edges[self.short_key]
+        if key_str is None:
+            return rel_dict
+        else:
+            processed_key = pk(key_str)
+            return rel_dict.get(processed_key, [])
+
+    def get_inv_relations(self, key_str: Optional[str] = None) -> Union[Dict[str, list], list]:
+        """
+        Return all relations where this item is object
+        :param key_str:     if passed return only the result for this key
+        :return:            either the whole dict or just one value (of type list)
+        """
+
+        inv_rel_dict = ds.inv_relation_edges[self.short_key]
+        if key_str is None:
+            return inv_rel_dict
+        else:
+            processed_key = pk(key_str)
+            return inv_rel_dict.get(processed_key, [])
 
 
 # noinspection PyShadowingNames

@@ -344,7 +344,8 @@ with I9907.scope("context") as cm:
     cm.new_rel(I9907.M, R5939["has column number"], I9907.nc)
 
 with I9907.scope("premises") as cm:
-    cm.new_equation(lhs=I9907.nr, rhs=I9907.nr)
+    # number of rows == number of columns
+    cm.new_equation(lhs=I9907.nr, rhs=I9907.nc)
 
 with I9907.scope("assertions") as cm:
     cm.new_rel(I9907.M, p.R30["is secondary instance of"], I9906["square matrix"])

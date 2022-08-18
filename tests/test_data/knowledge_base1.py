@@ -291,6 +291,7 @@ I3007 = p.create_item(
 
 with I3007.scope("context") as cm:
     cm.new_var(sys=uq_instance_of(I5948["dynamical system"]))
+    
     cm.new_var(tf_rep=p.instance_of(I2640["transfer function representation"]))
     cm.new_var(denom=p.instance_of(I4239["monovariate polynomial"]))
     cm.new_var(set_of_poles=p.instance_of(I5484["finite set of complex numbers"]))
@@ -372,8 +373,9 @@ I9907 = p.create_item(
 )
 
 with I9907.scope("context") as cm:
-    cm.new_var(M=p.instance_of(I9904["matrix"]))
-    cm.new_var(nr=p.instance_of(I4464["positive integer"]))
+    cm.new_var(M=uq_instance_of(I9904["matrix"]))
+    cm.new_var(nr=uq_instance_of(I4464["positive integer"]))
+
     cm.new_var(nc=p.instance_of(I4464["positive integer"]))
 
     cm.new_rel(I9907.M, R5938["has row number"], I9907.nr)
@@ -399,8 +401,9 @@ I3749 = p.create_item(
 # TODO: specify universal quantification for A and n
 
 with I3749["Cayley-Hamilton theorem"].scope("context") as cm:
-    cm.new_var(A=p.instance_of(I9906["square matrix"]))
-    cm.new_var(n=p.instance_of(I4464["positive integer"]))
+    cm.new_var(A=uq_instance_of(I9906["square matrix"]))
+    cm.new_var(n=uq_instance_of(I4464["positive integer"]))
+
     cm.new_var(P=p.instance_of(I4240["matrix polynomial"]))
     cm.new_var(Z=p.instance_of(I9905["zero matrix"]))
 

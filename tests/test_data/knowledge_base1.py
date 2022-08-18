@@ -244,6 +244,45 @@ I7208 = p.create_item(
     R17__is_subproperty_of=I7207["stability"],
 )
 
+
+I1145 = p.create_relation(
+    R1__has_label="is universally quantified",
+    R2__has_description=(
+        "specifies that the subject represents an universally quantified variable (usually denoted by '∀')"
+    ),
+    R8__has_domain_of_argument_1=I4235["mathematical object"],
+    R11__has_range_of_result=bool,
+    R18__has_usage_hints=(
+        "used to specify the free variables in theorems and similar statements"
+    ),
+)
+
+
+def uq_instance_of(type_entity: p.Item, r1: str = None, r2: str = None) -> p.Item:
+    """
+    Shortcut to create an instance and set the relation I1145["is universally quantified"] to True in one step
+    to allow compact notation.
+
+    :param type_entity:     the type of which an instance is created
+    :param r1:              the label (tried to extract from calling context)
+    :param r2:              optional description
+
+    :return:                new item
+    """
+
+    if r1 is None:
+        try:
+            r1 = p.core.get_key_str_by_inspection(upcount=1)
+        # TODO: make this except clause more specific
+        except:
+            # note this fallback naming can be avoided by explicitly passing r1=...  as kwarg
+            r1 = f"{type_entity.R1} – instance"
+
+    instance = p.instance_of(type_entity, r1, r2)
+    instance.set_relation(I1145["is universally quantified"], True)
+    return instance
+
+
 # <theorem>
 # todo this should be an equivalence instead of an implication
 I3007 = p.create_item(
@@ -253,7 +292,7 @@ I3007 = p.create_item(
 )
 
 with I3007.scope("context") as cm:
-    cm.new_var(sys=p.instance_of(I5948["dynamical system"]))
+    cm.new_var(sys=uq_instance_of(I5948["dynamical system"]))
     cm.new_var(tf_rep=p.instance_of(I2640["transfer function representation"]))
     cm.new_var(denom=p.instance_of(I4239["monovariate polynomial"]))
     cm.new_var(set_of_poles=p.instance_of(I5484["finite set of complex numbers"]))

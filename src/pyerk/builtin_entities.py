@@ -13,6 +13,7 @@ from .core import (
     RelationEdge,
     de,
     en,
+    QualifierFactory
 )
 
 # it is OK to access ds here in the builtin module, but this import should not be copied to other knowledge modules
@@ -452,7 +453,7 @@ class _proposition__CM:
         assert isinstance(pred, Relation)
         sub.set_relation(pred, obj, scope=self.scope)
 
-    def new_equation(self, lhs: Item, rhs: Item):
+    def new_equation(self, lhs: Item, rhs: Item) -> Item:
         """
         convenience method to create a equation-related RelationEdge
 
@@ -465,8 +466,7 @@ class _proposition__CM:
         assert lhs is not rhs
 
         eq = new_equation(lhs, rhs, scope=self.scope)
-
-        self.new_rel(*eq.rel_tup)
+        return eq
 
 
 def _proposition__scope(self: Item, scope_name: str):
@@ -576,13 +576,15 @@ I21 = create_builtin_item(
 R26 = create_builtin_relation(
     key_str="R26",
     R1__has_label="has lhs",
-    R2__has_description="specifies the left hand side of an equation",
+    R2__has_description="specifies the left hand side of an relation",
+    R22__is_funtional=True,
 )
 
 R27 = create_builtin_relation(
     key_str="R27",
     R1__has_label="has rhs",
-    R2__has_description="specifies the right hand side of an equation",
+    R2__has_description="specifies the right hand side of an relation",
+    R22__is_funtional=True,
 )
 
 R26["has lhs"].set_relation(R8["has domain of argument 1"], I21["mathematical relation"])
@@ -732,7 +734,7 @@ R31 = create_builtin_relation(
 )
 
 
-def new_equation(lhs: Item, rhs: Item, doc=None, scope: Optional[Item] = None):
+def new_equation(lhs: Item, rhs: Item, doc=None, scope: Optional[Item] = None) -> Item:
 
     if doc is not None:
         assert isinstance(doc, str)
@@ -745,9 +747,7 @@ def new_equation(lhs: Item, rhs: Item, doc=None, scope: Optional[Item] = None):
     eq.set_relation(R27["has rhs"], rhs)
 
     # TODO: proxyitem should be specified by a qualifier
-    re = lhs.set_relation(R31["is in mathematical relation with"], rhs, scope=scope, proxyitem=eq)
-
-    eq.rel_tup = re.relation_tuple
+    re = lhs.set_relation(R31["is in mathematical relation with"], rhs, scope=scope, qualifiers=[proxy_item(eq)])
 
     return eq
 
@@ -775,6 +775,20 @@ R33 = create_builtin_relation(
     ),
     R22_is_functional=True,
 )
+
+R34 = create_builtin_relation(
+    key_str="R34",
+    R1__has_label="has proxy item",
+    R2__has_description=(
+        'specifies an item which represents an RelationEdge'
+    ),
+    R18__has_usage_hints=(
+        "This relation is intended to be used as qualifier, e.g. on R31__is_in_mathematical_relation_with, "
+        "where the proxy item is an instance of I23__equation."
+    ),
+)
+
+proxy_item = QualifierFactory(R34["has proxy item"])
 
 
 # noinspection PyUnresolvedReferences

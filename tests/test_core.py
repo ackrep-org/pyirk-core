@@ -149,3 +149,31 @@ class TestCore(unittest.TestCase):
         rel1, rel2 = itm1.get_relations()[p.pk("R1833__has_employer")][:2]
         self.assertEqual(len(rel1.qualifiers), 2)
         self.assertEqual(len(rel2.qualifiers), 2)
+
+    def test_equation(self):
+        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH, "knowledge_base1")
+
+        itm1: p.Item = p.ds.get_entity("I3749__Cayley_Hamilton_theorem")
+        Z: p.Item = itm1.scope("context").namespace["Z"]
+        inv_rel_dict = Z.get_inv_relations()
+
+        # test R31__in_mathematical_relation_with
+
+        r31_list = inv_rel_dict["R31"]
+        re: p.RelationEdge = r31_list[0]
+        self.assertEqual(len(r31_list), 1)
+
+        # test the expected qualifier
+        q = re.qualifiers[0]
+        self.assertEqual(q.relation_tuple[0], re)
+        self.assertEqual(q.relation_tuple[1], p.R34["has proxy item"])
+
+        # this is the proxy item
+        eq = q.relation_tuple[2]
+        rhs = eq.R27__has__rhs
+        self.assertEqual(rhs, Z)
+
+
+class TestCore2(unittest.TestCase):
+    def setUp(self):
+        pass

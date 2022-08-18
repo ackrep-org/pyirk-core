@@ -141,3 +141,11 @@ class TestCore(unittest.TestCase):
 
         itm4 = p.instance_of(itm3)
         self.assertFalse(p.is_instance_of_generalized_metaclass(itm4))
+
+    def test_qualifiers(self):
+        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH, "knowledge_base1")
+
+        itm1: p.Item = p.ds.get_entity("I2746__Rudolf_Kalman")
+        rel1, rel2 = itm1.get_relations()[p.pk("R1833__has_employer")][:2]
+        self.assertEqual(len(rel1.qualifiers), 2)
+        self.assertEqual(len(rel2.qualifiers), 2)

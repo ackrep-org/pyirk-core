@@ -314,7 +314,9 @@ class Entity(abc.ABC):
         if isinstance(relation, Relation):
 
             if isinstance(obj, (Entity, *allowed_types)) or obj in allowed_types:
-                return self._set_relation(relation.short_key, obj, scope=scope, proxyitem=proxyitem)
+                return self._set_relation(
+                    relation.short_key, obj, scope=scope, qualifiers=qualifiers, proxyitem=proxyitem
+                )
             # Todo: remove obsolete code:
             # elif isinstance(obj, Iterable):
             #     msg = f"Unsupported iterable type ({type(obj)}) of {obj}, while setting relation {relation.short_key}"

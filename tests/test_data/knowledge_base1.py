@@ -384,7 +384,7 @@ I7435 = p.create_item(
     R1__has_label="human",
     R2__has_description="human being",
     R4__instance_of=p.I2["Metaclass"],
-    R33__has_corresponding_wikidata_entity="Q5"
+    R33__has_corresponding_wikidata_entity="Q5",
 )
 
 
@@ -399,21 +399,21 @@ I1342 = p.create_item(
     R1__has_label="academic institution",
     R2__has_description="educational institution dedicated to education and research",
     R4__instance_of=p.I2["Metaclass"],
-    R33__has_corresponding_wikidata_entity="Q4671277"
+    R33__has_corresponding_wikidata_entity="Q4671277",
 )
 
 I9942 = p.create_item(
     R1__has_label="Stanford University",
     R2__has_description="private research university in California, USA",
     R4__instance_of=I1342["academic institution"],
-    R33__has_corresponding_wikidata_entity="Q41506"
+    R33__has_corresponding_wikidata_entity="Q41506",
 )
 
 I7301 = p.create_item(
     R1__has_label="ETH Zürich",
     R2__has_description="Swiss Federal Institute of Technology in Zürich",
     R4__instance_of=I1342["academic institution"],
-    R33__has_corresponding_wikidata_entity="Q11942"
+    R33__has_corresponding_wikidata_entity="Q11942",
 )
 
 R1833 = p.create_relation(
@@ -422,9 +422,27 @@ R1833 = p.create_relation(
     R33__has_corresponding_wikidata_entity="P108",
 )
 
-# TODO: add qualifiers `start-date` and `end-date` here
-I2746["Rudolf Kalman"].set_relation(R1833["has employer"], I9942["Stanford University"])  # 1964 until 1971
-I2746["Rudolf Kalman"].set_relation(R1833["has employer"], I7301["ETH Zürich"])  # 1973 - 1997
+R4156 = p.create_relation(
+    R1__has_label="has start time",
+    R2__has_description="specifies when a statement becomes true",
+    R33__has_corresponding_wikidata_entity="P580",
+)
+
+R4698 = p.create_relation(
+    R1__has_label="has end time",
+    R2__has_description="specifies when a statement ends to be true",
+    R33__has_corresponding_wikidata_entity="P582",
+)
+
+start_time = p.QualifierFactory(R4156["has start time"])
+end_time = p.QualifierFactory(R4698["has end time"])
+
+I2746["Rudolf Kalman"].set_relation(
+    R1833["has employer"], I9942["Stanford University"], qualifiers=[start_time("1964"), end_time("1971")]
+)
+I2746["Rudolf Kalman"].set_relation(
+    R1833["has employer"], I7301["ETH Zürich"], qualifiers=[start_time("1973"), end_time("1997")]
+)
 
 # End of qualifier-testing code
 

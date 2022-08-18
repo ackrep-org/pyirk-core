@@ -134,6 +134,8 @@ I4235 = p.create_item(
     R4__instance_of=p.I2["Metaclass"],
 )
 
+p.R37["has definition"].set_relation(p.R8["has domain of argument 1"], I4235["mathematical object"])
+
 # todo: what is the difference between an object and an expression?
 I4236 = p.create_item(
     R1__has_label="mathematical expression",
@@ -252,7 +254,7 @@ I1145 = p.create_relation(
     ),
     R8__has_domain_of_argument_1=I4235["mathematical object"],
     R11__has_range_of_result=bool,
-    R18__has_usage_hints=("used to specify the free variables in theorems and similar statements"),
+    R18__has_usage_hints="used to specify the free variables in theorems and similar statements",
 )
 
 
@@ -291,7 +293,7 @@ I3007 = p.create_item(
 
 with I3007.scope("context") as cm:
     cm.new_var(sys=uq_instance_of(I5948["dynamical system"]))
-    
+
     cm.new_var(tf_rep=p.instance_of(I2640["transfer function representation"]))
     cm.new_var(denom=p.instance_of(I4239["monovariate polynomial"]))
     cm.new_var(set_of_poles=p.instance_of(I5484["finite set of complex numbers"]))
@@ -390,11 +392,13 @@ with I9907.scope("assertions") as cm:
 
 # </definition>
 
+I9906["square matrix"].set_relation(p.R37["has definition"], I9907["definition of square matrix"])
+
 # <theorem>
 
 I3749 = p.create_item(
     R1__has_label="Cayley-Hamilton theorem",
-    R2__has_description="establishes that every quadratic matrix is a root of its own characteristic polynomial",
+    R2__has_description="establishes that every square matrix is a root of its own characteristic polynomial",
     R4__instance_of=p.I15["implication proposition"],
 )
 
@@ -485,6 +489,35 @@ I2746["Rudolf Kalman"].set_relation(
 )
 
 # End of qualifier-testing code
+
+
+I5325 = p.create_item(
+    R1__has_label="Hurwitz polynomial",
+    R2__has_description="monovariate polynomial of quadratic matrices",
+    R3__subclass_of=I4239["monovariate polynomial"],
+)
+
+# <definition>
+I4455 = p.create_item(
+    R1__has_label="definition of Hurwitz polynomial",
+    R2__has_description="the defining statement of what a hurwitz polynomial is",
+    R4__is_instance_of=p.I20["mathematical definition"],
+)
+
+with I4455.scope("context") as cm:
+    cm.new_var(P=uq_instance_of(I4239["monovariate polynomial"]))
+    cm.new_var(set_of_roots=p.instance_of(I5484["finite set of complex numbers"]))
+    cm.new_rel(I4455.P, R1757["has set of roots"], I4455.set_of_roots)
+
+
+with I4455.scope("premises") as cm:
+    cm.new_rel(I4455.set_of_roots, p.R14["is subset of"], I2739["open left half plane"])
+
+with I4455.scope("assertions") as cm:
+    cm.new_rel(I4455.P, p.R30["is secondary instance of"], I5325["Hurwitz polynomial"])
+
+I5325["Hurwitz polynomial"].set_relation(p.R37["has definition"], I4455["definition of Hurwitz polynomial"])
+# </definition>
 
 
 p.Sequence("y", p.I000["time derivative of order i"], link_op=p.I000["listing"], start=0, stop="k")

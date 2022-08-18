@@ -792,14 +792,14 @@ assert R32 is not None
 R33 = create_builtin_relation(
     key_str="R33",
     R1__has_label="has corresponding wikidata entity",
-    R2__has_description=("specifies the corresponding wikidata item or relation"),
+    R2__has_description="specifies the corresponding wikidata item or relation",
     R22_is_functional=True,
 )
 
 R34 = create_builtin_relation(
     key_str="R34",
     R1__has_label="has proxy item",
-    R2__has_description=("specifies an item which represents an RelationEdge"),
+    R2__has_description="specifies an item which represents an RelationEdge",
     R18__has_usage_hints=(
         "This relation is intended to be used as qualifier, e.g. on R31__is_in_mathematical_relation_with, "
         "where the proxy item is an instance of I23__equation."
@@ -812,7 +812,7 @@ proxy_item = QualifierFactory(R34["has proxy item"])
 R35 = create_builtin_relation(
     key_str="R35",
     R1__has_label="is applied mapping of",
-    R2__has_description=("specifies the mapping entitiy for which the subject is an application"),
+    R2__has_description="specifies the mapping entitiy for which the subject is an application",
     R8__has_domain_of_argument_1=I32["evaluated mapping"],
     R22__is_functional=True,
     R18__has_usage_hints=(
@@ -823,11 +823,19 @@ R35 = create_builtin_relation(
 R36 = create_builtin_relation(
     key_str="R36",
     R1__has_label="has argument",
-    R2__has_description=("specifies the/an argument entitiy of the subject"),
+    R2__has_description="specifies the/an argument entitiy of the subject",
     R8__has_domain_of_argument_1=I32["evaluated mapping"],
     R18__has_usage_hints=(
         "Example: if subj = P(A) then we have: subj.R4__is_instance_of = I32; subj.R35 = P; subj.R36 = A"
     ),
+)
+
+R37 = create_builtin_relation(
+    key_str="R37",
+    R1__has_label="has definition",
+    R2__has_description="specifies a formal definition of the item",
+    # R8__has_domain_of_argument_1= <mathematical object> (will be defined in other module)
+    R11__has_range_of_result=I20["mathematical definition"],
 )
 
 

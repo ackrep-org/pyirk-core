@@ -424,13 +424,20 @@ class DataStore:
         # this will be set on demand
         self.rdfgraph = None
 
-    def get_entity(self, short_key) -> Entity:
-        if res := self.relations.get(short_key):
+    def get_entity(self, key_str) -> Entity:
+        """
+        :param key_str:     str like I1234 or I1234__some_label
+
+        :return:            corresponding entity
+        """
+
+        processed_key = process_key_str(key_str)
+        if res := self.relations.get(processed_key.short_key):
             return res
-        if res := self.items.get(short_key):
+        if res := self.items.get(processed_key.short_key):
             return res
         else:
-            msg = f"Could not find entity with key {short_key}"
+            msg = f"Could not find entity with key {processed_key.short_key}; Entity type: {processed_key.etype}"
             raise KeyError(msg)
 
     def get_relation_edges(self, entity_key: str, relation_key: str) -> List["RelationEdge"]:

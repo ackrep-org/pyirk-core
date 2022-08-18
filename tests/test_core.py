@@ -129,9 +129,9 @@ class TestCore(unittest.TestCase):
     def test_is_instance_of_generalized_metaclass(self):
         mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH, "knowledge_base1")
 
-        itm1 = p.ds.get_entity("I2")  # I2["Metaclass"]
-        itm2 = p.ds.get_entity("I4235")  # I4235["mathematical object"]
-        itm3 = p.ds.get_entity("I4239")  # I4239["monovariate polynomial"]->I4236["mathematical expression"]->I4235
+        itm1 = p.ds.get_entity("I2__Metaclass")
+        itm2 = p.ds.get_entity("I4235__mathematical_object")
+        itm3 = p.ds.get_entity("I4239__mathematical_expression")
 
         # metaclass itself is not an instance of metaclass
         self.assertFalse(p.is_instance_of_generalized_metaclass(itm1))

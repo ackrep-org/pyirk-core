@@ -252,9 +252,7 @@ I1145 = p.create_relation(
     ),
     R8__has_domain_of_argument_1=I4235["mathematical object"],
     R11__has_range_of_result=bool,
-    R18__has_usage_hints=(
-        "used to specify the free variables in theorems and similar statements"
-    ),
+    R18__has_usage_hints=("used to specify the free variables in theorems and similar statements"),
 )
 
 
@@ -344,7 +342,6 @@ I9906 = p.create_item(
     R3__is_subclass_of=I9904["matrix"],
     # TODO: formalize the condition inspired by OWL
 )
-
 
 R5938 = p.create_relation(
     R1__has_label="has row number",

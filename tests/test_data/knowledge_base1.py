@@ -283,6 +283,39 @@ def uq_instance_of(type_entity: p.Item, r1: str = None, r2: str = None) -> p.Ite
     return instance
 
 
+I5325 = p.create_item(
+    R1__has_label="Hurwitz polynomial",
+    R2__has_description="monovariate polynomial of quadratic matrices",
+    R3__subclass_of=I4239["monovariate polynomial"],
+)
+
+# <definition>
+I4455 = p.create_item(
+    R1__has_label="definition of Hurwitz polynomial",
+    R2__has_description="the defining statement of what a hurwitz polynomial is",
+    R4__is_instance_of=p.I20["mathematical definition"],
+)
+
+with I4455.scope("context") as cm:
+    cm.new_var(P=uq_instance_of(I4239["monovariate polynomial"]))
+    cm.new_var(set_of_roots=p.instance_of(I5484["finite set of complex numbers"]))
+    cm.new_rel(I4455.P, R1757["has set of roots"], I4455.set_of_roots)
+
+
+with I4455.scope("premises") as cm:
+    cm.new_rel(I4455.set_of_roots, p.R14["is subset of"], I2739["open left half plane"])
+
+with I4455.scope("assertions") as cm:
+    cm.new_rel(I4455.P, p.R30["is secondary instance of"], I5325["Hurwitz polynomial"])
+
+I5325["Hurwitz polynomial"].set_relation(p.R37["has definition"], I4455["definition of Hurwitz polynomial"])
+# </definition>
+
+
+# TODO: open question should  I3007["stability theorem for a rational transfer function"] be constructed by using I5325["Hurwitz polynomial"]
+# con: BIBO-stability might be meaningfull also for Transferfunctions with nonpolynomial denominators
+
+
 # <theorem>
 # todo this should be an equivalence instead of an implication
 I3007 = p.create_item(
@@ -489,35 +522,6 @@ I2746["Rudolf Kalman"].set_relation(
 )
 
 # End of qualifier-testing code
-
-
-I5325 = p.create_item(
-    R1__has_label="Hurwitz polynomial",
-    R2__has_description="monovariate polynomial of quadratic matrices",
-    R3__subclass_of=I4239["monovariate polynomial"],
-)
-
-# <definition>
-I4455 = p.create_item(
-    R1__has_label="definition of Hurwitz polynomial",
-    R2__has_description="the defining statement of what a hurwitz polynomial is",
-    R4__is_instance_of=p.I20["mathematical definition"],
-)
-
-with I4455.scope("context") as cm:
-    cm.new_var(P=uq_instance_of(I4239["monovariate polynomial"]))
-    cm.new_var(set_of_roots=p.instance_of(I5484["finite set of complex numbers"]))
-    cm.new_rel(I4455.P, R1757["has set of roots"], I4455.set_of_roots)
-
-
-with I4455.scope("premises") as cm:
-    cm.new_rel(I4455.set_of_roots, p.R14["is subset of"], I2739["open left half plane"])
-
-with I4455.scope("assertions") as cm:
-    cm.new_rel(I4455.P, p.R30["is secondary instance of"], I5325["Hurwitz polynomial"])
-
-I5325["Hurwitz polynomial"].set_relation(p.R37["has definition"], I4455["definition of Hurwitz polynomial"])
-# </definition>
 
 
 p.Sequence("y", p.I000["time derivative of order i"], link_op=p.I000["listing"], start=0, stop="k")

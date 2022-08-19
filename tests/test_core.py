@@ -18,6 +18,9 @@ TEST_DATA_PATH = pjoin(current_dir, "test_data", "knowledge_base1.py")
 # noinspection PyPep8Naming
 class TestCore(unittest.TestCase):
     def setUp(self):
+        # this serves to debug interdependent test-cases
+        # print("In method", self._testMethodName)
+        # IPS()
         pass
 
     def test_core1(self):

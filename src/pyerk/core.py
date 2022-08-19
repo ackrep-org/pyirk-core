@@ -868,6 +868,8 @@ def create_relation(key_str: str = "", **kwargs) -> Relation:
     else:
         rel_key = key_str
 
+    assert rel_key.startswith("R")
+    
     mod_id = get_mod_name_by_inspection()
 
     default_relations = {

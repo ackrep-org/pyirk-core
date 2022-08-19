@@ -247,7 +247,7 @@ I7208 = p.create_item(
 )
 
 
-I1145 = p.create_relation(
+R1145 = p.create_relation(
     R1__has_label="is universally quantified",
     R2__has_description=(
         "specifies that the subject represents an universally quantified variable (usually denoted by '∀')"
@@ -260,7 +260,7 @@ I1145 = p.create_relation(
 
 def uq_instance_of(type_entity: p.Item, r1: str = None, r2: str = None) -> p.Item:
     """
-    Shortcut to create an instance and set the relation I1145["is universally quantified"] to True in one step
+    Shortcut to create an instance and set the relation R1145["is universally quantified"] to True in one step
     to allow compact notation.
 
     :param type_entity:     the type of which an instance is created
@@ -279,7 +279,7 @@ def uq_instance_of(type_entity: p.Item, r1: str = None, r2: str = None) -> p.Ite
             r1 = f"{type_entity.R1} – instance"
 
     instance = p.instance_of(type_entity, r1, r2)
-    instance.set_relation(I1145["is universally quantified"], True)
+    instance.set_relation(R1145["is universally quantified"], True)
     return instance
 
 

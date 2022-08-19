@@ -670,7 +670,10 @@ def create_item(key_str: str = "", **kwargs) -> Item:
     else:
         item_key = key_str
 
-    mod_id = get_mod_name_by_inspection()
+    mod_id_list = get_mod_id_list_by_inspection()
+
+    # get the uppermost __MOD_ID__
+    mod_id = mod_id_list.pop()
 
     new_kwargs = {}
     # prepare the kwargs to set relations
@@ -869,8 +872,9 @@ def create_relation(key_str: str = "", **kwargs) -> Relation:
         rel_key = key_str
 
     assert rel_key.startswith("R")
-    
-    mod_id = get_mod_name_by_inspection()
+
+    # get uppermost __MOD_ID__ from frame stack
+    mod_id = get_mod_id_list_by_inspection().pop()
 
     default_relations = {
         # "R22": None,  # R22__is_functional
@@ -981,6 +985,7 @@ def get_key_str_by_inspection(upcount=1) -> str:
     return res
 
 
+# TODO: remove obsolete this obsolete function
 def get_mod_name_by_inspection(upcount=1):
     """
     :param upcount:     int; how many frames to go up
@@ -991,6 +996,37 @@ def get_mod_name_by_inspection(upcount=1):
 
     mod_id = frame.f_globals.get("__MOD_ID__")
     return mod_id
+
+
+def get_mod_id_list_by_inspection(upcount=2) -> list:
+    """
+    :param upcount:     int; how many frames to go up at beginning
+                        upcount=2 (default) means: start int the caller frame. Example: fnc1()->fnc2()->fnc3()
+                        where fnc3 is this function, called by fnc2, which itself is called by fnc1 (the caller)
+    :return:            list of mod_id-objects (type str)
+    """
+
+    # get start frame
+    frame = inspect.currentframe()
+    i = upcount
+    while True:
+        assert frame.f_back is not None
+        frame = frame.f_back
+        i -= 1
+        if i == 0:
+            break
+
+    # now `frame` is our start frame where we begin to look for __MOD_ID__
+    res = [None]
+    while True:
+        mod_id = frame.f_globals.get("__MOD_ID__")
+        if mod_id is not None:
+            res.append(mod_id)
+        frame = frame.f_back
+        if frame is None:
+            break
+
+    return res
 
 
 class Context:
@@ -1014,7 +1050,7 @@ def unload_mod(mod_id: str, strict=True) -> None:
 
     # TODO: This might to check dependencies in the future
 
-    entity_keys = ds.entities_created_in_mod.pop(mod_id)
+    entity_keys: List[str] = ds.entities_created_in_mod.pop(mod_id)
 
     if not entity_keys and strict:
         msg = f"Seems like no entities from {mod_id} have been loaded. This is unexpected."
@@ -1022,6 +1058,12 @@ def unload_mod(mod_id: str, strict=True) -> None:
 
     for ek in entity_keys:
         _unlink_entity(ek)
+        assert ek not in ds.relation_relation_edges.keys()
+
+    intersection_set = set(entity_keys).intersection(ds.relation_relation_edges.keys())
+
+    msg = "Unexpectedly some of the entity keys are still present"
+    assert len(intersection_set) == 0, msg
 
     ds.mod_path_mapping.remove_pair(key_a=mod_id)
 
@@ -1051,17 +1093,28 @@ def _unlink_entity(ek: str) -> None:
         for re in re_list:
             try:
                 # ds.relation_relation_edges: for every relation key stores a list of relevant relation-edges
-                ds.relation_relation_edges[rel_key].remove(re)
+
+                # check before accessing the default dict to avoid to create a key just by looking
+                if rel_key in ds.relation_relation_edges:
+                    ds.relation_relation_edges[rel_key].remove(re)
+
+                # explanation: if ek = R1234 with R1234["has my relation"] the above line deletes e.g. the relation edge
+                # for R1 (=rel_key) which could be created by R1234.set_relation(R1, "has my label")
+            except ValueError:
+                # this happens if there was no entity in the list (returned by the defalut dict)
+                pass
+
+            try:
+                # ds.relation_edge_list: store a list of all relation edges (to maintain the order)
+                ds.relation_edge_list.remove(re)
+
+                # explanation: also remove the RelationEdge instance (e.g. represented by the tuple
+                # (R1234, R1, "has my label")
             except ValueError:
                 # this happens if there was no entity in the list
                 pass
 
-            try:
-                # ds.store a list of all relation edges (to maintain the order)
-                ds.relation_edge_list.remove(re)
-            except ValueError:
-                # this happens if there was no entity in the list
-                pass
+    ds.relation_relation_edges.pop(ek, None)
 
 
 def register_mod(mod_id):

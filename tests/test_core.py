@@ -19,9 +19,42 @@ TEST_DATA_PATH = pjoin(current_dir, "test_data", "knowledge_base1.py")
 class TestCore(unittest.TestCase):
     def setUp(self):
         # this serves to debug interdependent test-cases
-        # print("In method", self._testMethodName)
-        # IPS()
+        # print("In method", p.aux.bgreen(self._testMethodName))
+        # IPS(print_tb=-1)
         pass
+
+    def tearDown(self) -> None:
+
+        # unload all modules which where loaded by a test
+        for mod_id in list(p.ds.mod_path_mapping.a.keys()):
+            p.unload_mod(mod_id)
+
+    def test_aa1(self):
+        """
+        The first two tests ensure, that TestCases do not influence each other
+        """
+        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH, "knowledge_base1")
+
+    def test_aa2(self):
+        """
+        The first two tests ensure, that TestCases do not influence each other
+        """
+
+        builtin_entity_keys = set(p.ds.builtin_entities.keys())
+        available_item_keys = set(p.ds.items.keys())
+        available_relation_keys = set(p.ds.relations.keys())
+        available_relation_edge_keys = set(p.ds.relation_edges.keys())
+        available_relation_relation_edge_keys = set(p.ds.relation_relation_edges.keys())
+
+        diff1 = available_item_keys.difference(builtin_entity_keys)
+        diff2 = available_relation_keys.difference(builtin_entity_keys)
+        diff3 = available_relation_edge_keys.difference(builtin_entity_keys)
+        diff4 = available_relation_relation_edge_keys.difference(builtin_entity_keys)
+
+        self.assertEqual(len(diff1), 0)
+        self.assertEqual(len(diff2), 0)
+        self.assertEqual(len(diff3), 0)
+        self.assertEqual(len(diff4), 0)
 
     def test_core1(self):
         mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH, "knowledge_base1")
@@ -186,4 +219,6 @@ class TestCore(unittest.TestCase):
 
 class TestCore2(unittest.TestCase):
     def setUp(self):
+        # this serves to debug interdependent test-cases
+        # print("In method", p.aux.bgreen(self._testMethodName))
         pass

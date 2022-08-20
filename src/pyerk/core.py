@@ -381,12 +381,47 @@ class Entity(abc.ABC):
                 qualifiers=qualifiers,
                 proxyitem=proxyitem,
             )
+
+            # interconnect the primal RE with the inverse one:
+            rledg.dual_relation_edge = inv_rledg
+            inv_rledg.dual_relation_edge = rledg
+
             # ds.set_relation_edge(rel_content.short_key, rel.short_key, inv_rledg)
             tmp_list = ds.inv_relation_edges[rel_content.short_key][rel.short_key]
 
             # TODO: maybe check length here for inverse functional
             tmp_list.append(inv_rledg)
         return rledg
+
+    def get_relations(self, key_str: Optional[str] = None) -> Union[Dict[str, list], list]:
+        """
+        Return all RelationEdge instance where this item is subject
+
+        :param key_str:     if passed return only the result for this key
+        :return:            either the whole dict or just one value (of type list)
+        """
+
+        rel_dict = ds.relation_edges[self.short_key]
+        if key_str is None:
+            return rel_dict
+        else:
+            processed_key = pk(key_str)
+            return rel_dict.get(processed_key, [])
+
+    def get_inv_relations(self, key_str: Optional[str] = None) -> Union[Dict[str, list], list]:
+        """
+        Return all RelationEdge instance where this item is object
+
+        :param key_str:     if passed return only the result for this key
+        :return:            either the whole dict or just one value (of type list)
+        """
+
+        inv_rel_dict = ds.inv_relation_edges[self.short_key]
+        if key_str is None:
+            return inv_rel_dict
+        else:
+            processed_key = pk(key_str)
+            return inv_rel_dict.get(processed_key, [])
 
 
 class DataStore:
@@ -626,34 +661,6 @@ class Item(Entity):
             R1 = "<<ValueError while retrieving R1>>"
         return f'<Item {self.short_key}["{R1}"]>'
 
-    def get_relations(self, key_str: Optional[str] = None) -> Union[Dict[str, list], list]:
-        """
-        Return all relations where this item is subject
-        :param key_str:     if passed return only the result for this key
-        :return:            either the whole dict or just one value (of type list)
-        """
-
-        rel_dict = ds.relation_edges[self.short_key]
-        if key_str is None:
-            return rel_dict
-        else:
-            processed_key = pk(key_str)
-            return rel_dict.get(processed_key, [])
-
-    def get_inv_relations(self, key_str: Optional[str] = None) -> Union[Dict[str, list], list]:
-        """
-        Return all relations where this item is object
-        :param key_str:     if passed return only the result for this key
-        :return:            either the whole dict or just one value (of type list)
-        """
-
-        inv_rel_dict = ds.inv_relation_edges[self.short_key]
-        if key_str is None:
-            return inv_rel_dict
-        else:
-            processed_key = pk(key_str)
-            return inv_rel_dict.get(processed_key, [])
-
 
 # noinspection PyShadowingNames
 def create_item(key_str: str = "", **kwargs) -> Item:
@@ -816,6 +823,8 @@ class RelationEdge:
         self.corresponding_literal = corresponding_literal
         self.qualifiers = []
         self._process_qualifiers(qualifiers)
+        self.dual_relation_edge = None
+        self.unlinked = None
 
         # TODO: replace this by qualifier
         self.proxyitem = proxyitem
@@ -853,6 +862,62 @@ class RelationEdge:
                 proxyitem=None,
             )
             self.qualifiers.append(rledg)
+
+    def unlink(self, *args) -> None:
+        """
+        Remove this RelationEdge instance from all data structures in the global data storage
+        :return:
+        """
+
+        if not len(self.relation_tuple) == 3:
+            raise NotImplementedError
+
+        if self.unlinked:
+            return
+
+        subj, pred, obj = self.relation_tuple
+
+        if self.role == RelationRole.SUBJECT:
+            # ds.relation_edge_list: store a list of all (primal/subject) relation edges (to maintain the order)
+
+            tolerant_removal(ds.relation_edge_list, self)
+
+            subj_rel_edges: Dict[str: List[RelationEdge]] = ds.relation_edges[subj.short_key]
+            tolerant_removal(subj_rel_edges.get(pred.short_key, []), self)
+
+            # ds.relation_relation_edges: for every relation key stores a list of relevant relation-edges
+            # (check before accessing the *defaultdict* to avoid to create a key just by looking)
+            if pred.short_key in ds.relation_relation_edges:
+                tolerant_removal(ds.relation_relation_edges.get(pred.short_key, []), self)
+
+        elif self.role == RelationRole.OBJECT:
+            assert isinstance(obj, Entity)
+            obj_rel_edges: Dict[str: List[RelationEdge]] = ds.inv_relation_edges[obj.short_key]
+            # (check before accessing, see above)
+            if pred.short_key in obj_rel_edges:
+                tolerant_removal(obj_rel_edges[pred.short_key], self)
+        else:
+            msg = f"Unexpected .role attribute: {self.role}"
+            raise ValueError(msg)
+
+        # this prevents from infinite recursion
+        self.unlinked = True
+        if self.dual_relation_edge is not None:
+            self.dual_relation_edge.unlink()
+
+
+def tolerant_removal(sequence, element):
+    """
+    call sequence.remove(element) but tolerate KeyError and ValueError
+    :param sequence:
+    :param element:
+    :return:
+    """
+
+    try:
+        sequence.remove(element)
+    except (KeyError, ValueError):
+        pass
 
 
 def create_relation(key_str: str = "", **kwargs) -> Relation:
@@ -1075,6 +1140,8 @@ def _unlink_entity(ek: str) -> None:
     :param ek:     entity key
     :return:        None
     """
+
+    entity: Entity = ds.get_entity(ek)
     res1 = ds.items.pop(ek, None)
     res2 = ds.relations.pop(ek, None)
 
@@ -1082,37 +1149,22 @@ def _unlink_entity(ek: str) -> None:
         msg = f"No entity with key {ek} could be found. This is unexpected."
         raise KeyError(msg)
 
-    # for every entity key it stores a dict that maps relation keys to lists of corresponding relation-edges
-    re_dict = ds.relation_edges.pop(ek, {})
-    inv_re_dict = ds.inv_relation_edges.pop(ek, {})
+    # now delete the relation edges from the data structures
+    re_dict = ds.relation_edges.pop(entity.short_key, {})
+    inv_re_dict = ds.inv_relation_edges.pop(entity.short_key, {})
 
     # in case res1 is a scope-item we delete all corressponding relation edges, otherwise nothing happens
     ds.scope_relation_edges.pop(ek, None)
 
-    for rel_key, re_list in list(re_dict.items()) + list(inv_re_dict.items()):
+    # create a item-list of all RelationEdges instances where `ek` is involved either as subject or object
+    re_item_list = list(re_dict.items()) + list(inv_re_dict.items())
+
+    for rel_key, re_list in re_item_list:
+        # rel_key: key of the relation (like "R1234")
+        # re_list: list of RelationEdge instances
         for re in re_list:
-            try:
-                # ds.relation_relation_edges: for every relation key stores a list of relevant relation-edges
-
-                # check before accessing the default dict to avoid to create a key just by looking
-                if rel_key in ds.relation_relation_edges:
-                    ds.relation_relation_edges[rel_key].remove(re)
-
-                # explanation: if ek = R1234 with R1234["has my relation"] the above line deletes e.g. the relation edge
-                # for R1 (=rel_key) which could be created by R1234.set_relation(R1, "has my label")
-            except ValueError:
-                # this happens if there was no entity in the list (returned by the defalut dict)
-                pass
-
-            try:
-                # ds.relation_edge_list: store a list of all relation edges (to maintain the order)
-                ds.relation_edge_list.remove(re)
-
-                # explanation: also remove the RelationEdge instance (e.g. represented by the tuple
-                # (R1234, R1, "has my label")
-            except ValueError:
-                # this happens if there was no entity in the list
-                pass
+            re: RelationEdge
+            re.unlink(ek)
 
     ds.relation_relation_edges.pop(ek, None)
 

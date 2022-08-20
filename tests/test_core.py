@@ -6,7 +6,7 @@ from os.path import join as pjoin
 import rdflib
 
 # noinspection PyUnresolvedReferences
-from ipydex import IPS, activate_ips_on_exception
+from ipydex import IPS, activate_ips_on_exception, set_trace
 import pyerk as p
 
 activate_ips_on_exception()
@@ -214,7 +214,8 @@ class TestCore(unittest.TestCase):
         lhs = eq.R26__has_lhs
         P: p.Item = itm1.scope("context").namespace["P"]
         A: p.Item = itm1.scope("context").namespace["A"]
-        self.assertEqual(lhs, P(A))
+        tmp = P(A)
+        self.assertEqual(lhs, tmp)
 
 
 class TestCore2(unittest.TestCase):
@@ -222,3 +223,51 @@ class TestCore2(unittest.TestCase):
         # this serves to debug interdependent test-cases
         # print("In method", p.aux.bgreen(self._testMethodName))
         pass
+
+    def tearDown(self) -> None:
+
+        # unload all modules which where loaded by a test
+        for mod_id in list(p.ds.mod_path_mapping.a.keys()):
+            p.unload_mod(mod_id)
+
+    def test_aa1(self):
+        """
+        The first two tests ensure, that TestCases do not influence each other
+        """
+        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH, "knowledge_base1")
+
+        self.tearDown()
+
+        # after tearing down there should be no i32 instances left
+        i32_instance_rels = p.I32["evaluated mapping"].get_inv_relations("R4__is_instance_of")
+        self.assertEqual(len(i32_instance_rels), 0)
+
+    def test_equation(self):
+        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH, "knowledge_base1")
+
+        itm1: p.Item = p.ds.get_entity("I3749__Cayley_Hamilton_theorem")
+        Z: p.Item = itm1.scope("context").namespace["Z"]
+        inv_rel_dict = Z.get_inv_relations()
+
+        # test R31__in_mathematical_relation_with
+
+        r31_list = inv_rel_dict["R31"]
+        re: p.RelationEdge = r31_list[0]
+        self.assertEqual(len(r31_list), 1)
+
+        # test the expected qualifier
+        q = re.qualifiers[0]
+        self.assertEqual(q.relation_tuple[0], re)
+        self.assertEqual(q.relation_tuple[1], p.R34["has proxy item"])
+
+        # this is the proxy item
+        eq = q.relation_tuple[2]
+        rhs = eq.R27__has__rhs
+        self.assertEqual(rhs, Z)
+
+        # ensure reproducible results of applied mappings
+        lhs = eq.R26__has_lhs
+        P: p.Item = itm1.scope("context").namespace["P"]
+        A: p.Item = itm1.scope("context").namespace["A"]
+        tmp = P(A)
+        self.assertEqual(lhs, tmp)

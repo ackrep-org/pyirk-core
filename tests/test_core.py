@@ -8,6 +8,7 @@ import rdflib
 # noinspection PyUnresolvedReferences
 from ipydex import IPS, activate_ips_on_exception, set_trace
 import pyerk as p
+import pyerk.visualization as visualization
 
 activate_ips_on_exception()
 
@@ -220,6 +221,11 @@ class TestCore2(unittest.TestCase):
         # unload all modules which where loaded by a test
         for mod_id in list(p.ds.mod_path_mapping.a.keys()):
             p.unload_mod(mod_id)
+
+    def test_visualization(self):
+
+        res_graph: visualization.nx.DiGraph = visualization.visualize_entity("I21__equation", print_path=True)
+        # self.assertEqual(res_graph.number_of_nodes(), 2)
 
 
 class TestZZCore3(unittest.TestCase):

@@ -22,7 +22,6 @@ from abc import ABC
 
 
 class AbstractNode(ABC):
-
     def __init__(self):
         self.repr_str: str = ""
         self.smart_label: str = ""
@@ -35,6 +34,7 @@ class EntityNode(AbstractNode):
     """
     Container to represent a node in a networkx graph (for visualization)
     """
+
     def __init__(self, entity: p.Entity):
         super().__init__()
 
@@ -81,7 +81,7 @@ def visualize_entity(ek, fpath=None, print_path=False) -> nx.DiGraph:
     base_node = create_node(entity)
     G.add_node(base_node, color="#2ca02c")
 
-    for rel_key, re_list in re_dict.items():
+    for rel_key, re_list in list(re_dict.items()) + list(inv_re_dict.items()):
         if rel_key in REL_BLACKLIST:
             continue
 
@@ -89,37 +89,33 @@ def visualize_entity(ek, fpath=None, print_path=False) -> nx.DiGraph:
         for re in re_list:
             assert len(re.relation_tuple) == 3
             subj, pred, obj = re.relation_tuple
-            other_node = create_node(obj)
-            G.add_node(other_node)
-            G.add_edge(base_node, other_node, label=rel_label(pred))
 
-    for rel_key, re_list in inv_re_dict.items():
-        if rel_key in REL_BLACKLIST:
-            continue
+            if re.role == p.RelationRole.SUBJECT:
+                other_node = create_node(obj)
+                G.add_node(other_node)
+                G.add_edge(base_node, other_node, label=rel_label(pred))
+            else:
+                other_node = create_node(subj)
+                G.add_node(other_node)
+                G.add_edge(other_node, base_node, label=rel_label(pred))
 
-        re_list: List[p.RelationEdge]
-        for re in re_list:
-            assert len(re.relation_tuple) == 3
-            subj, pred, obj = re.relation_tuple
-            other_node = create_node(subj)
-            G.add_node(other_node)
-            G.add_edge(other_node, base_node, label=rel_label(pred))
-    IPS()
-
-    # see https://nxv.readthedocs.io/en/latest/reference.html#styling
+    # for styling see https://nxv.readthedocs.io/en/latest/reference.html#styling
     # matplotlib default colors:
     # ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf']
-    edge_defaults = {"style": "solid", "arrowType": "normal", "fontsize": 10, }
+    edge_defaults = {
+        "style": "solid",
+        "arrowType": "normal",
+        "fontsize": 10,
+    }
     style = nxv.Style(
         graph={"rankdir": "BT"},
-
         # u: node, d: its attribute dict
         node=lambda u, d: {
             "shape": "circle",
             "fixedsize": True,
-            "width": 2,
+            "width": 1.2,
             "fontsize": 10,
-            "color": d.get("color", "black")
+            "color": d.get("color", "black"),
         },
         # u: node1, v: node1, d: its attribute dict
         edge=lambda u, v, d: {**edge_defaults, "label": d["label"]},

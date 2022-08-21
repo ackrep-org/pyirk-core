@@ -882,7 +882,7 @@ class RelationEdge:
 
             tolerant_removal(ds.relation_edge_list, self)
 
-            subj_rel_edges: Dict[str: List[RelationEdge]] = ds.relation_edges[subj.short_key]
+            subj_rel_edges: Dict[str : List[RelationEdge]] = ds.relation_edges[subj.short_key]
             tolerant_removal(subj_rel_edges.get(pred.short_key, []), self)
 
             # ds.relation_relation_edges: for every relation key stores a list of relevant relation-edges
@@ -892,7 +892,7 @@ class RelationEdge:
 
         elif self.role == RelationRole.OBJECT:
             assert isinstance(obj, Entity)
-            obj_rel_edges: Dict[str: List[RelationEdge]] = ds.inv_relation_edges[obj.short_key]
+            obj_rel_edges: Dict[str : List[RelationEdge]] = ds.inv_relation_edges[obj.short_key]
             # (check before accessing, see above)
             if pred.short_key in obj_rel_edges:
                 tolerant_removal(obj_rel_edges[pred.short_key], self)
@@ -1186,7 +1186,14 @@ class LangaguageCode:
 
         self.langtag = langtag
 
-    def __rmatmul__(self, arg: str) -> str:
+    def __rmatmul__(self, arg: str) -> Literal:
+        """
+        This enables syntax like `"test string" @ en` (where `en` is a LanguageCode instance)
+
+        :param arg:     the string for which the language ist to be specified
+
+        :return:        Literal instance with `.lang` attribute set
+        """
         assert isinstance(arg, str)
 
         res = Literal(arg, lang=self.langtag)

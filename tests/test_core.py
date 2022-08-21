@@ -57,6 +57,8 @@ class TestCore(unittest.TestCase):
         self.assertEqual(len(diff3), 0)
         self.assertEqual(len(diff4), 0)
 
+    # noinspection PyUnresolvedReferences
+    # (above noinspection is necessary because of the @-operator which is undecleared for strings)
     def test_core1(self):
         mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH, "knowledge_base1")
         self.assertEqual(mod1.I3749.R1, "Cayley-Hamilton theorem")
@@ -65,8 +67,9 @@ class TestCore(unittest.TestCase):
         self.assertEqual(def_eq_item.R4__is_instance_of, p.I18["mathematical expression"])
         self.assertEqual(def_eq_item.R24__has_LaTeX_string, r"$\dot x = f(x, u)$")
 
-        teststring1 = "this is english text" @ mod1.p.en
-        teststring2 = "das ist deutsch" @ mod1.p.de
+        # TODO: convince pycharm that this is valid (due to .__rmatmul__ method of p.en)
+        teststring1 = "this is english text" @ p.en
+        teststring2 = "das ist deutsch" @ p.de
 
         self.assertIsInstance(teststring1, rdflib.Literal)
         self.assertIsInstance(teststring2, rdflib.Literal)
@@ -224,6 +227,7 @@ class TestZZCore3(unittest.TestCase):
     Collection of test that should be executed last (because they seem to influence othter tests).
     This is achieved by putting "ZZ" in the name (assuming that test classes are executed in alphabetical order).
     """
+
     def setUp(self):
         # this serves to debug interdependent test-cases
         # print("In method", p.aux.bgreen(self._testMethodName))
@@ -248,4 +252,3 @@ class TestZZCore3(unittest.TestCase):
         print(colorama.Fore.YELLOW, "sparql test currently fails!")
 
         # self.assertEqual(res2, [[mod1.I4466, p.I4], [mod1.I4466, p.I5]])
-

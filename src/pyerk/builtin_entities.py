@@ -710,6 +710,7 @@ def create_evaluated_mapping(mapping: Item, arg: Entity) -> Item:
 
     # Note: this could be speed up by caching, however it is unclear where the cache should live
     # and how it relates to RDF representation
+    # thus we iterate over all instances of I32["evaluated mapping"]
 
     for i32_inst_rel in i32_instance_rels:
         i32_instance = i32_inst_rel.relation_tuple[0]

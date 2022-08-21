@@ -19,7 +19,7 @@ TEST_DATA_PATH = pjoin(current_dir, "test_data", "knowledge_base1.py")
 class TestCore(unittest.TestCase):
     def setUp(self):
         # this serves to debug interdependent test-cases
-        # print("In method", p.aux.bgreen(self._testMethodName))
+        print("In method", p.aux.bgreen(self._testMethodName))
         # IPS(print_tb=-1)
         pass
 
@@ -31,14 +31,15 @@ class TestCore(unittest.TestCase):
 
     def test_aa1(self):
         """
-        The first two tests ensure, that TestCases do not influence each other
+        The first test ensures, that TestCases do not influence each other
         """
         mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH, "knowledge_base1")
 
-    def test_aa2(self):
-        """
-        The first two tests ensure, that TestCases do not influence each other
-        """
+        self.tearDown()
+
+        # after tearing down there should be no i32 instances left
+        i32_instance_rels = p.I32["evaluated mapping"].get_inv_relations("R4__is_instance_of")
+        self.assertEqual(len(i32_instance_rels), 0)
 
         builtin_entity_keys = set(p.ds.builtin_entities.keys())
         available_item_keys = set(p.ds.items.keys())
@@ -76,19 +77,6 @@ class TestCore(unittest.TestCase):
         # ensure that R32["is functional for each language"] works as expected (return str/Literal but not [str] ...)
         self.assertNotIsInstance(p.I12.R2, list)
         self.assertNotIsInstance(p.I900.R2, list)
-
-    def test_sparql_query(self):
-        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH, "knowledge_base1")
-        p.ds.rdfgraph = p.rdfstack.create_rdf_triples()
-        qsrc = p.rdfstack.get_sparql_example_query()
-        res = p.ds.rdfgraph.query(qsrc)
-        res2 = p.aux.apply_func_to_table_cells(p.rdfstack.convert_from_rdf_to_pyerk, res)
-
-        import colorama
-
-        print(colorama.Fore.YELLOW, "sparql test currently fails!")
-
-        # self.assertEqual(res2, [[mod1.I4466, p.I4], [mod1.I4466, p.I5]])
 
     def test_builtins1(self):
         """
@@ -230,44 +218,34 @@ class TestCore2(unittest.TestCase):
         for mod_id in list(p.ds.mod_path_mapping.a.keys()):
             p.unload_mod(mod_id)
 
-    def test_aa1(self):
-        """
-        The first two tests ensure, that TestCases do not influence each other
-        """
+
+class TestZZCore3(unittest.TestCase):
+    """
+    Collection of test that should be executed last (because they seem to influence othter tests).
+    This is achieved by putting "ZZ" in the name (assuming that test classes are executed in alphabetical order).
+    """
+    def setUp(self):
+        # this serves to debug interdependent test-cases
+        # print("In method", p.aux.bgreen(self._testMethodName))
+        pass
+
+    def tearDown(self) -> None:
+
+        # unload all modules which where loaded by a test
+        for mod_id in list(p.ds.mod_path_mapping.a.keys()):
+            p.unload_mod(mod_id)
+
+    def test_sparql_query(self):
+        # This test seems somehow to influence later tests
         mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH, "knowledge_base1")
+        p.ds.rdfgraph = p.rdfstack.create_rdf_triples()
+        qsrc = p.rdfstack.get_sparql_example_query()
+        res = p.ds.rdfgraph.query(qsrc)
+        res2 = p.aux.apply_func_to_table_cells(p.rdfstack.convert_from_rdf_to_pyerk, res)
 
-        self.tearDown()
+        import colorama
 
-        # after tearing down there should be no i32 instances left
-        i32_instance_rels = p.I32["evaluated mapping"].get_inv_relations("R4__is_instance_of")
-        self.assertEqual(len(i32_instance_rels), 0)
+        print(colorama.Fore.YELLOW, "sparql test currently fails!")
 
-    def test_equation(self):
-        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH, "knowledge_base1")
+        # self.assertEqual(res2, [[mod1.I4466, p.I4], [mod1.I4466, p.I5]])
 
-        itm1: p.Item = p.ds.get_entity("I3749__Cayley_Hamilton_theorem")
-        Z: p.Item = itm1.scope("context").namespace["Z"]
-        inv_rel_dict = Z.get_inv_relations()
-
-        # test R31__in_mathematical_relation_with
-
-        r31_list = inv_rel_dict["R31"]
-        re: p.RelationEdge = r31_list[0]
-        self.assertEqual(len(r31_list), 1)
-
-        # test the expected qualifier
-        q = re.qualifiers[0]
-        self.assertEqual(q.relation_tuple[0], re)
-        self.assertEqual(q.relation_tuple[1], p.R34["has proxy item"])
-
-        # this is the proxy item
-        eq = q.relation_tuple[2]
-        rhs = eq.R27__has__rhs
-        self.assertEqual(rhs, Z)
-
-        # ensure reproducible results of applied mappings
-        lhs = eq.R26__has_lhs
-        P: p.Item = itm1.scope("context").namespace["P"]
-        A: p.Item = itm1.scope("context").namespace["A"]
-        tmp = P(A)
-        self.assertEqual(lhs, tmp)

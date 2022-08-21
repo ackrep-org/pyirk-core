@@ -1168,6 +1168,10 @@ def _unlink_entity(ek: str) -> None:
 
     ds.relation_relation_edges.pop(ek, None)
 
+    # during unlinking of the RelationEdges the default dicts might have been recreating some keys -> pop again
+    ds.relation_edges.pop(entity.short_key, None)
+    ds.inv_relation_edges.pop(entity.short_key, None)
+
 
 def register_mod(mod_id):
     frame = get_caller_frame(upcount=1)

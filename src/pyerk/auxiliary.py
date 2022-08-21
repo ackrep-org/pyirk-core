@@ -84,6 +84,18 @@ def bright(txt):
     return f"{Style.BRIGHT}{txt}{Style.RESET_ALL}"
 
 
+def bblue(txt):
+    return f"{Fore.BLUE}{Style.BRIGHT}{txt}{Style.RESET_ALL}"
+
+
+def bcyan(txt):
+    return f"{Fore.CYAN}{Style.BRIGHT}{txt}{Style.RESET_ALL}"
+
+
+def bmagenta(txt):
+    return f"{Fore.MAGENTA}{Style.BRIGHT}{txt}{Style.RESET_ALL}"
+
+
 def bgreen(txt):
     return f"{Fore.GREEN}{Style.BRIGHT}{txt}{Style.RESET_ALL}"
 

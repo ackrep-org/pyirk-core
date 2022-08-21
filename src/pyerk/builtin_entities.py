@@ -646,7 +646,7 @@ I26 = create_builtin_item(
 I27 = create_builtin_item(
     key_str="I27",
     R1__has_label="non-strict inequality",
-    R2__has_description=("super class for greater-than-or-equal-to and less-than-or-equal-to"),
+    R2__has_description="super class for greater-than-or-equal-to and less-than-or-equal-to",
     R3__is_subclass_of=I25["general inequality"],
 )
 

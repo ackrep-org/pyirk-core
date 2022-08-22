@@ -224,8 +224,12 @@ class TestCore2(unittest.TestCase):
 
     def test_visualization(self):
 
-        res_graph: visualization.nx.DiGraph = visualization.visualize_entity("I21__equation", print_path=True)
-        # self.assertEqual(res_graph.number_of_nodes(), 2)
+        res_graph: visualization.nx.DiGraph = visualization.visualize_entity("I21__equation", print_path=False)
+        self.assertEqual(res_graph.number_of_nodes(), 7)
+
+        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH, "knowledge_base1")
+        res_graph: visualization.nx.DiGraph = visualization.visualize_entity("Ia3699", print_path=False)
+        self.assertEqual(res_graph.number_of_nodes(), 8)
 
 
 class TestZZCore3(unittest.TestCase):

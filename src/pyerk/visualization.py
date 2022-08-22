@@ -47,10 +47,11 @@ class EntityNode(AbstractNode):
     Container to represent a node in a networkx graph (for visualization)
     """
 
-    def __init__(self, entity: p.Entity):
+    def __init__(self, entity: p.Entity, url_template: str):
         super().__init__()
 
         self.short_key = entity.short_key
+        self.url_template = url_template
 
         # TODO: handle different languages here
         self.label = self.smart_label = entity.R1
@@ -61,16 +62,15 @@ class EntityNode(AbstractNode):
 
         self.repr_str = f'{self.short_key}["{self.smart_label}"]'
 
-    def link_wrapped_label(self, url_template: str) -> str:
+    def __repr__(self) -> str:
         """
         Set the label to a string which will be later replaced by a link-wrapped label.
         This two-step process is necessary due to the internal escaping of the graph-viz rendering.
 
-        :param url_template:
         :return:
         """
 
-        url = url_template.format(short_key=self.short_key)
+        url = self.url_template.format(short_key=self.short_key)
         res = []
 
         # this loop is to handle multiline lables (wich are introduced in self.smart_label for better space efficiency)
@@ -89,15 +89,14 @@ class LiteralStrNode(AbstractNode):
         self.repr_str = arg
 
 
-def create_node(arg: Union[p.Entity, str]):
+def create_node(arg: Union[p.Entity, object], url_template: str):
 
     if isinstance(arg, p.Entity):
-        return EntityNode(arg)
+        return EntityNode(arg, url_template)
     elif isinstance(arg, str):
-        return LiteralStrNode(arg)
+        return LiteralStrNode(f'"{arg}"')
     else:
-        msg = f"unexpected type: {type(arg)}"
-        raise TypeError(msg)
+        return LiteralStrNode(f"{type(arg).__name__}({str(arg)})")
 
 
 def rel_label(rel: p.Relation):
@@ -110,8 +109,8 @@ def visualize_entity(ek, fpath=None, print_path=False, return_svg_data=False, ur
     inv_re_dict = entity.get_inv_relations()
 
     G = nx.DiGraph()
-    base_node = create_node(entity)
-    G.add_node(base_node, color="#2ca02c", label=base_node.link_wrapped_label(url_template))
+    base_node = create_node(entity, url_template)
+    G.add_node(base_node, color="#2ca02c", label=repr(base_node))
 
     for rel_key, re_list in list(re_dict.items()) + list(inv_re_dict.items()):
         if rel_key in REL_BLACKLIST:
@@ -123,12 +122,12 @@ def visualize_entity(ek, fpath=None, print_path=False, return_svg_data=False, ur
             subj, pred, obj = re.relation_tuple
 
             if re.role == p.RelationRole.SUBJECT:
-                other_node = create_node(obj)
-                G.add_node(other_node, label=other_node.link_wrapped_label(url_template))
+                other_node = create_node(obj, url_template)
+                G.add_node(other_node, label=repr(other_node))
                 G.add_edge(base_node, other_node, label=rel_label(pred))
             else:
-                other_node = create_node(subj)
-                G.add_node(other_node, label=other_node.link_wrapped_label(url_template))
+                other_node = create_node(subj, url_template)
+                G.add_node(other_node, label=repr(other_node))
                 G.add_edge(other_node, base_node, label=rel_label(pred))
 
     # for styling see https://nxv.readthedocs.io/en/latest/reference.html#styling

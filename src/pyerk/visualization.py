@@ -72,7 +72,7 @@ def rel_label(rel: p.Relation):
     return f'{rel.short_key}["{rel.R1}"]'
 
 
-def visualize_entity(ek, fpath=None, print_path=False) -> nx.DiGraph:
+def visualize_entity(ek, fpath=None, print_path=False, return_svg_data=False) -> Union[bytes, nx.DiGraph]:
     entity = p.ds.get_entity(ek)
     re_dict = entity.get_relations()
     inv_re_dict = entity.get_inv_relations()
@@ -123,6 +123,9 @@ def visualize_entity(ek, fpath=None, print_path=False) -> nx.DiGraph:
 
     # svg_data = nxv.render(G, style)
     svg_data = nxv.render(G, style, format="svg")
+
+    if return_svg_data:
+        return svg_data
 
     if fpath is None:
         fpath = "./tmp.svg"

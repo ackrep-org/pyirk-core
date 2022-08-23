@@ -209,6 +209,18 @@ class TestCore(unittest.TestCase):
         tmp = P(A)
         self.assertEqual(lhs, tmp)
 
+    def test_process_key_str(self):
+
+        pkey1 = p.process_key_str("I8234")
+        pkey2 = p.process_key_str("R1234__my_label")
+
+        self.assertEqual(pkey1.label, "")
+        self.assertEqual(pkey2.label, "my_label")
+
+        self.assertRaises(ValueError, p.process_key_str, "R1234XYZ")
+
+        IPS()
+
 
 class TestCore2(unittest.TestCase):
     def setUp(self):

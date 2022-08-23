@@ -211,15 +211,27 @@ class TestCore(unittest.TestCase):
 
     def test_process_key_str(self):
 
-        pkey1 = p.process_key_str("I8234")
-        pkey2 = p.process_key_str("R1234__my_label")
+        # note these keys do not to exist
+        pkey1 = p.process_key_str("I0008234")
 
+        self.assertEqual(pkey1.short_key, "I0008234")
         self.assertEqual(pkey1.label, "")
+
+        pkey2 = p.process_key_str("R00001234__my_label")
+
+        self.assertEqual(pkey2.short_key, "R00001234")
         self.assertEqual(pkey2.label, "my_label")
 
+        # wrong syntax of key_str (missing "__")
         self.assertRaises(ValueError, p.process_key_str, "R1234XYZ")
 
-        IPS()
+        pkey3 = p.process_key_str("R2__has_description")
+
+        self.assertEqual(pkey3.short_key, "R2")
+        self.assertEqual(pkey3.label, "has_description")
+
+        # wrong label ("_XYZ")
+        self.assertRaises(ValueError, p.process_key_str, "R2__has_description_XYZ")
 
 
 class TestCore2(unittest.TestCase):

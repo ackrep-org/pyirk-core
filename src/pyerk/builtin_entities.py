@@ -80,7 +80,7 @@ def instance_of(entity, r1: str = None, r2: str = None) -> Item:
         key_str=core.generate_new_key(prefix="I", prefix2="a"),
         R1__has_label=r1,
         R2__has_description=r2,
-        R4__instance_of=entity,
+        R4__is_instance_of=entity,
     )
 
     return new_item
@@ -115,17 +115,17 @@ R32["is functional for each language"].set_relation(R22["is functional"], True)
 
 # Note that R1, R22, and R32 are used extensively to control the behavior in pyerk.core
 
-R3 = create_builtin_relation("R3", R1="is subclass of", R22__is_funtional=True)
-R4 = create_builtin_relation("R4", R1="is instance of", R22__is_funtional=True)
+R3 = create_builtin_relation("R3", R1="is subclass of", R22__is_functional=True)
+R4 = create_builtin_relation("R4", R1="is instance of", R22__is_functional=True)
 R5 = create_builtin_relation("R5", R1="is part of")
-R6 = create_builtin_relation("R6", R1="has defining equation", R22__is_funtional=True)
-R7 = create_builtin_relation("R7", R1="has arity", R22__is_funtional=True)
+R6 = create_builtin_relation("R6", R1="has defining equation", R22__is_functional=True)
+R7 = create_builtin_relation("R7", R1="has arity", R22__is_functional=True)
 R8 = create_builtin_relation("R8", R1="has domain of argument 1")
 R9 = create_builtin_relation("R9", R1="has domain of argument 2")
 R10 = create_builtin_relation("R10", R1="has domain of argument 3")
 R11 = create_builtin_relation("R11", R1="has range of result", R2="specifies the range of the result (last arg)")
 R12 = create_builtin_relation("R12", R1="is defined by means of")
-R13 = create_builtin_relation("R13", R1="has canonical symbol", R22__is_funtional=True)
+R13 = create_builtin_relation("R13", R1="has canonical symbol", R22__is_functional=True)
 R14 = create_builtin_relation("R14", R1="is subset of")
 R15 = create_builtin_relation("R15", R1="is element of", R2="states that arg1 is an element of arg2")
 R16 = create_builtin_relation(
@@ -138,7 +138,9 @@ R16 = create_builtin_relation(
 R17 = create_builtin_relation(
     key_str="R17", R1="is subproperty of", R2="specifies that arg1 (subj) is a subproperty of arg2 (obj)"
 )
-R18 = create_builtin_relation("R18", R1="has usage hints", R2="specifies hints on how this relation should be used")
+R18 = create_builtin_relation(
+    "R18", R1="has usage hint", R2="specifies a hint (str) on how this relation should be used"
+)
 
 R19 = create_builtin_relation(
     key_str="R19",
@@ -152,7 +154,7 @@ R20 = create_builtin_relation(
     R1="has defining scope",
     R2="specifies the scope in which an entity is defined (e.g. the premise of a theorem)",
     R18="Note: one Entity can be parent of multiple scopes, (e.g. a theorem has 'context', 'premises', 'assertions')",
-    R22__is_funtional=True,
+    R22__is_functional=True,
 )
 
 R21 = create_builtin_relation(
@@ -163,7 +165,7 @@ R21 = create_builtin_relation(
         "This relation is used to bind scope items to its 'semantic parents'. "
         "This is *not* the inverse relation to R20"
     ),
-    R22__is_funtional=True,
+    R22__is_functional=True,
 )
 
 
@@ -171,14 +173,14 @@ R23 = create_builtin_relation(
     key_str="R23",
     R1="has name in scope",
     R2="specifies that the subject entity has the object-literal as unique local name",
-    R22__is_funtional=True,
+    R22__is_functional=True,
 )
 
 R24 = create_builtin_relation(
     key_str="R24",
     R1="has LaTeX string",
     R2="specifies that the subject is associated with a string of LaTeX source",
-    R22__is_funtional=True,
+    R22__is_functional=True,
 )
 
 R25 = create_builtin_relation(
@@ -197,20 +199,20 @@ I2 = create_builtin_item(
     R2__has_description=(
         "Parent class for other classes; subclasses of this are also metaclasses " "instances are ordinary classes"
     ),
-    R3__subclass_of=I1,
+    R3__is_subclass_of=I1,
 )
 
 I3 = create_builtin_item("I3", R1="Field of science")
-I4 = create_builtin_item("I4", R1="Mathematics", R4__instance_of=I3)
-I5 = create_builtin_item("I5", R1="Engineering", R4__instance_of=I3)
-I6 = create_builtin_item("I6", R1="mathematical operation", R4__instance_of=I2["Metaclass"])
-I7 = create_builtin_item("I7", R1="mathematical operation with arity 1", R3__subclass_of=I6, R7=1)
-I8 = create_builtin_item("I8", R1="mathematical operation with arity 2", R3__subclass_of=I6, R7=2)
-I9 = create_builtin_item("I9", R1="mathematical operation with arity 3", R3__subclass_of=I6, R7=3)
+I4 = create_builtin_item("I4", R1="Mathematics", R4__is_instance_of=I3)
+I5 = create_builtin_item("I5", R1="Engineering", R4__is_instance_of=I3)
+I6 = create_builtin_item("I6", R1="mathematical operation", R4__is_instance_of=I2["Metaclass"])
+I7 = create_builtin_item("I7", R1="mathematical operation with arity 1", R3__is_subclass_of=I6, R7=1)
+I8 = create_builtin_item("I8", R1="mathematical operation with arity 2", R3__is_subclass_of=I6, R7=2)
+I9 = create_builtin_item("I9", R1="mathematical operation with arity 3", R3__is_subclass_of=I6, R7=3)
 I10 = create_builtin_item(
     "I10",
     R1="abstract metaclass",
-    R3__subclass_of=I2,
+    R3__is_subclass_of=I2,
     R2__has_description=(
         "Special metaclass. Instances of this class are abstract classes that should not be instantiated, "
         "but subclassed instead."
@@ -220,8 +222,8 @@ I11 = create_builtin_item(
     key_str="I11",
     R1="mathematical property",
     R2__has_description="base class for all mathematical properties",
-    R4__instance_of=I2["Metaclass"],
-    R18__has_usage_hints=(
+    R4__is_instance_of=I2["Metaclass"],
+    R18__has_usage_hint=(
         "Actual properties are instances of this class (not subclasses). "
         "To create a taxonomy-like structure the relation R17__is_sub_property_of should be used."
     ),
@@ -231,14 +233,14 @@ I12 = create_builtin_item(
     key_str="I12",
     R1__has_label="mathematical object",
     R2__has_description="base class for any knowledge object of interrest in the field of mathematics",
-    R4__instance_of=I2["Metaclass"],
+    R4__is_instance_of=I2["Metaclass"],
 )
 
 I13 = create_builtin_item(
     key_str="I13",
     R1__has_label="mathematical set",
     R2__has_description="mathematical set",
-    R3__subclass_of=I12["mathematical object"],
+    R3__is_subclass_of=I12["mathematical object"],
 )
 
 
@@ -246,7 +248,7 @@ I14 = create_builtin_item(
     key_str="I14",
     R1__has_label="mathematical proposition",
     R2__has_description="general mathematical proposition",
-    # R3__subclass_of=I7723["general mathematical proposition"]
+    # R3__is_subclass_of=I7723["general mathematical proposition"]
 )
 
 
@@ -254,7 +256,7 @@ I15 = create_builtin_item(
     key_str="I15",
     R1__has_label="implication proposition",
     R2__has_description="proposition, where the premise (if-part) implies the assertion (then-part)",
-    R3__subclass_of=I14["mathematical proposition"],
+    R3__is_subclass_of=I14["mathematical proposition"],
 )
 
 
@@ -262,7 +264,7 @@ I16 = create_builtin_item(
     key_str="I16",
     R1__has_label="scope",
     R2__has_description="auxiliary class; an instance defines the scope of statements (RelationEdge-objects)",
-    R3__instance_of=I2["Metaclass"],
+    R4__is_instance_of=I2["Metaclass"],
 )
 
 ###############################################################################
@@ -498,7 +500,7 @@ I17 = create_builtin_item(
     key_str="I17",
     R1__has_label="equivalence proposition",
     R2__has_description="proposition, which establishes the equivalence of two or more statements",
-    R3__subclass_of=I14["mathematical proposition"],
+    R3__is_subclass_of=I14["mathematical proposition"],
 )
 
 
@@ -508,7 +510,7 @@ I18 = create_builtin_item(
     R2__has_description=(
         "mathematical expression, e.g. represented by a LaTeX-string; this might change in the future to MathMl"
     ),
-    R3__instance_of=I2["Metaclass"],
+    R4__is_instance_of=I2["Metaclass"],
 )
 
 
@@ -554,7 +556,7 @@ I19 = create_builtin_item(
     key_str="I19",
     R1__has_label="multilingual string literal",
     R2__has_description="used to encode strings that depend on natural languages",
-    R3__is_instance_of=I2["Metaclass"],
+    R4__is_instance_of=I2["Metaclass"],
 )
 
 
@@ -583,14 +585,14 @@ R26 = create_builtin_relation(
     key_str="R26",
     R1__has_label="has lhs",
     R2__has_description="specifies the left hand side of an relation",
-    R22__is_funtional=True,
+    R22__is_functional=True,
 )
 
 R27 = create_builtin_relation(
     key_str="R27",
     R1__has_label="has rhs",
     R2__has_description="specifies the right hand side of an relation",
-    R22__is_funtional=True,
+    R22__is_functional=True,
 )
 
 R26["has lhs"].set_relation(R8["has domain of argument 1"], I21["mathematical relation"])
@@ -622,7 +624,7 @@ I24 = create_builtin_item(
     R1__has_label="inequation",
     R2__has_description="mathematical relation that specifies that lhs is unequal to rhs",
     R3__is_subclass_of=I21["mathematical relation"],
-    R18__has_usage_hints=(
+    R18__has_usage_hint=(
         "This item is different from inquality (I25): lhs and rhs need to be members of the same ordered set."
     ),
 )
@@ -689,7 +691,7 @@ R28 = create_builtin_relation(
     key_str="R28",
     R1__has_label="has mapping item",
     R2__has_description='specifies the concrete mapping item of an I32["evaluated mapping"] item',
-    R22_is_functional=True,
+    R22__is_functional=True,
 )
 
 R29 = create_builtin_relation(
@@ -741,7 +743,7 @@ R30 = create_builtin_relation(
     R2__has_description=(
         "specifies that the subject is an instance of a class-item,in addtioin to its unambiguous parent class."
     ),
-    R18__has_usage_hints=(
+    R18__has_usage_hint=(
         "Note that this relation is not functional. This construction allows to combine single (R4) "
         "and multiple inheritance."
     ),
@@ -754,7 +756,7 @@ R31 = create_builtin_relation(
     R2__has_description=(
         'specifies that the subject is related to the object via an instance of I25["mathematical relation"].'
     ),
-    R18__has_usage_hints=(
+    R18__has_usage_hint=(
         "The actual type of the relation can be tretrieved by the .proxyitem attribute of the "
         "corresponding RelationEdge."
     ),
@@ -786,8 +788,8 @@ I900 = create_builtin_item(
     key_str="I900",
     R1__has_label="test item mit label auf deutsch" @ de,
     R2__has_description="used for testing during development",
-    R3__is_instance_of=I2["Metaclass"],
-    R18__has_usage_hints="This item serves only for unittesting labels in different languages",
+    R4__is_instance_of=I2["Metaclass"],
+    R18__has_usage_hint="This item serves only for unittesting labels in different languages",
 )
 
 
@@ -798,14 +800,14 @@ R33 = create_builtin_relation(
     key_str="R33",
     R1__has_label="has corresponding wikidata entity",
     R2__has_description="specifies the corresponding wikidata item or relation",
-    R22_is_functional=True,
+    R22__is_functional=True,
 )
 
 R34 = create_builtin_relation(
     key_str="R34",
     R1__has_label="has proxy item",
     R2__has_description="specifies an item which represents an RelationEdge",
-    R18__has_usage_hints=(
+    R18__has_usage_hint=(
         "This relation is intended to be used as qualifier, e.g. on R31__is_in_mathematical_relation_with, "
         "where the proxy item is an instance of I23__equation."
     ),
@@ -820,7 +822,7 @@ R35 = create_builtin_relation(
     R2__has_description="specifies the mapping entitiy for which the subject is an application",
     R8__has_domain_of_argument_1=I32["evaluated mapping"],
     R22__is_functional=True,
-    R18__has_usage_hints=(
+    R18__has_usage_hint=(
         "Example: if subj = P(A) then we have: subj.R4__is_instance_of = I32; subj.R35 = P; subj.R36 = A"
     ),
 )
@@ -830,7 +832,7 @@ R36 = create_builtin_relation(
     R1__has_label="has argument",
     R2__has_description="specifies the/an argument entitiy of the subject",
     R8__has_domain_of_argument_1=I32["evaluated mapping"],
-    R18__has_usage_hints=(
+    R18__has_usage_hint=(
         "Example: if subj = P(A) then we have: subj.R4__is_instance_of = I32; subj.R35 = P; subj.R36 = A"
     ),
 )
@@ -852,7 +854,7 @@ I000 = create_builtin_item(
     key_str="I000",
     R1__has_label="dummy item",
     R2__has_description="used during development as placeholder for items which will be defined later",
-    R4__instance_of=I2["Metaclass"],  # this means: this Item is an ordinary class
+    R4__is_instance_of=I2["Metaclass"],  # this means: this Item is an ordinary class
 )
 
 R000 = create_builtin_relation(

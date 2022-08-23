@@ -673,7 +673,11 @@ def check_processed_key(pkey: ProcessedStmtKey) -> None:
     if not pkey.label:
         return
 
-    entity = ds.get_entity(pkey.short_key)
+    try:
+        entity = ds.get_entity(pkey.short_key)
+    except KeyError:
+        # entity does not exist -> no label to compare with
+        return
     label_compare_str = entity.R1.lower().replace(" ", "_")
 
     if label_compare_str != pkey.label:

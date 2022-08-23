@@ -211,6 +211,7 @@ class TestCore(unittest.TestCase):
 
     def test_process_key_str(self):
 
+        # first, check label consistency in builtin_enities
         # note these keys do not to exist
         pkey1 = p.process_key_str("I0008234")
 
@@ -232,6 +233,9 @@ class TestCore(unittest.TestCase):
 
         # wrong label ("_XYZ")
         self.assertRaises(ValueError, p.process_key_str, "R2__has_description_XYZ")
+
+        # now, check label consistency in the test data
+        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH, "knowledge_base1")
 
 
 class TestCore2(unittest.TestCase):

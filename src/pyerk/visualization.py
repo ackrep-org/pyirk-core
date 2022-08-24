@@ -32,14 +32,15 @@ class AbstractNode(ABC):
         return self.repr_str
 
 
-def replacement_key_generator(template="_rk_{:04d}"):
+def key_generator(template="k{:04d}"):
     i = -1
     while True:
         i += 1
         yield template.format(i)
 
 
-rep_key_gen = replacement_key_generator()
+rep_key_gen = key_generator(template="_rk_{:04d}")
+literal_node_key_gen = key_generator(template="LN{:04d}")
 
 
 class EntityNode(AbstractNode):
@@ -51,6 +52,7 @@ class EntityNode(AbstractNode):
         super().__init__()
 
         self.short_key = entity.short_key
+        self.id = f"node_{self.short_key}"  # this serves to recognize the nodes in svg code
         self.url_template = url_template
 
         # TODO: handle different languages here
@@ -84,6 +86,7 @@ class LiteralStrNode(AbstractNode):
         super().__init__()
 
         self.repr_str = arg
+        self.id = next(literal_node_key_gen)
 
 
 def create_node(arg: Union[p.Entity, object], url_template: str):
@@ -163,14 +166,28 @@ def format_repr_str(label: str, maxlen: int = 17) -> str:
     return "\n".join(result)
 
 
+class CustomizedDiGraph(nx.DiGraph):
+
+    def add_node(self, node_for_adding, **kwargs):
+
+        # set defaults
+        # note: adding an id keyword here does not influence the id in the svg
+        new_kwargs = dict(label=repr(node_for_adding), id=node_for_adding.id)
+
+        # overwrite with explicitly given kwargs
+        new_kwargs.update(kwargs)
+
+        super().add_node(node_for_adding, **new_kwargs)
+
+
 def visualize_entity(ek, fpath=None, print_path=False, return_svg_data=False, url_template="") -> Union[bytes, nx.DiGraph]:
     entity = p.ds.get_entity(ek)
     re_dict = entity.get_relations()
     inv_re_dict = entity.get_inv_relations()
 
-    G = nx.DiGraph()
+    G = CustomizedDiGraph()
     base_node = create_node(entity, url_template)
-    G.add_node(base_node, color="#2ca02c", label=repr(base_node))
+    G.add_node(base_node, color="#2ca02c")
 
     for rel_key, re_list in list(re_dict.items()) + list(inv_re_dict.items()):
         if rel_key in REL_BLACKLIST:
@@ -183,11 +200,11 @@ def visualize_entity(ek, fpath=None, print_path=False, return_svg_data=False, ur
 
             if re.role == p.RelationRole.SUBJECT:
                 other_node = create_node(obj, url_template)
-                G.add_node(other_node, label=repr(other_node))
+                G.add_node(other_node)
                 G.add_edge(base_node, other_node, label=rel_label(pred))
             else:
                 other_node = create_node(subj, url_template)
-                G.add_node(other_node, label=repr(other_node))
+                G.add_node(other_node)
                 G.add_edge(other_node, base_node, label=rel_label(pred))
 
     # for styling see https://nxv.readthedocs.io/en/latest/reference.html#styling

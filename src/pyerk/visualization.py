@@ -56,9 +56,8 @@ class EntityNode(AbstractNode):
         # TODO: handle different languages here
         self.label = self.smart_label = entity.R1
 
-        self.smart_label = format_label(self.label)
-
-        self.repr_str = f'{self.short_key}["{self.smart_label}"]'
+        unformated_repr_str = f'{self.short_key}["{self.smart_label}"]'
+        self.repr_str = format_repr_str(unformated_repr_str)
 
     def __repr__(self) -> str:
         """
@@ -101,9 +100,9 @@ def rel_label(rel: p.Relation):
     return f'{rel.short_key}["{rel.R1}"]'
 
 
-def format_label(label: str, maxlen: int = 12) -> str:
+def format_repr_str(label: str, maxlen: int = 17) -> str:
     """
-    Introduce newlines into entity labels for better spaces usage and readibility
+    Introduce newlines into entity repr_strings for better space usage and readibility
 
     Examples:
     - I4321["quite long label with many words"] -> I4321\n["quite long label\nwith many words"]
@@ -117,19 +116,32 @@ def format_label(label: str, maxlen: int = 12) -> str:
 
     # TODO: this should be ensured during data loading
     assert "\n" not in label
+    assert label == label.strip()
 
     if len(label) < maxlen:
         # short labels stay unchanged
         return label
 
     idx1 = label.find("[")
-    result = [label[:idx1]]
-    rest = label[idx1:]
+    if idx1 >= 0:
+        result = [label[:idx1]]
+        rest = label[idx1:]
+    else:
+        # nothing was found
+        result = []
+        rest = label
 
     split_chars = (" ", "-", "_")
 
     while len(rest) > maxlen:
+
         first_part = rest[:maxlen]
+
+        # handle special case where the next character is a space
+        if rest[maxlen] == " ":
+            result.append(first_part)
+            rest = rest[maxlen+1:]
+            continue
 
         # make first_part as long as possible -> find the last split-char index
         for i, c in enumerate(first_part[::-1]):
@@ -147,8 +159,6 @@ def format_label(label: str, maxlen: int = 12) -> str:
         rest = rest[first_part_split_index:]
 
     result.append(rest)
-
-    # self.smart_label = tmp.replace(" ", "\n").replace("_", "_\n").replace("-", "-\n")
 
     return "\n".join(result)
 

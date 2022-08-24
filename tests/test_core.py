@@ -263,14 +263,20 @@ class TestCore2(unittest.TestCase):
 
     def test_format_label(self):
 
-        l1 = visualization.format_label('I0123["1234567890"]', maxlen=8)
+        l1 = visualization.format_repr_str('I0123["1234567890"]', maxlen=8)
         self.assertEqual(l1, 'I0123\n["123456\n7890"]')
 
-        l2 = visualization.format_label('I0123["34 6 890"]', maxlen=10 + 2)  # +2 for the two characters '"]'
+        l2 = visualization.format_repr_str('I0123["34 6 890"]', maxlen=10 + 2)  # +2 for the two characters '"]'
         self.assertEqual(l2, 'I0123\n["34 6 890"]')
 
-        l3 = visualization.format_label('I0123["34 6 890"]', maxlen=9 + 2)
+        l3 = visualization.format_repr_str('I0123["34 6 890"]', maxlen=9 + 2)
         self.assertEqual(l3, 'I0123\n["34 6\n890"]')
+
+        lx = visualization.format_repr_str('I4463["non-negative integer"]', maxlen=12)
+        self.assertEqual(lx, 'I4463\n["non-\nnegative\ninteger"]')
+
+        lx = visualization.format_repr_str('non-negative integer', maxlen=12)
+        self.assertEqual(lx, 'non-negative\ninteger')
 
 
 class TestZZCore3(unittest.TestCase):

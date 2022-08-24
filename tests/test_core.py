@@ -252,12 +252,25 @@ class TestCore2(unittest.TestCase):
 
     def test_visualization(self):
 
-        res_graph: visualization.nx.DiGraph = visualization.visualize_entity("I21__equation", print_path=False)
+        res_graph: visualization.nx.DiGraph = visualization.visualize_entity(
+            "I21__mathematical_relation", print_path=False
+        )
         self.assertEqual(res_graph.number_of_nodes(), 7)
 
         mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH, "knowledge_base1")
         res_graph: visualization.nx.DiGraph = visualization.visualize_entity("Ia3699", print_path=False)
         self.assertEqual(res_graph.number_of_nodes(), 8)
+
+    def test_format_label(self):
+
+        l1 = visualization.format_label('I0123["1234567890"]', maxlen=8)
+        self.assertEqual(l1, 'I0123\n["123456\n7890"]')
+
+        l2 = visualization.format_label('I0123["34 6 890"]', maxlen=10 + 2)  # +2 for the two characters '"]'
+        self.assertEqual(l2, 'I0123\n["34 6 890"]')
+
+        l3 = visualization.format_label('I0123["34 6 890"]', maxlen=9 + 2)
+        self.assertEqual(l3, 'I0123\n["34 6\n890"]')
 
 
 class TestZZCore3(unittest.TestCase):

@@ -56,9 +56,7 @@ class EntityNode(AbstractNode):
         # TODO: handle different languages here
         self.label = self.smart_label = entity.R1
 
-        if len(self.label) > 12:
-            tmp = self.label
-            self.smart_label = tmp.replace(" ", "\n").replace("_", "_\n").replace("-", "-\n")
+        self.smart_label = format_label(self.label)
 
         self.repr_str = f'{self.short_key}["{self.smart_label}"]'
 
@@ -101,6 +99,58 @@ def create_node(arg: Union[p.Entity, object], url_template: str):
 
 def rel_label(rel: p.Relation):
     return f'{rel.short_key}["{rel.R1}"]'
+
+
+def format_label(label: str, maxlen: int = 12) -> str:
+    """
+    Introduce newlines into entity labels for better spaces usage and readibility
+
+    Examples:
+    - I4321["quite long label with many words"] -> I4321\n["quite long label\nwith many words"]
+    - I4321["not so long"] -> I4321\n["not so long"]
+
+    :param label:   label string
+    :param maxlen:  maximum length of each line
+
+    :return:    strings with newlines
+    """
+
+    # TODO: this should be ensured during data loading
+    assert "\n" not in label
+
+    if len(label) < maxlen:
+        # short labels stay unchanged
+        return label
+
+    idx1 = label.find("[")
+    result = [label[:idx1]]
+    rest = label[idx1:]
+
+    split_chars = (" ", "-", "_")
+
+    while len(rest) > maxlen:
+        first_part = rest[:maxlen]
+
+        # make first_part as long as possible -> find the last split-char index
+        for i, c in enumerate(first_part[::-1]):
+            if c in split_chars:
+                break
+        else:
+            # there was no break (no split char) -> split after first_part
+            i = 0
+
+        first_part_split_index = maxlen - i
+
+        # rstrip to eliminate trainling spaces but not dashes etc
+        new_line = first_part[:first_part_split_index].rstrip()
+        result.append(new_line)
+        rest = rest[first_part_split_index:]
+
+    result.append(rest)
+
+    # self.smart_label = tmp.replace(" ", "\n").replace("_", "_\n").replace("-", "-\n")
+
+    return "\n".join(result)
 
 
 def visualize_entity(ek, fpath=None, print_path=False, return_svg_data=False, url_template="") -> Union[bytes, nx.DiGraph]:

@@ -100,7 +100,7 @@ def create_node(arg: Union[p.Entity, object], url_template: str):
 
 
 def rel_label(rel: p.Relation):
-    return f'{rel.short_key}["{rel.R1}"]'
+    return format_repr_str(f'{rel.short_key}["{rel.R1}"]', maxlen=10)
 
 
 def format_repr_str(label: str, maxlen: int = 17) -> str:

@@ -678,12 +678,12 @@ def check_processed_key(pkey: ProcessedStmtKey) -> None:
     except KeyError:
         # entity does not exist -> no label to compare with
         return
-    label_compare_str = entity.R1.lower().replace(" ", "_")
+    label_compare_str = entity.R1.replace(" ", "_")
 
-    if label_compare_str != pkey.label:
+    if label_compare_str.lower() != pkey.label.lower():
         msg = (
-            f"check of label consistency failed for key {pkey.original_key_str}. Expected: {label_compare_str} but "
-            f"got {pkey.label}"
+            f'check of label consistency failed for key {pkey.original_key_str}. Expected:  "{label_compare_str}"  ' 
+            f'but got   "{pkey.label}"  . Note: this test is *not* case-sensitive.'
         )
         raise ValueError(msg)
 

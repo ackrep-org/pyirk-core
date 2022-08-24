@@ -130,7 +130,7 @@ class TestCore(unittest.TestCase):
         # a _custom_call-method defined)
         res = poly1(0)
 
-        self.assertEqual(res.R4__is_instace_of, p.I32["evaluated mapping"])
+        self.assertEqual(res.R4__is_instance_of, p.I32["evaluated mapping"])
 
     def test_scope_vars(self):
 
@@ -141,11 +141,11 @@ class TestCore(unittest.TestCase):
         self.assertEqual(matrix_instance.R1, "M")
 
     def test_relations_with_sequence_as_argument(self):
-        I001x = p.create_item(R1__has_label="test item")
+        Ia001 = p.create_item(R1__has_label="test item")
 
         # check that assigning sequences is not allowed
         with self.assertRaises(TypeError):
-            I001x.set_relation(p.R5["is part of"], [p.I4["Mathematics"], p.I5["Engineering"]])
+            Ia001.set_relation(p.R5["is part of"], [p.I4["Mathematics"], p.I5["Engineering"]])
 
         mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH, "knowledge_base1")
         itm = p.ds.get_entity("I4466")  # I4466["Systems Theory"]
@@ -160,7 +160,7 @@ class TestCore(unittest.TestCase):
 
         itm1 = p.ds.get_entity("I2__Metaclass")
         itm2 = p.ds.get_entity("I4235__mathematical_object")
-        itm3 = p.ds.get_entity("I4239__mathematical_expression")
+        itm3 = p.ds.get_entity("I4239__monovariate_polynomial")
 
         # metaclass itself is not an instance of metaclass
         self.assertFalse(p.is_instance_of_generalized_metaclass(itm1))
@@ -182,7 +182,7 @@ class TestCore(unittest.TestCase):
     def test_equation(self):
         mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH, "knowledge_base1")
 
-        itm1: p.Item = p.ds.get_entity("I3749__Cayley_Hamilton_theorem")
+        itm1: p.Item = p.ds.get_entity("I3749__Cayley-Hamilton_theorem")
         Z: p.Item = itm1.scope("context").namespace["Z"]
         inv_rel_dict = Z.get_inv_relations()
 
@@ -199,7 +199,7 @@ class TestCore(unittest.TestCase):
 
         # this is the proxy item
         eq = q.relation_tuple[2]
-        rhs = eq.R27__has__rhs
+        rhs = eq.R27__has_rhs
         self.assertEqual(rhs, Z)
 
         # ensure reproducible results of applied mappings

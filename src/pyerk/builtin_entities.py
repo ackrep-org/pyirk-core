@@ -773,6 +773,9 @@ def new_equation(lhs: Item, rhs: Item, doc=None, scope: Optional[Item] = None) -
         assert isinstance(doc, str)
     eq = instance_of(I23["equation"])
 
+    if scope is not None:
+        eq.set_relation(R20["has defining scope"], scope)
+
     # TODO: perform type checking
     # assert check_is_instance_of(lhs, I23("mathematical term"))
 

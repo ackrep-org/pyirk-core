@@ -282,7 +282,10 @@ class TestCore2(unittest.TestCase):
         self.assertEqual(res_graph.number_of_nodes(), 7)
 
         mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH, "knowledge_base1")
-        res_graph: visualization.nx.DiGraph = visualization.create_nx_graph_from_entity("Ia3699")
+
+        # do not use something like "Ia3699" here directly because this might change when mod1 changes
+        auto_item: p.Item = mod1.I3749["Cayley-Hamilton theorem"].A
+        res_graph: visualization.nx.DiGraph = visualization.create_nx_graph_from_entity(auto_item.short_key)
         self.assertEqual(res_graph.number_of_nodes(), 8)
 
     def test_visualization2(self):
@@ -291,7 +294,8 @@ class TestCore2(unittest.TestCase):
         res = visualization.visualize_entity("I21__mathematical_relation", write_tmp_files=True)
 
         mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH, "knowledge_base1")
-        res = visualization.visualize_entity("Ia6745", write_tmp_files=False)
+        auto_item: p.Item = mod1.I3749["Cayley-Hamilton theorem"].P
+        res = visualization.visualize_entity(auto_item.short_key, write_tmp_files=False)
 
 
 class TestZZCore3(unittest.TestCase):

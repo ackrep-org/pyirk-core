@@ -297,6 +297,13 @@ class TestCore2(unittest.TestCase):
         auto_item: p.Item = mod1.I3749["Cayley-Hamilton theorem"].P
         res = visualization.visualize_entity(auto_item.short_key, write_tmp_files=False)
 
+        s1 = '<a href="">R35</a>'
+        s2 = '<a href="">["is applied</a>'
+        s3 = '<a href="">mapping of"]</a>'
+        self.assertIn(s1, res)
+        self.assertIn(s2, res)
+        self.assertIn(s3, res)
+
 
 class TestZZCore3(unittest.TestCase):
     """

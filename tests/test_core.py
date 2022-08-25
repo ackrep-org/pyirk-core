@@ -283,9 +283,10 @@ class TestCore2(unittest.TestCase):
 
         n = visualization.create_node(p.I21, "")
 
-        res = visualization.visualize_entity(
-            "I21__mathematical_relation", write_tmp_files=True
-        )
+        res = visualization.visualize_entity("I21__mathematical_relation", write_tmp_files=True)
+
+        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH, "knowledge_base1")
+        res = visualization.visualize_entity("Ia6745", write_tmp_files=False)
 
 
 class TestZZCore3(unittest.TestCase):

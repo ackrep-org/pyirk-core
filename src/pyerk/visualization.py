@@ -67,8 +67,8 @@ class AbstractGraphObject(ABC):
         # wrap the each key with curly braces to allow application of .format(...) later]
         self.dot_label_str = self.sep.join([f"{{{key_str}}}" for key_str in self.label_segment_keys])
 
-    def __repr__(self):
-        return self.repr_str
+    def __repr__(self) -> str:
+        return f"<{type(self).__name__}: {self.short_key}>"
 
     def get_dot_label(self):
         return repr(self)
@@ -119,7 +119,7 @@ class EntityNode(AbstractGraphObject):
         self.url_template = url_template
 
         if isinstance(entity, p.Item):
-            self.shape = "ellipse"
+            self.shape = "circle"
         elif isinstance(entity, p.Relation):
             self.shape = "hexagon"
         elif isinstance(entity, p.RelationEdge):
@@ -139,39 +139,21 @@ class EntityNode(AbstractGraphObject):
 
         return self.dot_label_str
 
-    def __repr__(self) -> str:
-        return f"<{type(self).__name__}: {self.short_key}>"
-
-    def _obsolete(self):
-
-        if self.replaced_repr_str is not None:
-            return self.replaced_repr_str
-
-        url = self.url_template.format(short_key=self.short_key)
-        res = []
-
-        # this loop is to handle multiline lables (wich are introduced in self.smart_label for better space efficiency)
-        for substr in self.repr_str.split("\n"):
-            rep_key = next(label_segment_key_gen)
-            REPLACEMENTS[rep_key] = f'<a href="{url}">{substr}</a>'
-            res.append(f"{{{rep_key}}}")  # create a string like "{_rk_0123}" which will be replaced later
-
-        original_str = "\n".join(res)
-
-        rep_key = next(label_segment_key_gen)
-        REPLACEMENTS[rep_key] = f'<a href="{url}">{substr}</a>'
-
-        return
-
 
 class LiteralStrNode(AbstractGraphObject):
     def __init__(self, arg: str):
         super().__init__()
 
-        self.repr_str = arg
+        self.value = arg
         self.id = next(literal_node_key_gen)
 
         self.shape = "rectangle"  # will be overwritten by subclasses
+
+    def __repr__(self) -> str:
+        return f"<{type(self).__name__}: {self.value}>"
+
+    def get_dot_label(self):
+        return self.value
 
 
 class Edge(AbstractGraphObject):
@@ -198,9 +180,6 @@ class Edge(AbstractGraphObject):
 
     def get_dot_label(self):
         return self.dot_label_str
-
-    def __repr__(self) -> str:
-        return f"<{type(self).__name__}: {self.short_key}>"
 
 
 def create_node(arg: Union[p.Entity, object], url_template: str):
@@ -292,7 +271,7 @@ def create_label_segments(label: str, maxlen: int) -> Tuple[List[str], List[str]
         # nothing was found
         rest = label
 
-    split_chars = (" ", "-", "_")
+    split_chars = (" ", "-", "_", ":")
 
     while len(rest) > maxlen:
 
@@ -418,28 +397,6 @@ def render_graph_to_dot(G: nx.DiGraph) -> str:
     dot_data: str = nxv.render(G, style, format="raw")
 
     return dot_data
-
-    svg_data = nxv.render(G, style, format="svg")
-
-    if return_dtype == "svg":
-
-        # insert links (circumvent escaping)
-        svg_data = svg_data.decode("utf8").format(**REPLACEMENTS).encode("utf8")
-
-        return svg_data
-
-    # for debugging
-    if fpath is None:
-        fpath = "./tmp.svg"
-
-    with open(fpath, "wb") as svgfile:
-        svgfile.write(svg_data)
-
-    if print_path:
-        print(p.aux.bcyan(f"File written: {os.path.abspath(fpath)}"))
-
-    # return the graph for unittest purposes
-    return G
 
 
 def visualize_entity(ek: str, url_template="", write_tmp_files: bool = False) -> str:

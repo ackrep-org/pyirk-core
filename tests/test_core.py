@@ -239,20 +239,29 @@ class TestCore(unittest.TestCase):
 
     def test_format_label(self):
 
-        l1 = visualization.format_repr_str('I0123["1234567890"]', maxlen=8)
-        self.assertEqual(l1, 'I0123\n["123456\n7890"]')
+        e1 = p.create_item(key_str="I0123", R1="1234567890")
+        node = visualization.create_node(e1, url_template="")
+        node.perform_html_wrapping(use_html=False)
+        label = node.get_dot_label(render=True)
+        self.assertEqual(label, 'I0123\\n["1234567890"]')
 
-        l2 = visualization.format_repr_str('I0123["34 6 890"]', maxlen=10 + 2)  # +2 for the two characters '"]'
-        self.assertEqual(l2, 'I0123\n["34 6 890"]')
+        e1 = p.create_item(key_str="I0124", R1="1234567890abcdefgh")
+        node = visualization.create_node(e1, url_template="")
+        node.perform_html_wrapping(use_html=False)
+        label = node.get_dot_label(render=True)
+        self.assertEqual(label, 'I0124\\n["1234567890abcde\\nfgh"]')
 
-        l3 = visualization.format_repr_str('I0123["34 6 890"]', maxlen=9 + 2)
-        self.assertEqual(l3, 'I0123\n["34 6\n890"]')
+        e1 = p.create_item(key_str="I0125", R1="12 34567 890abcdefgh")
+        node = visualization.create_node(e1, url_template="")
+        node.perform_html_wrapping(use_html=False)
+        label = node.get_dot_label(render=True)
+        self.assertEqual(label, 'I0125\\n["12 34567\\n890abcdefgh"]')
 
-        lx = visualization.format_repr_str('I4463["non-negative integer"]', maxlen=12)
-        self.assertEqual(lx, 'I4463\n["non-\nnegative\ninteger"]')
-
-        lx = visualization.format_repr_str('non-negative integer', maxlen=12)
-        self.assertEqual(lx, 'non-negative\ninteger')
+        e1 = p.create_item(key_str="I0126", R1="12 34567-890abcdefgh")
+        node = visualization.create_node(e1, url_template="")
+        node.perform_html_wrapping(use_html=False)
+        label = node.get_dot_label(render=True)
+        self.assertEqual(label, 'I0126\\n["12 34567-\\n890abcdefgh"]')
 
 
 class TestCore2(unittest.TestCase):
@@ -269,19 +278,15 @@ class TestCore2(unittest.TestCase):
 
     def test_visualization(self):
 
-        res_graph: visualization.nx.DiGraph = visualization.visualize_entity(
-            "I21__mathematical_relation", print_path=False
-        )
+        res_graph: visualization.nx.DiGraph = visualization.create_nx_graph_from_entity("I21__mathematical_relation")
         self.assertEqual(res_graph.number_of_nodes(), 7)
 
         mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH, "knowledge_base1")
-        res_graph: visualization.nx.DiGraph = visualization.visualize_entity("Ia3699", print_path=False)
+        res_graph: visualization.nx.DiGraph = visualization.create_nx_graph_from_entity("Ia3699")
         self.assertEqual(res_graph.number_of_nodes(), 8)
 
     def test_visualization2(self):
         # test rendering of dot
-
-        n = visualization.create_node(p.I21, "")
 
         res = visualization.visualize_entity("I21__mathematical_relation", write_tmp_files=True)
 

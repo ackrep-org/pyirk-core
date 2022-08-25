@@ -73,7 +73,7 @@ class AbstractGraphObject(ABC):
     def get_dot_label(self):
         return repr(self)
 
-    def perform_html_wrapping(self) -> None:
+    def perform_html_wrapping(self, use_html = True) -> None:
         """
         Assigns the segment key to the actual html-wrapped string. This pair will be used later by .format
         to modify the generated svg-data
@@ -90,7 +90,10 @@ class AbstractGraphObject(ABC):
         url = self.url_template.format(short_key=self.short_key)
 
         for seg_key, segment in self.label_segment_items:
-            REPLACEMENTS[seg_key] = f'<a href="{url}">{segment}</a>'
+            if use_html:
+                REPLACEMENTS[seg_key] = f'<a href="{url}">{segment}</a>'
+            else:
+                REPLACEMENTS[seg_key] = segment
 
 
 def key_generator(template="k{:04d}"):
@@ -135,9 +138,12 @@ class EntityNode(AbstractGraphObject):
         self.sep = "__newline-center__"  # see NEWLINE_REPLACEMENTS
         self._perform_label_segmentation()
 
-    def get_dot_label(self):
+    def get_dot_label(self, render=False) -> str:
 
-        return self.dot_label_str
+        if render:
+            return render_label(self.dot_label_str)
+        else:
+            return self.dot_label_str
 
 
 class LiteralStrNode(AbstractGraphObject):
@@ -190,30 +196,6 @@ def create_node(arg: Union[p.Entity, object], url_template: str):
         return LiteralStrNode(f'"{arg}"')
     else:
         return LiteralStrNode(f"{type(arg).__name__}({str(arg)})")
-
-
-def rel_label(rel: p.Relation):
-    return format_repr_str(f'{rel.short_key}["{rel.R1}"]', maxlen=14)
-
-
-def format_repr_str(label: str, maxlen: int = 17, sep: str = "\\l") -> str:
-    """
-    Introduce newlines into entity repr_strings for better space usage and readibility
-
-    Examples:
-    - I4321["quite long label with many words"] -> I4321\n["quite long label\nwith many words"]
-    - I4321["not so long"] -> I4321\n["not so long"]
-
-    :param label:   label string
-    :param maxlen:  maximum length of each line
-    :param sep:     separator string between segments
-
-    :return:    strings with newlines
-    """
-
-    _, segments = create_label_segments(label, maxlen)
-
-    return sep.join(segments)
 
 
 def create_key_with_length(basic_key_gen: callable, length: int) -> str:
@@ -443,3 +425,9 @@ def visualize_entity(ek: str, url_template="", write_tmp_files: bool = False) ->
     return svg_data1
 
 
+def render_label(label: str):
+    res = label
+    for old, new in NEWLINE_REPLACEMENTS:
+        res = res.replace(old, new)
+
+    return res.format(**REPLACEMENTS)

@@ -1,7 +1,7 @@
 """
 This module contains code for the visualization of ERK-entities.
 """
-from typing import Union, List
+from typing import Union, List, Tuple
 import os
 
 import networkx as nx
@@ -22,14 +22,75 @@ from abc import ABC
 
 REPLACEMENTS = {}
 
+NEWLINE_REPLACEMENTS = [("__newline-center__", r"\n"), ("__newline-left__", r"\l")]
 
-class AbstractNode(ABC):
+
+class AbstractGraphObject(ABC):
+    """
+    Common base class for nodes and edges
+    """
+
     def __init__(self):
-        self.repr_str: str = ""
-        self.smart_label: str = ""
+        self.short_key = None
+        self.repr_str: str = ""  # TODO: obsolete ?
+        self.label: str = ""
+        self.smart_label: str = ""  # TODO: obsolete
+        self.replaced_repr_str = None
+        self.id = None
+        self.sep: str = ""
+
+        # default shape
+        self.shape = None
+
+        self.maxlen: Union[int, None] = None
+        self.url_template: Union[None, str] = None
+
+        # will be set in some subclasses calling self._perform_label_segmentation
+        self.label_segment_keys = None
+        self.label_segments = None
+        self.label_segment_items = None
+        self.dot_label_str = None
+
+    def _perform_label_segmentation(self) -> None:
+        """"
+        handle label formatting (segmentation into multiple lines and later wrapping by html tags)
+
+        labels of Nodes should be centered (dot file should contain r"\n" bewteen segments)
+        hower neither using "\n" nor r"\n" inside the nxv-node-labels leads to the desired results
+        thus: use a dummy which will be replaced later
+        """
+
+        unformated_repr_str = f'{self.short_key}["{self.label}"]'
+        self.label_segment_keys, self.label_segments = create_label_segments(unformated_repr_str, maxlen=self.maxlen)
+        self.label_segment_items = zip(self.label_segment_keys, self.label_segments)
+
+        # wrap the each key with curly braces to allow application of .format(...) later]
+        self.dot_label_str = self.sep.join([f"{{{key_str}}}" for key_str in self.label_segment_keys])
 
     def __repr__(self):
         return self.repr_str
+
+    def get_dot_label(self):
+        return repr(self)
+
+    def perform_html_wrapping(self) -> None:
+        """
+        Assigns the segment key to the actual html-wrapped string. This pair will be used later by .format
+        to modify the generated svg-data
+
+        This two-step process is necessary due to the internal escaping of the graph-viz rendering.
+
+        :return:    None
+        """
+
+        if self.url_template is None:
+            # do nothing
+            return
+
+        url = self.url_template.format(short_key=self.short_key)
+
+        for seg_key, segment in self.label_segment_items:
+            REPLACEMENTS[seg_key] = f'<a href="{url}">{segment}</a>'
 
 
 def key_generator(template="k{:04d}"):
@@ -39,11 +100,13 @@ def key_generator(template="k{:04d}"):
         yield template.format(i)
 
 
-rep_key_gen = key_generator(template="_rk_{:04d}")
+# for label segments
+label_segment_key_gen = key_generator(template="LS{:04d}_")
 literal_node_key_gen = key_generator(template="LN{:04d}")
+relation_key_gen = key_generator(template="R{:04d}")
 
 
-class EntityNode(AbstractNode):
+class EntityNode(AbstractGraphObject):
     """
     Container to represent a node in a networkx graph (for visualization)
     """
@@ -55,38 +118,89 @@ class EntityNode(AbstractNode):
         self.id = f"node_{self.short_key}"  # this serves to recognize the nodes in svg code
         self.url_template = url_template
 
+        if isinstance(entity, p.Item):
+            self.shape = "ellipse"
+        elif isinstance(entity, p.Relation):
+            self.shape = "hexagon"
+        elif isinstance(entity, p.RelationEdge):
+            self.shape = "cds"
+        else:
+            msg = f"Unexpected entity type: {type(entity)} during creation of EntityNode in visualization."
+            raise TypeError(msg)
+
         # TODO: handle different languages here
         self.label = self.smart_label = entity.R1
 
-        unformated_repr_str = f'{self.short_key}["{self.smart_label}"]'
-        self.repr_str = format_repr_str(unformated_repr_str)
+        self.maxlen = 17
+        self.sep = "__newline-center__"  # see NEWLINE_REPLACEMENTS
+        self._perform_label_segmentation()
+
+    def get_dot_label(self):
+
+        return self.dot_label_str
 
     def __repr__(self) -> str:
-        """
-        Set the label to a string which will be later replaced by a link-wrapped label.
-        This two-step process is necessary due to the internal escaping of the graph-viz rendering.
+        return f"<{type(self).__name__}: {self.short_key}>"
 
-        :return:
-        """
+    def _obsolete(self):
+
+        if self.replaced_repr_str is not None:
+            return self.replaced_repr_str
 
         url = self.url_template.format(short_key=self.short_key)
         res = []
 
         # this loop is to handle multiline lables (wich are introduced in self.smart_label for better space efficiency)
         for substr in self.repr_str.split("\n"):
-            rep_key = next(rep_key_gen)
+            rep_key = next(label_segment_key_gen)
             REPLACEMENTS[rep_key] = f'<a href="{url}">{substr}</a>'
             res.append(f"{{{rep_key}}}")  # create a string like "{_rk_0123}" which will be replaced later
 
-        return "\n".join(res)
+        original_str = "\n".join(res)
+
+        rep_key = next(label_segment_key_gen)
+        REPLACEMENTS[rep_key] = f'<a href="{url}">{substr}</a>'
+
+        return
 
 
-class LiteralStrNode(AbstractNode):
+class LiteralStrNode(AbstractGraphObject):
     def __init__(self, arg: str):
         super().__init__()
 
         self.repr_str = arg
         self.id = next(literal_node_key_gen)
+
+        self.shape = "rectangle"  # will be overwritten by subclasses
+
+
+class Edge(AbstractGraphObject):
+    """
+    This class models the graphviz representation of an edge between two nodes
+    """
+    def __init__(self, relation: p.Relation, url_template: str):
+        super().__init__()
+
+        self.short_key = relation.short_key
+        self.label = relation.R1
+        self.url_template = url_template
+        self.id = next(relation_key_gen)
+        self.sep = "__newline-left__"  # see NEWLINE_REPLACEMENTS
+        self.maxlen = 17
+
+        self._perform_label_segmentation()
+
+    def _perform_label_segmentation(self) -> None:
+        super()._perform_label_segmentation()
+
+        # add self.sep at the end to ensure that the last line segment is also left adjusted
+        self.dot_label_str = f"{self.dot_label_str}{self.sep}"
+
+    def get_dot_label(self):
+        return self.dot_label_str
+
+    def __repr__(self) -> str:
+        return f"<{type(self).__name__}: {self.short_key}>"
 
 
 def create_node(arg: Union[p.Entity, object], url_template: str):
@@ -100,10 +214,10 @@ def create_node(arg: Union[p.Entity, object], url_template: str):
 
 
 def rel_label(rel: p.Relation):
-    return format_repr_str(f'{rel.short_key}["{rel.R1}"]', maxlen=10)
+    return format_repr_str(f'{rel.short_key}["{rel.R1}"]', maxlen=14)
 
 
-def format_repr_str(label: str, maxlen: int = 17) -> str:
+def format_repr_str(label: str, maxlen: int = 17, sep: str = "\\l") -> str:
     """
     Introduce newlines into entity repr_strings for better space usage and readibility
 
@@ -113,25 +227,69 @@ def format_repr_str(label: str, maxlen: int = 17) -> str:
 
     :param label:   label string
     :param maxlen:  maximum length of each line
+    :param sep:     separator string between segments
 
     :return:    strings with newlines
+    """
+
+    _, segments = create_label_segments(label, maxlen)
+
+    return sep.join(segments)
+
+
+def create_key_with_length(basic_key_gen: callable, length: int) -> str:
+
+    base_key = next(basic_key_gen)
+
+    relevant_length = length - 2  # (account for curly braces (see REMARK__curly_braces_wrapping))
+
+    if relevant_length <= len(base_key):
+        key_str = base_key
+    else:
+
+        assert relevant_length > 0
+        assert length < 36, "unexpected long length"
+
+        key_str = f"{base_key}1234567890abcdefghijklmnopqrstuvwxyz"[:length]
+
+    return key_str
+
+
+def create_label_segments(label: str, maxlen: int) -> Tuple[List[str], List[str]]:
+    """
+    Split label string into segments and assign a key to each. Return items.
+
+    Examples:
+    - I4321["quite long label with many words"] ->
+        [("key0", 'I4321'), ("key1", '["quite long label'), ("key2", 'with many words"]')]
+
+    :param label:   label string
+    :param maxlen:  maximum length of each line
+
+    :return:    (keys, segments)
     """
 
     # TODO: this should be ensured during data loading
     assert "\n" not in label
     assert label == label.strip()
 
+    res_keys = []
+    res_segments = []
+
     if len(label) < maxlen:
         # short labels stay unchanged
-        return label
+        key = create_key_with_length(label_segment_key_gen, len(label))
+        res_segments.append(label)
+        res_keys.append(key)
+        return res_keys, res_segments
 
+    # for now only create the segments, and create the keys later at once
     idx1 = label.find("[")
     if idx1 >= 0:
-        result = [label[:idx1]]
+        res_segments.append(label[:idx1])
         rest = label[idx1:]
     else:
         # nothing was found
-        result = []
         rest = label
 
     split_chars = (" ", "-", "_")
@@ -142,7 +300,7 @@ def format_repr_str(label: str, maxlen: int = 17) -> str:
 
         # handle special case where the next character is a space
         if rest[maxlen] == " ":
-            result.append(first_part)
+            res_segments.append(first_part)
             rest = rest[maxlen+1:]
             continue
 
@@ -158,29 +316,42 @@ def format_repr_str(label: str, maxlen: int = 17) -> str:
 
         # rstrip to eliminate trainling spaces but not dashes etc
         new_line = first_part[:first_part_split_index].rstrip()
-        result.append(new_line)
+        res_segments.append(new_line)
         rest = rest[first_part_split_index:]
 
-    result.append(rest)
+    res_segments.append(rest)
 
-    return "\n".join(result)
+    for segment in res_segments:
+        key = create_key_with_length(label_segment_key_gen, len(segment))
+        res_keys.append(key)
+
+    return res_keys, res_segments
 
 
 class CustomizedDiGraph(nx.DiGraph):
 
-    def add_node(self, node_for_adding, **kwargs):
+    def add_node(self, node: AbstractGraphObject, **kwargs):
 
         # set defaults
         # note: adding an id keyword here does not influence the id in the svg
-        new_kwargs = dict(label=repr(node_for_adding), id=node_for_adding.id)
+        new_kwargs = dict(label=node.get_dot_label(), id=node.id, shape=node.shape)
+
+        node.perform_html_wrapping()
 
         # overwrite with explicitly given kwargs
         new_kwargs.update(kwargs)
 
-        super().add_node(node_for_adding, **new_kwargs)
+        super().add_node(node, **new_kwargs)
 
 
-def visualize_entity(ek, fpath=None, print_path=False, return_svg_data=False, url_template="") -> Union[bytes, nx.DiGraph]:
+def create_nx_graph_from_entity(ek, url_template="") -> nx.DiGraph:
+    """
+
+    :param ek:
+    :param url_template:
+    :return:
+    """
+
     entity = p.ds.get_entity(ek)
     re_dict = entity.get_relations()
     inv_re_dict = entity.get_inv_relations()
@@ -198,14 +369,26 @@ def visualize_entity(ek, fpath=None, print_path=False, return_svg_data=False, ur
             assert len(re.relation_tuple) == 3
             subj, pred, obj = re.relation_tuple
 
+            edge = Edge(pred, url_template)
+            edge.perform_html_wrapping()
             if re.role == p.RelationRole.SUBJECT:
                 other_node = create_node(obj, url_template)
                 G.add_node(other_node)
-                G.add_edge(base_node, other_node, label=rel_label(pred))
+                G.add_edge(base_node, other_node, label=edge.get_dot_label())
             else:
                 other_node = create_node(subj, url_template)
                 G.add_node(other_node)
-                G.add_edge(other_node, base_node, label=rel_label(pred))
+                G.add_edge(other_node, base_node, label=edge.get_dot_label())
+
+    return G
+
+
+def render_graph_to_dot(G: nx.DiGraph) -> str:
+    """
+
+    :param G:       the graph to render
+    :return:        dot_data
+    """
 
     # for styling see https://nxv.readthedocs.io/en/latest/reference.html#styling
     # matplotlib default colors:
@@ -214,30 +397,38 @@ def visualize_entity(ek, fpath=None, print_path=False, return_svg_data=False, ur
         "style": "solid",
         "arrowType": "normal",
         "fontsize": 10,
+        # "labeljust": "r",
     }
     style = nxv.Style(
         graph={"rankdir": "BT"},
         # u: node, d: its attribute dict
         node=lambda u, d: {
-            "shape": "circle",
             "fixedsize": True,
-            "width": 1.2,
+            "width": 1.3,
             "fontsize": 10,
             "color": d.get("color", "black"),
-            "label": d.get("label", "undefined label")
+            "label": d.get("label", "undefined label"),
+            "shape": d.get("shape", "circle"),  # see also AbstractNode.shape
         },
         # u: node1, v: node1, d: its attribute dict
         edge=lambda u, v, d: {**edge_defaults, "label": d["label"]},
     )
 
+    # noinspection PyTypeChecker
+    dot_data: str = nxv.render(G, style, format="raw")
+
+    return dot_data
+
     svg_data = nxv.render(G, style, format="svg")
 
-    # insert links (circumvent escaping)
-    svg_data = svg_data.decode("utf8").format(**REPLACEMENTS).encode("utf8")
+    if return_dtype == "svg":
 
-    if return_svg_data:
+        # insert links (circumvent escaping)
+        svg_data = svg_data.decode("utf8").format(**REPLACEMENTS).encode("utf8")
+
         return svg_data
 
+    # for debugging
     if fpath is None:
         fpath = "./tmp.svg"
 
@@ -249,3 +440,49 @@ def visualize_entity(ek, fpath=None, print_path=False, return_svg_data=False, ur
 
     # return the graph for unittest purposes
     return G
+
+
+def visualize_entity(ek: str, url_template="", write_tmp_files: bool = False) -> str:
+    """
+
+    :param ek:              entity key_str (like "I0123" or "I0123__my_label")
+    :param url_template:    url template for creation a-tags (html links) for the labels
+    :param write_tmp_files: boolean flag whether to write debug output
+
+    :return:                svg_data as string
+    """
+
+    G = create_nx_graph_from_entity(ek, url_template)
+    raw_dot_data = render_graph_to_dot(G)
+
+    dot_data0 = raw_dot_data
+    for old, new in NEWLINE_REPLACEMENTS:
+        dot_data0 = dot_data0.replace(old, new)
+
+    # work arround curly braces in first and last line
+    dot_lines = dot_data0.split("\n")
+    inner_dot_code = "\n".join(dot_lines[1:-1])
+
+    dot_data = "\n".join((dot_lines[0], inner_dot_code, dot_lines[-1]))
+
+    # noinspection PyUnresolvedReferences,PyProtectedMember
+    raw_svg_data = nxv._graphviz.run(dot_data, algorithm="dot", format="svg", graphviz_bin=None)
+
+    svg_data1: str = raw_svg_data.decode("utf8").format(**REPLACEMENTS)
+
+    if write_tmp_files:
+        # for debugging
+
+        dot_fpath = "./tmp_dot.txt"
+        with open(dot_fpath, "w") as txtfile:
+            txtfile.write(dot_data)
+        print("File written:", os.path.abspath(dot_fpath))
+
+        svg_fpath = "./tmp.svg"
+        with open(svg_fpath, "w") as txtfile:
+            txtfile.write(svg_data1)
+        print("File written:", os.path.abspath(svg_fpath))
+
+    return svg_data1
+
+

@@ -705,7 +705,11 @@ R29 = create_builtin_relation(
 
 def create_evaluated_mapping(mapping: Item, arg: Entity) -> Item:
 
-    r1 = f"mapping '{mapping}' applied to '{arg}'"
+    try:
+        arg_repr = arg.R1
+    except AttributeError:
+        arg_repr = str(arg)
+    r1 = f"applied mapping: {mapping.R1}({arg_repr})"
 
     # achieve determinism: if this mapping-item was already evaluated with this arg-item we want to return
     # the same evaluated-mapping-item again

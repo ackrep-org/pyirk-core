@@ -882,18 +882,48 @@ def new_tuple(*args, **kwargs) -> Item:
     return tup
 
 
+# different number types (complex, real, rational, integer, ...)
+
 I34 = create_builtin_item(
     key_str="I34",
-    R1__has_label="non-negative integer",
-    R2__has_description="mathematical type equivalent to Nat (from type theory): non-negative integer number",
+    R1__has_label="complex number",
+    R2__has_description="mathematical type representing all complex numbers",
     R4__is_instance_of=I12["mathematical object"],
 )
 
 I35 = create_builtin_item(
     key_str="I35",
+    R1__has_label="real number",
+    R2__has_description="mathematical type representing all real numbers",
+    R3__is_subclass_of=I34["complex number"],
+)
+
+I36 = create_builtin_item(
+    key_str="I36",
+    R1__has_label="rational number",
+    R2__has_description="mathematical type representing all rational numbers",
+    R3__is_subclass_of=I35["real number"],
+)
+
+I37 = create_builtin_item(
+    key_str="I37",
+    R1__has_label="integer number",
+    R2__has_description="mathematical type representing all integer numbers, e.g. ..., -2, -1, 0, 1, ...",
+    R3__is_subclass_of=I36["rational number"],
+)
+
+I38 = create_builtin_item(
+    key_str="I38",
+    R1__has_label="non-negative integer",
+    R2__has_description="mathematical type equivalent to Nat (from type theory): non-negative integer number",
+    R3__is_subclass_of=I37["integer number"],
+)
+
+I39 = create_builtin_item(
+    key_str="I39",
     R1__has_label="positive integer",
     R2__has_description="mathematical type equivalent to Nat+ (from type theory): positive integer number",
-    R3__is_subclass_of=I34["non-negative integer"],
+    R3__is_subclass_of=I38["non-negative integer"],
 )
 
 
@@ -922,7 +952,7 @@ R38 = create_builtin_relation(
     R1__has_label="has length",
     R2__has_description="specifies the length of a finite sequence",
     # R8__has_domain_of_argument_1= <mathematical object> (will be defined in other module)
-    R11__has_range_of_result=I34["non-negative integer"],
+    R11__has_range_of_result=I38["non-negative integer"],
     R22__is_functional=True,
 )
 
@@ -940,11 +970,32 @@ R40 = create_builtin_relation(
     R1__has_label="has index",
     R2__has_description="qualifier; specifies the index (starting at 0) of an R39__has_element relation edge of a tuple",
     # R8__has_domain_of_argument_1= <Relation Edge> # TODO: specify
-    R9__has_domain_of_argument_2=I34["non-negative integer"],
+    R9__has_domain_of_argument_2=I38["non-negative integer"],
     R18__has_usage_hint="This relation should be used as qualifier for R39__has_element",
 )
 
 has_index = QualifierFactory(R40["has index"])
+
+I40 = create_builtin_item(
+    key_str="I40",
+    R1__has_label="general relation",
+    R2__has_description="proxy item for a relation",
+    R18__has_usage_hint=(
+        "This item (which is in no relation to I1__general_item) can be used as a placeholder for any relation. "
+        "In other words: this can be interpreted as the common superclass for all relations"
+    ),
+)
+
+R41 = create_builtin_relation(
+    key_str="R41",
+    R1__has_label="has required instance relation",
+    R2__has_description=(
+        "specifies relations which must be set for an instance of the subject to be valid; "
+        "subject is assumed to be a type, i.e. an instance of I2__metaclass"
+    ),
+    R8__has_domain_of_argument_1=I2["Metaclass"],
+    R9__has_domain_of_argument_2=I40["general relation"],
+)
 
 
 # ######################################################################################################################

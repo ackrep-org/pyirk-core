@@ -139,7 +139,7 @@ p.R37["has definition"].set_relation(p.R8["has domain of argument 1"], I4235["ma
 # todo: what is the difference between an object and an expression?
 I4236 = p.create_item(
     R1__has_label="mathematical expression",
-    R2__has_description="...",
+    R2__has_description="common base class for mathematical expressions",
     R3__is_subclass_of=I4235["mathematical object"],
 )
 
@@ -149,7 +149,7 @@ I4237 = p.create_item(
     R3__is_subclass_of=I4236["mathematical expression"],
 )
 
-I4237["monovariate rational function"].add_method(p.custom_call__create_evaluated_mapping, "_custom_call")
+I4237["monovariate rational function"].add_method(p.create_evaluated_mapping, "_custom_call")
 
 I4239 = p.create_item(
     R1__has_label="monovariate polynomial",
@@ -292,7 +292,7 @@ I5325 = p.create_item(
 # <definition>
 I4455 = p.create_item(
     R1__has_label="definition of Hurwitz polynomial",
-    R2__has_description="the defining statement of what a hurwitz polynomial is",
+    R2__has_description="the defining statement of what a Hurwitz polynomial is",
     R4__is_instance_of=p.I20["mathematical definition"],
 )
 
@@ -578,7 +578,6 @@ with I4216.scope("premises") as cm:
 with I4216.scope("assertions") as cm:
     cm.new_rel(I4216.mpc_problem, p.R000["can be reduced to"], I4216.quadratic_problem)
 
-
 """
 Particularly for linear systems, the MPC problem can be reduced to a quadratic
 problem, for which the optimal control over the admissible polyhedral set can be
@@ -586,6 +585,82 @@ precomputed.
 """
 
 # </statement>
+
+I9923 = p.create_item(
+    R1__has_label="scalar field",
+    R2__has_description="...",
+    R3__is_subclass_of=I4235["mathematical object"],
+)
+
+I9841 = p.create_item(
+    R1__has_label="vector field",
+    R2__has_description="...",
+    R3__is_subclass_of=I4235["mathematical object"],
+)
+
+I4895 = p.create_item(
+    R1__has_label="mathematical operator",
+    R2__has_description="general (unspecified) mathematical operator",
+    R3__is_subclass_of=I4235["mathematical object"],
+)
+
+I1347 = p.create_item(
+    R1__has_label="Lie derivative of scalar field",
+    R2__has_description=(
+        "mathematical operation wich maps a scalar field h_1 to a new scalar field h_2, depending on a vector field f; "
+        "h2 can be interpreted as the time derivative of h_1 along the solution of the ode associated with f; "
+        "in other words: along the flow of f",
+    ),
+    R3__is_subclass_of=I4895["mathematical operator"],
+    R8__has_domain_of_argument_1=I9923["scalar field"],
+    R9__has_domain_of_argument_2=I9841["vector field"],
+    R11__has_range_of_result=I9923["scalar field"],
+    R13__has_canonical_symbol=r"$L$",
+
+    # TODO: add defining equation
+)
+
+# make the Lie derivative callable:
+I1347["Lie derivative of scalar field"].add_method(p.create_evaluated_mapping, "_custom_call")
+
+# <definition>
+I6229 = p.create_item(
+    R1__has_label="definition of Lie derivative of scalar field",
+    R2__has_description="the defining statement of a Lie derivative of a scalar field",
+    R4__is_instance_of=p.I20["mathematical definition"],
+)
+
+with I6229.scope("context") as cm:
+    cm.new_var(h=uq_instance_of(I9923["scalar field"]))
+    cm.new_var(f=uq_instance_of(I9841["vector field"]))
+    cm.new_var(L=p.instance_of(I1347["Lie derivative of scalar field"]))
+
+
+with I6229.scope("premises") as cm:
+    # TODO: specify consistency between h and and f
+    pass
+
+with I6229.scope("assertions") as cm:
+    cm.new_equation(lhs=I9907.nr, rhs=I9907.nc)
+
+I1347["Lie derivative of scalar field"].set_relation(
+    p.R37["has definition"], I6229["definition of Lie derivative of scalar field"]
+)
+# </definition>
+
+
+I1371 = p.create_item(
+    R1__has_label="iterated Lie derivative of scalar field",
+    R2__has_description="iterated version of I1347__Lie_derivative_of_scalar_field",
+    R3__is_subclass_of=I4895["mathematical operator"],
+    R8__has_domain_of_argument_1=p.I000["scalar field"],
+    R9__has_domain_of_argument_2=p.I000["vector field"],
+    R10__has_domain_of_argument_3=p.I000["non-negative number"],
+    R11__has_range_of_result=p.I000["scalar field"],
+    # TODO: add defining equation
+)
+
+
 
 r"""
 

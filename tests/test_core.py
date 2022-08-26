@@ -132,6 +132,17 @@ class TestCore(unittest.TestCase):
 
         self.assertEqual(res.R4__is_instance_of, p.I32["evaluated mapping"])
 
+    def test_evaluated_mapping2(self):
+        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH, "knowledge_base1")
+
+        h = mod1.I9923["scalar field"]
+        f = mod1.I9841["vector field"]
+
+        Lderiv = mod1.I1347["Lie derivative of scalar field"]
+        h2 = Lderiv(f, h)
+
+        self.assertEqual(h2.R4__is_instance_of, p.I32["evaluated mapping"])
+
     def test_scope_vars(self):
 
         # this tests for a bug with labels of scope vars

@@ -703,7 +703,19 @@ R29 = create_builtin_relation(
 )
 
 
-def create_evaluated_mapping(mapping: Item, arg: Entity) -> Item:
+# TODO: doc: this mechanism needs documentation
+# this function can be added to mapping objects as needed
+def create_evaluated_mapping(mapping: Item, *args) -> Item:
+    """
+
+    :param mapping:
+    :param arg:
+    :return:
+    """
+
+    # TODO  # Make this work with up to three arguments
+
+    arg = args[0]
 
     try:
         arg_repr = arg.R1
@@ -733,12 +745,6 @@ def create_evaluated_mapping(mapping: Item, arg: Entity) -> Item:
     ev_mapping.set_relation(R36["has argument"], arg)
 
     return ev_mapping
-
-
-# TODO: doc: this mechanism needs documentation
-# this function can be added to mapping objects as needed
-def custom_call__create_evaluated_mapping(self, arg):
-    return create_evaluated_mapping(mapping=self, arg=arg)
 
 
 R30 = create_builtin_relation(

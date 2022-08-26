@@ -139,9 +139,14 @@ class TestCore(unittest.TestCase):
         f = mod1.I9841["vector field"]
 
         Lderiv = mod1.I1347["Lie derivative of scalar field"]
-        h2 = Lderiv(f, h)
+        h2 = Lderiv(h, f)
 
         self.assertEqual(h2.R4__is_instance_of, p.I32["evaluated mapping"])
+
+        arg_tup = h2.R36__has_argument_tuple
+        self.assertEqual(arg_tup.R4__is_instance_of, p.I33["tuple"])
+        elements = arg_tup.R39__has_element
+        self.assertEqual(tuple(elements), (h, f))
 
     def test_tuple(self):
 

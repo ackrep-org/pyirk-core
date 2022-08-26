@@ -135,18 +135,19 @@ class TestCore(unittest.TestCase):
     def test_evaluated_mapping2(self):
         mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH, "knowledge_base1")
 
-        h = mod1.I9923["scalar field"]
-        f = mod1.I9841["vector field"]
+        h = p.instance_of(mod1.I9923["scalar field"])
+        f = p.instance_of(mod1.I9841["vector field"])
+        x = p.instance_of(mod1.I1168["point in state space"])
 
         Lderiv = mod1.I1347["Lie derivative of scalar field"]
-        h2 = Lderiv(h, f)
+        h2 = Lderiv(h, f, x)
 
         self.assertEqual(h2.R4__is_instance_of, p.I32["evaluated mapping"])
 
         arg_tup = h2.R36__has_argument_tuple
         self.assertEqual(arg_tup.R4__is_instance_of, p.I33["tuple"])
         elements = arg_tup.R39__has_element
-        self.assertEqual(tuple(elements), (h, f))
+        self.assertEqual(tuple(elements), (h, f, x))
 
     def test_tuple(self):
 

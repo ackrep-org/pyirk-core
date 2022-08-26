@@ -419,7 +419,7 @@ class _proposition__CM:
         # this is the place to handle exceptions
         pass
 
-    def new_var(self, **kwargs) -> None:
+    def new_var(self, **kwargs) -> Entity:
         """
         create and register a new variable to the respective scope
 
@@ -456,6 +456,8 @@ class _proposition__CM:
         # todo: evaluate if this makes the namespaces obsolete
         variable_object.set_relation(R23["has name in scope"], variable_name)
 
+        return variable_object
+
     def new_rel(self, sub, pred, obj) -> None:
         assert isinstance(sub, Entity)
         assert isinstance(pred, Relation)
@@ -484,6 +486,10 @@ class _proposition__CM:
         :param name:
         :return:
         """
+
+        if name in self.__dict__:
+            return self.dict__[name]
+
         return getattr(self.item, name)
 
 

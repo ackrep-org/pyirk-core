@@ -574,23 +574,14 @@ precomputed.
 
 # </statement>
 
-I9923 = p.create_item(
-    R1__has_label="scalar field",
-    R2__has_description="...",
-    R3__is_subclass_of=I4235["mathematical object"],
-)
-
-I9841 = p.create_item(
-    R1__has_label="vector field",
-    R2__has_description="...",
-    R3__is_subclass_of=I4235["mathematical object"],
-)
-
 I4895 = p.create_item(
     R1__has_label="mathematical operator",
     R2__has_description="general (unspecified) mathematical operator",
     R3__is_subclass_of=I4235["mathematical object"],
 )
+
+# make all instances of operators callable:
+I4895["mathematical operator"].add_method(p.create_evaluated_mapping, "_custom_call")
 
 
 R3326 = p.create_relation(
@@ -628,6 +619,20 @@ I1168 = p.create_item(
 )
 # TODO: it might be worth to generalize this: creating a type from a set (where the set is an instance of another type)
 
+
+I9923 = p.create_item(
+    R1__has_label="scalar field",
+    R2__has_description="...",
+    R3__is_subclass_of=I4895["mathematical operator"],
+)
+
+I9841 = p.create_item(
+    R1__has_label="vector field",
+    R2__has_description="...",
+    R3__is_subclass_of=I4895["mathematical operator"],
+)
+
+
 I9273 = p.create_item(
     R1__has_label="explicit first order ODE system",
     R2__has_description="system of explicit first order ordinary differential equations",
@@ -636,9 +641,21 @@ I9273 = p.create_item(
     # TODO: make explicit the relation to I6886["general ode state space representation"]
 )
 
+R4122 = p.create_relation(
+    R1__has_label="has associated vector field",
+    R2__has_description="specifies the associated vector field of the subject (e.g. a I9273__explicit...ode_system)",
+    R8__has_domain_of_argument_1=I9273["explicit first order ODE system"],
+    R11__has_range_of_result=I9841["vector field"],
+    R22__is_functional=True,
+)
+
+# add this relation to the required relations
+I9273["explicit first order ODE system"].set_relation(
+    p.R41["has required instance relation"], R4122["has associated vector field"]
+)
 
 I2753 = p.create_item(
-    R1__has_label="flow of a vectorfield",
+    R1__has_label="flow of a vector field",
     R2__has_description="operator yielding the solution of the associated I9273__explicit_first_order_ODE_system",
     R3__is_subclass_of=I4895["mathematical operator"],
     R8__has_domain_of_argument_1=I1168["point in state space"],
@@ -650,10 +667,7 @@ I2753 = p.create_item(
     # (\cdot_i) means: the i-th argument
     R13__has_canonical_symbol=r"$\varphi_{(\cdot_2)}^{(\cdot_3)}(\cdot_1)$",
 )
-# TODO: finde a way to assign labels to the arguments: "initial value x", "time t", "vector field f"
-
-# make the flow callable:
-I2753["flow of a vectorfield"].add_method(p.create_evaluated_mapping, "_custom_call")
+# TODO: find a way to assign labels to the arguments: "initial value x", "time t", "vector field f"
 
 I4122 = p.create_item(
     R1__has_label="independent variable",
@@ -672,9 +686,21 @@ I3513 = p.create_item(
     R13__has_canonical_symbol=r"$\frac{d}{d(\cdot_2}) (\cdot_1)$",
 )
 
+I2075 = p.create_item(
+    R1__has_label="substitution",
+    R2__has_description=(
+        "operator yielding an new expression where in expression arg1 the subexpression arg2 is replaced by arg3"
+    ),
+    R4__is_instance_of=I4895["mathematical operator"],
+    R8__has_domain_of_argument_1=I4236["mathematical expression"],
+    R9__has_domain_of_argument_2=I4236["mathematical expression"],
+    R10__has_domain_of_argument_3=I4236["mathematical expression"],
+    R11__has_range_of_result=I4236["mathematical expression"],
+    R13__has_canonical_symbol=r"$\left.(\cdot_1)\left|_{(\cdot_2)=(\cdot_3)}$",
+)
+
 
 """
-I4122
 I2075
 I7733
 I4101
@@ -684,6 +710,7 @@ I7864
 I9853 
 """
 
+
 I1347 = p.create_item(
     R1__has_label="Lie derivative of scalar field",
     R2__has_description=(
@@ -691,16 +718,14 @@ I1347 = p.create_item(
         "h2 can be interpreted as the time derivative of h_1 along the solution of the ode associated with f; "
         "in other words: along the flow of f",
     ),
-    R3__is_subclass_of=I4895["mathematical operator"],
+    R4__is_instance_of=I4895["mathematical operator"],
     R8__has_domain_of_argument_1=I9923["scalar field"],
     R9__has_domain_of_argument_2=I9841["vector field"],
+    R10__has_domain_of_argument_3=I1168["point in state space"],
     R11__has_range_of_result=I9923["scalar field"],
     R13__has_canonical_symbol=r"$L$",
     # TODO: complete defining equation
 )
-
-# make the Lie derivative callable:
-I1347["Lie derivative of scalar field"].add_method(p.create_evaluated_mapping, "_custom_call")
 
 # <definition>
 I6229 = p.create_item(
@@ -710,23 +735,36 @@ I6229 = p.create_item(
 )
 
 with I6229.scope("context") as cm:
-    cm.new_var(n=uq_instance_of(p.I39["positive integer"]))
-    cm.new_var(M=uq_instance_of(I5167["state space"]))
-    cm.new_var(h=uq_instance_of(I9923["scalar field"]))
-    cm.new_var(f=uq_instance_of(I9841["vector field"]))
-    cm.new_var(L=p.instance_of(I1347["Lie derivative of scalar field"]))
+    n = cm.new_var(n=uq_instance_of(p.I39["positive integer"]))
+    M = cm.new_var(M=uq_instance_of(I5167["state space"]))
+    h = cm.new_var(h=uq_instance_of(I9923["scalar field"]))
+    f = cm.new_var(f=uq_instance_of(I9841["vector field"]))
+
+    ode_sys = cm.new_var(ode_sys=p.instance_of(I9273["explicit first order ODE system"]))
+    phi = cm.new_var(phi=p.instance_of(I2753["flow of a vector field"]))
+    x = cm.new_var(x=p.instance_of(I1168["point in state space"]))
+    t = cm.new_var(t=p.instance_of(I4122["independent variable"]))
+    deriv = cm.new_var(deriv=p.instance_of(I3513["derivative w.r.t. scalar parameter"]))
 
     cm.new_rel(cm.M, R3326["has dimension"], cm.n)
+    cm.new_rel(cm.h, R5405["has associated state space"], cm.M)
+    cm.new_rel(cm.f, R5405["has associated state space"], cm.M)
+    cm.new_rel(cm.ode_sys, R5405["has associated state space"], cm.M)
+    cm.new_rel(cm.ode_sys, R4122["has associated vector field"], cm.f)
 
+    # evaluate the mappings
+    h_evaluated = h(phi(x, t, ode_sys))
 
-# work in progress
-with I6229.scope("premises") as cm:
-    # TODO: specify consistency between h and and f
-    pass
+    # perform the derivative
+    deriv_evaluated = deriv(h_evaluated, t)
+
+    cm.item.subs = I2075["substitution"](deriv_evaluated, t, 0)
+    cm.item.L_evaluated = I1347["Lie derivative of scalar field"](h, f, x)
+
 
 with I6229.scope("assertions") as cm:
-    I6229.L(I6229.h, I6229.f)
-    cm.new_equation(lhs=I9907.nr, rhs=I9907.nc)
+    # TODO: encode the directional character of this equation (lhs := rhs)
+    cm.new_equation(lhs=cm.L_evaluated, rhs=cm.subs)
 
 I1347["Lie derivative of scalar field"].set_relation(
     p.R37["has definition"], I6229["definition of Lie derivative of scalar field"]

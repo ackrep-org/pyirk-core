@@ -855,6 +855,36 @@ I33 = create_builtin_item(
     R18__has_usage_hint="positions of the elements are specified via qualifiers"
 )
 
+
+def new_tuple(*args, **kwargs) -> Item:
+    """
+    Create a new tuple entitiy
+    :param args:
+    :return:
+    """
+
+    scope = kwargs.pop("scope", None)
+    assert len(kwargs) == 0, f"Unexpected keyword argument(s): {kwargs}"
+
+    length = len(args)
+
+    # TODO generate a useful label for the tuple instance
+    args_str = str(args)
+    if len(args_str) > 15:
+        args_str = f"{args_str[:12]}..."
+    tup = instance_of(I33["tuple"], r1=f"{length}-tuple: {args_str}")
+
+    if scope is not None:
+        tup.set_relation(R20["has defining scope"], scope)
+
+    tup.set_relation(R38["has length"], len(args))
+
+    for idx, arg in enumerate(args):
+        tup.set_relation(R39["has element"], arg, qualifiers=[has_index(idx)])
+
+    return tup
+
+
 I34 = create_builtin_item(
     key_str="I34",
     R1__has_label="non-negative integer",
@@ -894,9 +924,33 @@ R38 = create_builtin_relation(
     R1__has_label="has length",
     R2__has_description="specifies the length of a finite sequence",
     # R8__has_domain_of_argument_1= <mathematical object> (will be defined in other module)
-    R11__has_range_of_result=I20["mathematical definition"],
+    R11__has_range_of_result=I34["non-negative integer"],
+    R22__is_functional=True,
 )
 
+R39 = create_builtin_relation(
+    key_str="R39",
+    R1__has_label="has element",
+    R2__has_description="specifies that the object is an element of the subject; inverse of R15_is_element_of",
+    R8__has_domain_of_argument_1=I33["tuple"],
+    R18__has_usage_hint="This relation should be used with the qualifier R40__has_index"
+    # TODO specify inverse relation R15
+)
+
+R40 = create_builtin_relation(
+    key_str="R40",
+    R1__has_label="has index",
+    R2__has_description="qualifier; specifies the index (starting at 0) of an R39__has_element relation edge of a tuple",
+    # R8__has_domain_of_argument_1= <Relation Edge> # TODO: specify
+    R9__has_domain_of_argument_2=I34["non-negative integer"],
+    R18__has_usage_hint="This relation should be used as qualifier for R39__has_element"
+)
+
+has_index = QualifierFactory(R40["has index"])
+
+
+# ######################################################################################################################
+# Testing and debugging entities
 
 # noinspection PyUnresolvedReferences
 I900.set_relation(R1["has label"], "test item with english label" @ en)

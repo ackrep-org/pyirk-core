@@ -143,6 +143,17 @@ class TestCore(unittest.TestCase):
 
         self.assertEqual(h2.R4__is_instance_of, p.I32["evaluated mapping"])
 
+    def test_tuple(self):
+
+        data = (10, 11, 12, 13, p.I1, "some string")
+        tup = p.new_tuple(*data)
+        self.assertEqual(tup.R4__is_instance_of, p.I33["tuple"])
+        self.assertEqual(tup.R38__has_length, 6)
+
+        # TODO: non functional relations should return a tuple not a list?
+        res = tup.R39__has_element
+        self.assertEqual(data, tuple(res))
+
     def test_scope_vars(self):
 
         # this tests for a bug with labels of scope vars
@@ -190,6 +201,7 @@ class TestCore(unittest.TestCase):
         self.assertEqual(len(rel1.qualifiers), 2)
         self.assertEqual(len(rel2.qualifiers), 2)
 
+    # this currently fails
     def test_equation(self):
         mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH, "knowledge_base1")
 

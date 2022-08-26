@@ -717,13 +717,17 @@ def create_evaluated_mapping(mapping: Item, *args) -> Item:
 
     arg = args[0]
 
-    try:
-        arg_repr = arg.R1
-    except AttributeError:
-        arg_repr = str(arg)
-    r1 = f"applied mapping: {mapping.R1}({arg_repr})"
+    arg_repr_list = []
+    for arg in args:
+        try:
+            arg_repr_list.append(arg.R1)
+        except AttributeError:
+            arg_repr_list.append(str(arg))
 
-    # achieve determinism: if this mapping-item was already evaluated with this arg-item we want to return
+    args_repr = ", ".join(arg_repr_list)
+    r1 = f"applied mapping: {mapping.R1}({args_repr})"
+
+    # achieve determinism: if this mapping-item was already evaluated with the same args we want to return
     # the same evaluated-mapping-item again
 
     i32_instance_rels = I32["evaluated mapping"].get_inv_relations("R4__is_instance_of")
@@ -736,13 +740,15 @@ def create_evaluated_mapping(mapping: Item, *args) -> Item:
         i32_instance = i32_inst_rel.relation_tuple[0]
 
         # TODO: adapt this for multivariant mappings
-        if i32_instance.R35__is_applied_mapping_of == mapping and i32_instance.R36__has_argument[0] == arg:
+        #!!
+        if i32_instance.R35__is_applied_mapping_of == mapping and i32_instance.R36__has_argument_tuple == args[0]:
             return i32_instance
 
     # for loop finished regularly -> the application `mapping(arg)` has not been created before -> create new item
     ev_mapping = instance_of(I32["evaluated mapping"], r1=r1)
     ev_mapping.set_relation(R35["is applied mapping of"], mapping)
-    ev_mapping.set_relation(R36["has argument"], arg)
+    #!!
+    ev_mapping.set_relation(R36["has argument tuple"], args[0])
 
     return ev_mapping
 
@@ -840,11 +846,36 @@ R35 = create_builtin_relation(
     ),
 )
 
+
+I33 = create_builtin_item(
+    key_str="I33",
+    R1__has_label="tuple",
+    R2__has_description="data type for specific ordered sequences of entities and/or literals",
+    R3__is_subclass_of=I2["Metaclass"],
+    R18__has_usage_hint="positions of the elements are specified via qualifiers"
+)
+
+I34 = create_builtin_item(
+    key_str="I34",
+    R1__has_label="non-negative integer",
+    R2__has_description="mathematical type equivalent to Nat (from type theory): non-negative integer number",
+    R4__is_instance_of=I12["mathematical object"],
+)
+
+I35 = create_builtin_item(
+    key_str="I35",
+    R1__has_label="positive integer",
+    R2__has_description="mathematical type equivalent to Nat+ (from type theory): positive integer number",
+    R3__is_subclass_of=I34["non-negative integer"],
+)
+
+
 R36 = create_builtin_relation(
     key_str="R36",
-    R1__has_label="has argument",
-    R2__has_description="specifies the/an argument entitiy of the subject",
+    R1__has_label="has argument tuple",
+    R2__has_description="specifies the tuple of arguments of the subject",
     R8__has_domain_of_argument_1=I32["evaluated mapping"],
+    R9__has_domain_of_argument_2=I33["tuple"],
     R18__has_usage_hint=(
         "Example: if subj = P(A) then we have: subj.R4__is_instance_of = I32; subj.R35 = P; subj.R36 = A"
     ),
@@ -854,6 +885,14 @@ R37 = create_builtin_relation(
     key_str="R37",
     R1__has_label="has definition",
     R2__has_description="specifies a formal definition of the item",
+    # R8__has_domain_of_argument_1= <mathematical object> (will be defined in other module)
+    R11__has_range_of_result=I20["mathematical definition"],
+)
+
+R38 = create_builtin_relation(
+    key_str="R38",
+    R1__has_label="has length",
+    R2__has_description="specifies the length of a finite sequence",
     # R8__has_domain_of_argument_1= <mathematical object> (will be defined in other module)
     R11__has_range_of_result=I20["mathematical definition"],
 )

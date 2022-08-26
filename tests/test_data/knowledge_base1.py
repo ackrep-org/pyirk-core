@@ -347,17 +347,9 @@ with I3007.scope("assertions") as cm:
 # preparation for next theorem
 
 # Note, it might be worthwile to introduce the set of all (non-negative/positive) integer numbers as a separate item
-I4463 = p.create_item(
-    R1__has_label="non-negative integer",
-    R2__has_description="mathematical type equivalent to Nat (from type theory): non-negative integer number",
-    R4__is_instance_of=p.I12["mathematical object"],
-)
+I4463 = p.I34["non-negative integer"]
+I4464 = p.I35["positive integer"]
 
-I4464 = p.create_item(
-    R1__has_label="positive integer",
-    R2__has_description="mathematical type equivalent to Nat+ (from type theory): positive integer number",
-    R3__is_subclass_of=I4463["non-negative integer"],
-)
 
 # todo: this needs more generalization
 I9904 = p.create_item(

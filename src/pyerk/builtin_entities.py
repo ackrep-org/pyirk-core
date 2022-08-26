@@ -713,10 +713,6 @@ def create_evaluated_mapping(mapping: Item, *args) -> Item:
     :return:
     """
 
-    # TODO  # Make this work with up to three arguments
-
-    arg = args[0]
-
     arg_repr_list = []
     for arg in args:
         try:
@@ -739,16 +735,17 @@ def create_evaluated_mapping(mapping: Item, *args) -> Item:
     for i32_inst_rel in i32_instance_rels:
         i32_instance = i32_inst_rel.relation_tuple[0]
 
-        # TODO: adapt this for multivariant mappings
-        #!!
-        if i32_instance.R35__is_applied_mapping_of == mapping and i32_instance.R36__has_argument_tuple == args[0]:
-            return i32_instance
+        if i32_instance.R35__is_applied_mapping_of == mapping:
+            old_arg_tup = i32_instance.R36__has_argument_tuple
+            if tuple(old_arg_tup.R39__has_element) == args:
+                return i32_instance
 
     # for loop finished regularly -> the application `mapping(arg)` has not been created before -> create new item
     ev_mapping = instance_of(I32["evaluated mapping"], r1=r1)
     ev_mapping.set_relation(R35["is applied mapping of"], mapping)
-    #!!
-    ev_mapping.set_relation(R36["has argument tuple"], args[0])
+
+    arg_tup = new_tuple(*args)
+    ev_mapping.set_relation(R36["has argument tuple"], arg_tup)
 
     return ev_mapping
 
@@ -909,6 +906,7 @@ R36 = create_builtin_relation(
     R18__has_usage_hint=(
         "Example: if subj = P(A) then we have: subj.R4__is_instance_of = I32; subj.R35 = P; subj.R36 = A"
     ),
+    R22__is_functional=True,
 )
 
 R37 = create_builtin_relation(

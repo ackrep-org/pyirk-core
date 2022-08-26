@@ -201,7 +201,6 @@ class TestCore(unittest.TestCase):
         self.assertEqual(len(rel1.qualifiers), 2)
         self.assertEqual(len(rel2.qualifiers), 2)
 
-    # this currently fails
     def test_equation(self):
         mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH, "knowledge_base1")
 

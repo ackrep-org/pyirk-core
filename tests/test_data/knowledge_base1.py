@@ -299,14 +299,14 @@ I4455 = p.create_item(
 with I4455.scope("context") as cm:
     cm.new_var(P=uq_instance_of(I4239["monovariate polynomial"]))
     cm.new_var(set_of_roots=p.instance_of(I5484["finite set of complex numbers"]))
-    cm.new_rel(I4455.P, R1757["has set of roots"], I4455.set_of_roots)
+    cm.new_rel(cm.P, R1757["has set of roots"], cm.set_of_roots)
 
 
 with I4455.scope("premises") as cm:
-    cm.new_rel(I4455.set_of_roots, p.R14["is subset of"], I2739["open left half plane"])
+    cm.new_rel(cm.set_of_roots, p.R14["is subset of"], I2739["open left half plane"])
 
 with I4455.scope("assertions") as cm:
-    cm.new_rel(I4455.P, p.R30["is secondary instance of"], I5325["Hurwitz polynomial"])
+    cm.new_rel(cm.P, p.R30["is secondary instance of"], I5325["Hurwitz polynomial"])
 
 I5325["Hurwitz polynomial"].set_relation(p.R37["has definition"], I4455["definition of Hurwitz polynomial"])
 # </definition>
@@ -331,16 +331,16 @@ with I3007.scope("context") as cm:
     cm.new_var(denom=p.instance_of(I4239["monovariate polynomial"]))
     cm.new_var(set_of_poles=p.instance_of(I5484["finite set of complex numbers"]))
 
-    cm.new_rel(I3007.sys, R5334["has representation"], I3007.tf_rep)
-    cm.new_rel(I3007.tf_rep, R5323["has denominator"], I3007.denom)
-    cm.new_rel(I3007.denom, R1757["has set of roots"], I3007.set_of_poles)
+    cm.new_rel(cm.sys, R5334["has representation"], cm.tf_rep)
+    cm.new_rel(cm.tf_rep, R5323["has denominator"], cm.denom)
+    cm.new_rel(cm.denom, R1757["has set of roots"], cm.set_of_poles)
 
 with I3007.scope("premises") as cm:
-    cm.new_rel(I3007.set_of_poles, p.R14["is subset of"], I2739["open left half plane"])
-    cm.new_rel(I3007.tf_rep, p.R16["has property"], I8181["properness"])
+    cm.new_rel(cm.set_of_poles, p.R14["is subset of"], I2739["open left half plane"])
+    cm.new_rel(cm.tf_rep, p.R16["has property"], I8181["properness"])
 
 with I3007.scope("assertions") as cm:
-    cm.new_rel(I3007.sys, p.R16["has property"], I7208["BIBO stability"])
+    cm.new_rel(cm.sys, p.R16["has property"], I7208["BIBO stability"])
 # </theorem>
 
 
@@ -401,15 +401,15 @@ with I9907.scope("context") as cm:
 
     cm.new_var(nc=p.instance_of(p.I39["positive integer"]))
 
-    cm.new_rel(I9907.M, R5938["has row number"], I9907.nr)
-    cm.new_rel(I9907.M, R5939["has column number"], I9907.nc)
+    cm.new_rel(cm.M, R5938["has row number"], cm.nr)
+    cm.new_rel(cm.M, R5939["has column number"], cm.nc)
 
 with I9907.scope("premises") as cm:
     # number of rows == number of columns
-    cm.new_equation(lhs=I9907.nr, rhs=I9907.nc)
+    cm.new_equation(lhs=cm.nr, rhs=cm.nc)
 
 with I9907.scope("assertions") as cm:
-    cm.new_rel(I9907.M, p.R30["is secondary instance of"], I9906["square matrix"])
+    cm.new_rel(cm.M, p.R30["is secondary instance of"], I9906["square matrix"])
 
 # </definition>
 
@@ -432,14 +432,14 @@ with I3749["Cayley-Hamilton theorem"].scope("context") as cm:
     cm.new_var(P=p.instance_of(I4240["matrix polynomial"]))
     cm.new_var(Z=p.instance_of(I9905["zero matrix"]))
 
-    cm.new_rel(I3749.A, R5938["has row number"], I3749.n)
-    cm.new_rel(I3749.A, R5940["has characteristic polynomial"], I3749.P)
-    cm.new_rel(I3749.Z, R5938["has row number"], I3749.n)
-    cm.new_rel(I3749.Z, R5939["has column number"], I3749.n)
-    cm.new_rel(I3749.Z, p.R24["has LaTeX string"], r"\mathbf{0}")
+    cm.new_rel(cm.A, R5938["has row number"], cm.n)
+    cm.new_rel(cm.A, R5940["has characteristic polynomial"], cm.P)
+    cm.new_rel(cm.Z, R5938["has row number"], cm.n)
+    cm.new_rel(cm.Z, R5939["has column number"], cm.n)
+    cm.new_rel(cm.Z, p.R24["has LaTeX string"], r"\mathbf{0}")
 
 with I3749["Cayley-Hamilton theorem"].scope("assertions") as cm:
-    cm.new_equation(lhs=I3749.P(I3749.A), rhs=I3749.Z)
+    cm.new_equation(lhs=cm.P(cm.A), rhs=cm.Z)
 
 # </theorem>
 
@@ -558,13 +558,13 @@ with I4216.scope("context") as cm:
     cm.new_var(mathematical_solution=p.instance_of(I5948["dynamical system"]))
     cm.new_var(optimal_control_law=p.instance_of(I5948["dynamical system"]))
 
-    cm.new_rel(I4216.mpc_problem, p.R000["refers to"], I4216.sys)
+    cm.new_rel(cm.mpc_problem, p.R000["refers to"], cm.sys)
 
 with I4216.scope("premises") as cm:
-    cm.new_rel(I4216.sys, p.R000["refers to"], I4216.sys)
+    cm.new_rel(cm.sys, p.R000["refers to"], cm.sys)
 
 with I4216.scope("assertions") as cm:
-    cm.new_rel(I4216.mpc_problem, p.R000["can be reduced to"], I4216.quadratic_problem)
+    cm.new_rel(cm.mpc_problem, p.R000["can be reduced to"], cm.quadratic_problem)
 
 """
 Particularly for linear systems, the MPC problem can be reduced to a quadratic
@@ -645,14 +645,35 @@ I2753 = p.create_item(
     R9__has_domain_of_argument_2=p.I35["real number"],
     R10__has_domain_of_argument_3=I9273["explicit first order ODE system"],
     R11__has_range_of_result=I1168["point in state space"],
-    R13__has_canonical_symbol=r"$\varphi$",
+
+    # TODO: display and evaluate this notation
+    # (\cdot_i) means: the i-th argument
+    R13__has_canonical_symbol=r"$\varphi_{(\cdot_2)}^{(\cdot_3)}(\cdot_1)$",
 )
+# TODO: finde a way to assign labels to the arguments: "initial value x", "time t", "vector field f"
 
 # make the flow callable:
 I2753["flow of a vectorfield"].add_method(p.create_evaluated_mapping, "_custom_call")
 
+I4122 = p.create_item(
+    R1__has_label="independent variable",
+    R2__has_description="type for an independent variable",
+    R3__is_subclass_of=I4235["mathematical object"],
+)
+
+
+I3513 = p.create_item(
+    R1__has_label="derivative w.r.t. scalar parameter",
+    R2__has_description="operator yielding the derivative of an expression w.r.t. a parameter",
+    R3__is_subclass_of=I4895["mathematical operator"],
+    R8__has_domain_of_argument_1=I4236["mathematical expression"],
+    R9__has_domain_of_argument_2=I4122["independent variable"],
+    R11__has_range_of_result=I4236["mathematical expression"],
+    R13__has_canonical_symbol=r"$\frac{d}{d(\cdot_2}) (\cdot_1)$",
+)
+
+
 """
-I3513
 I4122
 I2075
 I7733
@@ -689,9 +710,13 @@ I6229 = p.create_item(
 )
 
 with I6229.scope("context") as cm:
+    cm.new_var(n=uq_instance_of(p.I39["positive integer"]))
+    cm.new_var(M=uq_instance_of(I5167["state space"]))
     cm.new_var(h=uq_instance_of(I9923["scalar field"]))
     cm.new_var(f=uq_instance_of(I9841["vector field"]))
     cm.new_var(L=p.instance_of(I1347["Lie derivative of scalar field"]))
+
+    cm.new_rel(cm.M, R3326["has dimension"], cm.n)
 
 
 # work in progress
@@ -716,7 +741,7 @@ I1371 = p.create_item(
     R8__has_domain_of_argument_1=I9923["scalar field"],
     R9__has_domain_of_argument_2=I9841["vector field"],
     R10__has_domain_of_argument_3=p.I38["non-negative integer"],
-    R11__has_range_of_result=p.I000["scalar field"],
+    R11__has_range_of_result=I9923["scalar field"],
     # TODO: add defining equation
 )
 

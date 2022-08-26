@@ -476,6 +476,16 @@ class _proposition__CM:
         eq = new_equation(lhs, rhs, scope=self.scope)
         return eq
 
+    def __getattr__(self, name: str):
+        """
+        This function allows to use `cm.<local variable> instead of I2345.<local variable> where I2345 is the
+        parent object of the scope.
+
+        :param name:
+        :return:
+        """
+        return getattr(self.item, name)
+
 
 def _proposition__scope(self: Item, scope_name: str):
     """

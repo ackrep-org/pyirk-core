@@ -346,10 +346,6 @@ with I3007.scope("assertions") as cm:
 
 # preparation for next theorem
 
-# Note, it might be worthwile to introduce the set of all (non-negative/positive) integer numbers as a separate item
-I4463 = p.I34["non-negative integer"]
-I4464 = p.I35["positive integer"]
-
 
 # todo: this needs more generalization
 I9904 = p.create_item(
@@ -375,14 +371,14 @@ R5938 = p.create_relation(
     R1__has_label="has row number",
     R2__has_description="specifies the number of rows of a matrix",
     R8__has_domain_of_argument_1=I9904["matrix"],
-    R11__has_range_of_result=I4463["non-negative integer"],
+    R11__has_range_of_result=p.I38["non-negative integer"],
 )
 
 R5939 = p.create_relation(
     R1__has_label="has column number",
     R2__has_description="specifies the number of columns of a matrix",
     R8__has_domain_of_argument_1=I9904["matrix"],
-    R11__has_range_of_result=I4463["non-negative integer"],
+    R11__has_range_of_result=p.I38["non-negative integer"],
 )
 
 R5940 = p.create_relation(
@@ -401,9 +397,9 @@ I9907 = p.create_item(
 
 with I9907.scope("context") as cm:
     cm.new_var(M=uq_instance_of(I9904["matrix"]))
-    cm.new_var(nr=uq_instance_of(I4464["positive integer"]))
+    cm.new_var(nr=uq_instance_of(p.I39["positive integer"]))
 
-    cm.new_var(nc=p.instance_of(I4464["positive integer"]))
+    cm.new_var(nc=p.instance_of(p.I39["positive integer"]))
 
     cm.new_rel(I9907.M, R5938["has row number"], I9907.nr)
     cm.new_rel(I9907.M, R5939["has column number"], I9907.nc)
@@ -431,7 +427,7 @@ I3749 = p.create_item(
 
 with I3749["Cayley-Hamilton theorem"].scope("context") as cm:
     cm.new_var(A=uq_instance_of(I9906["square matrix"]))
-    cm.new_var(n=uq_instance_of(I4464["positive integer"]))
+    cm.new_var(n=uq_instance_of(p.I39["positive integer"]))
 
     cm.new_var(P=p.instance_of(I4240["matrix polynomial"]))
     cm.new_var(Z=p.instance_of(I9905["zero matrix"]))
@@ -596,6 +592,77 @@ I4895 = p.create_item(
     R3__is_subclass_of=I4235["mathematical object"],
 )
 
+
+R3326 = p.create_relation(
+    R1__has_label="has dimension",
+    R2__has_description="specifies the dimension of a (dimensional) mathematical object",
+    R8__has_domain_of_argument_1=I4235["mathematical object"],
+    R11__has_range_of_result=p.I38["non-negative integer"],
+    R22__is_functional=True,
+)
+
+# TODO: consider "state manifold"
+I5167 = p.create_item(
+    R1__has_label="state space",
+    R2__has_description="type for a state space of a dynamical system (I6886)",
+    R3__is_subclass_of=I4235["mathematical object"],
+    # R33__has_corresponding_wikidata_entity= TODO,
+    R41__has_required_instance_relation=R3326["has dimension"]
+)
+
+
+R5405 = p.create_relation(
+    R1__has_label="has associated state space",
+    R2__has_description="specifies the associated state space of the subject (e.g. a I9273__explicit...ode_system)",
+    R8__has_domain_of_argument_1=I4235["mathematical object"],
+    R11__has_range_of_result=I5167["state space"],
+    R22__is_functional=True,
+)
+
+I1168 = p.create_item(
+    R1__has_label="point in state space",
+    R2__has_description="type for a point in a given state space",
+    R3__is_subclass_of=I4235["mathematical object"],
+    # R33__has_corresponding_wikidata_entity= TODO,
+    R41__has_required_instance_relation=R5405["has associated state space"]
+)
+# TODO: it might be worth to generalize this: creating a type from a set (where the set is an instance of another type)
+
+I9273 = p.create_item(
+    R1__has_label="explicit first order ODE system",
+    R2__has_description="system of explicit first order ordinary differential equations",
+    R3__is_subclass_of=I4235["mathematical object"],
+    R41__has_required_instance_relation=R5405["has associated state space"]
+    # TODO: make explicit the relation to I6886["general ode state space representation"]
+)
+
+
+I2753 = p.create_item(
+    R1__has_label="flow of a vectorfield",
+    R2__has_description="operator yielding the solution of the associated I9273__explicit_first_order_ODE_system",
+    R3__is_subclass_of=I4895["mathematical operator"],
+    R8__has_domain_of_argument_1=I1168["point in state space"],
+    R9__has_domain_of_argument_2=p.I35["real number"],
+    R10__has_domain_of_argument_3=I9273["explicit first order ODE system"],
+    R11__has_range_of_result=I1168["point in state space"],
+    R13__has_canonical_symbol=r"$\varphi$",
+)
+
+# make the flow callable:
+I2753["flow of a vectorfield"].add_method(p.create_evaluated_mapping, "_custom_call")
+
+"""
+I3513
+I4122
+I2075
+I7733
+I4101
+I9030
+I9210
+I7864
+I9853 
+"""
+
 I1347 = p.create_item(
     R1__has_label="Lie derivative of scalar field",
     R2__has_description=(
@@ -608,7 +675,7 @@ I1347 = p.create_item(
     R9__has_domain_of_argument_2=I9841["vector field"],
     R11__has_range_of_result=I9923["scalar field"],
     R13__has_canonical_symbol=r"$L$",
-    # TODO: add defining equation
+    # TODO: complete defining equation
 )
 
 # make the Lie derivative callable:
@@ -627,11 +694,13 @@ with I6229.scope("context") as cm:
     cm.new_var(L=p.instance_of(I1347["Lie derivative of scalar field"]))
 
 
+# work in progress
 with I6229.scope("premises") as cm:
     # TODO: specify consistency between h and and f
     pass
 
 with I6229.scope("assertions") as cm:
+    I6229.L(I6229.h, I6229.f)
     cm.new_equation(lhs=I9907.nr, rhs=I9907.nc)
 
 I1347["Lie derivative of scalar field"].set_relation(
@@ -644,9 +713,9 @@ I1371 = p.create_item(
     R1__has_label="iterated Lie derivative of scalar field",
     R2__has_description="iterated version of I1347__Lie_derivative_of_scalar_field",
     R3__is_subclass_of=I4895["mathematical operator"],
-    R8__has_domain_of_argument_1=p.I000["scalar field"],
-    R9__has_domain_of_argument_2=p.I000["vector field"],
-    R10__has_domain_of_argument_3=p.I000["non-negative number"],
+    R8__has_domain_of_argument_1=I9923["scalar field"],
+    R9__has_domain_of_argument_2=I9841["vector field"],
+    R10__has_domain_of_argument_3=p.I38["non-negative integer"],
     R11__has_range_of_result=p.I000["scalar field"],
     # TODO: add defining equation
 )

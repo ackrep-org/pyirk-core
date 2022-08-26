@@ -849,7 +849,7 @@ I33 = create_builtin_item(
     R1__has_label="tuple",
     R2__has_description="data type for specific ordered sequences of entities and/or literals",
     R3__is_subclass_of=I2["Metaclass"],
-    R18__has_usage_hint="positions of the elements are specified via qualifiers"
+    R18__has_usage_hint="positions of the elements are specified via qualifiers",
 )
 
 
@@ -941,7 +941,7 @@ R40 = create_builtin_relation(
     R2__has_description="qualifier; specifies the index (starting at 0) of an R39__has_element relation edge of a tuple",
     # R8__has_domain_of_argument_1= <Relation Edge> # TODO: specify
     R9__has_domain_of_argument_2=I34["non-negative integer"],
-    R18__has_usage_hint="This relation should be used as qualifier for R39__has_element"
+    R18__has_usage_hint="This relation should be used as qualifier for R39__has_element",
 )
 
 has_index = QualifierFactory(R40["has index"])

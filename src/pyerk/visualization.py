@@ -52,7 +52,7 @@ class AbstractGraphObject(ABC):
         self.dot_label_str = None
 
     def _perform_label_segmentation(self) -> None:
-        """"
+        """
         handle label formatting (segmentation into multiple lines and later wrapping by html tags)
 
         labels of Nodes should be centered (dot file should contain r"\n" bewteen segments)
@@ -73,7 +73,7 @@ class AbstractGraphObject(ABC):
     def get_dot_label(self):
         return repr(self)
 
-    def perform_html_wrapping(self, use_html = True) -> None:
+    def perform_html_wrapping(self, use_html=True) -> None:
         """
         Assigns the segment key to the actual html-wrapped string. This pair will be used later by .format
         to modify the generated svg-data
@@ -166,6 +166,7 @@ class Edge(AbstractGraphObject):
     """
     This class models the graphviz representation of an edge between two nodes
     """
+
     def __init__(self, relation: p.Relation, url_template: str):
         super().__init__()
 
@@ -262,7 +263,7 @@ def create_label_segments(label: str, maxlen: int) -> Tuple[List[str], List[str]
         # handle special case where the next character is a space
         if rest[maxlen] == " ":
             res_segments.append(first_part)
-            rest = rest[maxlen+1:]
+            rest = rest[maxlen + 1 :]
             continue
 
         # make first_part as long as possible -> find the last split-char index
@@ -290,7 +291,6 @@ def create_label_segments(label: str, maxlen: int) -> Tuple[List[str], List[str]
 
 
 class CustomizedDiGraph(nx.DiGraph):
-
     def add_node(self, node: AbstractGraphObject, **kwargs):
 
         # set defaults

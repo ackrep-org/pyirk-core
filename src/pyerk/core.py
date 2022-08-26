@@ -595,7 +595,7 @@ def unpack_l1d(l1d: Dict[str, object]):
     return tuple(*l1d.items())
 
 
-def process_key_str(key_str: str, check: bool =True) -> ProcessedStmtKey:
+def process_key_str(key_str: str, check: bool = True) -> ProcessedStmtKey:
     """
     In ERK there are three kinds of keys:
         - a) short_key like `R1234`
@@ -682,7 +682,7 @@ def check_processed_key(pkey: ProcessedStmtKey) -> None:
 
     if label_compare_str.lower() != pkey.label.lower():
         msg = (
-            f'check of label consistency failed for key {pkey.original_key_str}. Expected:  "{label_compare_str}"  ' 
+            f'check of label consistency failed for key {pkey.original_key_str}. Expected:  "{label_compare_str}"  '
             f'but got   "{pkey.label}"  . Note: this test is *not* case-sensitive.'
         )
         raise ValueError(msg)

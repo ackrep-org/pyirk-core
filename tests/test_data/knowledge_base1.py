@@ -608,7 +608,6 @@ I1347 = p.create_item(
     R9__has_domain_of_argument_2=I9841["vector field"],
     R11__has_range_of_result=I9923["scalar field"],
     R13__has_canonical_symbol=r"$L$",
-
     # TODO: add defining equation
 )
 
@@ -651,7 +650,6 @@ I1371 = p.create_item(
     R11__has_range_of_result=p.I000["scalar field"],
     # TODO: add defining equation
 )
-
 
 
 r"""

@@ -13,7 +13,11 @@ import pyerk.visualization as visualization
 activate_ips_on_exception()
 
 current_dir = os.path.dirname(os.path.abspath(sys.modules.get(__name__).__file__))
-TEST_DATA_PATH = pjoin(current_dir, "test_data", "knowledge_base1.py")
+
+ERK_ROOT_DIR = p.aux.get_erk_root_dir()
+
+TEST_DATA_PATH = pjoin(ERK_ROOT_DIR, "erk-data", "control-theory", "control_theory1.py")
+TEST_MOD_NAME = "control_theory1"
 
 
 # noinspection PyPep8Naming
@@ -30,11 +34,20 @@ class TestCore(unittest.TestCase):
         for mod_id in list(p.ds.mod_path_mapping.a.keys()):
             p.unload_mod(mod_id)
 
+    def test_aa0__directory_structure(self):
+        pyerk_dir = pjoin(ERK_ROOT_DIR, "pyerk")
+        django_gui_dir = pjoin(ERK_ROOT_DIR, "django-erk-gui")
+        erk_data_dir = pjoin(ERK_ROOT_DIR, "erk-data")
+
+        self.assertTrue(os.path.isdir(pyerk_dir))
+        self.assertTrue(os.path.isdir(django_gui_dir))
+        self.assertTrue(os.path.isdir(erk_data_dir))
+
     def test_aa1(self):
         """
         The first test ensures, that TestCases do not influence each other
         """
-        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH, "knowledge_base1")
+        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH, TEST_MOD_NAME)
 
         self.tearDown()
 
@@ -61,7 +74,7 @@ class TestCore(unittest.TestCase):
     # noinspection PyUnresolvedReferences
     # (above noinspection is necessary because of the @-operator which is undecleared for strings)
     def test_core1(self):
-        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH, "knowledge_base1")
+        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH, TEST_MOD_NAME)
         self.assertEqual(mod1.I3749.R1, "Cayley-Hamilton theorem")
 
         def_eq_item = mod1.I6886.R6__has_defining_equation
@@ -120,7 +133,7 @@ class TestCore(unittest.TestCase):
         p.core._unlink_entity(itm2.short_key)
 
     def test_evaluated_mapping(self):
-        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH, "knowledge_base1")
+        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH, TEST_MOD_NAME)
         poly1 = p.instance_of(mod1.I4239["monovariate polynomial"])
 
         # test that an arbitrary item is *not* callable
@@ -133,7 +146,7 @@ class TestCore(unittest.TestCase):
         self.assertEqual(res.R4__is_instance_of, p.I32["evaluated mapping"])
 
     def test_evaluated_mapping2(self):
-        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH, "knowledge_base1")
+        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH, TEST_MOD_NAME)
 
         h = p.instance_of(mod1.I9923["scalar field"])
         f = p.instance_of(mod1.I9841["vector field"])
@@ -163,7 +176,7 @@ class TestCore(unittest.TestCase):
     def test_scope_vars(self):
 
         # this tests for a bug with labels of scope vars
-        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH, "knowledge_base1")
+        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH, TEST_MOD_NAME)
         def_itm = p.ds.get_entity("I9907")
         matrix_instance = def_itm.M
         self.assertEqual(matrix_instance.R1, "M")
@@ -175,7 +188,7 @@ class TestCore(unittest.TestCase):
         with self.assertRaises(TypeError):
             Ia001.set_relation(p.R5["is part of"], [p.I4["Mathematics"], p.I5["Engineering"]])
 
-        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH, "knowledge_base1")
+        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH, TEST_MOD_NAME)
         itm = p.ds.get_entity("I4466")  # I4466["Systems Theory"]
         # construction: R5__is_part_of=[p.I4["Mathematics"], p.I5["Engineering"]]
         res = itm.R5
@@ -184,7 +197,7 @@ class TestCore(unittest.TestCase):
         self.assertIn(p.I5["Engineering"], res)
 
     def test_is_instance_of_generalized_metaclass(self):
-        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH, "knowledge_base1")
+        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH, TEST_MOD_NAME)
 
         itm1 = p.ds.get_entity("I2__Metaclass")
         itm2 = p.ds.get_entity("I4235__mathematical_object")
@@ -200,7 +213,7 @@ class TestCore(unittest.TestCase):
         self.assertFalse(p.is_instance_of_generalized_metaclass(itm4))
 
     def test_qualifiers(self):
-        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH, "knowledge_base1")
+        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH, TEST_MOD_NAME)
 
         itm1: p.Item = p.ds.get_entity("I2746__Rudolf_Kalman")
         rel1, rel2 = itm1.get_relations()[p.pk("R1833__has_employer")][:2]
@@ -208,7 +221,7 @@ class TestCore(unittest.TestCase):
         self.assertEqual(len(rel2.qualifiers), 2)
 
     def test_equation(self):
-        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH, "knowledge_base1")
+        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH, TEST_MOD_NAME)
 
         itm1: p.Item = p.ds.get_entity("I3749__Cayley-Hamilton_theorem")
         Z: p.Item = itm1.scope("context").namespace["Z"]
@@ -263,7 +276,7 @@ class TestCore(unittest.TestCase):
         self.assertRaises(ValueError, p.process_key_str, "R2__has_description_XYZ")
 
         # now, check label consistency in the test data
-        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH, "knowledge_base1")
+        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH, TEST_MOD_NAME)
 
     def test_format_label(self):
 
@@ -309,7 +322,7 @@ class TestCore2(unittest.TestCase):
         res_graph: visualization.nx.DiGraph = visualization.create_nx_graph_from_entity("I21__mathematical_relation")
         self.assertEqual(res_graph.number_of_nodes(), 7)
 
-        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH, "knowledge_base1")
+        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH, TEST_MOD_NAME)
 
         # do not use something like "Ia3699" here directly because this might change when mod1 changes
         auto_item: p.Item = mod1.I3749["Cayley-Hamilton theorem"].A
@@ -321,7 +334,7 @@ class TestCore2(unittest.TestCase):
 
         res = visualization.visualize_entity("I21__mathematical_relation", write_tmp_files=True)
 
-        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH, "knowledge_base1")
+        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH, TEST_MOD_NAME)
         auto_item: p.Item = mod1.I3749["Cayley-Hamilton theorem"].P
         res = visualization.visualize_entity(auto_item.short_key, write_tmp_files=False)
 
@@ -352,7 +365,7 @@ class TestZZCore3(unittest.TestCase):
 
     def test_sparql_query(self):
         # This test seems somehow to influence later tests
-        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH, "knowledge_base1")
+        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH, TEST_MOD_NAME)
         p.ds.rdfgraph = p.rdfstack.create_rdf_triples()
         qsrc = p.rdfstack.get_sparql_example_query()
         res = p.ds.rdfgraph.query(qsrc)

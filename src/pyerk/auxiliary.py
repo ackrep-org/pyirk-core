@@ -1,3 +1,5 @@
+import os
+import sys
 from typing import Iterable, Union
 from rdflib import Literal
 from colorama import Style, Fore
@@ -106,3 +108,15 @@ def bred(txt):
 
 def byellow(txt):
     return f"{Fore.YELLOW}{Style.BRIGHT}{txt}{Style.RESET_ALL}"
+
+
+def get_erk_root_dir() -> str:
+    """
+    Return the absolute path of the erk-root (assuming the directory structure documented in README.md)
+
+    :return:
+    """
+    #
+    current_dir = os.path.dirname(os.path.abspath(sys.modules.get(__name__).__file__))
+    erk_root = os.path.abspath(os.path.join(current_dir, "..", "..", ".."))
+    return erk_root

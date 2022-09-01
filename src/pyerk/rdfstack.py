@@ -99,7 +99,7 @@ def check_all_relation_types():
     n = list(res)[0][0]
 
     res2 = aux.apply_func_to_table_cells(convert_from_rdf_to_pyerk, res)
-    IPS()
+    # IPS()
 
 
 """

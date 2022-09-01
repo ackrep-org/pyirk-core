@@ -19,12 +19,19 @@ def main():
         default=None,
     )
 
-    parser.add_argument("--new-key", help=f"generate new key", default=None, action="store_true")
+    parser.add_argument("--new-keys", help=f"generate new key", default=None, action="store_true")
 
     parser.add_argument(
         "--load-mod",
         help=f"load module",
         default=None,
+    )
+
+    parser.add_argument(
+        "--nk",
+        help=f"number of keys",
+        type=int,
+        default=30,
     )
 
     parser.add_argument("--dbg", help=f"start debug routine", default=None, action="store_true")
@@ -38,10 +45,11 @@ def main():
     if args.load_mod is not None:
         process_mod(path=args.load_mod)
 
-    if args.new_key:
+    # typical call: pyerk --new-key --load-mod ../erk-data/control-theory/control_theory1.py --nk 100
+    if args.new_keys:
         if not args.load_mod:
             print(aux.byellow("No module loaded. There might be key clashes. Use `--load-mod` to prevent this."))
-        core.print_new_key()
+        core.print_new_keys(args.nk)
 
     elif args.inputfile is not None:
         core.script_main(args.inputfile)

@@ -1049,20 +1049,17 @@ def generate_new_key(prefix, prefix2=""):
             continue
 
 
-def print_new_key():
+def print_new_keys(n=30):
     """
-    print random integer keys from the pregenerated list.
+    print n random integer keys from the pregenerated list.
 
     :return:
     """
 
-    for i in range(30):
+    for i in range(n):
         k = generate_new_key("I")[1:]
 
         print(f"supposed key:    I{k}      R{k}")
-
-
-# ------------------
 
 
 def get_caller_frame(upcount: int) -> types.FrameType:

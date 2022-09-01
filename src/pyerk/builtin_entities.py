@@ -1013,6 +1013,27 @@ R41 = create_builtin_relation(
     R9__has_domain_of_argument_2=I40["general relation"],
 )
 
+R42 = create_builtin_relation(
+    key_str="R42",
+    R1__has_label="is symmetrical",
+    R2__has_description=(
+        "specifies that the subject ('rel') is a symmetrical relation, i.e. that the statement `subj rel obj` also "
+        "implies the statement `obj rel subj`"
+    ),
+    R8__has_domain_of_argument_1=I40["general relation"],
+    R9__has_domain_of_argument_2=bool,
+    R22__is_functional=True,
+)
+
+R43 = create_builtin_relation(
+    key_str="R43",
+    R1__has_label="is opposite of",
+    R2__has_description="specifies that the subject is the oposite of the object.",
+    R42__is_symmetrical=True,
+    R8__has_domain_of_argument_1=I1["General Item"],
+    R9__has_domain_of_argument_2=I1["General Item"],
+)
+
 
 # ######################################################################################################################
 # Testing and debugging entities

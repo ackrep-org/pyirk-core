@@ -385,8 +385,4 @@ class TestZZCore3(unittest.TestCase):
         res = p.ds.rdfgraph.query(qsrc)
         res2 = p.aux.apply_func_to_table_cells(p.rdfstack.convert_from_rdf_to_pyerk, res)
 
-        import colorama
-
-        print(colorama.Fore.YELLOW, "sparql test currently fails!")
-
-        # self.assertEqual(res2, [[mod1.I4466, p.I4], [mod1.I4466, p.I5]])
+        self.assertEqual(res2, [[mod1.I4466, p.I4], [mod1.I4466, p.I5]])

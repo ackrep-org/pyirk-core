@@ -10,6 +10,18 @@ from ipydex import IPS, activate_ips_on_exception, set_trace
 import pyerk as p
 import pyerk.visualization as visualization
 
+"""
+recommended ways to run the tests from the repo root (where setup.py lives):
+
+# all tests
+nosetests --rednose --nocapture
+python3 -m unititest
+
+# single class
+
+
+"""
+
 activate_ips_on_exception()
 
 current_dir = os.path.dirname(os.path.abspath(sys.modules.get(__name__).__file__))
@@ -19,14 +31,18 @@ ERK_ROOT_DIR = p.aux.get_erk_root_dir()
 TEST_DATA_PATH = pjoin(ERK_ROOT_DIR, "erk-data", "control-theory", "control_theory1.py")
 TEST_MOD_NAME = "control_theory1"
 
+# this serves to print the test-method-name before it is executed (useful for debugging, see setUP below)
+PRINT_TEST_METHODNAMES = False
+
+# some tests might generate files such as `tmp.svg` as a byproduct for debugging. The following flags controls this.
+WRITE_TMP_FILES = False
+
 
 # noinspection PyPep8Naming
 class TestCore(unittest.TestCase):
     def setUp(self):
-        # this serves to debug interdependent test-cases
-        print("In method", p.aux.bgreen(self._testMethodName))
-        # IPS(print_tb=-1)
-        pass
+        if PRINT_TEST_METHODNAMES:
+            print("In method", p.aux.bgreen(self._testMethodName))
 
     def tearDown(self) -> None:
 
@@ -307,9 +323,8 @@ class TestCore(unittest.TestCase):
 
 class TestCore2(unittest.TestCase):
     def setUp(self):
-        # this serves to debug interdependent test-cases
-        # print("In method", p.aux.bgreen(self._testMethodName))
-        pass
+        if PRINT_TEST_METHODNAMES:
+            print("In method", p.aux.bgreen(self._testMethodName))
 
     def tearDown(self) -> None:
 
@@ -332,11 +347,11 @@ class TestCore2(unittest.TestCase):
     def test_visualization2(self):
         # test rendering of dot
 
-        res = visualization.visualize_entity("I21__mathematical_relation", write_tmp_files=True)
+        res = visualization.visualize_entity("I21__mathematical_relation", write_tmp_files=WRITE_TMP_FILES)
 
         mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH, TEST_MOD_NAME)
         auto_item: p.Item = mod1.I3749["Cayley-Hamilton theorem"].P
-        res = visualization.visualize_entity(auto_item.short_key, write_tmp_files=False)
+        res = visualization.visualize_entity(auto_item.short_key, write_tmp_files=WRITE_TMP_FILES)
 
         s1 = '<a href="">R35</a>'
         s2 = '<a href="">["is applied</a>'
@@ -353,9 +368,8 @@ class TestZZCore3(unittest.TestCase):
     """
 
     def setUp(self):
-        # this serves to debug interdependent test-cases
-        # print("In method", p.aux.bgreen(self._testMethodName))
-        pass
+        if PRINT_TEST_METHODNAMES:
+            print("In method", p.aux.bgreen(self._testMethodName))
 
     def tearDown(self) -> None:
 

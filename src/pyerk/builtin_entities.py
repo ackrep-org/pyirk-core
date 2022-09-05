@@ -142,6 +142,8 @@ R18 = create_builtin_relation(
     "R18", R1="has usage hint", R2="specifies a hint (str) on how this relation should be used"
 )
 
+R16.set_relation(R18["has usage hint"], "this relation should be used on conrete instances, not on generic types")
+
 R19 = create_builtin_relation(
     key_str="R19",
     R1="defines method",

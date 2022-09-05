@@ -385,4 +385,37 @@ class TestZZCore3(unittest.TestCase):
         res = p.ds.rdfgraph.query(qsrc)
         res2 = p.aux.apply_func_to_table_cells(p.rdfstack.convert_from_rdf_to_pyerk, res)
 
-        self.assertEqual(res2, [[mod1.I4466, p.I4], [mod1.I4466, p.I5]])
+        # Note this will fail if more `R5__has_part` relations are used
+        expected_result = [
+            [mod1.I4466["Systems Theory"], p.I4["Mathematics"]],
+            [mod1.I4466["Systems Theory"], p.I5["Engineering"]],
+        ]
+        self.assertEqual(res2, expected_result)
+
+    def test_sparql_query2(self):
+        # TODO: replace by Model entity once it exists
+        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH, TEST_MOD_NAME)
+
+        m1 = p.instance_of(mod1.I7641["general system model"], r1="test_model 1", r2="a test model")
+        m2 = p.instance_of(mod1.I7641["general system model"], r1="test_model 2", r2="a test model")
+
+        m1.set_relation(p.R16["has property"], mod1.I9210["stabilizability"])
+        m2.set_relation(p.R16["has property"], mod1.I7864["controllability"])
+
+        # graph has to be created after the entities
+        p.ds.rdfgraph = p.rdfstack.create_rdf_triples()
+
+        qsrc = f"""
+        PREFIX : <{p.rdfstack.ERK_URI}>
+        SELECT ?s ?o
+        WHERE {{
+            ?s :R16 :I7864.
+        }}
+        """
+        res = p.ds.rdfgraph.query(qsrc)
+        res2 = p.aux.apply_func_to_table_cells(p.rdfstack.convert_from_rdf_to_pyerk, res)
+
+        expected_result = [
+            [m2["test_model 2"], None],
+        ]
+        self.assertEqual(res2, expected_result)

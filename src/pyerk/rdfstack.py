@@ -69,6 +69,10 @@ def convert_from_rdf_to_pyerk(rdfnode) -> object:
         entity_object = pyerk.ds.get_entity(short_key)
     elif isinstance(rdfnode, Literal):
         entity_object = rdfnode.value
+    elif rdfnode is None:
+        # this is the case when a variable from the SELECT-clause is not bound by the WHERE-clause
+        # (or when there is a blank rdf node in the triples?)
+        entity_object = None
     else:
         msg = f"Unexpected Type: {type(rdfnode)} of object {rdfnode} while parsing rdf graph."
         raise TypeError(msg)

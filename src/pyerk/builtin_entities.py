@@ -194,7 +194,7 @@ R25 = create_builtin_relation(
 
 # Items
 
-I1 = create_builtin_item("I1", R1="General Item")
+I1 = create_builtin_item("I1", R1="general item")
 I2 = create_builtin_item(
     "I2",
     R1="Metaclass",
@@ -768,6 +768,7 @@ def create_evaluated_mapping(mapping: Item, *args) -> Item:
     return ev_mapping
 
 
+# todo: maybe the differece between asserted inheritance and inferred inheritance should be encoded via qualifiers
 R30 = create_builtin_relation(
     key_str="R30",
     R1__has_label="is secondary instance of",
@@ -1032,14 +1033,50 @@ R43 = create_builtin_relation(
     R1__has_label="is opposite of",
     R2__has_description="specifies that the subject is the oposite of the object.",
     R42__is_symmetrical=True,
-    R8__has_domain_of_argument_1=I1["General Item"],
-    R9__has_domain_of_argument_2=I1["General Item"],
+    R8__has_domain_of_argument_1=I1["general item"],
+    R9__has_domain_of_argument_2=I1["general item"],
 )
+
+I41 = create_builtin_item(
+    key_str="I41",
+    R1__has_label="semantic rule",
+    R2__has_description="...",
+    R4__is_instance_of=I2["Metaclass"],
+)
+
+I41["semantic rule"].add_method(_proposition__scope, name="scope")
+
+# testing
 
 
 # ######################################################################################################################
 # Testing and debugging entities
 
+I041 = create_builtin_item(
+    key_str="I041",
+    R1__has_label="subproperty rule 1",
+    R2__has_description=(
+        # "specifies the 'transitivity' of I11_mathematical_property-instances via R17_issubproperty_of"
+        "specifies the 'transitivity' of R17_issubproperty_of"
+    ),
+    R4__is_instance_of=I41["semantic rule"],
+)
+
+
+with I041.scope("context") as cm:
+
+    cm.new_var(P1=instance_of(I11["mathematical property"]))
+    cm.new_var(P2=instance_of(I11["mathematical property"]))
+    cm.new_var(P3=instance_of(I11["mathematical property"]))
+#     # A = cm.new_var(sys=instance_of(I1["general item"]))
+#
+with I041.scope("premises") as cm:
+    cm.new_rel(cm.P2, R17["is subproperty of"], cm.P1)
+    cm.new_rel(cm.P3, R17["is subproperty of"], cm.P1)
+    # todo: state that all variables are different from each other
+
+with I041.scope("assertions") as cm:
+    cm.new_rel(cm.P3, R17["is subproperty of"], cm.P1)
 # noinspection PyUnresolvedReferences
 I900.set_relation(R1["has label"], "test item with english label" @ en)
 

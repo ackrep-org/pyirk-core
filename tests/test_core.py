@@ -320,18 +320,6 @@ class TestCore(unittest.TestCase):
         label = node.get_dot_label(render=True)
         self.assertEqual(label, 'I0126\\n["12 34567-\\n890abcdefgh"]')
 
-
-class TestCore2(unittest.TestCase):
-    def setUp(self):
-        if PRINT_TEST_METHODNAMES:
-            print("In method", p.aux.bgreen(self._testMethodName))
-
-    def tearDown(self) -> None:
-
-        # unload all modules which where loaded by a test
-        for mod_id in list(p.ds.mod_path_mapping.a.keys()):
-            p.unload_mod(mod_id)
-
     def test_visualization(self):
 
         res_graph: visualization.nx.DiGraph = visualization.create_nx_graph_from_entity("I21__mathematical_relation")
@@ -359,6 +347,22 @@ class TestCore2(unittest.TestCase):
         self.assertIn(s1, res)
         self.assertIn(s2, res)
         self.assertIn(s3, res)
+
+
+class TestCore2(unittest.TestCase):
+    def setUp(self):
+        if PRINT_TEST_METHODNAMES:
+            print("In method", p.aux.bgreen(self._testMethodName))
+
+    def tearDown(self) -> None:
+
+        # unload all modules which where loaded by a test
+        for mod_id in list(p.ds.mod_path_mapping.a.keys()):
+            p.unload_mod(mod_id)
+
+    def test_ruleengine1(self):
+        # test rendering of dot
+        p.ruleengine.apply_all_semantic_rules()
 
 
 class TestZZCore3(unittest.TestCase):

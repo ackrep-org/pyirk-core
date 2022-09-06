@@ -155,10 +155,13 @@ R19 = create_builtin_relation(
 R20 = create_builtin_relation(
     key_str="R20",
     R1="has defining scope",
-    R2="specifies the scope in which an entity is defined (e.g. the premise of a theorem)",
+    R2="specifies the scope in which an entity or relation edge is defined (e.g. the premise of a theorem)",
     R18="Note: one Entity can be parent of multiple scopes, (e.g. a theorem has 'context', 'premises', 'assertions')",
     R22__is_functional=True,
+    # R43__is_opposite_of=R21["is scope of"],  # defined later for dependency reasons
 )
+
+qff_has_defining_scope = QualifierFactory(R20["has defining scope"], registry_name="qff_has_defining_scope")
 
 R21 = create_builtin_relation(
     key_str="R21",
@@ -288,7 +291,7 @@ def _register_scope(self, name: str) -> (dict, "Item"):
     # TODO: obsolete assert?
     assert not name.startswith("_ns_") and not name.startswith("_scope_")
     ns_name = f"_ns_{name}"
-    scope_name = f"scope:{name}"
+    scope_name = f"scp__{name}"
     scope = getattr(self, scope_name, None)
 
     if (ns := getattr(self, ns_name, None)) is None:
@@ -1047,6 +1050,8 @@ R43 = create_builtin_relation(
     R9__has_domain_of_argument_2=I1["general item"],
 )
 
+R20["has defining scope"].set_relation("R43__is_opposite_of", R21["is scope of"])
+
 I41 = create_builtin_item(
     key_str="I41",
     R1__has_label="semantic rule",
@@ -1073,19 +1078,19 @@ I041 = create_builtin_item(
 )
 
 
-with I041.scope("context") as cm:
+with I041["subproperty rule 1"].scope("context") as cm:
 
     cm.new_var(P1=instance_of(I11["mathematical property"]))
     cm.new_var(P2=instance_of(I11["mathematical property"]))
     cm.new_var(P3=instance_of(I11["mathematical property"]))
 #     # A = cm.new_var(sys=instance_of(I1["general item"]))
 #
-with I041.scope("premises") as cm:
+with I041["subproperty rule 1"].scope("premises") as cm:
     cm.new_rel(cm.P2, R17["is subproperty of"], cm.P1)
     cm.new_rel(cm.P3, R17["is subproperty of"], cm.P1)
     # todo: state that all variables are different from each other
 
-with I041.scope("assertions") as cm:
+with I041["subproperty rule 1"].scope("assertions") as cm:
     cm.new_rel(cm.P3, R17["is subproperty of"], cm.P1)
 
 # noinspection PyUnresolvedReferences

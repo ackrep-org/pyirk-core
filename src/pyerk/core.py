@@ -353,6 +353,14 @@ class Entity(abc.ABC):
             corresponding_entity = None
             corresponding_literal = repr(rel_content)
 
+        if qualifiers is None:
+            qualifiers = []
+
+        if scope is not None:
+            assert scope.R4__is_instance_of == ds.get_entity("I16__scope")
+            qff_has_defining_scope: QualifierFactory = ds.qff_dict["qff_has_defining_scope"]
+            qualifiers.append(qff_has_defining_scope(scope))
+
         rledg = RelationEdge(
             relation=rel,
             relation_tuple=(self, rel, rel_content),
@@ -408,11 +416,13 @@ class Entity(abc.ABC):
             processed_key = pk(key_str)
             return rel_dict.get(processed_key, [])
 
-    def get_inv_relations(self, key_str: Optional[str] = None) -> Union[Dict[str, list], list]:
+    def get_inv_relations(self, key_str: Optional[str] = None, return_subj: bool = False) -> Union[Dict[str, list], list]:
         """
         Return all RelationEdge instance where this item is object
 
         :param key_str:     if passed return only the result for this key
+        :param return_subj: default False; if True only return the subject(s) of the relation edges, not the whole RE
+
         :return:            either the whole dict or just one value (of type list)
         """
 
@@ -421,7 +431,14 @@ class Entity(abc.ABC):
             return inv_rel_dict
         else:
             processed_key = pk(key_str)
-            return inv_rel_dict.get(processed_key, [])
+            tmp_res = inv_rel_dict.get(processed_key, [])
+            if isinstance(tmp_res, list):
+                tmp_res: List[RelationEdge]
+                res = [re.subject for re in tmp_res]
+            else:
+                assert isinstance(tmp_res, RelationEdge)
+                res = tmp_res.subject
+            return res
 
 
 class DataStore:
@@ -460,6 +477,9 @@ class DataStore:
 
         # this will be set on demand
         self.rdfgraph = None
+
+        # dict to store important QualifierFactory instances which are created in builtin_entities but needed in core
+        self.qff_dict = {}
 
     def get_entity(self, key_str) -> Entity:
         """
@@ -812,6 +832,10 @@ def generate_key_numbers() -> list:
 available_key_numbers = generate_key_numbers()
 
 
+def repl_spc_by_udsc(txt: str) -> str:
+    return txt.replace(" ", "_")
+
+
 class RawQualifier:
     """
     Precursor to a real Qualifier (which is a RelationEdge) where the subject is yet unspecified
@@ -821,6 +845,13 @@ class RawQualifier:
     def __init__(self, rel: Relation, obj: Union[Literal, Entity]):
         self.rel = rel
         self.obj = obj
+
+    def __repr__(self):
+        if isinstance(self.obj, Entity):
+            obj_label = f"{self.obj.short_key}__{repl_spc_by_udsc(self.obj.R1)}"
+        else:
+            obj_label = str(self.obj)
+        return f"<RawQualifier (...) ({self.rel.short_key}__{repl_spc_by_udsc(self.rel.R1)}) ({obj_label})>"
 
 
 class QualifierFactory:
@@ -837,8 +868,17 @@ class QualifierFactory:
 
     # TODO: rename this class
 
-    def __init__(self, relation: Relation):
+    def __init__(self, relation: Relation, registry_name: Optional[str] = None):
+        """
+
+        :param relation:
+        :param registry_name:   optional str; if not None this is the key under which this QF is stored in ds.qff_dict.
+        """
         self.relation = relation
+
+        if registry_name is not None:
+            assert isinstance(registry_name, str) and registry_name not in ds.qff_dict
+            ds.qff_dict[registry_name] = self
 
     def __call__(self, obj):
         return RawQualifier(self.relation, obj)
@@ -877,6 +917,7 @@ class RelationEdge:
         self.key_str = f"RE{available_key_numbers.pop()}"
         self.relation = relation
         self.relation_tuple = relation_tuple
+        self.subject = relation_tuple[0]
         self.role = role
         self.scope = scope
         self.corresponding_entity = corresponding_entity
@@ -922,6 +963,11 @@ class RelationEdge:
                 proxyitem=None,
             )
             self.qualifiers.append(rledg)
+
+            if isinstance(qf.obj, Entity):
+                # add inverse relation
+                tmp_list = ds.inv_relation_edges[qf.obj.short_key][qf.rel.short_key]
+                tmp_list.append(rledg)
 
     def unlink(self, *args) -> None:
         """

@@ -14,6 +14,7 @@ from .core import (
     de,
     en,
     QualifierFactory,
+    ds
 )
 
 # it is OK to access ds here in the builtin module, but this import should not be copied to other knowledge modules
@@ -283,6 +284,7 @@ def _register_scope(self, name: str) -> (dict, "Item"):
     :return:
     """
 
+    assert isinstance(self, Entity)
     # TODO: obsolete assert?
     assert not name.startswith("_ns_") and not name.startswith("_scope_")
     ns_name = f"_ns_{name}"
@@ -308,6 +310,10 @@ def _register_scope(self, name: str) -> (dict, "Item"):
 
     assert isinstance(ns, dict)
     assert isinstance(scope, Item) and (scope.R21__is_scope_of == self)
+
+    # if the Entity self is a builtin then this newly created scope is also considered as a builtin
+    if self.short_key in ds.builtin_entities:
+        ds.builtin_entities[scope.short_key] = scope
 
     return ns, scope
 
@@ -447,6 +453,10 @@ class _proposition__CM:
         # allow simple access to the variables → put them into dict (after checking that the name is still free)
         assert variable_name not in self.__dict__
         self.item.__dict__[variable_name] = variable_object
+
+        # if item is a builtin item then this newly created entity should also be considered as builtin
+        if self.item.short_key in ds.builtin_entities:
+            ds.builtin_entities[variable_object.short_key] = variable_object
 
         # keep track of added context vars
         self.namespace[variable_name] = variable_object
@@ -1077,6 +1087,7 @@ with I041.scope("premises") as cm:
 
 with I041.scope("assertions") as cm:
     cm.new_rel(cm.P3, R17["is subproperty of"], cm.P1)
+
 # noinspection PyUnresolvedReferences
 I900.set_relation(R1["has label"], "test item with english label" @ en)
 

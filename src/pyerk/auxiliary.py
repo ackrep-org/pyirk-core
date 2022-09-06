@@ -10,6 +10,10 @@ Some auxiliary classes and functions for pyerk.
 """
 
 
+class NotYetFinishedError(NotImplementedError):
+    pass
+
+
 class OneToOneMapping(object):
     def __init__(self, **kwargs):
         self.a = dict(**kwargs)

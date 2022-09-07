@@ -129,8 +129,8 @@ class Entity(abc.ABC):
             r4 = getattr(self, "R4", None)
             msg = (
                 f"Unexpected attribute name: '{attr_name}' of entity {self}\n",
-                f'Type hint: self.R3("is_subclass_of"): {r3}\n',
-                f'Type hint: self.R4("is_instance_of"): {r4}\n',
+                f'Type hint: self.R3__is_subclass_of: {r3}\n',
+                f'Type hint: self.R4__is_instance_of: {r4}\n',
             )
             raise AttributeError(msg)
 

@@ -4,3 +4,7 @@ colorama
 # owlready2
 # rdflib
 # pydantic
+addict
+networkx
+nxv
+semantictools # https://github.com/cknoll/semantictools

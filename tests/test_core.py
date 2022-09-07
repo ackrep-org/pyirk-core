@@ -32,7 +32,7 @@ TEST_DATA_PATH = pjoin(ERK_ROOT_DIR, "erk-data", "control-theory", "control_theo
 TEST_MOD_NAME = "control_theory1"
 
 # this serves to print the test-method-name before it is executed (useful for debugging, see setUP below)
-PRINT_TEST_METHODNAMES = False
+PRINT_TEST_METHODNAMES = True
 
 # some tests might generate files such as `tmp.svg` as a byproduct for debugging. The following flags controls this.
 WRITE_TMP_FILES = False
@@ -63,6 +63,7 @@ class TestCore(unittest.TestCase):
         """
         The first test ensures, that TestCases do not influence each other
         """
+
         mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH, TEST_MOD_NAME)
 
         self.tearDown()
@@ -80,6 +81,8 @@ class TestCore(unittest.TestCase):
         diff1 = available_item_keys.difference(builtin_entity_keys)
         diff2 = available_relation_keys.difference(builtin_entity_keys)
         diff3 = available_relation_edge_keys.difference(builtin_entity_keys)
+        IPS()
+
         diff4 = available_relation_relation_edge_keys.difference(builtin_entity_keys)
 
         self.assertEqual(len(diff1), 0)

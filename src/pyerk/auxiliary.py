@@ -1,6 +1,6 @@
 import os
 import sys
-from typing import Iterable, Union
+from typing import Iterable, Union, Dict, Any
 from rdflib import Literal
 from colorama import Style, Fore
 from . import settings
@@ -84,6 +84,29 @@ def ensure_rdf_str_literal(arg, allow_none=True) -> Union[Literal, None]:
         raise TypeError(msg)
 
     return res
+
+
+def clean_dict(dikt: Dict[Any, Union[list, dict]]) -> Dict[Any, Union[list, dict]]:
+    """
+    Recursively remove all keys where the corresponding value is an empty list or dict.
+
+    :param dikt:
+    :return:
+    """
+
+    obsolete_keys = []
+    for key, value in dikt.items():
+        if len(value) == 0 and isinstance(value, (list, dict)):
+            obsolete_keys.append(key)
+        elif isinstance(value, dict):
+            tmp_dict = clean_dict(value)
+            if len(tmp_dict) == 0:
+                obsolete_keys.append(key)
+
+    for key in obsolete_keys:
+        dikt.pop(key)
+
+    return dikt
 
 
 def bright(txt):

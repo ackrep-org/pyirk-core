@@ -372,6 +372,7 @@ class Entity(abc.ABC):
             proxyitem=proxyitem,
         )
 
+
         ds.set_relation_edge(self.short_key, rel.short_key, rledg)
 
         if scope is not None:
@@ -431,13 +432,17 @@ class Entity(abc.ABC):
             return inv_rel_dict
         else:
             processed_key = pk(key_str)
-            tmp_res = inv_rel_dict.get(processed_key, [])
-            if isinstance(tmp_res, list):
-                tmp_res: List[RelationEdge]
-                res = [re.subject for re in tmp_res]
+            rledg_res: Union[RelationEdge, List[RelationEdge]] = inv_rel_dict.get(processed_key, [])
+            if return_subj:
+                # do not return, the RelationEdge instance(s) but only the subject(s)
+                if isinstance(rledg_res, list):
+                    rledg_res: List[RelationEdge]
+                    res = [re.subject for re in rledg_res]
+                else:
+                    assert isinstance(rledg_res, RelationEdge)
+                    res = rledg_res.subject
             else:
-                assert isinstance(tmp_res, RelationEdge)
-                res = tmp_res.subject
+                res = rledg_res
             return res
 
 
@@ -481,6 +486,9 @@ class DataStore:
         # dict to store important QualifierFactory instances which are created in builtin_entities but needed in core
         self.qff_dict = {}
 
+        # list of keys which are released, when unloading a module
+        self.released_keys = []
+
     def get_entity(self, key_str) -> Entity:
         """
         :param key_str:     str like I1234 or I1234__some_label
@@ -511,7 +519,17 @@ class DataStore:
         # TODO: model this as defaultdict?
         return self.relation_edges[entity_key].get(relation_key, list())
 
-    def set_relation_edge(self, entity_key: str, relation_key: str, re_object: "RelationEdge") -> None:
+    def set_relation_edge(self, short_key: str, relation_key: str, re_object: "RelationEdge") -> None:
+        """
+        Insert a RelationEdge into the relevant data structures of the DataStorage (self)
+
+        This method does not handle the dual realtion. It must be created and stored separately.
+
+        :param short_key:       str; short_key of either an Entity instance or a RelationEdge instance
+        :param relation_key:
+        :param re_object:
+        :return:
+        """
 
         self.relation_relation_edges[relation_key].append(re_object)
         self.relation_edge_list.append(re_object)
@@ -519,17 +537,19 @@ class DataStore:
         relation = self.relations[relation_key]
 
         # inner_obj will be either a list of relation_edges or None
-        inner_obj = self.relation_edges[entity_key].get(relation_key, None)
+        # for some R22-related reason (see below) we cannot use a default dict here,
+        # thus we need to do the case distinction manually
+        inner_obj = self.relation_edges[short_key].get(relation_key, None)
 
         if inner_obj is None:
-            self.relation_edges[entity_key][relation_key] = [re_object]
+            self.relation_edges[short_key][relation_key] = [re_object]
 
         elif isinstance(inner_obj, list):
             # R22__is_functional, this means there can only be one value for this relation and this item
             if relation.R22:
                 msg = (
-                    f"for entity {entity_key} there already exists a RelationEdge for functional relation "
-                    f"with key {relation_key}. Another one is not allowed."
+                    f"for entity/relation-edge {short_key} there already exists a RelationEdge for "
+                    f"functional relation with key {relation_key}. Another one is not allowed."
                 )
                 raise ValueError(msg)
             elif relation.R32:
@@ -539,7 +559,7 @@ class DataStore:
 
         else:
             msg = (
-                f"unexpected type ({type(inner_obj)}) of dict content for entity {entity_key} and "
+                f"unexpected type ({type(inner_obj)}) of dict content for entity {short_key} and "
                 f"relation {relation_key}. Expected list or None"
             )
             raise TypeError(msg)
@@ -810,26 +830,89 @@ class RelationRole(Enum):
 
 
 # for now we want unique numbers for keys for relations and items etc (although this is not necessary)
-
-
-def generate_key_numbers() -> list:
+class KeyManager:
     """
-    Creates a reaservoir of keynumbers, e.g. for automatically created entities. Due to the hardcoded seed value
-    these numbers are stable between runs of the software, which simplifies development and debugging.
-
-    This function is also called after unloading a module because the respective keys are "free" again
-
-    :return:    list of integers
+    Singleton class for a flexible and comprehensible key management
     """
-    # passing seed (arg `x`) ensures "reproducible randomness" accross runs
-    random_ng = random.Random(x=1750)
-    _available_key_numbers = list(range(1000, 9999))
-    random_ng.shuffle(_available_key_numbers)
 
-    return _available_key_numbers
+    # class variable to ensure Singleton Pattern
+    instance = None
+
+    def __init__(self):
+
+        assert self.instance is None
+        self.instance = self
+
+        self.key_reservoir = None
+        self._generate_key_numbers()
+        self.index = 0
+        self.key_index_map = {}
+
+    def pop(self) -> int:
+
+        key = self.key_reservoir.pop()
+        self.key_index_map[key] = self.index
+        self.index += 1
+        return key
+
+    def _generate_key_numbers(self) -> None:
+        """
+        Creates a reaservoir of keynumbers, e.g. for automatically created entities. Due to the hardcoded seed value
+        these numbers are stable between runs of the software, which simplifies development and debugging.
+
+        This function is also called after unloading a module because the respective keys are "free" again
+
+        :return:    list of integers
+        """
+
+        assert self.key_reservoir is None
+
+        # passing seed (arg `x`) ensures "reproducible randomness" accross runs
+        random_ng = random.Random(x=1750)
+        self.key_reservoir = list(range(1000, 9999))
+        random_ng.shuffle(self.key_reservoir)
+
+    def recycle_keys(self, short_key_list: List[str]) -> None:
+        """
+        After unloading an erk-module its keys are free again. This method reintroduces them into the key_reservoir
+        in the previous order (to ensure reproducibility).
+
+        :param short_key_list:
+        :return:                None
+        """
+
+        re_short_key = regex.compile(r"^((Ia?)|(Ra?)|(RE))(\d+)$")
+        # produces 5 groups: [{outer-parenthesis}, {inner-p1}, {inner-p2}, {inner-p3}, {last-p}]
+        # first (index: 1) and last are the only relevant groups
+
+        numeric_keys = []
+        for key_str in short_key_list:
+            match = re_short_key.match(key_str)
+
+            type_str = match.group(1)
+            num_str = match.group(5)
+            assert type_str is not None
+            assert num_str is not None
+            numeric_keys.append(int(num_str))
+
+        def sort_func(int_key):
+            # assert int_key in self.key_index_map
+            try:
+                return self.key_index_map[int_key]
+            except KeyError:
+                msg = f"try to recycle unknown key-number: {int_key}"
+                raise KeyError(msg)
+
+        numeric_keys.sort(key=sort_func, reverse=True)
+
+        self.key_reservoir.extend(numeric_keys)
+        self.index -= len(numeric_keys)
+        assert self.index >= 0
 
 
-available_key_numbers = generate_key_numbers()
+
+
+available_key_numbers = KeyManager()
 
 
 def repl_spc_by_udsc(txt: str) -> str:
@@ -914,7 +997,7 @@ class RelationEdge:
         :param proxyitem:               associated item; e.g. a equation-item
         """
 
-        self.key_str = f"RE{available_key_numbers.pop()}"
+        self.short_key = f"RE{available_key_numbers.pop()}"
         self.relation = relation
         self.relation_tuple = relation_tuple
         self.subject = relation_tuple[0]
@@ -930,11 +1013,16 @@ class RelationEdge:
         # TODO: replace this by qualifier
         self.proxyitem = proxyitem
 
+    @property
+    def key_str(self):
+        # TODO: the "attribute" `.key_str` for RelationEdge is deprecated; use `.short_key` instead
+        return self.short_key
+
     def __repr__(self):
 
         # fixme: this breaks if self.role is not a valid enum-value in (0, 2)
 
-        res = f"RE[{self.role.name[0]}]{self.relation_tuple}"
+        res = f"{self.short_key}:{self.role.name[0]}{self.relation_tuple}"
         return res
 
     def _process_qualifiers(self, qlist: List[RawQualifier], scope: Optional["Entity"] = None) -> None:
@@ -952,7 +1040,7 @@ class RelationEdge:
                 corresponding_entity = None
                 corresponding_literal = repr(qf.obj)
 
-            rledg = RelationEdge(
+            qf_rledg = RelationEdge(
                 relation=qf.rel,
                 relation_tuple=(self, qf.rel, qf.obj),
                 role=RelationRole.SUBJECT,
@@ -962,12 +1050,44 @@ class RelationEdge:
                 qualifiers=None,
                 proxyitem=None,
             )
-            self.qualifiers.append(rledg)
+            self.qualifiers.append(qf_rledg)
 
+            # save the qualifyer-relation edge (and its inverse) in the appropriate data structures
+            ds.set_relation_edge(short_key=self.short_key, relation_key=qf.rel.short_key, re_object=qf_rledg)
             if isinstance(qf.obj, Entity):
                 # add inverse relation
-                tmp_list = ds.inv_relation_edges[qf.obj.short_key][qf.rel.short_key]
-                tmp_list.append(rledg)
+                ds.inv_relation_edges[qf.obj.short_key][qf.rel.short_key].append(qf_rledg.create_dual())
+
+    def create_dual(self):
+        if self.role == RelationRole.SUBJECT:
+            new_role = RelationRole.OBJECT
+        elif self.role == RelationRole.OBJECT:
+            new_role = RelationRole.SUBJECT
+        else:
+            msg = (
+                f"Unexpected value for `self.role`: {self.role}. Expected either `RelationRole.SUBJECT` or "
+                "`RelationRole.OBJECT`"
+            )
+            raise ValueError(msg)
+
+        dual_rledg = RelationEdge(
+            relation=self.relation,
+            relation_tuple=self.relation_tuple,
+            role=new_role,
+            corresponding_entity=self.corresponding_entity,
+            scope=self.scope,
+            qualifiers=self.qualifiers,
+            proxyitem=self.proxyitem,
+        )
+
+        # establish interconnection
+        dual_rledg.dual_relation_edge = self
+        self.dual_relation_edge = dual_rledg
+
+        return dual_rledg
+
+    def is_qualifier(self):
+        return isinstance(self.subject, RelationEdge)
 
     def unlink(self, *args) -> None:
         """
@@ -982,6 +1102,9 @@ class RelationEdge:
             return
 
         subj, pred, obj = self.relation_tuple
+
+        if self.is_qualifier():
+            _ = ds.relation_edges.pop(subj.short_key, [])
 
         if self.role == RelationRole.SUBJECT:
             # ds.relation_edge_list: store a list of all (primal/subject) relation edges (to maintain the order)
@@ -1008,8 +1131,16 @@ class RelationEdge:
 
         # this prevents from infinite recursion
         self.unlinked = True
+        if self.short_key == "RE4382":
+            pass
+            # set_trace()
         if self.dual_relation_edge is not None:
             self.dual_relation_edge.unlink()
+
+        for qf in self.qualifiers:
+            qf: RelationEdge
+            qf.unlink()
+        ds.released_keys.append(self.short_key)
 
 
 def tolerant_removal(sequence, element):
@@ -1206,15 +1337,18 @@ class Context:
         pass
 
 
-def unload_mod(mod_id: str, strict=True) -> None:
+def unload_mod(mod_id: str, strict=True) -> List[str]:
     """
     Delete all references to entities comming from a module with `mod_id`
 
     :param mod_id:  str; key string like "M1234"
     :param strict:  boolean; raise Exception if module seems be not loaded
 
-    :return:        None
+    :return:        list of released keys
     """
+
+    # prepare the list to store the released keys
+    ds.released_keys.clear()
 
     # TODO: This might to check dependencies in the future
 
@@ -1234,6 +1368,15 @@ def unload_mod(mod_id: str, strict=True) -> None:
     assert len(intersection_set) == 0, msg
 
     ds.mod_path_mapping.remove_pair(key_a=mod_id)
+
+    aux.clean_dict(ds.relation_edges)
+    aux.clean_dict(ds.inv_relation_edges)
+
+    res = list(ds.released_keys)
+
+    # empty the list again to avoid confusion in future uses
+    ds.released_keys.clear()
+    return res
 
 
 def _unlink_entity(ek: str) -> None:
@@ -1257,23 +1400,34 @@ def _unlink_entity(ek: str) -> None:
     inv_re_dict = ds.inv_relation_edges.pop(entity.short_key, {})
 
     # in case res1 is a scope-item we delete all corressponding relation edges, otherwise nothing happens
-    ds.scope_relation_edges.pop(ek, None)
+    scope_rels = ds.scope_relation_edges.pop(ek, [])
+
+    re_list = list(scope_rels)
 
     # create a item-list of all RelationEdges instances where `ek` is involved either as subject or object
     re_item_list = list(re_dict.items()) + list(inv_re_dict.items())
 
-    for rel_key, re_list in re_item_list:
+    for rel_key, local_re_list in re_item_list:
         # rel_key: key of the relation (like "R1234")
         # re_list: list of RelationEdge instances
-        for re in re_list:
-            re: RelationEdge
-            re.unlink(ek)
+        re_list.extend(local_re_list)
 
-    ds.relation_relation_edges.pop(ek, None)
+    if isinstance(entity, Relation):
+
+        tmp = ds.relation_relation_edges.pop(ek, [])
+        re_list.extend(tmp)
+
+    # now iterate over all RelationEdge instances
+    for re in re_list:
+        re: RelationEdge
+        re.unlink(ek)
 
     # during unlinking of the RelationEdges the default dicts might have been recreating some keys -> pop again
+    # TODO: obsolete because we clean up the defaultdicts anyway
     ds.relation_edges.pop(entity.short_key, None)
     ds.inv_relation_edges.pop(entity.short_key, None)
+
+    ds.released_keys.append(ek)
 
 
 def register_mod(mod_id):

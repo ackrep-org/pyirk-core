@@ -764,6 +764,7 @@ def create_evaluated_mapping(mapping: Item, *args) -> Item:
     # thus we iterate over all instances of I32["evaluated mapping"]
 
     for i32_inst_rel in i32_instance_rels:
+        assert isinstance(i32_inst_rel, RelationEdge)
         i32_instance = i32_inst_rel.relation_tuple[0]
 
         if i32_instance.R35__is_applied_mapping_of == mapping:

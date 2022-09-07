@@ -1095,7 +1095,7 @@ with I041.scope("context") as cm:
 #
 with I041.scope("premises") as cm:
     cm.new_rel(cm.P2, R17["is subproperty of"], cm.P1)
-    cm.new_rel(cm.P3, R17["is subproperty of"], cm.P1)
+    cm.new_rel(cm.P3, R17["is subproperty of"], cm.P2)
     # todo: state that all variables are different from each other
 
 with I041.scope("assertions") as cm:

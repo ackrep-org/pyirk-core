@@ -93,7 +93,7 @@ class TestCore(unittest.TestCase):
         mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH, TEST_MOD_NAME)
         self.assertEqual(mod1.I3749.R1, "Cayley-Hamilton theorem")
 
-        def_eq_item = mod1.I6886.R6__has_defining_equation
+        def_eq_item = mod1.I6886.R6__has_defining_mathematical_relation
         self.assertEqual(def_eq_item.R4__is_instance_of, p.I18["mathematical expression"])
         self.assertEqual(def_eq_item.R24__has_LaTeX_string, r"$\dot x = f(x, u)$")
 

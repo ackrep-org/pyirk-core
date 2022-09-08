@@ -6,3 +6,5 @@ SUPPORTED_LANGUAGES = ["en", "de"]
 # https://en.wikipedia.org/wiki/IETF_language_tag
 
 DEFAULT_DATA_LANGUAGE = "en"
+
+BUILTINS_URI = "pyerk/builtins"

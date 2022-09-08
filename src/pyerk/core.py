@@ -71,11 +71,13 @@ class Entity(abc.ABC):
     # I1234__some_explanatory_label (which is a key but not a short key)
     short_key: str = None
 
-    def __init__(self):
+    def __init__(self, base_uri):
         # this will hold mappings like "R1234": EntityRelation(..., R1234)
         self.relation_dict = {}
         self._method_prototypes = []
         self._namespaces = {}
+        self.base_uri = base_uri
+        self.uri = None  # will be set in __post_init__
 
     def __call__(self, *args, **kwargs):
         # returning self allows to use I1234 and I1234("human readable item name") interchageably
@@ -149,6 +151,7 @@ class Entity(abc.ABC):
     def __post_init__(self):
         # for a solution how to automate this see
         # https://stackoverflow.com/questions/55183333/how-to-use-an-equivalent-to-post-init-method-with-normal-class
+        self.uri = f"{self.base_uri}#{self.short_key}"
         self._perform_inheritance()
         self._perform_instantiation()
 
@@ -743,8 +746,8 @@ def pk(key_str: str) -> str:
 
 # noinspection PyShadowingNames
 class Item(Entity):
-    def __init__(self, key_str: str, **kwargs):
-        super().__init__()
+    def __init__(self, base_uri: str, key_str: str, **kwargs):
+        super().__init__(base_uri=base_uri)
 
         res = process_key_str(key_str)
         assert res.etype == EType.ITEM
@@ -762,6 +765,22 @@ class Item(Entity):
         return f'<Item {self.short_key}["{R1}"]>'
 
 
+class EmptyURIStackError(IndexError):
+    pass
+
+
+def get_active_mod_uri() -> str:
+    try:
+        res = _uri_stack[-1]
+    except IndexError:
+        msg = (
+            "Unexpected: empty uri_stack. Be sure to use uri_contex manager or similar technique "
+            "when creating entities"
+        )
+        raise EmptyURIStackError(msg)
+    return res
+
+
 # noinspection PyShadowingNames
 def create_item(key_str: str = "", **kwargs) -> Item:
     """
@@ -776,6 +795,8 @@ def create_item(key_str: str = "", **kwargs) -> Item:
         item_key = get_key_str_by_inspection()
     else:
         item_key = key_str
+
+    uri = get_active_mod_uri()
 
     mod_id_list = get_mod_id_list_by_inspection()
 
@@ -793,7 +814,7 @@ def create_item(key_str: str = "", **kwargs) -> Item:
 
         new_kwargs[processed_key.short_key] = value
 
-    itm = Item(item_key, **new_kwargs)
+    itm = Item(uri, item_key, **new_kwargs)
     assert item_key not in ds.items, f"Problematic (duplicated) key: {item_key}"
     ds.items[item_key] = itm
 
@@ -804,11 +825,12 @@ def create_item(key_str: str = "", **kwargs) -> Item:
 
 # noinspection PyShadowingNames
 class Relation(Entity):
-    def __init__(self, rel_key, **kwargs):
-        super().__init__()
+    def __init__(self, base_uri: str, short_key: str, **kwargs):
+        super().__init__(base_uri=base_uri)
+
+        self.short_key = short_key
 
         # set label
-        self.short_key = rel_key
         self._set_relations_from_init_kwargs(**kwargs)
 
         self.__post_init__()
@@ -1203,6 +1225,8 @@ def create_relation(key_str: str = "", **kwargs) -> Relation:
     else:
         rel_key = key_str
 
+    mod_uri = get_active_mod_uri()
+
     assert rel_key.startswith("R")
 
     # get uppermost __MOD_ID__ from frame stack
@@ -1222,7 +1246,7 @@ def create_relation(key_str: str = "", **kwargs) -> Relation:
 
         new_kwargs[processed_key.short_key] = value
 
-    rel = Relation(rel_key, **new_kwargs)
+    rel = Relation(mod_uri, rel_key, **new_kwargs)
     assert rel_key not in ds.relations
     ds.relations[rel_key] = rel
     ds.entities_created_in_mod[mod_id].append(rel_key)
@@ -1230,13 +1254,15 @@ def create_relation(key_str: str = "", **kwargs) -> Relation:
 
 
 def create_builtin_item(*args, **kwargs) -> Item:
-    itm = create_item(*args, **kwargs)
+    with uri_context(uri=settings.BUILTINS_URI):
+        itm = create_item(*args, **kwargs)
     ds.builtin_entities[itm.short_key] = itm
     return itm
 
 
 def create_builtin_relation(*args, **kwargs) -> Relation:
-    rel = create_relation(*args, **kwargs)
+    with uri_context(uri=settings.BUILTINS_URI):
+        rel = create_relation(*args, **kwargs)
     ds.builtin_entities[rel.short_key] = rel
     return rel
 
@@ -1358,6 +1384,7 @@ def get_mod_id_list_by_inspection(upcount=2) -> list:
     return res
 
 
+# TODO: obsolete?
 class Context:
     """
     Container class for context definitions
@@ -1365,6 +1392,32 @@ class Context:
 
     def __init__(self, *args, **kwargs):
         pass
+
+
+_uri_stack = []
+
+
+class uri_context:
+    """
+    Context manager for creating entities with a given uri
+    """
+
+    def __init__(self, uri: str):
+        self.uri = uri
+
+    def __enter__(self):
+        """
+        implicitly called in the head of the with statemet
+        :return:
+        """
+        _uri_stack.append(self.uri)
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        # this is the place to handle exceptions
+
+        res = _uri_stack.pop()
+        assert res == self.uri
 
 
 def unload_mod(mod_id: str, strict=True) -> None:
@@ -1466,6 +1519,24 @@ def register_mod(uri):
     path = os.path.abspath(frame.f_globals["__file__"])
     assert frame.f_globals.get("__URI__", None) == uri
     ds.mod_path_mapping.add_pair(key_a=uri, key_b=path)
+
+
+def start_mod(uri):
+    """
+    Register the uri for the _uri_stack.
+
+    Note: between start_mod and end_mod no it is not allowed to load other erk modules
+
+    :param uri:
+    :return:
+    """
+    assert len(_uri_stack) == 0
+    _uri_stack.append(uri)
+
+
+def end_mod():
+    _uri_stack.pop()
+    assert len(_uri_stack) == 0
 
 
 class LangaguageCode:

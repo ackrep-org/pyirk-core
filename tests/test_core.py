@@ -55,8 +55,6 @@ class TestCore0(unittest.TestCase):
             p.unload_mod(mod_id)
 
     def test_a0__key_manager(self):
-        pyerk_dir = pjoin(ERK_ROOT_DIR, "pyerk")
-
         p.KeyManager.instance = None
 
         km = p.KeyManager(minval=100, maxval=105)
@@ -77,8 +75,30 @@ class TestCore0(unittest.TestCase):
         km.recycle_keys(["Ia102", "RE104"])
         self.assertEqual(km.key_reservoir, [103, 101, 100, 104, 102])
 
+    def test_uri_attr_of_entities(self):
+
+        self.assertEqual(p.I1.uri, f"{p.BUILTINS_URI}#I1")
+        self.assertEqual(p.R1.uri, f"{p.BUILTINS_URI}#R1")
+
+        with self.assertRaises(p.EmptyURIStackError) as cm:
+            itm = p.create_item(key_str=p.generate_new_key("I"), R1="unit test item")
+
+        base_uri = "local/unittest/"
+        with p.uri_context(uri=base_uri):
+            itm = p.create_item(key_str=p.generate_new_key("I"), R1="unit test item")
+            rel = p.create_relation(key_str=p.generate_new_key("R"), R1="unit test relation")
+
+        self.assertEqual(itm.uri, f"{base_uri}#{itm.short_key}")
+        self.assertEqual(rel.uri, f"{base_uri}#{rel.short_key}")
+
+        # prevent possible key clashes with future manual keys
+        # TODO: obsolete if all dict keys are uri based
+        p.core._unlink_entity(itm.short_key)
+        p.core._unlink_entity(rel.short_key)
+
     def test_load_multiple_modules(self):
         tmod1 = p.erkloader.load_mod_from_path(pjoin(TEST_DATA_DIR1, "tmod1.py"), "tmod1")
+        # TODO: to be continued
 
 
 # noinspection PyPep8Naming
@@ -190,7 +210,8 @@ class TestCore1(unittest.TestCase):
         with self.assertRaises(AttributeError):
             itm2.example_func2(1234)
 
-        # explicitly unklink the created entities to avoid inferrence with future tests
+        # prevent possible key clashes with future manual keys
+        # TODO: obsolete if all dict keys are uri based
         p.core._unlink_entity(itm.short_key)
         p.core._unlink_entity(itm2.short_key)
 

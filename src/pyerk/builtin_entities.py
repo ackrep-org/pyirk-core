@@ -14,14 +14,16 @@ from .core import (
     de,
     en,
     QualifierFactory,
-    ds
+    ds,
 )
+
+from .settings import BUILTINS_URI
 
 # it is OK to access ds here in the builtin module, but this import should not be copied to other knowledge modules
 from . import core
 
 
-__URI__ = "pyerk/builtins"
+__URI__ = BUILTINS_URI
 
 
 def is_instance_of_generalized_metaclass(entity) -> bool:
@@ -1068,6 +1070,10 @@ I41["semantic rule"].add_method(_proposition__scope, name="scope")
 # ######################################################################################################################
 # Testing and debugging entities
 
+# when implicitly creating new items such as contexts the uri must be defined
+# note: this action must be manually reversed at the end of the module
+core.start_mod(__URI__)
+
 I041 = create_builtin_item(
     key_str="I041",
     R1__has_label="subproperty rule 1",
@@ -1131,3 +1137,7 @@ class Sequence:
         self.link_op = link_op
         self.start = start
         self.stop = stop
+
+
+# this is the inverse operation to `core.start_mod(__URI__)` (see above)
+core.end_mod()

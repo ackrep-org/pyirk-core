@@ -24,7 +24,14 @@ def load_mod_from_path(modpath: str, modname=None, allow_reload=True, omit_reloa
     spec = importlib.util.spec_from_file_location(modname, modpath)
     mod = importlib.util.module_from_spec(spec)
     sys.modules["module.name"] = mod
-    # noinspection PyUnresolvedReferences
-    spec.loader.exec_module(mod)
+
+    old_len = len(pyerk.core._uri_stack)
+    try:
+        # noinspection PyUnresolvedReferences
+        spec.loader.exec_module(mod)
+    except:
+        if len(pyerk.core._uri_stack) > old_len:
+            pyerk.core._uri_stack.pop()
+        raise
 
     return mod

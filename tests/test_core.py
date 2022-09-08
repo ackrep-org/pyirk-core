@@ -35,6 +35,8 @@ TEST_DATA_DIR1 = pjoin(ERK_ROOT_DIR, "pyerk", "tests", "test_data")
 TEST_DATA_PATH2 = pjoin(ERK_ROOT_DIR, "erk-data", "control-theory", "control_theory1.py")
 TEST_MOD_NAME = "control_theory1"
 
+TEST_BASE_URI = "local/unittest/"
+
 # this serves to print the test-method-name before it is executed (useful for debugging, see setUP below)
 PRINT_TEST_METHODNAMES = True
 
@@ -53,6 +55,26 @@ class TestCore0(unittest.TestCase):
         # unload all modules which where loaded by a test
         for mod_id in list(p.ds.mod_path_mapping.a.keys()):
             p.unload_mod(mod_id)
+
+    def test_a0__contex_manager(self):
+        """
+        Test defined behavior of errors occur in uri_context
+        :return:
+        """
+
+        self.assertEqual(len(p.core._uri_stack), 0)
+        try:
+            with p.uri_context(uri=TEST_BASE_URI):
+                raise ValueError
+        except ValueError:
+            pass
+        self.assertEqual(len(p.core._uri_stack), 0)
+
+        try:
+            _ = p.erkloader.load_mod_from_path(pjoin(TEST_DATA_DIR1, "tmod0_with_errors.py"), "tmod0")
+        except ValueError:
+            pass
+        self.assertEqual(len(p.core._uri_stack), 0)
 
     def test_a0__key_manager(self):
         p.KeyManager.instance = None
@@ -83,13 +105,12 @@ class TestCore0(unittest.TestCase):
         with self.assertRaises(p.EmptyURIStackError) as cm:
             itm = p.create_item(key_str=p.generate_new_key("I"), R1="unit test item")
 
-        base_uri = "local/unittest/"
-        with p.uri_context(uri=base_uri):
+        with p.uri_context(uri=TEST_BASE_URI):
             itm = p.create_item(key_str=p.generate_new_key("I"), R1="unit test item")
             rel = p.create_relation(key_str=p.generate_new_key("R"), R1="unit test relation")
 
-        self.assertEqual(itm.uri, f"{base_uri}#{itm.short_key}")
-        self.assertEqual(rel.uri, f"{base_uri}#{rel.short_key}")
+        self.assertEqual(itm.uri, f"{TEST_BASE_URI}#{itm.short_key}")
+        self.assertEqual(rel.uri, f"{TEST_BASE_URI}#{rel.short_key}")
 
         # prevent possible key clashes with future manual keys
         # TODO: obsolete if all dict keys are uri based
@@ -194,8 +215,10 @@ class TestCore1(unittest.TestCase):
         # instance level
         # Note: this creates items with keys which might conflict with recently added keys to builtin entities
         # explicitly unlinking them at the end
-        itm = p.create_item(key_str=p.generate_new_key("I"), R1="unit test item")
-        itm2 = p.create_item(key_str=p.generate_new_key("I"), R1="unit test item2")
+
+        with p.uri_context(uri=TEST_BASE_URI):
+            itm = p.create_item(key_str=p.generate_new_key("I"), R1="unit test item")
+            itm2 = p.create_item(key_str=p.generate_new_key("I"), R1="unit test item2")
 
         def example_func2(slf, a):
             return f"{slf.R1}::{a}"
@@ -211,32 +234,36 @@ class TestCore1(unittest.TestCase):
             itm2.example_func2(1234)
 
         # prevent possible key clashes with future manual keys
-        # TODO: obsolete if all dict keys are uri based
+        # TODO: obsolete if all dict keys are uri based (then also delete the comment above)
         p.core._unlink_entity(itm.short_key)
         p.core._unlink_entity(itm2.short_key)
 
     def test_evaluated_mapping(self):
         mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, TEST_MOD_NAME)
-        poly1 = p.instance_of(mod1.I4239["monovariate polynomial"])
+        with p.uri_context(uri=TEST_BASE_URI):
+            poly1 = p.instance_of(mod1.I4239["monovariate polynomial"])
 
         # test that an arbitrary item is *not* callable
         self.assertRaises(TypeError, mod1.I2738["field of complex numnbers"], 0)
 
         # test that some special items are callable (note that its parent class is a subclass of one which has
         # a _custom_call-method defined)
-        res = poly1(0)
+        with p.uri_context(uri=TEST_BASE_URI):
+            # this creates new items and thus must be executed inside a context
+            res = poly1(0)
 
         self.assertEqual(res.R4__is_instance_of, p.I32["evaluated mapping"])
 
     def test_evaluated_mapping2(self):
         mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, TEST_MOD_NAME)
 
-        h = p.instance_of(mod1.I9923["scalar field"])
-        f = p.instance_of(mod1.I9841["vector field"])
-        x = p.instance_of(mod1.I1168["point in state space"])
+        with p.uri_context(uri=TEST_BASE_URI):
+            h = p.instance_of(mod1.I9923["scalar field"])
+            f = p.instance_of(mod1.I9841["vector field"])
+            x = p.instance_of(mod1.I1168["point in state space"])
 
-        Lderiv = mod1.I1347["Lie derivative of scalar field"]
-        h2 = Lderiv(h, f, x)
+            Lderiv = mod1.I1347["Lie derivative of scalar field"]
+            h2 = Lderiv(h, f, x)
 
         self.assertEqual(h2.R4__is_instance_of, p.I32["evaluated mapping"])
 

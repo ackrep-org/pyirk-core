@@ -64,21 +64,18 @@ class TestCore0(unittest.TestCase):
         self.assertEqual(km.original_key_index_map, {103: 0, 101: 1, 100: 2, 104: 3, 102: 4})
         self.assertEqual(km.popped_key_index_map, {})
 
-        km.register_used_key("I100")
-        self.assertEqual(km.popped_key_index_map, {100: 2})
-
         k = km.pop()
         self.assertEqual(k, 102)
 
-        self.assertEqual(km.popped_key_index_map, {100: 2, 102: 4})
-        self.assertEqual(km.key_reservoir, [103, 101, 104])
+        k = km.pop()
+        self.assertEqual(k, 104)
 
-        km.register_used_key("R101")
+        self.assertEqual(km.popped_key_index_map, {102: 4, 104: 3})
+        self.assertEqual(km.key_reservoir, [103, 101, 100])
 
-        self.assertEqual(km.key_reservoir, [103, 104])
-
-        km.recycle_keys(["Ia102", "R101", "I100"])
-        self.assertEqual(km.key_reservoir, [103, 104, 102, 100, 101])
+        # recycle "automatically created" (i.e. popped) keys
+        km.recycle_keys(["Ia102", "RE104"])
+        self.assertEqual(km.key_reservoir, [103, 101, 100, 104, 102])
 
     def test_load_multiple_modules(self):
         tmod1 = p.erkloader.load_mod_from_path(pjoin(TEST_DATA_DIR1, "tmod1.py"), "tmod1")

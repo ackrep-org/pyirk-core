@@ -2,6 +2,7 @@ import os
 import re as regex
 import yaml
 from ipydex import IPS
+from typing import Union
 
 from .core import Item, Relation, Entity
 from . import aux
@@ -51,8 +52,10 @@ def parse_ackrep(path: str):
     IPS()
 
 
-def parse_recursive(parent, d: dict):
-    """recursively parse dirctionary"""
+def parse_recursive(parent: Item, d: dict):
+    """recursively parse ackrep metadata
+    create items and set appropriate relations"""
+
     for k, v in d.items():
         assert relation_pattern.match(k) is not None, f"This key ({k}) has to be a relation."
         relation = get_entity_from_string(k)
@@ -79,7 +82,9 @@ def parse_recursive(parent, d: dict):
         else:
             raise TypeError(f"value {v} has unrecognized type {type(v)}.")
 
-def handle_literal(obj):
+def handle_literal(obj: Union[int, float, str]) -> Union[int, float, str, Item]:
+    """handle yaml literal and return appropriate object (int, float, str, Item) """
+
     # literal is number
     if isinstance(obj, (int, float)):
         item = obj
@@ -96,7 +101,10 @@ def handle_literal(obj):
 
     return item
 
-def handle_dict(d: dict):
+def handle_dict(d: dict) -> Item:
+    """handle yaml dict, create new item and recusively add all its relations
+    return created Item"""
+
     assert len(d.keys()) == 1, "Item dictionary has to have exacly one key"
     k, v = list(d.items())[0]
     assert item_pattern.match(k) is not None, f"This key ({k}) has to be an item."

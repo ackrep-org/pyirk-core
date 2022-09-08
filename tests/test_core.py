@@ -54,23 +54,7 @@ class TestCore0(unittest.TestCase):
         for mod_id in list(p.ds.mod_path_mapping.a.keys()):
             p.unload_mod(mod_id)
 
-    def test_load_multiple_modules(self):
-        tmod1 = p.erkloader.load_mod_from_path(pjoin(TEST_DATA_DIR1, "tmod1.py"), "tmod1")
-
-
-# noinspection PyPep8Naming
-class TestCore1(unittest.TestCase):
-    def setUp(self):
-        if PRINT_TEST_METHODNAMES:
-            print("In method", p.aux.bgreen(self._testMethodName))
-
-    def tearDown(self) -> None:
-
-        # unload all modules which where loaded by a test
-        for mod_id in list(p.ds.mod_path_mapping.a.keys()):
-            p.unload_mod(mod_id)
-
-    def test_a0__directory_structure(self):
+    def test_a0__key_manager(self):
         pyerk_dir = pjoin(ERK_ROOT_DIR, "pyerk")
 
         p.KeyManager.instance = None
@@ -94,13 +78,23 @@ class TestCore1(unittest.TestCase):
         self.assertEqual(km.key_reservoir, [103, 104])
 
         km.recycle_keys(["Ia102", "R101", "I100"])
-        self.assertEqual(km.key_reservoir, [103, 104])
-        # self.assertEqual()
-        def func(**kwargs):
-            pass
+        self.assertEqual(km.key_reservoir, [103, 104, 102, 100, 101])
 
-        IPS()
+    def test_load_multiple_modules(self):
+        tmod1 = p.erkloader.load_mod_from_path(pjoin(TEST_DATA_DIR1, "tmod1.py"), "tmod1")
 
+
+# noinspection PyPep8Naming
+class TestCore1(unittest.TestCase):
+    def setUp(self):
+        if PRINT_TEST_METHODNAMES:
+            print("In method", p.aux.bgreen(self._testMethodName))
+
+    def tearDown(self) -> None:
+
+        # unload all modules which where loaded by a test
+        for mod_id in list(p.ds.mod_path_mapping.a.keys()):
+            p.unload_mod(mod_id)
 
     def test_aa0__directory_structure(self):
         pyerk_dir = pjoin(ERK_ROOT_DIR, "pyerk")

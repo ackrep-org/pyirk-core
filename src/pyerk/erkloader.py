@@ -19,11 +19,7 @@ def load_mod_from_path(modpath: str, modname=None, allow_reload=True, omit_reloa
         return
 
     if allow_reload and old_mod_id:
-        released_keys = pyerk.unload_mod(old_mod_id)
-    else:
-        released_keys = []
-
-    pyerk.core.available_key_numbers.recycle_keys(released_keys)
+        pyerk.unload_mod(old_mod_id)
 
     spec = importlib.util.spec_from_file_location(modname, modpath)
     mod = importlib.util.module_from_spec(spec)

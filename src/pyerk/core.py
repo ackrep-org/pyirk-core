@@ -974,7 +974,7 @@ class KeyManager:
         assert self.pop_counter >= 0
 
 
-available_key_numbers = KeyManager()
+key_manager = KeyManager()
 
 
 def repl_spc_by_udsc(txt: str) -> str:
@@ -1059,7 +1059,7 @@ class RelationEdge:
         :param proxyitem:               associated item; e.g. a equation-item
         """
 
-        self.short_key = f"RE{available_key_numbers.pop()}"
+        self.short_key = f"RE{key_manager.pop()}"
         self.relation = relation
         self.relation_tuple = relation_tuple
         self.subject = relation_tuple[0]
@@ -1278,7 +1278,7 @@ def generate_new_key(prefix, prefix2=""):
     assert prefix in ("I", "R")
 
     while True:
-        key = f"{prefix}{prefix2}{available_key_numbers.pop()}"
+        key = f"{prefix}{prefix2}{key_manager.pop()}"
         try:
             ds.get_entity(key)
         except KeyError:
@@ -1436,7 +1436,7 @@ def unload_mod(mod_id: str, strict=True) -> None:
 
     res = list(ds.released_keys)
 
-    available_key_numbers.recycle_keys(res)
+    key_manager.recycle_keys(res)
 
     # empty the list again to avoid confusion in future uses
     ds.released_keys.clear()

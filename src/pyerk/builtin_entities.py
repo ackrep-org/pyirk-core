@@ -21,7 +21,7 @@ from .core import (
 from . import core
 
 
-__MOD_ID__ = "M1000"
+__URI__ = "pyerk/builtins"
 
 
 def is_instance_of_generalized_metaclass(entity) -> bool:

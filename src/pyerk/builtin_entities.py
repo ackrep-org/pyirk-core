@@ -24,6 +24,8 @@ from . import core
 
 
 __URI__ = BUILTINS_URI
+keymanager = core.KeyManager()
+core.register_mod(__URI__, keymanager)
 
 
 def is_instance_of_generalized_metaclass(entity) -> bool:
@@ -89,10 +91,18 @@ def instance_of(entity, r1: str = None, r2: str = None) -> Item:
     return new_item
 
 
+########################################################################################################################
+#
+#            Creattion of entities
+#
+########################################################################################################################
+
+
+core.start_mod(__URI__)
+
 # the bootstrapping of relations is slightly unintuitive because
 # a) labels and descriptions are introduced with some delay and
 # b) because keys reflect historical development
-
 
 R32 = create_builtin_relation(key_str="R32")  # will be R32["is functional for each language"]
 
@@ -1069,10 +1079,6 @@ I41["semantic rule"].add_method(_proposition__scope, name="scope")
 
 # ######################################################################################################################
 # Testing and debugging entities
-
-# when implicitly creating new items such as contexts the uri must be defined
-# note: this action must be manually reversed at the end of the module
-core.start_mod(__URI__)
 
 I041 = create_builtin_item(
     key_str="I041",

@@ -35,7 +35,7 @@ TEST_DATA_DIR1 = pjoin(ERK_ROOT_DIR, "pyerk", "tests", "test_data")
 TEST_DATA_PATH2 = pjoin(ERK_ROOT_DIR, "erk-data", "control-theory", "control_theory1.py")
 TEST_MOD_NAME = "control_theory1"
 
-TEST_BASE_URI = "local/unittest/"
+__URI__ = TEST_BASE_URI = "local/unittest/"
 
 # this serves to print the test-method-name before it is executed (useful for debugging, see setUP below)
 PRINT_TEST_METHODNAMES = True
@@ -47,10 +47,14 @@ WRITE_TMP_FILES = False
 # noinspection PyPep8Naming
 class TestCore0(unittest.TestCase):
     def setUp(self):
+        keymanager = p.KeyManager()
+        p.register_mod(TEST_BASE_URI, keymanager)
         if PRINT_TEST_METHODNAMES:
             print("In method", p.aux.bgreen(self._testMethodName))
 
     def tearDown(self) -> None:
+
+        p.unload_mod(TEST_BASE_URI, strict=False)
 
         # unload all modules which where loaded by a test
         for mod_id in list(p.ds.mod_path_mapping.a.keys()):
@@ -112,11 +116,6 @@ class TestCore0(unittest.TestCase):
         self.assertEqual(itm.uri, f"{TEST_BASE_URI}#{itm.short_key}")
         self.assertEqual(rel.uri, f"{TEST_BASE_URI}#{rel.short_key}")
 
-        # prevent possible key clashes with future manual keys
-        # TODO: obsolete if all dict keys are uri based
-        p.core._unlink_entity(itm.short_key)
-        p.core._unlink_entity(rel.short_key)
-
     def test_load_multiple_modules(self):
         tmod1 = p.erkloader.load_mod_from_path(pjoin(TEST_DATA_DIR1, "tmod1.py"), "tmod1")
         # TODO: to be continued
@@ -133,6 +132,8 @@ class TestCore1(unittest.TestCase):
         # unload all modules which where loaded by a test
         for mod_id in list(p.ds.mod_path_mapping.a.keys()):
             p.unload_mod(mod_id)
+
+        p.unload_mod(TEST_BASE_URI, strict=False)
 
     def test_aa0__directory_structure(self):
         pyerk_dir = pjoin(ERK_ROOT_DIR, "pyerk")
@@ -177,6 +178,7 @@ class TestCore1(unittest.TestCase):
     # noinspection PyUnresolvedReferences
     # (above noinspection is necessary because of the @-operator which is undecleared for strings)
     def test_core1(self):
+        IPS()
         mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, TEST_MOD_NAME)
         self.assertEqual(mod1.I3749.R1, "Cayley-Hamilton theorem")
 
@@ -197,6 +199,14 @@ class TestCore1(unittest.TestCase):
         # ensure that R32["is functional for each language"] works as expected (return str/Literal but not [str] ...)
         self.assertNotIsInstance(p.I12.R2, list)
         self.assertNotIsInstance(p.I900.R2, list)
+
+        p.unload_mod('pyerk/ocse/0.2')
+
+        IPS()
+
+    def test_builtins2(self):
+
+        self.assertTrue('pyerk/ocse/0.2#RE7435:S' not in p.ds.rledgs_dict)
 
     def test_builtins1(self):
         """
@@ -233,12 +243,11 @@ class TestCore1(unittest.TestCase):
         with self.assertRaises(AttributeError):
             itm2.example_func2(1234)
 
-        # prevent possible key clashes with future manual keys
-        # TODO: obsolete if all dict keys are uri based (then also delete the comment above)
-        p.core._unlink_entity(itm.short_key)
-        p.core._unlink_entity(itm2.short_key)
-
     def test_evaluated_mapping(self):
+
+        res = p.ds.relation_edges.get("RE6229")
+        self.assertIsNone(res)
+
         mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, TEST_MOD_NAME)
         with p.uri_context(uri=TEST_BASE_URI):
             poly1 = p.instance_of(mod1.I4239["monovariate polynomial"])

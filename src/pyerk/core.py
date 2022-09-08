@@ -462,6 +462,11 @@ class DataStore:
         # dict of lists store keys of the entities (not the entities itself, to simplify deletion)
         self.entities_created_in_mod = defaultdict(list)
 
+        self.rledgs_created_in_mod = defaultdict(list)
+
+        # simple storage for all relation edges
+        self.rledgs_dict = {}
+
         # mappings like .a = {"M1234": "/path/to/mod.py"} and .b = {"/path/to/mod.py": "M1234"}
         self.mod_path_mapping = aux.OneToOneMapping()
 
@@ -491,6 +496,9 @@ class DataStore:
 
         # list of keys which are released, when unloading a module
         self.released_keys = []
+
+        # mapping linke {uri1: keymanager1, ...}
+        self.uri_keymanager_dict = {}
 
     def get_entity(self, key_str) -> Entity:
         """
@@ -796,12 +804,7 @@ def create_item(key_str: str = "", **kwargs) -> Item:
     else:
         item_key = key_str
 
-    uri = get_active_mod_uri()
-
-    mod_id_list = get_mod_id_list_by_inspection()
-
-    # get the uppermost __MOD_ID__
-    mod_uri = mod_id_list.pop()
+    mod_uri = get_active_mod_uri()
 
     new_kwargs = {}
     # prepare the kwargs to set relations
@@ -814,7 +817,7 @@ def create_item(key_str: str = "", **kwargs) -> Item:
 
         new_kwargs[processed_key.short_key] = value
 
-    itm = Item(uri, item_key, **new_kwargs)
+    itm = Item(base_uri=mod_uri, key_str=item_key, **new_kwargs)
     assert item_key not in ds.items, f"Problematic (duplicated) key: {item_key}"
     ds.items[item_key] = itm
 
@@ -854,18 +857,14 @@ class RelationRole(Enum):
 # for now we want unique numbers for keys for relations and items etc (although this is not necessary)
 class KeyManager:
     """
-    Singleton class for a flexible and comprehensible key management
+    Class for a flexible and comprehensible key management. Every pyerk module must have its own (passed via)
     """
-
-    # class variable to ensure Singleton Pattern
-    instance = None
 
     # TODO: the term "maxval" is misleading because it will be used in range where the upper bound is exclusive
     # however, using range(minval, maxval+1) would results in different shuffling and thus will probably need some
     # refactoring of existing modules
     def __init__(self, minval=1000, maxval=9999):
 
-        assert self.instance is None
         self.instance = self
         self.minval = minval
         self.maxval = maxval
@@ -964,7 +963,11 @@ class KeyManager:
         assert self.pop_counter >= 0
 
 
-key_manager = KeyManager()
+def pop_uri_based_key():
+
+    active_mod_uri = get_active_mod_uri()
+    km = ds.uri_keymanager_dict[active_mod_uri]
+    return km.pop()
 
 
 def repl_spc_by_udsc(txt: str) -> str:
@@ -1049,7 +1052,7 @@ class RelationEdge:
         :param proxyitem:               associated item; e.g. a equation-item
         """
 
-        self.short_key = f"RE{key_manager.pop()}"
+        self.short_key_xx = f"RE{pop_uri_based_key()}"
         self.relation = relation
         self.relation_tuple = relation_tuple
         self.subject = relation_tuple[0]
@@ -1062,19 +1065,28 @@ class RelationEdge:
         self.dual_relation_edge = None
         self.unlinked = None
 
+        mod_uri = get_active_mod_uri()
+        self.base_uri = mod_uri
+        self.uri = f"{self.base_uri}#{self.short_key_xx}:{self.role.name[0]}"
+
+        ds.rledgs_created_in_mod[mod_uri].append(self)
+
+        assert self.uri not in ds.rledgs_dict
+        ds.rledgs_dict[self.uri] = self
+
         # TODO: replace this by qualifier
         self.proxyitem = proxyitem
 
     @property
     def key_str(self):
         # TODO: the "attribute" `.key_str` for RelationEdge is deprecated; use `.short_key` instead
-        return self.short_key
+        return self.short_key_xx
 
     def __repr__(self):
 
         # fixme: this breaks if self.role is not a valid enum-value in (0, 2)
 
-        res = f"{self.short_key}:{self.role.name[0]}{self.relation_tuple}"
+        res = f"{self.short_key_xx}:{self.role.name[0]}{self.relation_tuple}"
         return res
 
     def _process_qualifiers(self, qlist: List[RawQualifier], scope: Optional["Entity"] = None) -> None:
@@ -1105,7 +1117,8 @@ class RelationEdge:
             self.qualifiers.append(qf_rledg)
 
             # save the qualifyer-relation edge (and its inverse) in the appropriate data structures
-            ds.set_relation_edge(short_key=self.short_key, relation_key=qf.rel.short_key, re_object=qf_rledg)
+            # _xx!! -> uri
+            ds.set_relation_edge(short_key=self.short_key_xx, relation_key=qf.rel.short_key, re_object=qf_rledg)
             if isinstance(qf.obj, Entity):
                 # add inverse relation
                 ds.inv_relation_edges[qf.obj.short_key][qf.rel.short_key].append(qf_rledg.create_dual())
@@ -1150,20 +1163,30 @@ class RelationEdge:
         if not len(self.relation_tuple) == 3:
             raise NotImplementedError
 
+        if self.uri == 'pyerk/ocse/0.2#RE1757':
+            set_trace()
+
         if self.unlinked:
             return
 
         subj, pred, obj = self.relation_tuple
 
         if self.is_qualifier():
-            _ = ds.relation_edges.pop(subj.short_key, [])
+            # _xx !! -> uri
+            _ = ds.relation_edges.pop(subj.short_key_xx, [])
 
         if self.role == RelationRole.SUBJECT:
             # ds.relation_edge_list: store a list of all (primal/subject) relation edges (to maintain the order)
 
             tolerant_removal(ds.relation_edge_list, self)
 
-            subj_rel_edges: Dict[str : List[RelationEdge]] = ds.relation_edges[subj.short_key]
+            # _xx !! -> uri
+            if isinstance(subj, RelationEdge):
+                key = subj.short_key_xx
+            else:
+                key = subj.short_key
+
+            subj_rel_edges: Dict[str : List[RelationEdge]] = ds.relation_edges[key]
             tolerant_removal(subj_rel_edges.get(pred.short_key, []), self)
 
             # ds.relation_relation_edges: for every relation key stores a list of relevant relation-edges
@@ -1183,8 +1206,6 @@ class RelationEdge:
 
         # this prevents from infinite recursion
         self.unlinked = True
-        if self.short_key == "RE4382":
-            pass
             # set_trace()
         if self.dual_relation_edge is not None:
             self.dual_relation_edge.unlink()
@@ -1192,7 +1213,9 @@ class RelationEdge:
         for qf in self.qualifiers:
             qf: RelationEdge
             qf.unlink()
-        ds.released_keys.append(self.short_key)
+
+        ds.rledgs_dict.pop(self.uri)
+        ds.released_keys.append(self.short_key_xx)
 
 
 def tolerant_removal(sequence, element):
@@ -1225,12 +1248,9 @@ def create_relation(key_str: str = "", **kwargs) -> Relation:
     else:
         rel_key = key_str
 
-    mod_uri = get_active_mod_uri()
-
     assert rel_key.startswith("R")
 
-    # get uppermost __MOD_ID__ from frame stack
-    mod_id = get_mod_id_list_by_inspection().pop()
+    mod_uri = get_active_mod_uri()
 
     default_relations = {
         # "R22": None,  # R22__is_functional
@@ -1249,7 +1269,7 @@ def create_relation(key_str: str = "", **kwargs) -> Relation:
     rel = Relation(mod_uri, rel_key, **new_kwargs)
     assert rel_key not in ds.relations
     ds.relations[rel_key] = rel
-    ds.entities_created_in_mod[mod_id].append(rel_key)
+    ds.entities_created_in_mod[mod_uri].append(rel_key)
     return rel
 
 
@@ -1267,19 +1287,32 @@ def create_builtin_relation(*args, **kwargs) -> Relation:
     return rel
 
 
-def generate_new_key(prefix, prefix2=""):
+def generate_new_key(prefix, prefix2="", mod_uri=None):
+    """
+    Utility function for the command line.
+
+    :param prefix:
+    :param prefix2:
+    :param mod_uri:
+    :return:
+    """
 
     assert prefix in ("I", "R")
 
-    while True:
-        key = f"{prefix}{prefix2}{key_manager.pop()}"
-        try:
-            ds.get_entity(key)
-        except KeyError:
-            # the key was new -> now problem
-            return key
-        else:
-            continue
+    if mod_uri is None:
+        mod_uri = settings.BUILTINS_URI
+        print(aux.byellow(f"Warning: creating key based on module {mod_uri}, which is probably unitended"))
+
+    with uri_context(mod_uri):
+        while True:
+            key = f"{prefix}{prefix2}{pop_uri_based_key()}"
+            try:
+                ds.get_entity(key)
+            except KeyError:
+                # the key was new -> now problem
+                return key
+            else:
+                continue
 
 
 def print_new_keys(n=30):
@@ -1420,11 +1453,11 @@ class uri_context:
         assert res == self.uri
 
 
-def unload_mod(mod_id: str, strict=True) -> None:
+def unload_mod(mod_uri: str, strict=True) -> None:
     """
     Delete all references to entities comming from a module with `mod_id`
 
-    :param mod_id:  str; key string like "M1234"
+    :param mod_uri: str; uri of the module, see its __URI__ attribute
     :param strict:  boolean; raise Exception if module seems be not loaded
 
     :return:        list of released keys
@@ -1435,10 +1468,10 @@ def unload_mod(mod_id: str, strict=True) -> None:
 
     # TODO: This might to check dependencies in the future
 
-    entity_keys: List[str] = ds.entities_created_in_mod.pop(mod_id)
+    entity_keys: List[str] = ds.entities_created_in_mod.pop(mod_uri, [])
 
     if not entity_keys and strict:
-        msg = f"Seems like no entities from {mod_id} have been loaded. This is unexpected."
+        msg = f"Seems like no entities from {mod_uri} have been loaded. This is unexpected."
         raise KeyError(msg)
 
     for ek in entity_keys:
@@ -1450,14 +1483,25 @@ def unload_mod(mod_id: str, strict=True) -> None:
     msg = "Unexpectedly some of the entity keys are still present"
     assert len(intersection_set) == 0, msg
 
-    ds.mod_path_mapping.remove_pair(key_a=mod_id)
+    for rledg in ds.rledgs_created_in_mod.pop(mod_uri, []):
+        assert isinstance(rledg, RelationEdge)
+        rledg.unlink()
+
+    try:
+        ds.mod_path_mapping.remove_pair(key_a=mod_uri)
+    except KeyError:
+        if strict:
+            raise
+        else:
+            pass
 
     aux.clean_dict(ds.relation_edges)
     aux.clean_dict(ds.inv_relation_edges)
 
+    # TODO: obsolete
     res = list(ds.released_keys)
 
-    key_manager.recycle_keys(res)
+    ds.uri_keymanager_dict.pop(mod_uri)
 
     # empty the list again to avoid confusion in future uses
     ds.released_keys.clear()
@@ -1470,10 +1514,13 @@ def _unlink_entity(ek: str) -> None:
     :param ek:     entity key
     :return:        None
     """
-
     entity: Entity = ds.get_entity(ek)
     res1 = ds.items.pop(ek, None)
     res2 = ds.relations.pop(ek, None)
+
+    if ek == "Ia9108":
+        pass
+        # set_trace()
 
     if res1 is None and res2 is None:
         msg = f"No entity with key {ek} could be found. This is unexpected."
@@ -1502,9 +1549,13 @@ def _unlink_entity(ek: str) -> None:
         re_list.extend(tmp)
 
     # now iterate over all RelationEdge instances
+    IPS(ek == "Ia9108")
     for re in re_list:
         re: RelationEdge
+        if re.uri == "pyerk/ocse/0.2#RE2617":
+            set_trace()
         re.unlink(ek)
+    IPS(ek == "Ia9108")
 
     # during unlinking of the RelationEdges the default dicts might have been recreating some keys -> pop again
     # TODO: obsolete because we clean up the defaultdicts anyway
@@ -1514,11 +1565,16 @@ def _unlink_entity(ek: str) -> None:
     ds.released_keys.append(ek)
 
 
-def register_mod(uri):
+def register_mod(uri: str, keymanager: KeyManager):
     frame = get_caller_frame(upcount=1)
     path = os.path.abspath(frame.f_globals["__file__"])
     assert frame.f_globals.get("__URI__", None) == uri
-    ds.mod_path_mapping.add_pair(key_a=uri, key_b=path)
+    if uri != settings.BUILTINS_URI:
+        # the builtin module is an exception because it should not be unloaded
+        ds.mod_path_mapping.add_pair(key_a=uri, key_b=path)
+
+    # all modules should have their own key manager
+    ds.uri_keymanager_dict[uri] = keymanager
 
 
 def start_mod(uri):

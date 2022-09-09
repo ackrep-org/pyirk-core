@@ -44,21 +44,37 @@ PRINT_TEST_METHODNAMES = True
 WRITE_TMP_FILES = False
 
 
-# noinspection PyPep8Naming
-class TestCore0(unittest.TestCase):
+class HouskeeperMixin:
+    """
+    Class to provide common functions for all our TestCase subclasses
+    """
     def setUp(self):
-        keymanager = p.KeyManager()
-        p.register_mod(TEST_BASE_URI, keymanager)
-        if PRINT_TEST_METHODNAMES:
-            print("In method", p.aux.bgreen(self._testMethodName))
+        self.print_methodnames()
+        self.register_this_module()
 
     def tearDown(self) -> None:
+        self.unload_all_mods()
 
+    @staticmethod
+    def unload_all_mods():
         p.unload_mod(TEST_BASE_URI, strict=False)
 
         # unload all modules which where loaded by a test
         for mod_id in list(p.ds.mod_path_mapping.a.keys()):
             p.unload_mod(mod_id)
+
+    @staticmethod
+    def register_this_module():
+        keymanager = p.KeyManager()
+        p.register_mod(TEST_BASE_URI, keymanager)
+
+    def print_methodnames(self):
+        if PRINT_TEST_METHODNAMES:
+            # noinspection PyUnresolvedReferences
+            print("In method", p.aux.bgreen(self._testMethodName))
+
+
+class TestCore0(HouskeeperMixin, unittest.TestCase):
 
     def test_a0__contex_manager(self):
         """
@@ -115,18 +131,7 @@ class TestCore0(unittest.TestCase):
 
 
 # noinspection PyPep8Naming
-class TestCore1(unittest.TestCase):
-    def setUp(self):
-        if PRINT_TEST_METHODNAMES:
-            print("In method", p.aux.bgreen(self._testMethodName))
-
-    def tearDown(self) -> None:
-
-        # unload all modules which where loaded by a test
-        for mod_id in list(p.ds.mod_path_mapping.a.keys()):
-            p.unload_mod(mod_id)
-
-        p.unload_mod(TEST_BASE_URI, strict=False)
+class TestCore1(HouskeeperMixin, unittest.TestCase):
 
     def test_aa0__directory_structure(self):
         pyerk_dir = pjoin(ERK_ROOT_DIR, "pyerk")
@@ -445,37 +450,18 @@ class TestCore1(unittest.TestCase):
         self.assertIn(s3, res)
 
 
-class TestCore2(unittest.TestCase):
-    def setUp(self):
-        if PRINT_TEST_METHODNAMES:
-            print("In method", p.aux.bgreen(self._testMethodName))
-
-    def tearDown(self) -> None:
-
-        # unload all modules which where loaded by a test
-        for mod_id in list(p.ds.mod_path_mapping.a.keys()):
-            p.unload_mod(mod_id)
+class TestCore2(HouskeeperMixin, unittest.TestCase):
 
     def test_ruleengine1(self):
         # test rendering of dot
         p.ruleengine.apply_all_semantic_rules()
 
 
-class TestZZCore3(unittest.TestCase):
+class TestZZCore3(HouskeeperMixin, unittest.TestCase):
     """
     Collection of test that should be executed last (because they seem to influence othter tests).
     This is achieved by putting "ZZ" in the name (assuming that test classes are executed in alphabetical order).
     """
-
-    def setUp(self):
-        if PRINT_TEST_METHODNAMES:
-            print("In method", p.aux.bgreen(self._testMethodName))
-
-    def tearDown(self) -> None:
-
-        # unload all modules which where loaded by a test
-        for mod_id in list(p.ds.mod_path_mapping.a.keys()):
-            p.unload_mod(mod_id)
 
     def test_sparql_query(self):
         # This test seems somehow to influence later tests

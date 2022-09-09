@@ -40,7 +40,7 @@ def main():
         "--parse-ackrep-data",
         help="parse ackrep data repository, create items and relations. specify path to ackrep_data base dir \
             (.../ackrep_data)",
-        metavar="path"
+        metavar="path",
     )
 
     parser.add_argument("--dbg", help=f"start debug routine", default=None, action="store_true")

@@ -31,6 +31,8 @@ ERK_ROOT_DIR = p.aux.get_erk_root_dir()
 TEST_DATA_PATH = pjoin(ERK_ROOT_DIR, "erk-data", "control-theory", "control_theory1.py")
 TEST_MOD_NAME = "control_theory1"
 
+TEST_ACKREP_DATA_FOR_UT_PATH = pjoin(ERK_ROOT_DIR, "..", "ackrep", "ackrep_data_for_unittests")
+
 # this serves to print the test-method-name before it is executed (useful for debugging, see setUP below)
 PRINT_TEST_METHODNAMES = False
 
@@ -319,6 +321,10 @@ class TestCore(unittest.TestCase):
         node.perform_html_wrapping(use_html=False)
         label = node.get_dot_label(render=True)
         self.assertEqual(label, 'I0126\\n["12 34567-\\n890abcdefgh"]')
+
+    def test_ackrep_parser(self):
+        res = p.parse_ackrep(TEST_ACKREP_DATA_FOR_UT_PATH)
+        self.assertEqual(res, 0)
 
 
 class TestCore2(unittest.TestCase):

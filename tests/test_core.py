@@ -323,8 +323,15 @@ class TestCore(unittest.TestCase):
         self.assertEqual(label, 'I0126\\n["12 34567-\\n890abcdefgh"]')
 
     def test_ackrep_parser(self):
-        res = p.parse_ackrep(TEST_ACKREP_DATA_FOR_UT_PATH)
+        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH, TEST_MOD_NAME)
+        p1 = os.path.join(TEST_ACKREP_DATA_FOR_UT_PATH, "system_models", "lorenz_system")
+        res = p.parse_ackrep(p1)
         self.assertEqual(res, 0)
+        p2 = os.path.join(TEST_ACKREP_DATA_FOR_UT_PATH, "system_models", "lorenz_system_broken")
+        try:
+            res = p.parse_ackrep(p2)
+        except AssertionError as e:
+            self.assertEqual(e.args[0], 'This key (_R2928["has model representation"]) has to be a relation.')
 
 
 class TestCore2(unittest.TestCase):

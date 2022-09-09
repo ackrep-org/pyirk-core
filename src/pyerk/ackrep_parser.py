@@ -31,9 +31,9 @@ def parse_ackrep(base_path):
     else:
         ackrep_path = os.path.join(os.getcwd(), base_path)
 
+    retcodes = []
     # parse entire repo
     if "ackrep_data" in os.path.split(ackrep_path)[1]:
-        retcodes = []
 
         system_models_path = os.path.join(ackrep_path, "system_models")
         model_folders = os.listdir(system_models_path)
@@ -52,8 +52,10 @@ def parse_ackrep(base_path):
 
     # assume path leads to entity folder
     else:
-        parse_ackrep_entity(ackrep_path)
+        retcode = parse_ackrep_entity(ackrep_path)
+        retcodes.append(retcode)
 
+    return sum(retcodes)
 
 def parse_ackrep_entity(entity_path: str):
 

@@ -14,7 +14,7 @@ from .core import (
     de,
     en,
     QualifierFactory,
-    ds
+    ds,
 )
 
 # it is OK to access ds here in the builtin module, but this import should not be copied to other knowledge modules
@@ -806,11 +806,12 @@ R31 = create_builtin_relation(
 
 
 def new_equation(lhs: Item, rhs: Item, doc=None, scope: Optional[Item] = None) -> Item:
-    """usefull speacial case, also ensures backwards compatibility"""
+    """common speacial case of mathematical relation, also ensures backwards compatibility"""
 
     eq = new_mathematical_relation(lhs, "=", rhs, doc, scope)
 
     return eq
+
 
 def new_mathematical_relation(lhs: Item, rsgn: str, rhs: Item, doc=None, scope: Optional[Item] = None) -> Item:
 
@@ -819,7 +820,7 @@ def new_mathematical_relation(lhs: Item, rsgn: str, rhs: Item, doc=None, scope: 
         "<": I29["less-than-relation"],
         ">": I28["greater-than-relation"],
         "<=": I31["less-or-equal-than-relation"],
-        ">=": I30["greater-or-equal-than-relation"]
+        ">=": I30["greater-or-equal-than-relation"],
     }
     if doc is not None:
         assert isinstance(doc, str)
@@ -838,6 +839,7 @@ def new_mathematical_relation(lhs: Item, rsgn: str, rhs: Item, doc=None, scope: 
     re = lhs.set_relation(R31["is in mathematical relation with"], rhs, scope=scope, qualifiers=[proxy_item(mr)])
 
     return mr
+
 
 # annoying: pycharm does not recognize that "str"@some_LangaguageCode_obj is valid because str does not
 # implement __matmul__

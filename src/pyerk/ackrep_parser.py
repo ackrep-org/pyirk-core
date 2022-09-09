@@ -10,6 +10,7 @@ from . import aux
 from .builtin_entities import instance_of
 from .erkloader import load_mod_from_path
 from . import builtin_entities
+from .auxiliary import *
 
 ERK_ROOT_DIR = aux.get_erk_root_dir()
 TEST_DATA_PATH = os.path.join(ERK_ROOT_DIR, "erk-data", "control-theory", "control_theory1.py")
@@ -20,42 +21,63 @@ mod = load_mod_from_path(TEST_DATA_PATH, TEST_MOD_NAME)
 entity_pattern = regex.compile(r"^(I|Ra?\d+)(\[(.*)\])$")
 item_pattern = regex.compile(r"^(Ia?\d+)(\[(.*)\])$")
 relation_pattern = regex.compile(r"^(Ra?\d+)(\[(.*)\])$")
+function_pattern = regex.compile(r"^(.+)(\(.*\))$")
 
 
-def parse_ackrep(path: str):
-
-    if os.path.isabs(path):
-        ackrep_path = path
+def parse_ackrep(base_path):
+    # TODO: agree on a path and put it in settings
+    if os.path.isabs(base_path):
+        ackrep_path = base_path
     else:
-        ackrep_path = os.path.join(os.getcwd(), path)
+        ackrep_path = os.path.join(os.getcwd(), base_path)
 
-    # TODO: implement walk
-    # for all system models ----------------------------------------------------
-    system_models_path = os.path.join(ackrep_path, "system_models")
-    model_folders = os.listdir(system_models_path)
-    for folder in model_folders:
-        # skip template folder
-        if folder[0] == "_":
-            continue
+    # parse entire repo
+    if "ackrep_data" in os.path.split(ackrep_path)[1]:
+        retcodes = []
 
-        metadata_path = os.path.join(system_models_path, folder, "metadata.yml")
+        system_models_path = os.path.join(ackrep_path, "system_models")
+        model_folders = os.listdir(system_models_path)
+        for folder in model_folders:
+            # skip template folder
+            if folder[0] == "_":
+                continue
 
-        with open(metadata_path, "r") as metadata_file:
-            try:
-                md = yaml.safe_load(metadata_file)
-            except ParserError as e:
-                msg = f"Metadata file of '{folder}' has yaml syntax error, see message above."
-                raise SyntaxError(msg) from e
+            retcode = parse_ackrep_entity(os.path.join(system_models_path, folder))
+            retcodes.append(retcode)
 
-        model = instance_of(mod.I7641["general system model"], r1=md["name"], r2=md["short_description"])
-        model.set_relation(mod.R2950["has corresponding ackrep key"], md["key"])
+        if sum(retcodes) == 0:
+            print(bgreen("All entities successfully parsed."))
+        else:
+            print(bred("Not all entities parsed, see above."))
 
+    # assume path leads to entity folder
+    else:
+        parse_ackrep_entity(ackrep_path)
+
+
+def parse_ackrep_entity(entity_path: str):
+
+    metadata_path = os.path.join(entity_path, "metadata.yml")
+
+    with open(metadata_path, "r") as metadata_file:
         try:
-            ed = md["erk_data"]
-            parse_recursive(model, ed)
-            print(model.get_relations())
-        except KeyError:
-            print(f"{md['key']}({md['name']}) has no erk_data yet.")
+            md = yaml.safe_load(metadata_file)
+        except ParserError as e:
+            msg = f"Metadata file of '{os.path.split(entity_path)[1]}' has yaml syntax error, see message above."
+            raise SyntaxError(msg) from e
+
+    model = instance_of(mod.I7641["general system model"], r1=md["name"], r2=md["short_description"])
+    model.set_relation(mod.R2950["has corresponding ackrep key"], md["key"])
+
+    try:
+        ed = md["erk_data"]
+    except KeyError:
+        print(byellow(f"{md['key']}({md['name']}) has no erk_data yet."))
+        return 2
+
+    parse_recursive(model, ed)
+    # print(model.get_relations())
+    print(bgreen(f"{md['key']}({md['name']}) successfully parsed."))
 
     return 0
 
@@ -69,13 +91,13 @@ def parse_recursive(parent: Item, d: dict):
         relation = get_entity_from_string(k)
         # value is literal (number)
         if isinstance(v, (str, int, float)):
-            item = handle_literal(obj=v)
+            item = handle_literal(literal=v)
             parent.set_relation(relation, item)
         # value is list
         elif isinstance(v, list):
             for entry in v:
                 if isinstance(entry, (str, int, float)):
-                    item = handle_literal(obj=entry)
+                    item = handle_literal(literal=entry)
                 elif isinstance(entry, dict):
                     item = handle_dict(entry)
                 elif isinstance(entry, list):
@@ -93,23 +115,26 @@ def parse_recursive(parent: Item, d: dict):
             raise TypeError(f"value {v} has unrecognized type {type(v)}.")
 
 
-def handle_literal(obj: Union[int, float, str]) -> Union[int, float, str, Item]:
+def handle_literal(literal: Union[int, float, str]) -> Union[int, float, str, Item]:
     """handle yaml literal and return appropriate object (int, float, str, Item)"""
 
     # literal is number
-    if isinstance(obj, (int, float)):
-        item = obj
+    if isinstance(literal, (int, float)):
+        item = literal
     # literal is string or item
-    elif isinstance(obj, str):
-        # TODO: how to differentiate between bad entity and regular string
+    elif isinstance(literal, str):
+        # TODO: how to differentiate between bad entity and regular string and function?
         # see if this is an item by examining pattern
-        if item_pattern.match(obj):
-            item = get_entity_from_string(obj)
-        elif relation_pattern.match(obj):
-            raise TypeError(f"relation result {obj} should not be another relation.")
+        if item_pattern.match(literal):
+            item = get_entity_from_string(literal)
+        elif relation_pattern.match(literal):
+            raise TypeError(f"relation result {literal} should not be another relation.")
+        elif function_pattern.match(literal):
+            func = getattr(builtin_entities, literal.split("(")[0])
+            item = func(literal.split("(")[1].split(")")[0])
         # else its a normal string
         else:
-            item = obj
+            item = literal
     else:
         raise NotImplementedError
 
@@ -124,6 +149,8 @@ def handle_dict(d: dict) -> Item:
     k, v = list(d.items())[0]
     assert item_pattern.match(k) is not None, f"This key ({k}) has to be an item."
     item = get_entity_from_string(k)
+    msg = f"value {v} of dictionary {d} has to be another dict with relations as keys and items as values"
+    assert isinstance(v, dict), msg
     parse_recursive(item, v)
 
     return item
@@ -154,7 +181,7 @@ def get_entity_from_string(string: str) -> Entity:
         pass
 
     if entity is None:
-        raise AttributeError(f"Attribute {s} not found.")
+        raise AttributeError(f"Attribute {s} not found. Maybe there is a typo?")
 
     # consitency check of string ["something"] and fetched entity
     entity.idoc(string.split("[")[1].split("]")[0][1:-1])
@@ -177,5 +204,6 @@ def get_entity_from_string(string: str) -> Entity:
 """
 usefull commands
 pyerk -pad ../../ackrep/ackrep_data
+pyerk -pad ../../ackrep/ackrep_data/system_models/lorenz_system
 
 """

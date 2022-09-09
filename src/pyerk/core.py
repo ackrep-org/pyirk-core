@@ -893,6 +893,21 @@ class KeyManager:
         self.pop_counter += 1
         return key
 
+    def pop_new_short_key(self, prefix, prefix2=""):
+        """
+        Create a short key (with prefixes) from the reservoir.
+
+        :param prefix:
+        :param prefix2:
+        :return:
+        """
+
+        assert prefix in ("I", "R")
+
+        num_key = self.pop()
+        key = f"{prefix}{prefix2}{num_key}"
+        return key
+
     def _generate_key_numbers(self) -> None:
         """
         Creates a reaservoir of keynumbers, e.g. for automatically created entities. Due to the hardcoded seed value
@@ -963,11 +978,26 @@ class KeyManager:
         assert self.pop_counter >= 0
 
 
-def pop_uri_based_key():
+def pop_uri_based_key(prefix: Optional[str] = None, prefix2: str = "") -> Union[int, str]:
+    """
+    Create a short key (int or str) (optionally with prefixes) from the reservoir.
+
+    :param prefix:
+    :param prefix2:
+    :return:
+    """
 
     active_mod_uri = get_active_mod_uri()
     km = ds.uri_keymanager_dict[active_mod_uri]
-    return km.pop()
+    num_key =  km.pop()
+    if prefix is None:
+        assert not prefix2
+        return num_key
+
+    assert prefix in ("I", "R")
+
+    short_key = f"{prefix}{prefix2}{num_key}"
+    return short_key
 
 
 def repl_spc_by_udsc(txt: str) -> str:
@@ -1301,7 +1331,8 @@ def generate_new_key(prefix, prefix2="", mod_uri=None):
 
     if mod_uri is None:
         mod_uri = settings.BUILTINS_URI
-        print(aux.byellow(f"Warning: creating key based on module {mod_uri}, which is probably unitended"))
+        print(aux.byellow(f"Warning: creating key based on module {mod_uri}, which is probably unintended"))
+        1/0
 
     with uri_context(mod_uri):
         while True:

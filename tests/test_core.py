@@ -107,11 +107,11 @@ class TestCore0(unittest.TestCase):
         self.assertEqual(p.R1.uri, f"{p.BUILTINS_URI}#R1")
 
         with self.assertRaises(p.EmptyURIStackError) as cm:
-            itm = p.create_item(key_str=p.generate_new_key("I"), R1="unit test item")
+            itm = p.create_item(key_str=p.pop_uri_based_key("I"), R1="unit test item")
 
         with p.uri_context(uri=TEST_BASE_URI):
-            itm = p.create_item(key_str=p.generate_new_key("I"), R1="unit test item")
-            rel = p.create_relation(key_str=p.generate_new_key("R"), R1="unit test relation")
+            itm = p.create_item(key_str=p.pop_uri_based_key("I"), R1="unit test item")
+            rel = p.create_relation(key_str=p.pop_uri_based_key("R"), R1="unit test relation")
 
         self.assertEqual(itm.uri, f"{TEST_BASE_URI}#{itm.short_key}")
         self.assertEqual(rel.uri, f"{TEST_BASE_URI}#{rel.short_key}")
@@ -227,8 +227,8 @@ class TestCore1(unittest.TestCase):
         # explicitly unlinking them at the end
 
         with p.uri_context(uri=TEST_BASE_URI):
-            itm = p.create_item(key_str=p.generate_new_key("I"), R1="unit test item")
-            itm2 = p.create_item(key_str=p.generate_new_key("I"), R1="unit test item2")
+            itm = p.create_item(key_str=p.pop_uri_based_key("I"), R1="unit test item")
+            itm2 = p.create_item(key_str=p.pop_uri_based_key("I"), R1="unit test item2")
 
         def example_func2(slf, a):
             return f"{slf.R1}::{a}"

@@ -85,21 +85,14 @@ class TestCore0(unittest.TestCase):
 
         km = p.KeyManager(minval=100, maxval=105)
 
-        self.assertEqual(km.original_key_index_map, {103: 0, 101: 1, 100: 2, 104: 3, 102: 4})
-        self.assertEqual(km.popped_key_index_map, {})
+        self.assertEqual(km.key_reservoir, [103, 101, 100, 104, 102])
 
         k = km.pop()
         self.assertEqual(k, 102)
 
         k = km.pop()
         self.assertEqual(k, 104)
-
-        self.assertEqual(km.popped_key_index_map, {102: 4, 104: 3})
         self.assertEqual(km.key_reservoir, [103, 101, 100])
-
-        # recycle "automatically created" (i.e. popped) keys
-        km.recycle_keys(["Ia102", "RE104"])
-        self.assertEqual(km.key_reservoir, [103, 101, 100, 104, 102])
 
     def test_uri_attr_of_entities(self):
 

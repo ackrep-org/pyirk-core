@@ -86,6 +86,25 @@ def ensure_rdf_str_literal(arg, allow_none=True) -> Union[Literal, None]:
     return res
 
 
+# This function was once part of the key-recycling mechanism.
+# Currently it is not needed but might be useful in the future.
+def convert_key_str_to_num(key_str: str) -> int:
+
+    import regex  # this import is "parked here" as long as the function is not used
+    re_short_key = regex.compile(r"^((Ia?)|(Ra?)|(RE))(\d+)$")
+    # produces 5 groups: [{outer-parenthesis}, {inner-p1}, {inner-p2}, {inner-p3}, {last-p}]
+    # first (index: 1) and last are the only relevant groups
+
+    match = re_short_key.match(key_str)
+
+    type_str = match.group(1)
+    num_str = match.group(5)
+    assert type_str is not None
+    assert num_str is not None
+
+    return int(num_str)
+
+
 def clean_dict(dikt: Dict[Any, Union[list, dict]]) -> Dict[Any, Union[list, dict]]:
     """
     Recursively remove all keys where the corresponding value is an empty list or dict.

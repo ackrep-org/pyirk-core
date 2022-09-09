@@ -86,6 +86,22 @@ def ensure_rdf_str_literal(arg, allow_none=True) -> Union[Literal, None]:
     return res
 
 
+class InvalidURIError(ValueError):
+    pass
+
+
+def ensure_valid_uri(txt: str):
+    cond = "#" in txt
+
+    if not cond:
+        msg = f"This seems not to be a valid URI: {txt}"
+        raise InvalidURIError(msg)
+
+
+def make_uri(base_uri: str, short_key):
+    return f"{base_uri}{short_key}"
+
+
 # This function was once part of the key-recycling mechanism.
 # Currently it is not needed but might be useful in the future.
 def convert_key_str_to_num(key_str: str) -> int:

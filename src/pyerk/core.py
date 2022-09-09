@@ -137,12 +137,11 @@ class Entity(abc.ABC):
             raise AttributeError(msg)
 
         try:
-            etyrel = self._get_relation_contents(res.short_key)
+            # TODO: introduce prefixes here, which are mapped to uris
+            etyrel = self._get_relation_contents(rel_uri=res.uri)
         except KeyError:
             msg = f"'{type(self)}' object has no attribute '{res.short_key}'"
             raise AttributeError(msg)
-            # general_relation = ds.relations[res.short_key]
-            # etyrel = EntityRelation(entity=self, relation=general_relation)
         return etyrel
 
     def __eq__(self, other):
@@ -190,9 +189,11 @@ class Entity(abc.ABC):
             for func in parent_class._method_prototypes:
                 self.add_method(func)
 
-    def _get_relation_contents(self, rel_key: str):
+    def _get_relation_contents(self, rel_uri: str):
 
-        relation_edges: List[RelationEdge] = ds.get_relation_edges(self.short_key, rel_key)
+        aux.ensure_valid_uri(rel_uri)
+
+        relation_edges: List[RelationEdge] = ds.get_relation_edges(self.short_key, rel_uri)
 
         # for each of the relation edges get a list of the result-objects
         # (this assumes the relation tuple to be a triple (sub, rel, obj))
@@ -206,13 +207,13 @@ class Entity(abc.ABC):
         # (note that R22 itself is also a functional relation: only one of {True, False} is meaningful, same holds for
         # R32["is functional for each language"]). R32 also must be handled separately
 
-        relation = ds.relations[rel_key]
+        relation = ds.relations[rel_uri]
         hardcode_functional_relations = ["R22", "R32"]
         hardcode_functional_fnc4elang_relations = ["R1"]
 
         # in the following or-expression the second operand is only evaluated if the first ist false
         # if rel_key in ["R22", "R32"] or relation.R22:
-        if rel_key in hardcode_functional_relations or relation.R22:
+        if rel_uri in hardcode_functional_relations or relation.R22:
             if len(res) == 0:
                 return None
             else:
@@ -222,7 +223,7 @@ class Entity(abc.ABC):
         #  is a similar situation
         # if rel_key == "R32" this means that self 'is functional for each language'
 
-        elif rel_key in hardcode_functional_fnc4elang_relations or relation.R32:
+        elif rel_uri in hardcode_functional_fnc4elang_relations or relation.R32:
             # TODO: handle multilingual situations more flexible
 
             # todo: specify currently relevant language here (influences the return value); for now: using default
@@ -336,17 +337,18 @@ class Entity(abc.ABC):
 
     def _set_relation(
         self,
-        rel_key: str,
+        rel_uri: str,
         rel_content: object,
         scope: Optional["Entity"] = None,
         qualifiers: Optional[list] = None,
         proxyitem: Optional["Item"] = None,
     ) -> "RelationEdge":
 
-        rel = ds.relations[rel_key]
+        aux.ensure_valid_uri(rel_uri)
+        rel = ds.relations[rel_uri]
 
         # store relation for later usage
-        self.relation_dict[rel_key] = rel
+        self.relation_dict[rel_uri] = rel
 
         # store this relation edge in the global store
         if isinstance(rel_content, Entity):
@@ -375,11 +377,10 @@ class Entity(abc.ABC):
             proxyitem=proxyitem,
         )
 
-
-        ds.set_relation_edge(self.short_key, rel.short_key, rledg)
+        ds.set_relation_edge(rledg)
 
         if scope is not None:
-            ds.scope_relation_edges[scope.short_key].append(rledg)
+            ds.scope_relation_edges[scope.uri].append(rledg)
 
         # if the object is not a literal then also store the inverse relation
         if isinstance(rel_content, Entity):
@@ -399,54 +400,78 @@ class Entity(abc.ABC):
             inv_rledg.dual_relation_edge = rledg
 
             # ds.set_relation_edge(rel_content.short_key, rel.short_key, inv_rledg)
-            tmp_list = ds.inv_relation_edges[rel_content.short_key][rel.short_key]
+            tmp_list = ds.inv_relation_edges[rel_content.uri][rel.uri]
 
             # TODO: maybe check length here for inverse functional
             tmp_list.append(inv_rledg)
         return rledg
 
-    def get_relations(self, key_str: Optional[str] = None) -> Union[Dict[str, list], list]:
+    def get_relations(self, key_str_or_uri: Optional[str] = None) -> Union[Dict[str, list], list]:
         """
         Return all RelationEdge instance where this item is subject
 
-        :param key_str:     if passed return only the result for this key
-        :return:            either the whole dict or just one value (of type list)
+        :param key_str_or_uri:      optional; either a verbose key_str (of a builtin entity) or a full uri;
+                                    if passed only return the result for this key
+
+        :return:                    either the whole dict or just one value (of type list)
         """
 
-        rel_dict = ds.relation_edges[self.short_key]
-        if key_str is None:
+        rel_dict = ds.relation_edges[self.uri]
+        if key_str_or_uri is None:
             return rel_dict
-        else:
-            processed_key = pk(key_str)
-            return rel_dict.get(processed_key, [])
 
-    def get_inv_relations(self, key_str: Optional[str] = None, return_subj: bool = False) -> Union[Dict[str, list], list]:
+        # the caller wants only results for this key (e.g. "R4")
+        if aux.ensure_valid_uri(key_str_or_uri, strict=False):
+            uri = key_str_or_uri
+        else:
+            # we assume that that a builtin relation was ment
+            key_str = key_str_or_uri
+            short_key = pk(key_str)
+            uri = aux.make_uri(settings.BUILTINS_URI, short_key)
+
+        return rel_dict.get(uri, [])
+
+    def get_inv_relations(
+            self,
+            key_str_or_uri: Optional[str] = None,
+            return_subj: bool = False
+    ) -> Union[Dict[str, list], list]:
         """
         Return all RelationEdge instance where this item is object
 
-        :param key_str:     if passed return only the result for this key
-        :param return_subj: default False; if True only return the subject(s) of the relation edges, not the whole RE
+        :param key_str_or_uri:      optional; either a verbose key_str (of a builtin entity) or a full uri;
+                                    if passed only return the result for this key
+        :param return_subj:         default False; if True only return the subject(s) of the relation edges,
+                                    not the whole RE
 
         :return:            either the whole dict or just one value (of type list)
         """
 
-        inv_rel_dict = ds.inv_relation_edges[self.short_key]
-        if key_str is None:
+        inv_rel_dict = ds.inv_relation_edges[self.uri]
+        if key_str_or_uri is None:
             return inv_rel_dict
+
+        # the caller wants only results for this key (e.g. "R4")
+        if aux.ensure_valid_uri(key_str_or_uri, strict=False):
+            uri = key_str_or_uri
         else:
-            processed_key = pk(key_str)
-            rledg_res: Union[RelationEdge, List[RelationEdge]] = inv_rel_dict.get(processed_key, [])
-            if return_subj:
-                # do not return, the RelationEdge instance(s) but only the subject(s)
-                if isinstance(rledg_res, list):
-                    rledg_res: List[RelationEdge]
-                    res = [re.subject for re in rledg_res]
-                else:
-                    assert isinstance(rledg_res, RelationEdge)
-                    res = rledg_res.subject
+            # we assume that that a builtin relation was ment
+            key_str = key_str_or_uri
+            short_key = pk(key_str)
+            uri = aux.make_uri(settings.BUILTINS_URI, short_key)
+
+        rledg_res: Union[RelationEdge, List[RelationEdge]] = inv_rel_dict.get(uri, [])
+        if return_subj:
+            # do not return the RelationEdge instance(s) but only the subject(s)
+            if isinstance(rledg_res, list):
+                rledg_res: List[RelationEdge]
+                res = [re.subject for re in rledg_res]
             else:
-                res = rledg_res
-            return res
+                assert isinstance(rledg_res, RelationEdge)
+                res = rledg_res.subject
+        else:
+            res = rledg_res
+        return res
 
 
 class DataStore:
@@ -455,9 +480,8 @@ class DataStore:
     """
 
     def __init__(self):
-        self.items = attr_dict()
-        self.relations = attr_dict()
-        self.statements = attr_dict()
+        self.items = {}
+        self.relations = {}
 
         # dict of lists store keys of the entities (not the entities itself, to simplify deletion)
         self.entities_created_in_mod = defaultdict(list)
@@ -467,13 +491,13 @@ class DataStore:
         # simple storage for all relation edges
         self.rledgs_dict = {}
 
-        # mappings like .a = {"M1234": "/path/to/mod.py"} and .b = {"/path/to/mod.py": "M1234"}
+        # mappings like .a = {"my/mod/uri": "/path/to/mod.py"} and .b = {"/path/to/mod.py": "my/mod/uri"}
         self.mod_path_mapping = aux.OneToOneMapping()
 
-        # this dict contains everything which is predefined by hardcoding
-        self.builtin_entities = attr_dict()
+        # this dict contains every entity (and their relation edges) which is predefined by hardcoding
+        self.builtin_entities = {}
 
-        # for every entity key store a dict that maps relation keys to lists of corresponding relation-edges
+        # for every entity key store a dict that maps relation uris to lists of corresponding relation-edges
         self.relation_edges = defaultdict(dict)
 
         # also do this for the inverse relations (for easy querying)
@@ -494,73 +518,90 @@ class DataStore:
         # dict to store important QualifierFactory instances which are created in builtin_entities but needed in core
         self.qff_dict = {}
 
+        # TODO: obsolete!
         # list of keys which are released, when unloading a module
         self.released_keys = []
 
         # mapping linke {uri1: keymanager1, ...}
         self.uri_keymanager_dict = {}
 
-    def get_entity(self, key_str) -> Entity:
+    def get_entity(self, key_str, mod_uri=None) -> Entity:
         """
         :param key_str:     str like I1234 or I1234__some_label
+        :param mod_uri:     optional uri of the module; if None the active module is assumed
 
         :return:            corresponding entity
         """
 
         processed_key = process_key_str(key_str)
-        if res := self.relations.get(processed_key.short_key):
-            return res
-        if res := self.items.get(processed_key.short_key):
-            return res
+        assert processed_key.etype in (EType.ITEM, EType.RELATION)
+
+        if mod_uri is None:
+            mod_uri = get_active_mod_uri()
+
+        uri = aux.make_uri(mod_uri, processed_key.short_key)
+
+        if processed_key.etype == EType.ITEM:
+            res = self.items.get(uri)
         else:
+            res = self.relations.get(uri)
+
+        if res is None:
             msg = f"Could not find entity with key {processed_key.short_key}; Entity type: {processed_key.etype}"
             raise KeyError(msg)
 
-    def get_relation_edges(self, entity_key: str, relation_key: str) -> List["RelationEdge"]:
+        return res
+
+    def get_relation_edges(self, entity_uri: str, rel_uri: str) -> List["RelationEdge"]:
         """
         self.relation_edges maps an entity_key to an inner_dict.
         The inner_dict maps an relation_key to a RelationEdge or List[RelationEdge].
 
-        :param entity_key:
-        :param relation_key:
+        :param entity_uri:
+        :param rel_uri:
         :return:
         """
+        aux.ensure_valid_uri(rel_uri)
+        aux.ensure_valid_uri(entity_uri)
 
         # We return an empty list if the entity has no such relation.
         # TODO: model this as defaultdict?
-        return self.relation_edges[entity_key].get(relation_key, list())
+        return self.relation_edges[entity_uri].get(rel_uri, list())
 
-    def set_relation_edge(self, short_key: str, relation_key: str, re_object: "RelationEdge") -> None:
+    def set_relation_edge(self, re_object: "RelationEdge") -> None:
         """
         Insert a RelationEdge into the relevant data structures of the DataStorage (self)
 
         This method does not handle the dual realtion. It must be created and stored separately.
 
-        :param short_key:       str; short_key of either an Entity instance or a RelationEdge instance
-        :param relation_key:
-        :param re_object:
+        :param re_object:   RelationEdge instance
         :return:
         """
 
-        self.relation_relation_edges[relation_key].append(re_object)
+        subj_uri = re_object.relation_tuple[0].uri
+        rel_uri = re_object.relation_tuple[1].uri
+        aux.ensure_valid_uri(subj_uri)
+        aux.ensure_valid_uri(rel_uri)
+
+        self.relation_relation_edges[rel_uri].append(re_object)
         self.relation_edge_list.append(re_object)
 
-        relation = self.relations[relation_key]
+        relation = self.relations[rel_uri]
 
         # inner_obj will be either a list of relation_edges or None
         # for some R22-related reason (see below) we cannot use a default dict here,
         # thus we need to do the case distinction manually
-        inner_obj = self.relation_edges[short_key].get(relation_key, None)
+        inner_obj = self.relation_edges[subj_uri].get(rel_uri, None)
 
         if inner_obj is None:
-            self.relation_edges[short_key][relation_key] = [re_object]
+            self.relation_edges[subj_uri][rel_uri] = [re_object]
 
         elif isinstance(inner_obj, list):
             # R22__is_functional, this means there can only be one value for this relation and this item
             if relation.R22:
                 msg = (
-                    f"for entity/relation-edge {short_key} there already exists a RelationEdge for "
-                    f"functional relation with key {relation_key}. Another one is not allowed."
+                    f"for entity/relation-edge {subj_uri} there already exists a RelationEdge for "
+                    f"functional relation with key {rel_uri}. Another one is not allowed."
                 )
                 raise ValueError(msg)
             elif relation.R32:
@@ -570,8 +611,8 @@ class DataStore:
 
         else:
             msg = (
-                f"unexpected type ({type(inner_obj)}) of dict content for entity {short_key} and "
-                f"relation {relation_key}. Expected list or None"
+                f"unexpected type ({type(inner_obj)}) of dict content for entity {subj_uri} and "
+                f"relation {rel_uri}. Expected list or None"
             )
             raise TypeError(msg)
 
@@ -819,7 +860,7 @@ def create_item(key_str: str = "", **kwargs) -> Item:
 
     itm = Item(base_uri=mod_uri, key_str=item_key, **new_kwargs)
     assert item_key not in ds.items, f"Problematic (duplicated) key: {item_key}"
-    ds.items[item_key] = itm
+    ds.items[itm.uri] = itm
 
     # acces the defaultdict(list)
     ds.entities_created_in_mod[mod_uri].append(item_key)
@@ -962,6 +1003,7 @@ class QualifierFactory:
         """
         self.relation = relation
 
+        # TODO: maybe this 'registry name should be uri-based?'
         if registry_name is not None:
             assert isinstance(registry_name, str) and registry_name not in ds.qff_dict
             ds.qff_dict[registry_name] = self
@@ -1015,7 +1057,7 @@ class RelationEdge:
 
         mod_uri = get_active_mod_uri()
         self.base_uri = mod_uri
-        self.uri = f"{self.base_uri}#{self.short_key_xx}:{self.role.name[0]}"
+        self.uri = f"{aux.make_uri(self.base_uri, self.short_key_xx)}:{self.role.name[0]}"
 
         ds.rledgs_created_in_mod[mod_uri].append(self)
 
@@ -1066,10 +1108,10 @@ class RelationEdge:
 
             # save the qualifyer-relation edge (and its inverse) in the appropriate data structures
             # _xx!! -> uri
-            ds.set_relation_edge(short_key=self.short_key_xx, relation_key=qf.rel.short_key, re_object=qf_rledg)
+            ds.set_relation_edge(re_object=qf_rledg)
             if isinstance(qf.obj, Entity):
                 # add inverse relation
-                ds.inv_relation_edges[qf.obj.short_key][qf.rel.short_key].append(qf_rledg.create_dual())
+                ds.inv_relation_edges[qf.obj.uri][qf.rel.uri].append(qf_rledg.create_dual())
 
     def create_dual(self):
         if self.role == RelationRole.SUBJECT:
@@ -1121,40 +1163,33 @@ class RelationEdge:
 
         if self.is_qualifier():
             # _xx !! -> uri
-            _ = ds.relation_edges.pop(subj.short_key_xx, [])
+            _ = ds.relation_edges.pop(subj.uri, [])
 
         if self.role == RelationRole.SUBJECT:
             # ds.relation_edge_list: store a list of all (primal/subject) relation edges (to maintain the order)
 
             tolerant_removal(ds.relation_edge_list, self)
 
-            # _xx !! -> uri
-            if isinstance(subj, RelationEdge):
-                key = subj.short_key_xx
-            else:
-                key = subj.short_key
-
-            subj_rel_edges: Dict[str : List[RelationEdge]] = ds.relation_edges[key]
-            tolerant_removal(subj_rel_edges.get(pred.short_key, []), self)
+            subj_rel_edges: Dict[str: List[RelationEdge]] = ds.relation_edges[subj.uri]
+            tolerant_removal(subj_rel_edges.get(pred.uri, []), self)
 
             # ds.relation_relation_edges: for every relation key stores a list of relevant relation-edges
             # (check before accessing the *defaultdict* to avoid to create a key just by looking)
-            if pred.short_key in ds.relation_relation_edges:
-                tolerant_removal(ds.relation_relation_edges.get(pred.short_key, []), self)
+            if pred.uri in ds.relation_relation_edges:
+                tolerant_removal(ds.relation_relation_edges.get(pred.uri, []), self)
 
         elif self.role == RelationRole.OBJECT:
             assert isinstance(obj, Entity)
-            obj_rel_edges: Dict[str : List[RelationEdge]] = ds.inv_relation_edges[obj.short_key]
+            obj_rel_edges: Dict[str: List[RelationEdge]] = ds.inv_relation_edges[obj.uri]
             # (check before accessing, see above)
-            if pred.short_key in obj_rel_edges:
-                tolerant_removal(obj_rel_edges[pred.short_key], self)
+            if pred.uri in obj_rel_edges:
+                tolerant_removal(obj_rel_edges[pred.uri], self)
         else:
             msg = f"Unexpected .role attribute: {self.role}"
             raise ValueError(msg)
 
         # this prevents from infinite recursion
         self.unlinked = True
-            # set_trace()
         if self.dual_relation_edge is not None:
             self.dual_relation_edge.unlink()
 
@@ -1215,8 +1250,8 @@ def create_relation(key_str: str = "", **kwargs) -> Relation:
         new_kwargs[processed_key.short_key] = value
 
     rel = Relation(mod_uri, rel_key, **new_kwargs)
-    assert rel_key not in ds.relations
-    ds.relations[rel_key] = rel
+    assert rel.uri not in ds.relations
+    ds.relations[rel.uri] = rel
     ds.entities_created_in_mod[mod_uri].append(rel_key)
     return rel
 
@@ -1224,14 +1259,14 @@ def create_relation(key_str: str = "", **kwargs) -> Relation:
 def create_builtin_item(*args, **kwargs) -> Item:
     with uri_context(uri=settings.BUILTINS_URI):
         itm = create_item(*args, **kwargs)
-    ds.builtin_entities[itm.short_key] = itm
+    ds.builtin_entities[itm.uri] = itm
     return itm
 
 
 def create_builtin_relation(*args, **kwargs) -> Relation:
     with uri_context(uri=settings.BUILTINS_URI):
         rel = create_relation(*args, **kwargs)
-    ds.builtin_entities[rel.short_key] = rel
+    ds.builtin_entities[rel.uri] = rel
     return rel
 
 
@@ -1475,8 +1510,8 @@ def _unlink_entity(ek: str) -> None:
         raise KeyError(msg)
 
     # now delete the relation edges from the data structures
-    re_dict = ds.relation_edges.pop(entity.short_key, {})
-    inv_re_dict = ds.inv_relation_edges.pop(entity.short_key, {})
+    re_dict = ds.relation_edges.pop(entity.uri, {})
+    inv_re_dict = ds.inv_relation_edges.pop(entity.uri, {})
 
     # in case res1 is a scope-item we delete all corressponding relation edges, otherwise nothing happens
     scope_rels = ds.scope_relation_edges.pop(ek, [])
@@ -1507,8 +1542,8 @@ def _unlink_entity(ek: str) -> None:
 
     # during unlinking of the RelationEdges the default dicts might have been recreating some keys -> pop again
     # TODO: obsolete because we clean up the defaultdicts anyway
-    ds.relation_edges.pop(entity.short_key, None)
-    ds.inv_relation_edges.pop(entity.short_key, None)
+    ds.relation_edges.pop(entity.uri, None)
+    ds.inv_relation_edges.pop(entity.uri, None)
 
     ds.released_keys.append(ek)
 

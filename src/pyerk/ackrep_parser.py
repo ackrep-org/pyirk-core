@@ -24,8 +24,12 @@ relation_pattern = regex.compile(r"^(Ra?\d+)(\[(.*)\])$")
 function_pattern = regex.compile(r"^(.+)(\(.*\))$")
 
 
-def parse_ackrep(base_path):
-    # TODO: agree on a path and put it in settings
+def parse_ackrep(base_path=None):
+
+    # default path
+    if base_path is None:
+        base_path = os.path.join(ERK_ROOT_DIR, settings.ACKREP_DATA_REL_PATH)
+
     if os.path.isabs(base_path):
         ackrep_path = base_path
     else:
@@ -150,7 +154,7 @@ def handle_dict(d: dict) -> Item:
     assert len(d.keys()) == 1, f"Item dictionary {d} has to have exacly one key"
     k, v = list(d.items())[0]
     assert item_pattern.match(k) is not None, f"This key ({k}) has to be an item."
-    item = get_entity_from_string(k)
+    item = get_entity_from_string(k, enforce_class=True)
     msg = f"value {v} of dictionary {d} has to be another dict with relations as keys and items as values"
     assert isinstance(v, dict), msg
     parse_recursive(item, v)
@@ -158,7 +162,7 @@ def handle_dict(d: dict) -> Item:
     return item
 
 
-def get_entity_from_string(string: str) -> Entity:
+def get_entity_from_string(string: str, enforce_class=False) -> Entity:
     """search mod and builtin_entities for attribute s and return this entity
 
     Args:
@@ -191,6 +195,13 @@ def get_entity_from_string(string: str) -> Entity:
     if isinstance(entity, Relation):
         res = entity
     elif isinstance(entity, Item):
+        if enforce_class:
+            # we have to determine if `entity` is a metaclass or a subclass of metaclass
+            # this is relevant for entities, that have to be specified by additional relations
+            has_super_class = entity.R3 is not None
+            is_instance_of_metaclass = builtin_entities.is_instance_of_generalized_metaclass(entity)
+            assert has_super_class or is_instance_of_metaclass, f"The item {entity} has to be a class, not an instance."
+
         # if entity is class
         try:
             return builtin_entities.instance_of(entity)

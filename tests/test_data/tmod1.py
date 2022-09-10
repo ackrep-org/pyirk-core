@@ -1,6 +1,6 @@
 import pyerk as p
 
-__URI__ = "pyerk/testmodule1"
+__URI__ = "erk:/pyerk/testmodule1"
 keymanager = p.KeyManager()
 p.register_mod(__URI__, keymanager)
 p.start_mod(__URI__)

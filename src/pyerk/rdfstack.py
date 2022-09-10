@@ -17,7 +17,7 @@ from rdflib.query import Result
 from pyparsing import ParseException
 
 
-ERK_URI = "erk:/"
+ERK_URI = f"{pyerk.settings.BUILTINS_URI}{pyerk.settings.URI_SEP}"
 
 
 def create_rdf_triples() -> Graph:
@@ -25,11 +25,11 @@ def create_rdf_triples() -> Graph:
     # based on https://rdflib.readthedocs.io/en/stable/gettingstarted.html
     g = Graph()
 
-    for re in pyerk.ds.relation_edge_list:
+    for re_uri, re in pyerk.ds.relation_edge_uri_map.items():
         row = []
         for entity in re.relation_tuple:
             if isinstance(entity, pyerk.Entity):
-                row.append(URIRef(f"erk:/{entity.short_key}"))
+                row.append(URIRef(f"{entity.uri}"))
             else:
                 # no entity but a literal value
                 row.append(Literal(entity))
@@ -72,8 +72,8 @@ def perform_sparql_query(qsrc: str, return_raw=False) -> Sparql_results_type:
 
 def convert_from_rdf_to_pyerk(rdfnode) -> object:
     if isinstance(rdfnode, URIRef):
-        short_key = rdfnode.lstrip(ERK_URI)
-        entity_object = pyerk.ds.get_entity_by_key_str(short_key)
+        uri = rdfnode.toPython()
+        entity_object = pyerk.ds.get_entity_by_uri(uri)
     elif isinstance(rdfnode, Literal):
         entity_object = rdfnode.value
     elif rdfnode is None:

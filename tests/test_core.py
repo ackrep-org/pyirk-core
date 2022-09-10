@@ -35,7 +35,7 @@ TEST_DATA_DIR1 = pjoin(ERK_ROOT_DIR, "pyerk", "tests", "test_data")
 TEST_DATA_PATH2 = pjoin(ERK_ROOT_DIR, "erk-data", "control-theory", "control_theory1.py")
 TEST_MOD_NAME = "control_theory1"
 
-__URI__ = TEST_BASE_URI = "local/unittest/"
+__URI__ = TEST_BASE_URI = "erk:/local/unittest/"
 
 # this serves to print the test-method-name before it is executed (useful for debugging, see setUP below)
 PRINT_TEST_METHODNAMES = True
@@ -232,7 +232,8 @@ class TestCore1(HouskeeperMixin, unittest.TestCase):
         self.assertNotIsInstance(p.I12.R2, list)
         self.assertNotIsInstance(p.I900.R2, list)
 
-        p.unload_mod('pyerk/ocse/0.2')
+        mod_uri = p.ds.uri_prefix_mapping.b["ct"]
+        p.unload_mod(mod_uri)
 
     def test_b01_builtins1(self):
         """
@@ -520,7 +521,7 @@ class TestCore2(HouskeeperMixin, unittest.TestCase):
         p.ruleengine.apply_all_semantic_rules()
 
 
-class TestZZCore3(HouskeeperMixin, unittest.TestCase):
+class TestCore3(HouskeeperMixin, unittest.TestCase):
     """
     Collection of test that should be executed last (because they seem to influence othter tests).
     This is achieved by putting "ZZ" in the name (assuming that test classes are executed in alphabetical order).
@@ -545,20 +546,22 @@ class TestZZCore3(HouskeeperMixin, unittest.TestCase):
         # TODO: replace by Model entity once it exists
         mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, TEST_MOD_NAME)
 
-        m1 = p.instance_of(mod1.I7641["general system model"], r1="test_model 1", r2="a test model")
-        m2 = p.instance_of(mod1.I7641["general system model"], r1="test_model 2", r2="a test model")
+        with p.uri_context(uri=TEST_BASE_URI):
+            m1 = p.instance_of(mod1.I7641["general system model"], r1="test_model 1", r2="a test model")
+            m2 = p.instance_of(mod1.I7641["general system model"], r1="test_model 2", r2="a test model")
 
-        m1.set_relation(p.R16["has property"], mod1.I9210["stabilizability"])
-        m2.set_relation(p.R16["has property"], mod1.I7864["controllability"])
+            m1.set_relation(p.R16["has property"], mod1.I9210["stabilizability"])
+            m2.set_relation(p.R16["has property"], mod1.I7864["controllability"])
 
         # graph has to be created after the entities
         p.ds.rdfgraph = p.rdfstack.create_rdf_triples()
 
         qsrc = f"""
         PREFIX : <{p.rdfstack.ERK_URI}>
+        PREFIX ct: <{mod1.__URI__}#>
         SELECT ?s ?o
         WHERE {{
-            ?s :R16 :I7864.
+            ?s :R16 ct:I7864.
         }}
         """
         res = p.ds.rdfgraph.query(qsrc)

@@ -51,4 +51,4 @@ def apply_rule(rule: pyerk.Entity) -> None:
     premises_rledgs = filter_subject_rledges(rule.scp__premises.get_inv_relations("R20__has_defining_scope"))
     assertions_rledgs = filter_subject_rledges(rule.scp__assertions.get_inv_relations("R20__has_defining_scope"))
 
-    IPS()  # ← continue here
+    # IPS()  # ← continue here

@@ -190,8 +190,9 @@ def ensure_valid_baseuri(txt: str, strict: bool = True) -> bool:
     :return:
     """
     conds = [isinstance(txt, str)]
+    conds += [":" in txt]   # rdflib wants this
     conds += ["/" in txt]
-    conds += ["#" not in txt]
+    conds += [settings.URI_SEP not in txt]
     conds += ["__" not in txt]
 
     cond = all(conds)
@@ -206,7 +207,7 @@ def make_uri(base_uri: str, short_key):
     ensure_valid_baseuri(base_uri)
     assert "_" not in short_key  # TODO: replace by regex match
     assert isinstance(short_key, str) and len(short_key) >= 2
-    return f"{base_uri}#{short_key}"
+    return f"{base_uri}{settings.URI_SEP}{short_key}"
 
 
 # This function was once part of the key-recycling mechanism.

@@ -7,4 +7,5 @@ SUPPORTED_LANGUAGES = ["en", "de"]
 
 DEFAULT_DATA_LANGUAGE = "en"
 
-BUILTINS_URI = "pyerk/builtins"
+BUILTINS_URI = "erk:/builtins"
+URI_SEP = "#"

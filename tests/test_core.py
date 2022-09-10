@@ -483,26 +483,27 @@ class TestCore1(HouskeeperMixin, unittest.TestCase):
         label = node.get_dot_label(render=True)
         self.assertEqual(label, 'I0126\\n["12 34567-\\n890abcdefgh"]')
 
-    def test_visualization(self):
+    def test_visualization1(self):
 
-        res_graph: visualization.nx.DiGraph = visualization.create_nx_graph_from_entity("I21__mathematical_relation")
+        res_graph: visualization.nx.DiGraph = \
+            visualization.create_nx_graph_from_entity(p.u("I21__mathematical_relation"))
         self.assertGreater(res_graph.number_of_nodes(), 7)
 
         mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, TEST_MOD_NAME)
 
         # do not use something like "Ia3699" here directly because this might change when mod1 changes
         auto_item: p.Item = mod1.I3749["Cayley-Hamilton theorem"].A
-        res_graph: visualization.nx.DiGraph = visualization.create_nx_graph_from_entity(auto_item.short_key)
-        self.assertEqual(res_graph.number_of_nodes(), 8)
+        res_graph: visualization.nx.DiGraph = visualization.create_nx_graph_from_entity(auto_item.uri)
+        self.assertGreater(res_graph.number_of_nodes(), 8)
 
     def test_visualization2(self):
         # test rendering of dot
 
-        res = visualization.visualize_entity("I21__mathematical_relation", write_tmp_files=WRITE_TMP_FILES)
+        res = visualization.visualize_entity(p.u("I21__mathematical_relation"), write_tmp_files=WRITE_TMP_FILES)
 
         mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, TEST_MOD_NAME)
         auto_item: p.Item = mod1.I3749["Cayley-Hamilton theorem"].P
-        res = visualization.visualize_entity(auto_item.short_key, write_tmp_files=WRITE_TMP_FILES)
+        res = visualization.visualize_entity(auto_item.uri, write_tmp_files=WRITE_TMP_FILES)
 
         s1 = '<a href="">R35</a>'
         s2 = '<a href="">["is applied</a>'

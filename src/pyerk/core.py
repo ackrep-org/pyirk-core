@@ -376,8 +376,7 @@ class Entity(abc.ABC):
             qualifiers = []
 
         if scope is not None:
-            i16_uri = aux.make_uri(settings.BUILTINS_URI, pk("I16__scope"))
-            assert scope.R4__is_instance_of == ds.get_entity_by_uri(i16_uri)
+            assert scope.R4__is_instance_of == ds.get_entity_by_uri(u("bi__I16__scope"))
             qff_has_defining_scope: QualifierFactory = ds.qff_dict["qff_has_defining_scope"]
             qualifiers.append(qff_has_defining_scope(scope))
 
@@ -871,9 +870,9 @@ def check_processed_key_label(pkey: ProcessedStmtKey) -> None:
         raise ValueError(msg)
 
 
-def pk(key_str: str) -> str:
+def u(key_str: str) -> str:
     """
-    Convenience function converting "I1234__my_label"  to "I1234". Intended for usage in unittests
+    Convenience function converting "[prefix__]I1234__my_label"  to "[moduri#]I1234".
 
     :param key_str:
     :return:
@@ -881,7 +880,7 @@ def pk(key_str: str) -> str:
 
     processed_key = process_key_str(key_str)
     assert processed_key.short_key is not None
-    return processed_key.short_key
+    return processed_key.uri
 
 
 # noinspection PyShadowingNames

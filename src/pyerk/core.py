@@ -18,6 +18,8 @@ from rdflib import Literal
 
 from . import auxiliary as aux
 from . import settings
+from .auxiliary import InvalidURIError, InvalidPrefixError, PyERKError, EmptyURIStackError, InvalidShortKeyError,\
+    UnknownPrefixError
 
 from ipydex import IPS, activate_ips_on_exception, set_trace
 
@@ -664,7 +666,7 @@ class DataStore:
 
         if res is None:
             msg = f"Unknown prefix: {prefix}. No matching URI found."
-            raise PrefixError(msg)
+            raise UnknownPrefixError(msg)
         return res
 
 
@@ -794,6 +796,7 @@ def process_key_str(key_str: str, check: bool = True, resolve_prefix: bool = Tru
         _resolve_prefix(res)
 
     if check:
+        aux.ensure_valid_short_key(res.short_key)
         check_processed_key_label(res)
 
     return res
@@ -901,21 +904,6 @@ class Item(Entity):
         except ValueError:
             R1 = "<<ValueError while retrieving R1>>"
         return f'<Item {self.short_key}["{R1}"]>'
-
-
-class PyERKError(Exception):
-    """
-    raised in situations where some ERK-specific conditions are violated
-    """
-    pass
-
-
-class EmptyURIStackError(IndexError):
-    pass
-
-
-class PrefixError(ValueError):
-    pass
 
 
 def get_active_mod_uri(strict: bool = True) -> Union[str, None]:

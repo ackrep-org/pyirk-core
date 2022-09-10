@@ -92,15 +92,30 @@ def ensure_rdf_str_literal(arg, allow_none=True) -> Union[Literal, None]:
     return res
 
 
-class InvalidURIError(ValueError):
+class PyERKError(Exception):
+    """
+    raised in situations where some ERK-specific conditions are violated
+    """
     pass
 
 
-class InvalidPrefixError(ValueError):
+class EmptyURIStackError(PyERKError):
     pass
 
 
-class InvalidShortKeyError(ValueError):
+class UnknownPrefixError(PyERKError):
+    pass
+
+
+class InvalidURIError(PyERKError):
+    pass
+
+
+class InvalidPrefixError(PyERKError):
+    pass
+
+
+class InvalidShortKeyError(PyERKError):
     pass
 
 
@@ -113,11 +128,14 @@ def ensure_valid_short_key(txt: str, strict: bool = True) -> bool:
 
     match = re_short_key.match(txt)
 
-    type_str = match.group(1)
-    num_str = match.group(5)
+    if match is None:
+        conds += [False]
+    else:
+        type_str = match.group(1)
+        num_str = match.group(5)
 
-    conds += [type_str is not None]
-    conds += [num_str is not None]
+        conds += [type_str is not None]
+        conds += [num_str is not None]
 
     cond = all(conds)
     if not cond and strict:

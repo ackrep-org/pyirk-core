@@ -91,6 +91,7 @@ class InvalidURIError(ValueError):
 
 
 def ensure_valid_uri(txt: str):
+    assert isinstance(txt, str)
     cond = "#" in txt
 
     if not cond:
@@ -98,8 +99,18 @@ def ensure_valid_uri(txt: str):
         raise InvalidURIError(msg)
 
 
+def ensure_valid_prefix(txt: str):
+    # to avoid confusion with base_uris prefixes have to
+    assert isinstance(txt, str)
+    assert txt.isidentifier()  # prefixes are assumed to be valid python-names (keywords like "in" are allowed though)
+    assert "__" not in txt
+
+
 def make_uri(base_uri: str, short_key):
-    return f"{base_uri}{short_key}"
+    # todo: add more checks to distinguish a base uri from a prefix
+    assert isinstance(base_uri, str) and "/" in base_uri
+    assert isinstance(short_key, str) and len(short_key) >= 2
+    return f"{base_uri}#{short_key}"
 
 
 # This function was once part of the key-recycling mechanism.

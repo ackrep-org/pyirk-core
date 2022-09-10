@@ -76,7 +76,33 @@ class HouskeeperMixin:
 
 class TestCore0(HouskeeperMixin, unittest.TestCase):
 
-    def test_a0__contex_manager(self):
+    def test_a0__process_key_str(self):
+        res = p.process_key_str("I1")
+        self.assertEqual(res.prefix, None)
+        self.assertEqual(res.short_key, "I1")
+        self.assertEqual(res.label, None)
+
+        res = p.process_key_str("I000__test_label", check=False)
+        self.assertEqual(res.prefix, None)
+        self.assertEqual(res.short_key, "I000")
+        self.assertEqual(res.label, "test_label")
+
+        res = p.process_key_str("some_prefix__I000", check=False)
+        self.assertEqual(res.prefix, "some_prefix")
+        self.assertEqual(res.short_key, "I000")
+        self.assertEqual(res.label, None)
+
+        res = p.process_key_str("some_prefix__I000__test_label", check=False)
+        self.assertEqual(res.prefix, "some_prefix")
+        self.assertEqual(res.short_key, "I000")
+        self.assertEqual(res.label, "test_label")
+
+        with self.assertRaises(ValueError):
+            res = p.process_key_str("some_prefix_literal_value", check=False)
+
+
+
+    def test_b1__uri_contex_manager(self):
         """
         Test defined behavior of errors occur in uri_context
         :return:
@@ -96,7 +122,7 @@ class TestCore0(HouskeeperMixin, unittest.TestCase):
             pass
         self.assertEqual(len(p.core._uri_stack), 0)
 
-    def test_a0__key_manager(self):
+    def test_key_manager(self):
         p.KeyManager.instance = None
 
         km = p.KeyManager(minval=100, maxval=105)

@@ -125,7 +125,11 @@ class Entity(abc.ABC):
             return self.__dict__[attr_name]
         except KeyError:
             pass
-        res = process_key_str(attr_name)
+        try:
+            res = process_key_str(attr_name)
+        except KeyError as err:
+            # this happens if a syntactically valid short key could not be resolved
+            raise AttributeError(*err.args)
         if not res.etype == EType.RELATION:
             r3 = getattr(self, "R3", None)
             r4 = getattr(self, "R4", None)
@@ -150,7 +154,7 @@ class Entity(abc.ABC):
     def __post_init__(self):
         # for a solution how to automate this see
         # https://stackoverflow.com/questions/55183333/how-to-use-an-equivalent-to-post-init-method-with-normal-class
-        self.uri = f"{self.base_uri}#{self.short_key}"
+        assert self.uri is not None
         self._perform_inheritance()
         self._perform_instantiation()
 
@@ -193,7 +197,7 @@ class Entity(abc.ABC):
 
         aux.ensure_valid_uri(rel_uri)
 
-        relation_edges: List[RelationEdge] = ds.get_relation_edges(self.short_key, rel_uri)
+        relation_edges: List[RelationEdge] = ds.get_relation_edges(self.uri, rel_uri)
 
         # for each of the relation edges get a list of the result-objects
         # (this assumes the relation tuple to be a triple (sub, rel, obj))
@@ -202,14 +206,18 @@ class Entity(abc.ABC):
         # the following logic decides whether to e.g. return a list of length 1 or the contained entity itself
         # this depends on whether self is a functional relation (->  R22__is_functional)
 
-        # if rel_key == "R22" -> relation is the R22-entity: we are asking whether self is functional;
+        # if rel_uri == "<bi>R22" -> relation is the R22-entity: we are asking whether self is functional;
         # this must be handled separately to avoid infinite recursion:
         # (note that R22 itself is also a functional relation: only one of {True, False} is meaningful, same holds for
         # R32["is functional for each language"]). R32 also must be handled separately
 
         relation = ds.relations[rel_uri]
-        hardcode_functional_relations = ["R22", "R32"]
-        hardcode_functional_fnc4elang_relations = ["R1"]
+        hardcode_functional_relations = [
+            aux.make_uri(settings.BUILTINS_URI, "R22"),
+            aux.make_uri(settings.BUILTINS_URI, "R32"),
+        ]
+
+        hardcode_functional_fnc4elang_relations = [aux.make_uri(settings.BUILTINS_URI, "R1")]
 
         # in the following or-expression the second operand is only evaluated if the first ist false
         # if rel_key in ["R22", "R32"] or relation.R22:
@@ -319,7 +327,7 @@ class Entity(abc.ABC):
 
             if isinstance(obj, (Entity, *allowed_types)) or obj in allowed_types:
                 return self._set_relation(
-                    relation.short_key, obj, scope=scope, qualifiers=qualifiers, proxyitem=proxyitem
+                    relation.uri, obj, scope=scope, qualifiers=qualifiers, proxyitem=proxyitem
                 )
             # Todo: remove obsolete code:
             # elif isinstance(obj, Iterable):
@@ -522,8 +530,14 @@ class DataStore:
         # list of keys which are released, when unloading a module
         self.released_keys = []
 
-        # mapping linke {uri1: keymanager1, ...}
+        # mapping like {uri_1: keymanager_1, ...}
         self.uri_keymanager_dict = {}
+
+        # mapping like .a = {uri_1: prefix_1, ...} and .b = {prefix_1: uri_1}
+        self.uri_prefix_mapping = aux.OneToOneMapping()
+
+        # initialize:
+        self.uri_prefix_mapping.add_pair(settings.BUILTINS_URI, "bi")
 
     def get_entity(self, key_str, mod_uri=None) -> Entity:
         """
@@ -541,14 +555,27 @@ class DataStore:
 
         uri = aux.make_uri(mod_uri, processed_key.short_key)
 
-        if processed_key.etype == EType.ITEM:
-            res = self.items.get(uri)
-        else:
-            res = self.relations.get(uri)
-
+        res = self.get_entitiy_by_uri(uri, processed_key.etype)
         if res is None:
             msg = f"Could not find entity with key {processed_key.short_key}; Entity type: {processed_key.etype}"
             raise KeyError(msg)
+
+        return res
+
+    def get_entitiy_by_uri(self, uri: str, etype=None) -> Union[Entity, None]:
+
+        if etype is not None:
+            # only one lookup is needed
+            if etype == EType.ITEM:
+                res = self.items.get(uri)
+            else:
+                res = self.relations.get(uri)
+        else:
+            # two lookups might be necessary
+            res = self.items.get(uri)
+            if res is None:
+                # try relation (might also be None)
+                res = self.relations.get(uri)
 
         return res
 
@@ -616,6 +643,14 @@ class DataStore:
             )
             raise TypeError(msg)
 
+    def get_uri_for_prefix(self, prefix: str) -> str:
+        res = self.uri_prefix_mapping.b.get(prefix)
+
+        if res is None:
+            msg = f"Unknown prefix: {prefix}. No matching URI found."
+            raise ValueError(msg)
+        return res
+
 
 ds = DataStore()
 
@@ -673,6 +708,8 @@ class ProcessedStmtKey:
     content: object = None
     delimiter: str = None
     label: str = None
+    prefix: str = None
+    uri: str = None
 
     original_key_str: str = None
 
@@ -687,19 +724,23 @@ def unpack_l1d(l1d: Dict[str, object]):
     return tuple(*l1d.items())
 
 
-def process_key_str(key_str: str, check: bool = True) -> ProcessedStmtKey:
+def process_key_str(key_str: str, check: bool = True, resolve_prefix: str = True) -> ProcessedStmtKey:
     """
-    In ERK there are three kinds of keys:
+    In ERK there are the following kinds of keys:
         - a) short_key like `R1234`
         - b) name-labeled key like `R1234__my_relation` (consisting of a short_key, a delimiter (`__`) and a label)
-        - c) index-labeld key like  `R1234["my relation"]`
+        - c) prefixed short_key like `bi__R1234`
+        - d) prefixed name-labeled key like `bi__R1234__my_relation`
 
-    Also the leading character indicates the entity type (EType).
+        - e) index-labeld key like  `R1234["my relation"]`
 
-    This function expects either case a) or b).
-    :param key_str:     a string like "R1234__my_relation" or "R1234"
+    Also, the leading character indicates the entity type (EType).
+
+    This function expects either of the cases a) to d).
+    :param key_str:     a string like "R1234__my_relation" or "R1234" or "bi__R1234__my_relation"
     :param check:       boolean flag; determines if the label part should be checked wrt its consistency to
-                        the actual label
+    :param resolve_prefix:
+                        boolean flag; determines if
 
 
     :return:            a data structure which allows to access short_key, type and label separately
@@ -707,51 +748,72 @@ def process_key_str(key_str: str, check: bool = True) -> ProcessedStmtKey:
 
     res = ProcessedStmtKey()
     res.original_key_str = key_str
+    res.delimiter = "__"
 
-    # prepare regular expressions
-    # second character is an optional "a" for "autogenerated"
-    re_itm = regex.compile(r"^(Ia?\d+)(_?_?)(.*)$")
-    re_rel = regex.compile(r"^(Ra?\d+)(_?_?)(.*)$")
+    parts = key_str.split("__")
+    if len(parts) == 1:
+        # no prefix, no label
+        parts = [None, *parts, None]
+    elif len(parts) == 2:
+        if parts[0].startswith("I") or parts[0].startswith("R"):
+            # no prefix
+            parts = [None, *parts]
+        else:
+            # no label
+            parts = [*parts, None]
 
-    # determine statement type
-    if key_str.startswith("new "):
-        res.stype = SType.CREATION
-        key_str = key_str[4:]
-    else:
-        res.stype = SType.EXTENTION
+    res.prefix, res.short_key, res.label = parts
 
-    # determine entity type
-    match_itm = re_itm.match(key_str)
-    match_rel = re_rel.match(key_str)
-
-    if match_itm:
-        res.short_key = match_itm.group(1)
+    if res.short_key.startswith("I"):
         res.etype = EType.ITEM
         res.vtype = VType.ENTITY
-        res.delimiter = match_itm.group(2)
-        res.label = match_itm.group(3)
-    elif match_rel:
-        res.short_key = match_rel.group(1)
+    elif res.short_key.startswith("R"):
         res.etype = EType.RELATION
         res.vtype = VType.ENTITY
-        res.delimiter = match_rel.group(2)
-        res.label = match_rel.group(3)
     else:
-        res.short_key = None
-        res.etype = EType.LITERAL
-        res.vtype = VType.LITERAL
-        res.content = key_str
-        res.label = None
-        res.delimiter = None
-
-    if res.label and not res.delimiter == "__":
-        msg = f"invalid key string: '{key_str}'! Unexpected or missing delimiter. '__' was expected"
+        msg = f"unxexpected shortkey: '{res.short_key}' (maybe a literal)"
         raise ValueError(msg)
+
+    if resolve_prefix:
+        _resolve_prefix(res)
 
     if check:
         check_processed_key(res)
 
     return res
+
+
+def _resolve_prefix(pr_key: ProcessedStmtKey) -> None:
+    # get uri from prefix
+    mod_uri = get_active_mod_uri(strict=False)
+
+    if pr_key.prefix is None:
+        if mod_uri is None:
+            # assume that `builtin_entities` is meant
+            mod_uri = settings.BUILTINS_URI
+        else:
+            # Situation: create_item(..., R321="some value") within an active module
+            # (no prefix). short_key R321 could refer to active module or to builtin_entities -> search in this order
+
+            # 1. check active mod
+            candidate_uri = aux.make_uri(mod_uri, pr_key.short_key)
+            res_entity = ds.get_entitiy_by_uri(candidate_uri)
+
+            if res_entity is None:
+                candidate_uri = aux.make_uri(settings.BUILTINS_URI, pr_key.short_key)
+                res_entity = ds.get_entitiy_by_uri(candidate_uri)
+
+            # if res is still None no entity could be found
+            if res_entity is None:
+                msg = (
+                    f"No entity could be found for short_key {pr_key.short_key}, neither in active module ({mod_uri}) "
+                    f"nor in builin_entities ({settings.BUILTINS_URI})"
+                )
+                raise KeyError(msg)
+    else:
+        mod_uri = ds.get_uri_for_prefix(pr_key.prefix)
+
+    pr_key.uri = aux.make_uri(mod_uri, pr_key.short_key)
 
 
 def check_processed_key(pkey: ProcessedStmtKey) -> None:
@@ -761,6 +823,8 @@ def check_processed_key(pkey: ProcessedStmtKey) -> None:
     :param pkey:
     :return:
     """
+
+    # TODO: check prefix
 
     if not pkey.label:
         return
@@ -798,10 +862,11 @@ class Item(Entity):
     def __init__(self, base_uri: str, key_str: str, **kwargs):
         super().__init__(base_uri=base_uri)
 
-        res = process_key_str(key_str)
+        res = process_key_str(key_str, check=False, resolve_prefix=False)
         assert res.etype == EType.ITEM
 
         self.short_key = res.short_key
+        self.uri = aux.make_uri(self.base_uri, self.short_key)
         self._set_relations_from_init_kwargs(**kwargs)
 
         self.__post_init__()
@@ -818,7 +883,7 @@ class EmptyURIStackError(IndexError):
     pass
 
 
-def get_active_mod_uri() -> str:
+def get_active_mod_uri(strict: bool = True) -> Union[str, None]:
     try:
         res = _uri_stack[-1]
     except IndexError:
@@ -826,7 +891,10 @@ def get_active_mod_uri() -> str:
             "Unexpected: empty uri_stack. Be sure to use uri_contex manager or similar technique "
             "when creating entities"
         )
-        raise EmptyURIStackError(msg)
+        if strict:
+            raise EmptyURIStackError(msg)
+        else:
+            return None
     return res
 
 
@@ -873,6 +941,7 @@ class Relation(Entity):
         super().__init__(base_uri=base_uri)
 
         self.short_key = short_key
+        self.uri = aux.make_uri(self.base_uri, self.short_key)
 
         # set label
         self._set_relations_from_init_kwargs(**kwargs)

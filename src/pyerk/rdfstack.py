@@ -73,7 +73,7 @@ def perform_sparql_query(qsrc: str, return_raw=False) -> Sparql_results_type:
 def convert_from_rdf_to_pyerk(rdfnode) -> object:
     if isinstance(rdfnode, URIRef):
         short_key = rdfnode.lstrip(ERK_URI)
-        entity_object = pyerk.ds.get_entity(short_key)
+        entity_object = pyerk.ds.get_entity_by_key_str(short_key)
     elif isinstance(rdfnode, Literal):
         entity_object = rdfnode.value
     elif rdfnode is None:

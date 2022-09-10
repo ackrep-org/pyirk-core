@@ -313,7 +313,7 @@ def create_nx_graph_from_entity(ek, url_template="") -> nx.DiGraph:
     :return:
     """
 
-    entity = p.ds.get_entity(ek)
+    entity = p.ds.get_entity_by_key_str(ek)
     re_dict = entity.get_relations()
     inv_re_dict = entity.get_inv_relations()
 

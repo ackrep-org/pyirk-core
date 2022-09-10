@@ -212,16 +212,16 @@ class Entity(abc.ABC):
         # R32["is functional for each language"]). R32 also must be handled separately
 
         relation = ds.relations[rel_uri]
-        hardcode_functional_relations = [
+        hardcoded_functional_relations = [
             aux.make_uri(settings.BUILTINS_URI, "R22"),
             aux.make_uri(settings.BUILTINS_URI, "R32"),
         ]
 
-        hardcode_functional_fnc4elang_relations = [aux.make_uri(settings.BUILTINS_URI, "R1")]
+        hardcoded_functional_fnc4elang_relations = [aux.make_uri(settings.BUILTINS_URI, "R1")]
 
         # in the following or-expression the second operand is only evaluated if the first ist false
-        # if rel_key in ["R22", "R32"] or relation.R22:
-        if rel_uri in hardcode_functional_relations or relation.R22:
+        # if rel_uri in ["...#R22", "...#R32"] or relation.R22:
+        if rel_uri in hardcoded_functional_relations or relation.R22:
             if len(res) == 0:
                 return None
             else:
@@ -231,7 +231,7 @@ class Entity(abc.ABC):
         #  is a similar situation
         # if rel_key == "R32" this means that self 'is functional for each language'
 
-        elif rel_uri in hardcode_functional_fnc4elang_relations or relation.R32:
+        elif rel_uri in hardcoded_functional_fnc4elang_relations or relation.R32:
             # TODO: handle multilingual situations more flexible
 
             # todo: specify currently relevant language here (influences the return value); for now: using default
@@ -319,8 +319,11 @@ class Entity(abc.ABC):
         """
 
         if isinstance(relation, str):
-            # assume we got the short key of the relation
-            relation = ds.get_entity(relation)
+            if aux.ensure_valid_uri(relation, strict=False):
+                relation = ds.get_entity_by_uri(relation)
+            else:
+                # assume we got the short key of the relation
+                relation = ds.get_entity_by_key_str(relation)
 
         allowed_types = (str, bool, float, int, complex)
         if isinstance(relation, Relation):
@@ -370,7 +373,8 @@ class Entity(abc.ABC):
             qualifiers = []
 
         if scope is not None:
-            assert scope.R4__is_instance_of == ds.get_entity("I16__scope")
+            i16_uri = aux.make_uri(settings.BUILTINS_URI, pk("I16__scope"))
+            assert scope.R4__is_instance_of == ds.get_entity_by_uri(i16_uri)
             qff_has_defining_scope: QualifierFactory = ds.qff_dict["qff_has_defining_scope"]
             qualifiers.append(qff_has_defining_scope(scope))
 
@@ -549,7 +553,7 @@ class DataStore:
         # initialize:
         self.uri_prefix_mapping.add_pair(settings.BUILTINS_URI, "bi")
 
-    def get_entity(self, key_str, mod_uri=None) -> Entity:
+    def get_entity_by_key_str(self, key_str, mod_uri=None) -> Entity:
         """
         :param key_str:     str like I1234 or I1234__some_label
         :param mod_uri:     optional uri of the module; if None the active module is assumed
@@ -565,14 +569,18 @@ class DataStore:
         else:
             uri = aux.make_uri(mod_uri, processed_key.short_key)
 
-        res = self.get_entitiy_by_uri(uri, processed_key.etype)
+        res = self.get_entity_by_uri(uri, processed_key.etype)
         if res is None:
-            msg = f"Could not find entity with key {processed_key.short_key}; Entity type: {processed_key.etype}"
+            mod_uri = get_active_mod_uri(strict=False)
+            msg = (
+                f"Could not find entity with key '{processed_key.short_key}'; Entity type: '{processed_key.etype}'; "
+                f"Active mod: '{mod_uri}'"
+            )
             raise KeyError(msg)
 
         return res
 
-    def get_entitiy_by_uri(self, uri: str, etype=None) -> Union[Entity, None]:
+    def get_entity_by_uri(self, uri: str, etype=None) -> Union[Entity, None]:
 
         if etype is not None:
             # only one lookup is needed
@@ -788,7 +796,7 @@ def process_key_str(key_str: str, check: bool = True, resolve_prefix: str = True
         _resolve_prefix(res)
 
     if check:
-        check_processed_key(res)
+        check_processed_key_label(res)
 
     return res
 
@@ -807,7 +815,7 @@ def _resolve_prefix(pr_key: ProcessedStmtKey) -> None:
 
             # 1. check active mod
             candidate_uri = aux.make_uri(mod_uri, pr_key.short_key)
-            res_entity = ds.get_entitiy_by_uri(candidate_uri)
+            res_entity = ds.get_entity_by_uri(candidate_uri)
 
             if res_entity is not None:
                 pr_key.uri = candidate_uri
@@ -815,7 +823,7 @@ def _resolve_prefix(pr_key: ProcessedStmtKey) -> None:
 
             # try builtin_entities as fallback
             candidate_uri = aux.make_uri(settings.BUILTINS_URI, pr_key.short_key)
-            res_entity = ds.get_entitiy_by_uri(candidate_uri)
+            res_entity = ds.get_entity_by_uri(candidate_uri)
 
             # if res_entity is still None no entity could be found
             if res_entity is not None:
@@ -834,7 +842,7 @@ def _resolve_prefix(pr_key: ProcessedStmtKey) -> None:
     pr_key.uri = aux.make_uri(mod_uri, pr_key.short_key)
 
 
-def check_processed_key(pkey: ProcessedStmtKey) -> None:
+def check_processed_key_label(pkey: ProcessedStmtKey) -> None:
     """
     Check if the used label of a key_str matches the actual label (R1) of that entity
 
@@ -848,7 +856,7 @@ def check_processed_key(pkey: ProcessedStmtKey) -> None:
         return
 
     try:
-        entity = ds.get_entity(pkey.short_key)
+        entity = ds.get_entity_by_key_str(pkey.short_key)
     except KeyError:
         # entity does not exist -> no label to compare with
         return
@@ -895,6 +903,13 @@ class Item(Entity):
         except ValueError:
             R1 = "<<ValueError while retrieving R1>>"
         return f'<Item {self.short_key}["{R1}"]>'
+
+
+class PyERKError(Exception):
+    """
+    raised in situations where some ERK-specific conditions are violated
+    """
+    pass
 
 
 class EmptyURIStackError(IndexError):
@@ -949,11 +964,11 @@ def create_item(key_str: str = "", **kwargs) -> Item:
         new_kwargs[processed_key.short_key] = value
 
     itm = Item(base_uri=mod_uri, key_str=item_key, **new_kwargs)
-    assert item_key not in ds.items, f"Problematic (duplicated) key: {item_key}"
+    assert itm.uri not in ds.items, f"Problematic (duplicated) uri: {itm.uri}"
     ds.items[itm.uri] = itm
 
     # acces the defaultdict(list)
-    ds.entities_created_in_mod[mod_uri].append(item_key)
+    ds.entities_created_in_mod[mod_uri].append(itm.uri)
     return itm
 
 
@@ -1343,7 +1358,7 @@ def create_relation(key_str: str = "", **kwargs) -> Relation:
     rel = Relation(mod_uri, rel_key, **new_kwargs)
     assert rel.uri not in ds.relations
     ds.relations[rel.uri] = rel
-    ds.entities_created_in_mod[mod_uri].append(rel_key)
+    ds.entities_created_in_mod[mod_uri].append(rel.uri)
     return rel
 
 
@@ -1380,10 +1395,11 @@ def generate_new_key(prefix, prefix2="", mod_uri=None):
     with uri_context(mod_uri):
         while True:
             key = f"{prefix}{prefix2}{pop_uri_based_key()}"
+            uri = aux.make_uri(mod_uri, key)
             try:
-                ds.get_entity(key)
+                ds.get_entity_by_uri(uri)
             except KeyError:
-                # the key was new -> now problem
+                # the key was new -> no problem
                 return key
             else:
                 continue
@@ -1542,17 +1558,17 @@ def unload_mod(mod_uri: str, strict=True) -> None:
 
     # TODO: This might to check dependencies in the future
 
-    entity_keys: List[str] = ds.entities_created_in_mod.pop(mod_uri, [])
+    entity_uris: List[str] = ds.entities_created_in_mod.pop(mod_uri, [])
 
-    if not entity_keys and strict:
+    if not entity_uris and strict:
         msg = f"Seems like no entities from {mod_uri} have been loaded. This is unexpected."
         raise KeyError(msg)
 
-    for ek in entity_keys:
-        _unlink_entity(ek)
-        assert ek not in ds.relation_relation_edges.keys()
+    for uri in entity_uris:
+        _unlink_entity(uri)
+        assert uri not in ds.relation_relation_edges.keys()
 
-    intersection_set = set(entity_keys).intersection(ds.relation_relation_edges.keys())
+    intersection_set = set(entity_uris).intersection(ds.relation_relation_edges.keys())
 
     msg = "Unexpectedly some of the entity keys are still present"
     assert len(intersection_set) == 0, msg
@@ -1575,29 +1591,34 @@ def unload_mod(mod_uri: str, strict=True) -> None:
     # TODO: obsolete
     res = list(ds.released_keys)
 
-    ds.uri_keymanager_dict.pop(mod_uri)
+    try:
+        ds.uri_keymanager_dict.pop(mod_uri)
+    except KeyError:
+        if strict:
+            raise
 
     # empty the list again to avoid confusion in future uses
     ds.released_keys.clear()
 
 
-def _unlink_entity(ek: str) -> None:
+def _unlink_entity(uri: str) -> None:
     """
     Remove the occurrence of this the respective entitiy from all relevant data structures
 
-    :param ek:     entity key
+    :param uri:     entity uri
     :return:        None
     """
-    entity: Entity = ds.get_entity(ek)
-    res1 = ds.items.pop(ek, None)
-    res2 = ds.relations.pop(ek, None)
+    aux.ensure_valid_uri(uri)
+    entity: Entity = ds.get_entity_by_uri(uri)
+    res1 = ds.items.pop(uri, None)
+    res2 = ds.relations.pop(uri, None)
 
-    if ek == "Ia9108":
+    if uri == "Ia9108":
         pass
         # set_trace()
 
     if res1 is None and res2 is None:
-        msg = f"No entity with key {ek} could be found. This is unexpected."
+        msg = f"No entity with key {uri} could be found. This is unexpected."
         raise KeyError(msg)
 
     # now delete the relation edges from the data structures
@@ -1605,38 +1626,38 @@ def _unlink_entity(ek: str) -> None:
     inv_re_dict = ds.inv_relation_edges.pop(entity.uri, {})
 
     # in case res1 is a scope-item we delete all corressponding relation edges, otherwise nothing happens
-    scope_rels = ds.scope_relation_edges.pop(ek, [])
+    scope_rels = ds.scope_relation_edges.pop(uri, [])
 
     re_list = list(scope_rels)
 
     # create a item-list of all RelationEdges instances where `ek` is involved either as subject or object
     re_item_list = list(re_dict.items()) + list(inv_re_dict.items())
 
-    for rel_key, local_re_list in re_item_list:
-        # rel_key: key of the relation (like "R1234")
+    for rel_uri, local_re_list in re_item_list:
+        # rel_uri: uri of the relation (like "pyerk/foo#R1234")
         # re_list: list of RelationEdge instances
         re_list.extend(local_re_list)
 
     if isinstance(entity, Relation):
 
-        tmp = ds.relation_relation_edges.pop(ek, [])
+        tmp = ds.relation_relation_edges.pop(uri, [])
         re_list.extend(tmp)
 
     # now iterate over all RelationEdge instances
-    IPS(ek == "Ia9108")
+    IPS(uri == "Ia9108")
     for re in re_list:
         re: RelationEdge
         if re.uri == "pyerk/ocse/0.2#RE2617":
             set_trace()
-        re.unlink(ek)
-    IPS(ek == "Ia9108")
+        re.unlink(uri)
+    IPS(uri == "Ia9108")
 
     # during unlinking of the RelationEdges the default dicts might have been recreating some keys -> pop again
     # TODO: obsolete because we clean up the defaultdicts anyway
     ds.relation_edges.pop(entity.uri, None)
     ds.inv_relation_edges.pop(entity.uri, None)
 
-    ds.released_keys.append(ek)
+    ds.released_keys.append(uri)
 
 
 def register_mod(uri: str, keymanager: KeyManager):

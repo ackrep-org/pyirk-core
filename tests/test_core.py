@@ -117,10 +117,19 @@ class TestCore0(HouskeeperMixin, unittest.TestCase):
             pass
         self.assertEqual(len(p.core._uri_stack), 0)
 
+        self.assertEqual(len(p.ds.entities_created_in_mod), 1)
+        L1 = len(p.ds.items)
+        L2 = len(p.ds.relations)
+        L3 = len(p.ds.relation_edge_list)
         try:
             _ = p.erkloader.load_mod_from_path(pjoin(TEST_DATA_DIR1, "tmod0_with_errors.py"), "tmod0")
         except ValueError:
             pass
+        # assert that no enties remain in the data structures
+        self.assertEqual(len(p.ds.entities_created_in_mod), 1)
+        self.assertEqual(L1, len(p.ds.items))
+        self.assertEqual(L2, len(p.ds.relations))
+        self.assertEqual(L3, len(p.ds.relation_edge_list))
         self.assertEqual(len(p.core._uri_stack), 0)
 
     def test_key_manager(self):
@@ -321,7 +330,7 @@ class TestCore1(HouskeeperMixin, unittest.TestCase):
 
         # this tests for a bug with labels of scope vars
         mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, TEST_MOD_NAME)
-        def_itm = p.ds.get_entity("I9907")
+        def_itm = p.ds.get_entity_by_key_str("I9907")
         matrix_instance = def_itm.M
         self.assertEqual(matrix_instance.R1, "M")
 
@@ -333,7 +342,7 @@ class TestCore1(HouskeeperMixin, unittest.TestCase):
             Ia001.set_relation(p.R5["is part of"], [p.I4["Mathematics"], p.I5["Engineering"]])
 
         mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, TEST_MOD_NAME)
-        itm = p.ds.get_entity("I4466")  # I4466["Systems Theory"]
+        itm = p.ds.get_entity_by_key_str("I4466")  # I4466["Systems Theory"]
         # construction: R5__is_part_of=[p.I4["Mathematics"], p.I5["Engineering"]]
         res = itm.R5
         self.assertEqual(len(res), 2)
@@ -343,9 +352,9 @@ class TestCore1(HouskeeperMixin, unittest.TestCase):
     def test_is_instance_of_generalized_metaclass(self):
         mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, TEST_MOD_NAME)
 
-        itm1 = p.ds.get_entity("I2__Metaclass")
-        itm2 = p.ds.get_entity("I4235__mathematical_object")
-        itm3 = p.ds.get_entity("I4239__monovariate_polynomial")
+        itm1 = p.ds.get_entity_by_key_str("I2__Metaclass")
+        itm2 = p.ds.get_entity_by_key_str("I4235__mathematical_object")
+        itm3 = p.ds.get_entity_by_key_str("I4239__monovariate_polynomial")
 
         # metaclass itself is not an instance of metaclass
         self.assertFalse(p.is_instance_of_generalized_metaclass(itm1))
@@ -359,7 +368,7 @@ class TestCore1(HouskeeperMixin, unittest.TestCase):
     def test_qualifiers(self):
         mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, TEST_MOD_NAME)
 
-        itm1: p.Item = p.ds.get_entity("I2746__Rudolf_Kalman")
+        itm1: p.Item = p.ds.get_entity_by_key_str("I2746__Rudolf_Kalman")
         rel1, rel2 = itm1.get_relations()[p.pk("R1833__has_employer")][:2]
         self.assertEqual(len(rel1.qualifiers), 2)
         self.assertEqual(len(rel2.qualifiers), 2)
@@ -367,7 +376,7 @@ class TestCore1(HouskeeperMixin, unittest.TestCase):
     def test_equation(self):
         mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, TEST_MOD_NAME)
 
-        itm1: p.Item = p.ds.get_entity("I3749__Cayley-Hamilton_theorem")
+        itm1: p.Item = p.ds.get_entity_by_key_str("I3749__Cayley-Hamilton_theorem")
         Z: p.Item = itm1.scope("context").namespace["Z"]
         inv_rel_dict = Z.get_inv_relations()
 

@@ -508,10 +508,7 @@ class DataStore:
         # dict of lists store keys of the entities (not the entities itself, to simplify deletion)
         self.entities_created_in_mod = defaultdict(list)
 
-        self.rledgs_created_in_mod = defaultdict(list)
-
-        # simple storage for all relation edges
-        self.rledgs_dict = {}
+        self.rledgs_created_in_mod = defaultdict(dict)
 
         # mappings like .a = {"my/mod/uri": "/path/to/mod.py"} and .b = {"/path/to/mod.py": "my/mod/uri"}
         self.mod_path_mapping = aux.OneToOneMapping()
@@ -528,8 +525,8 @@ class DataStore:
         # for every relation key store the relevant relation-edges
         self.relation_relation_edges = defaultdict(list)
 
-        # store a list of all relation edges (to maintain the order)
-        self.relation_edge_list = []
+        # store a map {uri: RE-instance} of all relation edges
+        self.relation_edge_uri_map = {}
 
         # this will be set on demand
         self.rdfgraph = None
@@ -626,7 +623,7 @@ class DataStore:
         aux.ensure_valid_uri(rel_uri)
 
         self.relation_relation_edges[rel_uri].append(re_object)
-        self.relation_edge_list.append(re_object)
+        self.relation_edge_uri_map[re_object.uri] = re_object
 
         relation = self.relations[rel_uri]
 
@@ -1161,10 +1158,10 @@ class RelationEdge:
         self.dual_relation_edge = None
         self.unlinked = None
 
-        ds.rledgs_created_in_mod[mod_uri].append(self)
+        ds.rledgs_created_in_mod[mod_uri][self.uri] = self
 
-        assert self.uri not in ds.rledgs_dict
-        ds.rledgs_dict[self.uri] = self
+        assert self.uri not in ds.relation_edge_uri_map
+        ds.relation_edge_uri_map[self.uri] = self
 
         # TODO: replace this by qualifier
         self.proxyitem = proxyitem
@@ -1263,9 +1260,6 @@ class RelationEdge:
             _ = ds.relation_edges.pop(subj.uri, [])
 
         if self.role == RelationRole.SUBJECT:
-            # ds.relation_edge_list: store a list of all (primal/subject) relation edges (to maintain the order)
-
-            tolerant_removal(ds.relation_edge_list, self)
 
             subj_rel_edges: Dict[str: List[RelationEdge]] = ds.relation_edges[subj.uri]
             tolerant_removal(subj_rel_edges.get(pred.uri, []), self)
@@ -1294,7 +1288,7 @@ class RelationEdge:
             qf: RelationEdge
             qf.unlink()
 
-        ds.rledgs_dict.pop(self.uri)
+        ds.relation_edge_uri_map.pop(self.uri)
 
         # TODO: remove obsolete key-recycling
         ds.released_keys.append(self.short_key)
@@ -1564,7 +1558,8 @@ def unload_mod(mod_uri: str, strict=True) -> None:
     msg = "Unexpectedly some of the entity keys are still present"
     assert len(intersection_set) == 0, msg
 
-    for rledg in ds.rledgs_created_in_mod.pop(mod_uri, []):
+    rledg_dict = ds.rledgs_created_in_mod.pop(mod_uri, {})
+    for uri, rledg in rledg_dict.items():
         assert isinstance(rledg, RelationEdge)
         rledg.unlink()
 

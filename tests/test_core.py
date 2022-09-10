@@ -97,7 +97,7 @@ class TestCore0(HouskeeperMixin, unittest.TestCase):
         self.assertEqual(res.short_key, "I000")
         self.assertEqual(res.label, "test_label")
 
-        with self.assertRaises(p.PrefixError):
+        with self.assertRaises(p.UnknownPrefixError):
             res = p.process_key_str("some_prefix__I000__test_label", check=False, resolve_prefix=True)
 
         with self.assertRaises(KeyError):
@@ -365,8 +365,8 @@ class TestCore1(HouskeeperMixin, unittest.TestCase):
         mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
 
         itm1 = p.ds.get_entity_by_key_str("I2__Metaclass")
-        itm2 = p.ds.get_entity_by_key_str("I4235__mathematical_object")
-        itm3 = p.ds.get_entity_by_key_str("I4239__monovariate_polynomial")
+        itm2 = p.ds.get_entity_by_key_str("ct__I4235__mathematical_object")
+        itm3 = p.ds.get_entity_by_key_str("ct__I4239__monovariate_polynomial")
 
         # metaclass itself is not an instance of metaclass
         self.assertFalse(p.is_instance_of_generalized_metaclass(itm1))
@@ -374,7 +374,8 @@ class TestCore1(HouskeeperMixin, unittest.TestCase):
         self.assertTrue(p.is_instance_of_generalized_metaclass(itm2))
         self.assertTrue(p.is_instance_of_generalized_metaclass(itm3))
 
-        itm4 = p.instance_of(itm3)
+        with p.uri_context(uri=TEST_BASE_URI):
+            itm4 = p.instance_of(itm3)
         self.assertFalse(p.is_instance_of_generalized_metaclass(itm4))
 
     def test_qualifiers(self):
@@ -397,11 +398,8 @@ class TestCore1(HouskeeperMixin, unittest.TestCase):
         self.assertEqual(itm1, itm2)
 
         Z: p.Item = itm1.scope("context").namespace["Z"]
-        inv_rel_dict = Z.get_inv_relations()
 
-        # test R31__in_mathematical_relation_with
-
-        r31_list = inv_rel_dict["R31"]
+        r31_list = Z.get_inv_relations("R31__is_in_mathematical_relation_with")
         re: p.RelationEdge = r31_list[0]
         self.assertEqual(len(r31_list), 1)
 
@@ -429,7 +427,7 @@ class TestCore1(HouskeeperMixin, unittest.TestCase):
         pkey1 = p.process_key_str("I0008234")
 
         self.assertEqual(pkey1.short_key, "I0008234")
-        self.assertEqual(pkey1.label, "")
+        self.assertEqual(pkey1.label, None)
 
         pkey2 = p.process_key_str("R00001234__my_label")
 
@@ -437,7 +435,7 @@ class TestCore1(HouskeeperMixin, unittest.TestCase):
         self.assertEqual(pkey2.label, "my_label")
 
         # wrong syntax of key_str (missing "__")
-        self.assertRaises(ValueError, p.process_key_str, "R1234XYZ")
+        self.assertRaises(p.InvalidShortKeyError, p.process_key_str, "R1234XYZ")
 
         pkey3 = p.process_key_str("R2__has_description")
 
@@ -451,26 +449,29 @@ class TestCore1(HouskeeperMixin, unittest.TestCase):
         mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, TEST_MOD_NAME)
 
     def test_format_label(self):
-
-        e1 = p.create_item(key_str="I0123", R1="1234567890")
+        with p.uri_context(uri=TEST_BASE_URI):
+            e1 = p.create_item(key_str="I0123", R1="1234567890")
         node = visualization.create_node(e1, url_template="")
         node.perform_html_wrapping(use_html=False)
         label = node.get_dot_label(render=True)
         self.assertEqual(label, 'I0123\\n["1234567890"]')
 
-        e1 = p.create_item(key_str="I0124", R1="1234567890abcdefgh")
+        with p.uri_context(uri=TEST_BASE_URI):
+            e1 = p.create_item(key_str="I0124", R1="1234567890abcdefgh")
         node = visualization.create_node(e1, url_template="")
         node.perform_html_wrapping(use_html=False)
         label = node.get_dot_label(render=True)
         self.assertEqual(label, 'I0124\\n["1234567890abcde\\nfgh"]')
 
-        e1 = p.create_item(key_str="I0125", R1="12 34567 890abcdefgh")
+        with p.uri_context(uri=TEST_BASE_URI):
+            e1 = p.create_item(key_str="I0125", R1="12 34567 890abcdefgh")
         node = visualization.create_node(e1, url_template="")
         node.perform_html_wrapping(use_html=False)
         label = node.get_dot_label(render=True)
         self.assertEqual(label, 'I0125\\n["12 34567\\n890abcdefgh"]')
 
-        e1 = p.create_item(key_str="I0126", R1="12 34567-890abcdefgh")
+        with p.uri_context(uri=TEST_BASE_URI):
+            e1 = p.create_item(key_str="I0126", R1="12 34567-890abcdefgh")
         node = visualization.create_node(e1, url_template="")
         node.perform_html_wrapping(use_html=False)
         label = node.get_dot_label(render=True)

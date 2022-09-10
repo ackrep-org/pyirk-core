@@ -561,9 +561,9 @@ class DataStore:
         assert processed_key.etype in (EType.ITEM, EType.RELATION)
 
         if mod_uri is None:
-            mod_uri = get_active_mod_uri()
-
-        uri = aux.make_uri(mod_uri, processed_key.short_key)
+            uri = processed_key.uri
+        else:
+            uri = aux.make_uri(mod_uri, processed_key.short_key)
 
         res = self.get_entitiy_by_uri(uri, processed_key.etype)
         if res is None:
@@ -809,12 +809,20 @@ def _resolve_prefix(pr_key: ProcessedStmtKey) -> None:
             candidate_uri = aux.make_uri(mod_uri, pr_key.short_key)
             res_entity = ds.get_entitiy_by_uri(candidate_uri)
 
-            if res_entity is None:
-                candidate_uri = aux.make_uri(settings.BUILTINS_URI, pr_key.short_key)
-                res_entity = ds.get_entitiy_by_uri(candidate_uri)
+            if res_entity is not None:
+                pr_key.uri = candidate_uri
+                return
 
-            # if res is still None no entity could be found
-            if res_entity is None:
+            # try builtin_entities as fallback
+            candidate_uri = aux.make_uri(settings.BUILTINS_URI, pr_key.short_key)
+            res_entity = ds.get_entitiy_by_uri(candidate_uri)
+
+            # if res_entity is still None no entity could be found
+            if res_entity is not None:
+                pr_key.uri = candidate_uri
+                return
+            else:
+                # if res_entity is still None no entity could be found
                 msg = (
                     f"No entity could be found for short_key {pr_key.short_key}, neither in active module ({mod_uri}) "
                     f"nor in builin_entities ({settings.BUILTINS_URI})"
@@ -1125,10 +1133,10 @@ class RelationEdge:
         :param proxyitem:               associated item; e.g. a equation-item
         """
 
-        self.short_key_xx = f"RE{pop_uri_based_key()}"
+        self.short_key = f"RE{pop_uri_based_key()}"
         mod_uri = get_active_mod_uri()
         self.base_uri = mod_uri
-        self.uri = f"{aux.make_uri(self.base_uri, self.short_key_xx)}"
+        self.uri = f"{aux.make_uri(self.base_uri, self.short_key)}"
         self.relation = relation
         self.relation_tuple = relation_tuple
         self.subject = relation_tuple[0]
@@ -1153,11 +1161,11 @@ class RelationEdge:
     @property
     def key_str(self):
         # TODO: the "attribute" `.key_str` for RelationEdge is deprecated; use `.short_key` instead
-        return self.short_key_xx
+        return self.short_key
 
     def __repr__(self):
 
-        res = f"{self.short_key_xx}{self.relation_tuple}"
+        res = f"{self.short_key}{self.relation_tuple}"
         return res
 
     def _process_qualifiers(self, qlist: List[RawQualifier], scope: Optional["Entity"] = None) -> None:
@@ -1279,7 +1287,9 @@ class RelationEdge:
             qf.unlink()
 
         ds.rledgs_dict.pop(self.uri)
-        ds.released_keys.append(self.short_key_xx)
+
+        # TODO: remove obsolete key-recycling
+        ds.released_keys.append(self.short_key)
 
 
 def tolerant_removal(sequence, element):

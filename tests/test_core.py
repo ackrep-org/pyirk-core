@@ -330,7 +330,12 @@ class TestCore1(HouskeeperMixin, unittest.TestCase):
     def test_tuple(self):
 
         data = (10, 11, 12, 13, p.I1, "some string")
-        tup = p.new_tuple(*data)
+
+        with self.assertRaises(p.EmptyURIStackError):
+            tup = p.new_tuple(*data)
+
+        with p.uri_context(uri=TEST_BASE_URI):
+            tup = p.new_tuple(*data)
         self.assertEqual(tup.R4__is_instance_of, p.I33["tuple"])
         self.assertEqual(tup.R38__has_length, 6)
 
@@ -342,19 +347,20 @@ class TestCore1(HouskeeperMixin, unittest.TestCase):
 
         # this tests for a bug with labels of scope vars
         mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
-        def_itm = p.ds.get_entity_by_key_str("I9907")
+        def_itm = p.ds.get_entity_by_key_str("ct__I9907__definition_of_square_matrix")
         matrix_instance = def_itm.M
         self.assertEqual(matrix_instance.R1, "M")
 
     def test_relations_with_sequence_as_argument(self):
-        Ia001 = p.create_item(R1__has_label="test item")
+        with p.uri_context(uri=TEST_BASE_URI):
+            Ia001 = p.create_item(R1__has_label="test item")
 
         # check that assigning sequences is not allowed
         with self.assertRaises(TypeError):
             Ia001.set_relation(p.R5["is part of"], [p.I4["Mathematics"], p.I5["Engineering"]])
 
         mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
-        itm = p.ds.get_entity_by_key_str("I4466")  # I4466["Systems Theory"]
+        itm = p.ds.get_entity_by_key_str("ct__I4466__Systems_Theory")
         # construction: R5__is_part_of=[p.I4["Mathematics"], p.I5["Engineering"]]
         res = itm.R5
         self.assertEqual(len(res), 2)
@@ -381,8 +387,8 @@ class TestCore1(HouskeeperMixin, unittest.TestCase):
     def test_qualifiers(self):
         mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
 
-        itm1: p.Item = p.ds.get_entity_by_key_str("I2746__Rudolf_Kalman")
-        rel1, rel2 = itm1.get_relations()[p.pk("R1833__has_employer")][:2]
+        itm1: p.Item = p.ds.get_entity_by_key_str("ct__I2746__Rudolf_Kalman")
+        rel1, rel2 = itm1.get_relations("ct__R1833__has_employer")[:2]
         self.assertEqual(len(rel1.qualifiers), 2)
         self.assertEqual(len(rel2.qualifiers), 2)
 
@@ -480,7 +486,7 @@ class TestCore1(HouskeeperMixin, unittest.TestCase):
     def test_visualization(self):
 
         res_graph: visualization.nx.DiGraph = visualization.create_nx_graph_from_entity("I21__mathematical_relation")
-        self.assertEqual(res_graph.number_of_nodes(), 7)
+        self.assertGreater(res_graph.number_of_nodes(), 7)
 
         mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, TEST_MOD_NAME)
 

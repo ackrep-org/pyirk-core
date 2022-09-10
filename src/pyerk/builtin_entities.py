@@ -894,6 +894,9 @@ def new_tuple(*args, **kwargs) -> Item:
     :return:
     """
 
+    # ensure this function is called with an active erk module (to define URIs of new instances )
+    _ = core.get_active_mod_uri()
+
     scope = kwargs.pop("scope", None)
     assert len(kwargs) == 0, f"Unexpected keyword argument(s): {kwargs}"
 

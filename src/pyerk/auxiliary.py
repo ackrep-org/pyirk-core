@@ -90,13 +90,15 @@ class InvalidURIError(ValueError):
     pass
 
 
-def ensure_valid_uri(txt: str):
+def ensure_valid_uri(txt: str, strict=True) -> bool:
     assert isinstance(txt, str)
     cond = "#" in txt
 
-    if not cond:
+    if not cond and strict:
         msg = f"This seems not to be a valid URI: {txt}"
         raise InvalidURIError(msg)
+
+    return cond
 
 
 def ensure_valid_prefix(txt: str):

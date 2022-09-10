@@ -87,20 +87,21 @@ class TestCore0(HouskeeperMixin, unittest.TestCase):
         self.assertEqual(res.short_key, "I000")
         self.assertEqual(res.label, "test_label")
 
-        res = p.process_key_str("some_prefix__I000", check=False)
+        res = p.process_key_str("some_prefix__I000", check=False, resolve_prefix=False)
         self.assertEqual(res.prefix, "some_prefix")
         self.assertEqual(res.short_key, "I000")
         self.assertEqual(res.label, None)
 
-        res = p.process_key_str("some_prefix__I000__test_label", check=False)
+        res = p.process_key_str("some_prefix__I000__test_label", check=False, resolve_prefix=False)
         self.assertEqual(res.prefix, "some_prefix")
         self.assertEqual(res.short_key, "I000")
         self.assertEqual(res.label, "test_label")
 
-        with self.assertRaises(ValueError):
+        with self.assertRaises(p.PrefixError):
+            res = p.process_key_str("some_prefix__I000__test_label", check=False, resolve_prefix=True)
+
+        with self.assertRaises(KeyError):
             res = p.process_key_str("some_prefix_literal_value", check=False)
-
-
 
     def test_b1__uri_contex_manager(self):
         """

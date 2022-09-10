@@ -408,11 +408,8 @@ def add_scope_to_defining_relation_edge(ent: Entity, scope: Item) -> None:
     assert isinstance(scope, Item)
     assert scope.R4__is_instance_of == I16["scope"]
 
-    # for every entity key this dict stores a dict that maps relation keys to lists of corresponding relation-edges
-    re_dict = core.ds.relation_edges[ent.short_key]
-
     # for now all defining_relations are R4-relations (R4__is_instance_of) (there should be exactly 1)
-    r4_list = re_dict["R4"]
+    r4_list = ent.get_relations(R4.uri)
     assert len(r4_list) == 1
 
     re = r4_list[0]

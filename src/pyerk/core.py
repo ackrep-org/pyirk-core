@@ -414,30 +414,22 @@ class Entity(abc.ABC):
             tmp_list.append(inv_rledg)
         return rledg
 
-    def get_relations(self, key_str_or_uri: Optional[str] = None) -> Union[Dict[str, list], list]:
+    def get_relations(
+            self, key_str_or_uri: Optional[str] = None, return_subj: bool = False
+    ) -> Union[Dict[str, list], list]:
         """
         Return all RelationEdge instance where this item is subject
 
         :param key_str_or_uri:      optional; either a verbose key_str (of a builtin entity) or a full uri;
                                     if passed only return the result for this key
+        :param return_subj:         default False; if True only return the subject(s) of the relation edges,
+                                    not the whole RE
 
-        :return:                    either the whole dict or just one value (of type list)
+        :return:            either the whole dict or just one value (of type list)
         """
 
         rel_dict = ds.relation_edges[self.uri]
-        if key_str_or_uri is None:
-            return rel_dict
-
-        # the caller wants only results for this key (e.g. "R4")
-        if aux.ensure_valid_uri(key_str_or_uri, strict=False):
-            uri = key_str_or_uri
-        else:
-            # we assume that that a builtin relation was ment
-            key_str = key_str_or_uri
-            short_key = pk(key_str)
-            uri = aux.make_uri(settings.BUILTINS_URI, short_key)
-
-        return rel_dict.get(uri, [])
+        return self._return_relations(rel_dict, key_str_or_uri, return_subj)
 
     def get_inv_relations(
             self,
@@ -456,19 +448,37 @@ class Entity(abc.ABC):
         """
 
         inv_rel_dict = ds.inv_relation_edges[self.uri]
+
+        return self._return_relations(inv_rel_dict, key_str_or_uri, return_subj)
+
+    @staticmethod
+    def _return_relations(
+            base_dict,
+            key_str_or_uri: str,
+            return_subj: bool,
+    ) -> Union[Dict[str, list], list]:
+        """
+
+        :param base_dict:           either ds.relation_edges or ds.inv_relation_edges
+        :param key_str_or_uri:      optional; either a verbose key_str (of a builtin entity) or a full uri;
+                                    if passed only return the result for this key
+        :param return_subj:         default False; if True only return the subject(s) of the relation edges,
+                                    not the whole RE
+        :return:
+        """
         if key_str_or_uri is None:
-            return inv_rel_dict
+            return base_dict
 
         # the caller wants only results for this key (e.g. "R4")
         if aux.ensure_valid_uri(key_str_or_uri, strict=False):
             uri = key_str_or_uri
         else:
-            # we assume that that a builtin relation was ment
+            # we try to resolve a prefix and use the active module and finally builtins as fallback
             key_str = key_str_or_uri
-            short_key = pk(key_str)
-            uri = aux.make_uri(settings.BUILTINS_URI, short_key)
+            pr_key = process_key_str(key_str)
+            uri = pr_key.uri
 
-        rledg_res: Union[RelationEdge, List[RelationEdge]] = inv_rel_dict.get(uri, [])
+        rledg_res: Union[RelationEdge, List[RelationEdge]] = base_dict.get(uri, [])
         if return_subj:
             # do not return the RelationEdge instance(s) but only the subject(s)
             if isinstance(rledg_res, list):
@@ -648,7 +658,7 @@ class DataStore:
 
         if res is None:
             msg = f"Unknown prefix: {prefix}. No matching URI found."
-            raise ValueError(msg)
+            raise PrefixError(msg)
         return res
 
 
@@ -772,7 +782,7 @@ def process_key_str(key_str: str, check: bool = True, resolve_prefix: str = True
         res.vtype = VType.ENTITY
     else:
         msg = f"unxexpected shortkey: '{res.short_key}' (maybe a literal)"
-        raise ValueError(msg)
+        raise KeyError(msg)
 
     if resolve_prefix:
         _resolve_prefix(res)
@@ -880,6 +890,10 @@ class Item(Entity):
 
 
 class EmptyURIStackError(IndexError):
+    pass
+
+
+class PrefixError(ValueError):
     pass
 
 
@@ -1112,6 +1126,9 @@ class RelationEdge:
         """
 
         self.short_key_xx = f"RE{pop_uri_based_key()}"
+        mod_uri = get_active_mod_uri()
+        self.base_uri = mod_uri
+        self.uri = f"{aux.make_uri(self.base_uri, self.short_key_xx)}"
         self.relation = relation
         self.relation_tuple = relation_tuple
         self.subject = relation_tuple[0]
@@ -1124,9 +1141,6 @@ class RelationEdge:
         self.dual_relation_edge = None
         self.unlinked = None
 
-        mod_uri = get_active_mod_uri()
-        self.base_uri = mod_uri
-        self.uri = f"{aux.make_uri(self.base_uri, self.short_key_xx)}:{self.role.name[0]}"
 
         ds.rledgs_created_in_mod[mod_uri].append(self)
 
@@ -1143,9 +1157,7 @@ class RelationEdge:
 
     def __repr__(self):
 
-        # fixme: this breaks if self.role is not a valid enum-value in (0, 2)
-
-        res = f"{self.short_key_xx}:{self.role.name[0]}{self.relation_tuple}"
+        res = f"{self.short_key_xx}{self.relation_tuple}"
         return res
 
     def _process_qualifiers(self, qlist: List[RawQualifier], scope: Optional["Entity"] = None) -> None:

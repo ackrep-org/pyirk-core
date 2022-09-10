@@ -51,8 +51,8 @@ def load_mod_from_path(modpath: str, prefix: str, modname=None, allow_reload=Tru
             # deactivate the failed module (because execution did not reach end_mod())
             failed_mod_uri = pyerk.core._uri_stack.pop()
 
-            # remove all added entities
-            pyerk.unload_mod(failed_mod_uri)
+            # remove all added entities, but tolerate errors (due to incomplete loading)
+            pyerk.unload_mod(failed_mod_uri, strict=False)
         raise
 
     if len(pyerk.core._uri_stack) > old_len:

@@ -120,7 +120,7 @@ class TestCore0(HouskeeperMixin, unittest.TestCase):
         self.assertEqual(len(p.ds.entities_created_in_mod), 1)
         L1 = len(p.ds.items)
         L2 = len(p.ds.relations)
-        L3 = len(p.ds.relation_edge_list)
+        L3 = len(p.ds.relation_edge_uri_map)
         try:
             _ = p.erkloader.load_mod_from_path(pjoin(TEST_DATA_DIR1, "tmod0_with_errors.py"), prefix="tm0")
         except ValueError:
@@ -129,7 +129,7 @@ class TestCore0(HouskeeperMixin, unittest.TestCase):
         self.assertEqual(len(p.ds.entities_created_in_mod), 1)
         self.assertEqual(L1, len(p.ds.items))
         self.assertEqual(L2, len(p.ds.relations))
-        self.assertEqual(L3, len(p.ds.relation_edge_list))
+        self.assertEqual(L3, len(p.ds.relation_edge_uri_map))
         self.assertEqual(len(p.core._uri_stack), 0)
 
     def test_key_manager(self):

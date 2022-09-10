@@ -516,9 +516,6 @@ class DataStore:
         # mappings like .a = {"my/mod/uri": "/path/to/mod.py"} and .b = {"/path/to/mod.py": "my/mod/uri"}
         self.mod_path_mapping = aux.OneToOneMapping()
 
-        # this dict contains every entity (and their relation edges) which is predefined by hardcoding
-        self.builtin_entities = {}
-
         # for every entity key store a dict that maps relation uris to lists of corresponding relation-edges
         self.relation_edges = defaultdict(dict)
 
@@ -1164,7 +1161,6 @@ class RelationEdge:
         self.dual_relation_edge = None
         self.unlinked = None
 
-
         ds.rledgs_created_in_mod[mod_uri].append(self)
 
         assert self.uri not in ds.rledgs_dict
@@ -1256,9 +1252,6 @@ class RelationEdge:
 
         if not len(self.relation_tuple) == 3:
             raise NotImplementedError
-
-        if self.uri == 'pyerk/ocse/0.2#RE1757':
-            set_trace()
 
         if self.unlinked:
             return
@@ -1365,14 +1358,12 @@ def create_relation(key_str: str = "", **kwargs) -> Relation:
 def create_builtin_item(*args, **kwargs) -> Item:
     with uri_context(uri=settings.BUILTINS_URI):
         itm = create_item(*args, **kwargs)
-    ds.builtin_entities[itm.uri] = itm
     return itm
 
 
 def create_builtin_relation(*args, **kwargs) -> Relation:
     with uri_context(uri=settings.BUILTINS_URI):
         rel = create_relation(*args, **kwargs)
-    ds.builtin_entities[rel.uri] = rel
     return rel
 
 
@@ -1644,13 +1635,9 @@ def _unlink_entity(uri: str) -> None:
         re_list.extend(tmp)
 
     # now iterate over all RelationEdge instances
-    IPS(uri == "Ia9108")
     for re in re_list:
         re: RelationEdge
-        if re.uri == "pyerk/ocse/0.2#RE2617":
-            set_trace()
         re.unlink(uri)
-    IPS(uri == "Ia9108")
 
     # during unlinking of the RelationEdges the default dicts might have been recreating some keys -> pop again
     # TODO: obsolete because we clean up the defaultdicts anyway

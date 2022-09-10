@@ -191,21 +191,23 @@ class TestCore1(HouskeeperMixin, unittest.TestCase):
         i32_instance_rels = p.I32["evaluated mapping"].get_inv_relations("R4__is_instance_of")
         self.assertEqual(len(i32_instance_rels), 0)
 
-        builtin_entity_keys = set(p.ds.builtin_entities.keys())
+        builtin_entity_uris = set(p.ds.entities_created_in_mod[p.BUILTINS_URI])
+        builtin_rledg_uris = set(p.ds.rledgs_created_in_mod[p.BUILTINS_URI])
         available_item_keys = set(p.ds.items.keys())
         available_relation_keys = set(p.ds.relations.keys())
         available_relation_edge_keys = set(p.ds.relation_edges.keys())
         available_relation_relation_edge_keys = set(p.ds.relation_relation_edges.keys())
 
-        diff1 = available_item_keys.difference(builtin_entity_keys)
-        diff2 = available_relation_keys.difference(builtin_entity_keys)
-        diff3 = available_relation_edge_keys.difference(builtin_entity_keys)
+        diff1 = available_item_keys.difference(builtin_entity_uris)
+        diff2 = available_relation_keys.difference(builtin_entity_uris)
 
-        diff4 = available_relation_relation_edge_keys.difference(builtin_entity_keys)
+        diff3 = available_relation_edge_keys.difference(builtin_rledg_uris)
+        diff4 = available_relation_relation_edge_keys.difference(builtin_rledg_uris)
 
         self.assertEqual(len(diff1), 0)
         self.assertEqual(len(diff2), 0)
-        return
+        # print(p.aux.byellow("some parts of test_aa1 still fail"))
+        # return
         self.assertEqual(len(diff3), 0)
         self.assertEqual(len(diff4), 0)
 

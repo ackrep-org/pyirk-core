@@ -122,7 +122,7 @@ class TestCore0(HouskeeperMixin, unittest.TestCase):
         L2 = len(p.ds.relations)
         L3 = len(p.ds.relation_edge_list)
         try:
-            _ = p.erkloader.load_mod_from_path(pjoin(TEST_DATA_DIR1, "tmod0_with_errors.py"), "tmod0")
+            _ = p.erkloader.load_mod_from_path(pjoin(TEST_DATA_DIR1, "tmod0_with_errors.py"), prefix="tm0")
         except ValueError:
             pass
         # assert that no enties remain in the data structures
@@ -162,8 +162,8 @@ class TestCore0(HouskeeperMixin, unittest.TestCase):
         self.assertEqual(rel.uri, f"{TEST_BASE_URI}#{rel.short_key}")
 
     def test_load_multiple_modules(self):
-        tmod1 = p.erkloader.load_mod_from_path(pjoin(TEST_DATA_DIR1, "tmod1.py"), "tmod1")
-        # TODO: to be continued
+        tmod1 = p.erkloader.load_mod_from_path(pjoin(TEST_DATA_DIR1, "tmod1.py"), prefix="tm1")
+        # TODO: to be continued where tmod1 itself loads tmod2...
 
 
 # noinspection PyPep8Naming
@@ -183,7 +183,7 @@ class TestCore1(HouskeeperMixin, unittest.TestCase):
         The first test ensures, that TestCases do not influence each other
         """
 
-        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, TEST_MOD_NAME)
+        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
 
         self.tearDown()
 
@@ -212,15 +212,13 @@ class TestCore1(HouskeeperMixin, unittest.TestCase):
     # noinspection PyUnresolvedReferences
     # (above noinspection is necessary because of the @-operator which is undecleared for strings)
     def test_core1(self):
-        IPS()
-        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, TEST_MOD_NAME)
+        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
         self.assertEqual(mod1.I3749.R1, "Cayley-Hamilton theorem")
 
         def_eq_item = mod1.I6886.R6__has_defining_equation
         self.assertEqual(def_eq_item.R4__is_instance_of, p.I18["mathematical expression"])
         self.assertEqual(def_eq_item.R24__has_LaTeX_string, r"$\dot x = f(x, u)$")
 
-        # TODO: convince pycharm that this is valid (due to .__rmatmul__ method of p.en)
         teststring1 = "this is english text" @ p.en
         teststring2 = "das ist deutsch" @ p.de
 
@@ -236,13 +234,7 @@ class TestCore1(HouskeeperMixin, unittest.TestCase):
 
         p.unload_mod('pyerk/ocse/0.2')
 
-        IPS()
-
-    def test_builtins2(self):
-
-        self.assertTrue('pyerk/ocse/0.2#RE7435:S' not in p.ds.rledgs_dict)
-
-    def test_builtins1(self):
+    def test_b01_builtins1(self):
         """
         Test the mechanism to endow the Entity class with custom methods (on class and on instance level)
         :return:
@@ -277,12 +269,32 @@ class TestCore1(HouskeeperMixin, unittest.TestCase):
         with self.assertRaises(AttributeError):
             itm2.example_func2(1234)
 
+    def test_b02_tear_down(self):
+        """
+        test if tear_down of TestClass works properly
+
+        :return:
+        """
+
+        # ensure that builtins are loaded
+        self.assertGreater(len(p.ds.items), 40)
+        self.assertGreater(len(p.ds.relations), 40)
+        self.assertGreater(len(p.ds.relation_edge_uri_map), 300)
+
+        # ensure that no residuals are left from last test
+        non_builtin_rledges = [k for k in p.ds.relation_edge_uri_map.keys() if not k.startswith(p.BUILTINS_URI)]
+        self.assertEqual(len(non_builtin_rledges), 0)
+
+        non_builtin_entities = [k for k in p.ds.items.keys() if not k.startswith(p.BUILTINS_URI)]
+        non_builtin_entities += [k for k in p.ds.relations.keys() if not k.startswith(p.BUILTINS_URI)]
+        self.assertEqual(len(non_builtin_entities), 0)
+
     def test_evaluated_mapping(self):
 
         res = p.ds.relation_edges.get("RE6229")
         self.assertIsNone(res)
 
-        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, TEST_MOD_NAME)
+        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
         with p.uri_context(uri=TEST_BASE_URI):
             poly1 = p.instance_of(mod1.I4239["monovariate polynomial"])
 
@@ -298,7 +310,7 @@ class TestCore1(HouskeeperMixin, unittest.TestCase):
         self.assertEqual(res.R4__is_instance_of, p.I32["evaluated mapping"])
 
     def test_evaluated_mapping2(self):
-        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, TEST_MOD_NAME)
+        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
 
         with p.uri_context(uri=TEST_BASE_URI):
             h = p.instance_of(mod1.I9923["scalar field"])
@@ -329,7 +341,7 @@ class TestCore1(HouskeeperMixin, unittest.TestCase):
     def test_scope_vars(self):
 
         # this tests for a bug with labels of scope vars
-        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, TEST_MOD_NAME)
+        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
         def_itm = p.ds.get_entity_by_key_str("I9907")
         matrix_instance = def_itm.M
         self.assertEqual(matrix_instance.R1, "M")
@@ -341,7 +353,7 @@ class TestCore1(HouskeeperMixin, unittest.TestCase):
         with self.assertRaises(TypeError):
             Ia001.set_relation(p.R5["is part of"], [p.I4["Mathematics"], p.I5["Engineering"]])
 
-        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, TEST_MOD_NAME)
+        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
         itm = p.ds.get_entity_by_key_str("I4466")  # I4466["Systems Theory"]
         # construction: R5__is_part_of=[p.I4["Mathematics"], p.I5["Engineering"]]
         res = itm.R5
@@ -350,7 +362,7 @@ class TestCore1(HouskeeperMixin, unittest.TestCase):
         self.assertIn(p.I5["Engineering"], res)
 
     def test_is_instance_of_generalized_metaclass(self):
-        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, TEST_MOD_NAME)
+        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
 
         itm1 = p.ds.get_entity_by_key_str("I2__Metaclass")
         itm2 = p.ds.get_entity_by_key_str("I4235__mathematical_object")
@@ -366,7 +378,7 @@ class TestCore1(HouskeeperMixin, unittest.TestCase):
         self.assertFalse(p.is_instance_of_generalized_metaclass(itm4))
 
     def test_qualifiers(self):
-        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, TEST_MOD_NAME)
+        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
 
         itm1: p.Item = p.ds.get_entity_by_key_str("I2746__Rudolf_Kalman")
         rel1, rel2 = itm1.get_relations()[p.pk("R1833__has_employer")][:2]
@@ -374,9 +386,16 @@ class TestCore1(HouskeeperMixin, unittest.TestCase):
         self.assertEqual(len(rel2.qualifiers), 2)
 
     def test_equation(self):
-        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, TEST_MOD_NAME)
+        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
 
-        itm1: p.Item = p.ds.get_entity_by_key_str("I3749__Cayley-Hamilton_theorem")
+        # get item via prefix and key
+        itm1: p.Item = p.ds.get_entity_by_key_str("ct__I3749__Cayley-Hamilton_theorem")
+
+        # get item via key and uri
+        itm2: p.Item = p.ds.get_entity_by_key_str("I3749__Cayley-Hamilton_theorem", mod_uri=mod1.__URI__)
+
+        self.assertEqual(itm1, itm2)
+
         Z: p.Item = itm1.scope("context").namespace["Z"]
         inv_rel_dict = Z.get_inv_relations()
 

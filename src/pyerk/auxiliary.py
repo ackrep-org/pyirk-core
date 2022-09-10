@@ -1,5 +1,6 @@
 import os
 import sys
+import regex
 from typing import Iterable, Union, Dict, Any
 from rdflib import Literal
 from colorama import Style, Fore
@@ -29,17 +30,22 @@ class OneToOneMapping(object):
         # assert 1to1-property
         assert len(self.a) == len(self.b)
 
-    def remove_pair(self, key_a=None, key_b=None):
+    def remove_pair(self, key_a=None, key_b=None, strict=True):
 
-        if key_a is not None:
-            key_b = self.a.pop(key_a)
-            self.b.pop(key_b)
-        elif key_b is not None:
-            key_a = self.b.pop(key_b)
-            self.a.pop(key_a)
-        else:
-            msg = "Both keys are not allowed to be `None` at the the same time."
-            raise ValueError(msg)
+        try:
+            if key_a is not None:
+                key_b = self.a.pop(key_a)
+                self.b.pop(key_b)
+            elif key_b is not None:
+                key_a = self.b.pop(key_b)
+                self.a.pop(key_a)
+            else:
+                msg = "Both keys are not allowed to be `None` at the the same time."
+                raise ValueError(msg)
+        except KeyError:
+            if strict:
+                raise
+            # else -> pass
 
 
 def ensure_list(arg):
@@ -90,27 +96,97 @@ class InvalidURIError(ValueError):
     pass
 
 
-def ensure_valid_uri(txt: str, strict=True) -> bool:
-    assert isinstance(txt, str)
-    cond = "#" in txt
+class InvalidPrefixError(ValueError):
+    pass
 
+
+class InvalidShortKeyError(ValueError):
+    pass
+
+
+def ensure_valid_short_key(txt: str, strict: bool = True) -> bool:
+    conds = [isinstance(txt, str)]
+
+    re_short_key = regex.compile(r"^((Ia?)|(Ra?)|(RE))(\d+)$")
+    # produces 5 groups: [{outer-parenthesis}, {inner-p1}, {inner-p2}, {inner-p3}, {last-p}]
+    # first (index: 1) and last are the only relevant groups
+
+    match = re_short_key.match(txt)
+
+    type_str = match.group(1)
+    num_str = match.group(5)
+
+    conds += [type_str is not None]
+    conds += [num_str is not None]
+
+    cond = all(conds)
     if not cond and strict:
-        msg = f"This seems not to be a valid URI: {txt}"
+        msg = f"This seems not to be a valid short_key: {txt}. Condition protocoll: {conds}"
+        raise InvalidShortKeyError(msg)
+
+    return cond
+
+
+def ensure_valid_uri(txt: str, strict: bool = True) -> bool:
+    conds = [isinstance(txt, str)]
+    conds += ["#" in txt]
+
+    parts = txt.split("#")
+    conds += [len(parts) == 2]
+
+    conds += [ensure_valid_baseuri(parts[0], strict=strict)]
+
+    cond = all(conds)
+    if not cond and strict:
+        msg = f"This seems not to be a valid URI: {txt}. Condition protocoll: {conds}"
         raise InvalidURIError(msg)
 
     return cond
 
 
-def ensure_valid_prefix(txt: str):
-    # to avoid confusion with base_uris prefixes have to
-    assert isinstance(txt, str)
-    assert txt.isidentifier()  # prefixes are assumed to be valid python-names (keywords like "in" are allowed though)
-    assert "__" not in txt
+def ensure_valid_prefix(txt: str, strict: bool = True) -> bool:
+    """
+    To avoid confusion with base_uris prefixes have to meet certain conditions.
+
+    :param txt:
+    :param strict:
+    :return:
+    """
+    conds = [isinstance(txt, str)]
+    conds += [txt.isidentifier()]  # prefixes are assumed to be valid python-names (keywords like "in" are allowed though)
+    conds += ["__" not in txt]
+
+    cond = all(conds)
+    if not cond and strict:
+        msg = f"This seems not to be a valid prefix: {txt}. Condition protocoll: {conds}"
+        raise InvalidPrefixError(msg)
+
+    return cond
+
+
+def ensure_valid_baseuri(txt: str, strict: bool = True) -> bool:
+    """
+
+    :param txt:
+    :param strict:
+    :return:
+    """
+    conds = [isinstance(txt, str)]
+    conds += ["/" in txt]
+    conds += ["#" not in txt]
+    conds += ["__" not in txt]
+
+    cond = all(conds)
+    if not cond and strict:
+        msg = f"This seems not to be a valid base uri: {txt}. Condition protocoll: {conds}"
+        raise InvalidURIError(msg)
+
+    return cond
 
 
 def make_uri(base_uri: str, short_key):
-    # todo: add more checks to distinguish a base uri from a prefix
-    assert isinstance(base_uri, str) and "/" in base_uri
+    ensure_valid_baseuri(base_uri)
+    assert "_" not in short_key  # TODO: replace by regex match
     assert isinstance(short_key, str) and len(short_key) >= 2
     return f"{base_uri}#{short_key}"
 

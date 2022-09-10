@@ -2,6 +2,7 @@
 Core module of pyerk
 """
 import os
+import sys
 from collections import defaultdict
 from dataclasses import dataclass
 import inspect
@@ -547,6 +548,9 @@ class DataStore:
         # initialize:
         self.uri_prefix_mapping.add_pair(settings.BUILTINS_URI, "bi")
 
+        # mapping like {uri1: modname1, ...}
+        self.modnames = {}
+
     def get_entity_by_key_str(self, key_str, mod_uri=None) -> Entity:
         """
         :param key_str:     str like I1234 or I1234__some_label
@@ -736,7 +740,7 @@ def unpack_l1d(l1d: Dict[str, object]):
     return tuple(*l1d.items())
 
 
-def process_key_str(key_str: str, check: bool = True, resolve_prefix: str = True) -> ProcessedStmtKey:
+def process_key_str(key_str: str, check: bool = True, resolve_prefix: bool = True) -> ProcessedStmtKey:
     """
     In ERK there are the following kinds of keys:
         - a) short_key like `R1234`
@@ -1582,6 +1586,11 @@ def unload_mod(mod_uri: str, strict=True) -> None:
     except KeyError:
         if strict:
             raise
+
+    ds.uri_prefix_mapping.remove_pair(mod_uri, strict=strict)
+
+    if modname := ds.modnames.get(mod_uri):
+        sys.modules.pop(modname)
 
     # empty the list again to avoid confusion in future uses
     ds.released_keys.clear()

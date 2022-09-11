@@ -3,6 +3,7 @@ This module contains code for the visualization of ERK-entities.
 """
 from typing import Union, List, Tuple
 import os
+import urllib
 
 import networkx as nx
 import nxv  # for graphviz visualization of networkx graphs
@@ -31,6 +32,7 @@ class AbstractGraphObject(ABC):
     """
 
     def __init__(self):
+        self.uri = None
         self.short_key = None
         self.repr_str: str = ""  # TODO: obsolete ?
         self.label: str = ""
@@ -60,6 +62,7 @@ class AbstractGraphObject(ABC):
         thus: use a dummy which will be replaced later
         """
 
+        # TODO: replace this by prefixed short_key
         unformated_repr_str = f'{self.short_key}["{self.label}"]'
         self.label_segment_keys, self.label_segments = create_label_segments(unformated_repr_str, maxlen=self.maxlen)
         self.label_segment_items = zip(self.label_segment_keys, self.label_segments)
@@ -87,7 +90,9 @@ class AbstractGraphObject(ABC):
             # do nothing
             return
 
-        url = self.url_template.format(short_key=self.short_key)
+        # noinspection PyUnresolvedReferences
+        quoted_uri = urllib.parse.quote(self.uri, safe="")
+        url = self.url_template.format(quoted_uri=quoted_uri)
 
         for seg_key, segment in self.label_segment_items:
             if use_html:
@@ -118,6 +123,9 @@ class EntityNode(AbstractGraphObject):
         super().__init__()
 
         self.short_key = entity.short_key
+        self.uri = entity.uri
+
+        # TODO: replace this by prefixed short_key
         self.id = f"node_{self.short_key}"  # this serves to recognize the nodes in svg code
         self.url_template = url_template
 
@@ -170,6 +178,7 @@ class Edge(AbstractGraphObject):
     def __init__(self, relation: p.Relation, url_template: str):
         super().__init__()
 
+        self.uri = relation.uri
         self.short_key = relation.short_key
         self.label = relation.R1
         self.url_template = url_template
@@ -381,17 +390,17 @@ def render_graph_to_dot(G: nx.DiGraph) -> str:
     return dot_data
 
 
-def visualize_entity(ek: str, url_template="", write_tmp_files: bool = False) -> str:
+def visualize_entity(uri: str, url_template="", write_tmp_files: bool = False) -> str:
     """
 
-    :param ek:              entity key_str (like "I0123" or "I0123__my_label")
-    :param url_template:    url template for creation a-tags (html links) for the labels
+    :param uri:             entity uri (like "erk:/my/module#I0123")
+    :param url_template:    url template for creation of a-tags (html links) for the labels
     :param write_tmp_files: boolean flag whether to write debug output
 
     :return:                svg_data as string
     """
 
-    G = create_nx_graph_from_entity(ek, url_template)
+    G = create_nx_graph_from_entity(uri, url_template)
     raw_dot_data = render_graph_to_dot(G)
 
     dot_data0 = raw_dot_data

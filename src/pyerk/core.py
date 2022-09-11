@@ -873,6 +873,7 @@ def check_processed_key_label(pkey: ProcessedStmtKey) -> None:
 def u(key_str: str) -> str:
     """
     Convenience function converting "[prefix__]I1234__my_label"  to "[moduri#]I1234".
+    If no prefix is given the active module and `builtin_entities` are searched for (in this order).
 
     :param key_str:
     :return:

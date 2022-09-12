@@ -1,7 +1,7 @@
 """
 Command line interface for erk package
 """
-
+import os
 import argparse
 from ipydex import IPS, activate_ips_on_exception
 from . import core, erkloader, rdfstack, auxiliary as aux
@@ -74,7 +74,11 @@ def process_mod(path):
 
 
 def debug():
-    mod1 = erkloader.load_mod_from_path("../controltheory_experiments/knowledge_base1.py", "knowledge_base1")
+    ERK_ROOT_DIR = aux.get_erk_root_dir()
+    TEST_DATA_PATH = os.path.join(ERK_ROOT_DIR, "erk-data", "control-theory", "control_theory1.py")
+    TEST_MOD_NAME = "control_theory1"
+    mod1 = erkloader.load_mod_from_path(TEST_DATA_PATH, TEST_MOD_NAME)
+    ackrep_parser.parse_ackrep()
     ds = core.ds
     ds.rdfgraph = rdfstack.create_rdf_triples()
     qsrc = rdfstack.get_sparql_example_query()

@@ -6,6 +6,7 @@ try:
     from .settings import *
     from . import erkloader
     from . import rdfstack
+    from . import ruleengine
     from . import auxiliary as aux
     from .ackrep_parser import parse_ackrep
 except ImportError:

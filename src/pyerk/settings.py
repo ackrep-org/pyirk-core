@@ -9,4 +9,9 @@ SUPPORTED_LANGUAGES = ["en", "de"]
 
 DEFAULT_DATA_LANGUAGE = "en"
 
+
 ACKREP_DATA_REL_PATH = "../ackrep/ackrep_data"
+
+BUILTINS_URI = "erk:/builtins"
+URI_SEP = "#"
+

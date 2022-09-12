@@ -5,6 +5,7 @@ Command line interface for erk package
 import argparse
 from ipydex import IPS, activate_ips_on_exception
 from . import core, erkloader, rdfstack, auxiliary as aux
+from . import ackrep_parser
 
 activate_ips_on_exception()
 
@@ -34,6 +35,14 @@ def main():
         default=30,
     )
 
+    parser.add_argument(
+        "-pad",
+        "--parse-ackrep-data",
+        help="parse ackrep data repository, create items and relations. specify path to ackrep_data base dir \
+            (.../ackrep_data)",
+        metavar="path",
+    )
+
     parser.add_argument("--dbg", help=f"start debug routine", default=None, action="store_true")
 
     args = parser.parse_args()
@@ -53,6 +62,8 @@ def main():
 
     elif args.inputfile is not None:
         core.script_main(args.inputfile)
+    elif args.parse_ackrep_data:
+        ackrep_parser.parse_ackrep(args.parse_ackrep_data)
     else:
         print("nothing to do, see option `--help` for more info")
 

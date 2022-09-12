@@ -35,7 +35,11 @@ TEST_DATA_DIR1 = pjoin(ERK_ROOT_DIR, "pyerk", "tests", "test_data")
 TEST_DATA_PATH2 = pjoin(ERK_ROOT_DIR, "erk-data", "control-theory", "control_theory1.py")
 TEST_MOD_NAME = "control_theory1"
 
+
+TEST_ACKREP_DATA_FOR_UT_PATH = pjoin(ERK_ROOT_DIR, "..", "ackrep", "ackrep_data_for_unittests")
+
 __URI__ = TEST_BASE_URI = "erk:/local/unittest/"
+
 
 # this serves to print the test-method-name before it is executed (useful for debugging, see setUP below)
 PRINT_TEST_METHODNAMES = True
@@ -215,7 +219,7 @@ class TestCore1(HouskeeperMixin, unittest.TestCase):
         mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
         self.assertEqual(mod1.I3749.R1, "Cayley-Hamilton theorem")
 
-        def_eq_item = mod1.I6886.R6__has_defining_equation
+        def_eq_item = mod1.I6886.R6__has_defining_mathematical_relation
         self.assertEqual(def_eq_item.R4__is_instance_of, p.I18["mathematical expression"])
         self.assertEqual(def_eq_item.R24__has_LaTeX_string, r"$\dot x = f(x, u)$")
 
@@ -484,7 +488,21 @@ class TestCore1(HouskeeperMixin, unittest.TestCase):
         label = node.get_dot_label(render=True)
         self.assertEqual(label, 'I0126\\n["12 34567-\\n890abcdefgh"]')
 
+
+    def test_ackrep_parser(self):
+        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH, TEST_MOD_NAME)
+        p1 = os.path.join(TEST_ACKREP_DATA_FOR_UT_PATH, "system_models", "lorenz_system")
+        res = p.parse_ackrep(p1)
+        self.assertEqual(res, 0)
+        p2 = os.path.join(TEST_ACKREP_DATA_FOR_UT_PATH, "system_models", "lorenz_system_broken")
+        try:
+            res = p.parse_ackrep(p2)
+        except AssertionError as e:
+            self.assertEqual(e.args[0], 'This key (_R2928["has model representation"]) has to be a relation.')
+
+
     def test_visualization1(self):
+
 
         res_graph: visualization.nx.DiGraph = \
             visualization.create_nx_graph_from_entity(p.u("I21__mathematical_relation"))

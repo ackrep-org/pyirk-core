@@ -131,7 +131,7 @@ R32["is functional for each language"].set_relation(R22["is functional"], True)
 R3 = create_builtin_relation("R3", R1="is subclass of", R22__is_functional=True)
 R4 = create_builtin_relation("R4", R1="is instance of", R22__is_functional=True)
 R5 = create_builtin_relation("R5", R1="is part of")
-R6 = create_builtin_relation("R6", R1="has defining equation", R22__is_functional=True)
+R6 = create_builtin_relation("R6", R1="has defining mathematical relation", R22__is_functional=True)
 R7 = create_builtin_relation("R7", R1="has arity", R22__is_functional=True)
 R8 = create_builtin_relation("R8", R1="has domain of argument 1")
 R9 = create_builtin_relation("R9", R1="has domain of argument 2")
@@ -700,14 +700,14 @@ I29 = create_builtin_item(
 
 I30 = create_builtin_item(
     key_str="I30",
-    R1__has_label="greater-than-relation",
+    R1__has_label="greater-or-equal-than-relation",
     R2__has_description="mathematical relation that specifies that lhs is strictly greater than rhs",
     R3__is_subclass_of=I27["non-strict inequality"],
 )
 
 I31 = create_builtin_item(
     key_str="I31",
-    R1__has_label="less-than-relation",
+    R1__has_label="less-or-equal-than-relation",
     R2__has_description="mathematical relation that specifies that lhs is strictly less than rhs",
     R3__is_subclass_of=I27["non-strict inequality"],
 )
@@ -811,24 +811,39 @@ R31 = create_builtin_relation(
 
 
 def new_equation(lhs: Item, rhs: Item, doc=None, scope: Optional[Item] = None) -> Item:
+    """common speacial case of mathematical relation, also ensures backwards compatibility"""
 
+    eq = new_mathematical_relation(lhs, "=", rhs, doc, scope)
+
+    return eq
+
+
+def new_mathematical_relation(lhs: Item, rsgn: str, rhs: Item, doc=None, scope: Optional[Item] = None) -> Item:
+
+    rsgn_dict = {
+        "=": I23["equation"],
+        "<": I29["less-than-relation"],
+        ">": I28["greater-than-relation"],
+        "<=": I31["less-or-equal-than-relation"],
+        ">=": I30["greater-or-equal-than-relation"],
+    }
     if doc is not None:
         assert isinstance(doc, str)
-    eq = instance_of(I23["equation"])
+    mr = instance_of(rsgn_dict[rsgn])
 
     if scope is not None:
-        eq.set_relation(R20["has defining scope"], scope)
+        mr.set_relation(R20["has defining scope"], scope)
 
     # TODO: perform type checking
     # assert check_is_instance_of(lhs, I23("mathematical term"))
 
-    eq.set_relation(R26["has lhs"], lhs)
-    eq.set_relation(R27["has rhs"], rhs)
+    mr.set_relation(R26["has lhs"], lhs)
+    mr.set_relation(R27["has rhs"], rhs)
 
     # TODO: proxyitem should be specified by a qualifier
-    re = lhs.set_relation(R31["is in mathematical relation with"], rhs, scope=scope, qualifiers=[proxy_item(eq)])
+    re = lhs.set_relation(R31["is in mathematical relation with"], rhs, scope=scope, qualifiers=[proxy_item(mr)])
 
-    return eq
+    return mr
 
 
 # annoying: pycharm does not recognize that "str"@some_LangaguageCode_obj is valid because str does not
@@ -1092,7 +1107,7 @@ with I041["subproperty rule 1"].scope("context") as cm:
 #
 with I041["subproperty rule 1"].scope("premises") as cm:
     cm.new_rel(cm.P2, R17["is subproperty of"], cm.P1)
-    cm.new_rel(cm.P3, R17["is subproperty of"], cm.P1)
+    cm.new_rel(cm.P3, R17["is subproperty of"], cm.P2)
     # todo: state that all variables are different from each other
 
 with I041["subproperty rule 1"].scope("assertions") as cm:

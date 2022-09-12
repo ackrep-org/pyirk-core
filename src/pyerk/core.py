@@ -29,37 +29,37 @@ activate_ips_on_exception()
 
 """
     TODO:
-    
+
     model sets as type? and elements as instances?
     manually trigger reload in gui
 
     Caylay-Hamilton-Theorem
     qualifier relations, e.g. for universal quantification
-         
+
     Lyapunov stability theorem
     visualizing the results
     has implementation (application to actual instances)
-    
-    
+
+
     multiple assignments via list
     natural language representation of ordered atomic statements
     Labels (als Listeneinträge)
     DOMAIN und RANGE
-    
+
     unittests ✓
     Sanity-check: `R1__part_of` muss einen Fehler werfen
-    
+
     content: dynamical_system can_be_represented_by mathematical_model
     → Herausforderung: in OWL sind relationen nur zwischen Instanzen zulässig.
     Damit ist die Angabe von DOMAIN und RANGE, relativ klar. Wenn die Grenze zwischen Klasse und Instanz verschwimmt
     ist das nicht mehr so klar: Jede Instanz der Klasse <dynamical_system> ???
-    
+
     anders: <can_be_represented_by> ist eine n:m Zuordnung von Instanzen der Klasse
     <dynamical_system> zu Instanzen der Klasse <mathematical_model>
-    
+
     komplexere Aussagen:
     alle steuerbaren linearen ODE-systeme sind flach
-        
+
 """
 
 

@@ -76,12 +76,11 @@ def process_mod(path):
 def debug():
     ERK_ROOT_DIR = aux.get_erk_root_dir()
     TEST_DATA_PATH = os.path.join(ERK_ROOT_DIR, "erk-data", "control-theory", "control_theory1.py")
-    TEST_MOD_NAME = "control_theory1"
-    mod1 = erkloader.load_mod_from_path(TEST_DATA_PATH, TEST_MOD_NAME)
+    mod1 = erkloader.load_mod_from_path(TEST_DATA_PATH, prefix="ct")
     ackrep_parser.parse_ackrep()
     ds = core.ds
     ds.rdfgraph = rdfstack.create_rdf_triples()
-    qsrc = rdfstack.get_sparql_example_query()
+    qsrc = rdfstack.get_sparql_example_query2()
     res = ds.rdfgraph.query(qsrc)
     z = aux.apply_func_to_table_cells(rdfstack.convert_from_rdf_to_pyerk, res)
     IPS()

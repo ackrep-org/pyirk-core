@@ -1,6 +1,6 @@
 import os
 import sys
-import regex
+import re as regex
 from typing import Iterable, Union, Dict, Any
 from rdflib import Literal
 from colorama import Style, Fore

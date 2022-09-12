@@ -90,13 +90,26 @@ def convert_from_rdf_to_pyerk(rdfnode) -> object:
 def get_sparql_example_query():
 
     qsrc = f"""
-    
+
         PREFIX : <{ERK_URI}>
         SELECT ?s ?o
         WHERE {{
             ?s :R5 ?o.
         }}
     """
+    return qsrc
+
+def get_sparql_example_query2():
+
+    qsrc = f"""
+        PREFIX : <{ERK_URI}>
+        PREFIX ocse: <erk:/ocse/0.2#>
+        SELECT ?s
+        WHERE {{
+            ?s :R16 ocse:I7733.
+
+        }}
+        """
     return qsrc
 
 

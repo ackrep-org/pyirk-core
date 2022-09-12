@@ -490,7 +490,7 @@ class TestCore1(HouskeeperMixin, unittest.TestCase):
 
 
     def test_ackrep_parser(self):
-        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH, TEST_MOD_NAME)
+        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, TEST_MOD_NAME)
         p1 = os.path.join(TEST_ACKREP_DATA_FOR_UT_PATH, "system_models", "lorenz_system")
         res = p.parse_ackrep(p1)
         self.assertEqual(res, 0)

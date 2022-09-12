@@ -6,11 +6,16 @@ from ipydex import IPS
 from typing import Union
 
 from .core import Item, Relation, Entity
+from . import core
 from . import aux
 from .builtin_entities import instance_of
 from .erkloader import load_mod_from_path
 from . import builtin_entities
 from .auxiliary import *
+
+__URI__ = "erk:/models"
+keymanager = core.KeyManager()
+core.register_mod(__URI__, keymanager)
 
 ERK_ROOT_DIR = aux.get_erk_root_dir()
 TEST_DATA_PATH = os.path.join(ERK_ROOT_DIR, "erk-data", "control-theory", "control_theory1.py")
@@ -24,8 +29,16 @@ relation_pattern = regex.compile(r"^(Ra?\d+)(\[(.*)\])$")
 function_pattern = regex.compile(r"^(.+)(\(.*\))$")
 
 
-def parse_ackrep(base_path=None):
+def parse_ackrep(base_path: str=None) -> int:
+    """parse ackrep entities. if no base path is given, entire ackrep_data repo is parsed. if path is given
+    only this path is parsed.
 
+    Args:
+        base_path (str, optional): optional target path to parse. Defaults to None.
+
+    Returns:
+        int: sum of returncodes
+    """
     # default path
     if base_path is None:
         base_path = os.path.join(ERK_ROOT_DIR, settings.ACKREP_DATA_REL_PATH)
@@ -46,7 +59,7 @@ def parse_ackrep(base_path=None):
             if folder[0] == "_":
                 continue
 
-            retcode = parse_ackrep_entity(os.path.join(system_models_path, folder))
+            retcode = parse_system_model(os.path.join(system_models_path, folder))
             retcodes.append(retcode)
 
         if sum(retcodes) == 0:
@@ -56,12 +69,12 @@ def parse_ackrep(base_path=None):
 
     # assume path leads to entity folder
     else:
-        retcode = parse_ackrep_entity(ackrep_path)
+        retcode = parse_system_model(ackrep_path)
         retcodes.append(retcode)
 
     return sum(retcodes)
 
-def parse_ackrep_entity(entity_path: str):
+def parse_system_model(entity_path: str):
 
     metadata_path = os.path.join(entity_path, "metadata.yml")
 
@@ -72,6 +85,7 @@ def parse_ackrep_entity(entity_path: str):
             msg = f"Metadata file of '{os.path.split(entity_path)[1]}' has yaml syntax error, see message above."
             raise SyntaxError(msg) from e
 
+    core.start_mod(__URI__)
     model = instance_of(mod.I7641["general system model"], r1=md["name"], r2=md["short_description"])
     model.set_relation(mod.R2950["has corresponding ackrep key"], md["key"])
 
@@ -79,12 +93,14 @@ def parse_ackrep_entity(entity_path: str):
         ed = md["erk_data"]
     except KeyError:
         print(byellow(f"{md['key']}({md['name']}) has no erk_data yet."))
+        core.end_mod()
         return 2
 
     parse_recursive(model, ed)
     # print(model.get_relations())
     print(bgreen(f"{md['key']}({md['name']}) successfully parsed."))
 
+    core.end_mod()
     return 0
 
 

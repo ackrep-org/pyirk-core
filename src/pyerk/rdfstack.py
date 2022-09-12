@@ -1,19 +1,23 @@
 """
 This module serves to perform integrity checks on the knowledge base
 """
-from typing import Iterable, Union
+from typing import Union
 
 from . import core as pyerk, auxiliary as aux
 
+# noinspection PyUnresolvedReferences
 from ipydex import IPS
 from rdflib import Graph, Literal, URIRef
 from rdflib.plugins.sparql.processor import SPARQLResult
+from rdflib.query import Result
 
-# noinspection PyUnresolvedReferences  # imported to be used in gui-view
+
+# noinspection PyUnresolvedReferences
+# (imported here to be used in gui-view)
 from pyparsing import ParseException
 
 
-ERK_URI = "erk:/"
+ERK_URI = f"{pyerk.settings.BUILTINS_URI}{pyerk.settings.URI_SEP}"
 
 
 def create_rdf_triples() -> Graph:
@@ -21,11 +25,11 @@ def create_rdf_triples() -> Graph:
     # based on https://rdflib.readthedocs.io/en/stable/gettingstarted.html
     g = Graph()
 
-    for re in pyerk.ds.relation_edge_list:
+    for re_uri, re in pyerk.ds.relation_edge_uri_map.items():
         row = []
         for entity in re.relation_tuple:
             if isinstance(entity, pyerk.Entity):
-                row.append(URIRef(f"erk:/{entity.short_key}"))
+                row.append(URIRef(f"{entity.uri}"))
             else:
                 # no entity but a literal value
                 row.append(Literal(entity))
@@ -44,8 +48,11 @@ def check_subclass(entity, class_item):
     res.extend(aux.ensure_list(entity.R4__is_instance_of))
     res.extend(aux.ensure_list(entity.R3__is_subclass_of))
 
+    res.append(class_item)
+    raise aux.NotYetFinishedError
 
-Sparql_results_type = Union[aux.ListWithAttributes, SPARQLResult]
+
+Sparql_results_type = Union[aux.ListWithAttributes, SPARQLResult, Result]
 
 
 def perform_sparql_query(qsrc: str, return_raw=False) -> Sparql_results_type:
@@ -65,8 +72,8 @@ def perform_sparql_query(qsrc: str, return_raw=False) -> Sparql_results_type:
 
 def convert_from_rdf_to_pyerk(rdfnode) -> object:
     if isinstance(rdfnode, URIRef):
-        short_key = rdfnode.lstrip(ERK_URI)
-        entity_object = pyerk.ds.get_entity(short_key)
+        uri = rdfnode.toPython()
+        entity_object = pyerk.ds.get_entity_by_uri(uri)
     elif isinstance(rdfnode, Literal):
         entity_object = rdfnode.value
     elif rdfnode is None:
@@ -93,6 +100,7 @@ def get_sparql_example_query():
     return qsrc
 
 
+# noinspection PyUnusedLocal
 def check_all_relation_types():
     rdfgraph = create_rdf_triples()
 
@@ -104,6 +112,7 @@ def check_all_relation_types():
 
     res2 = aux.apply_func_to_table_cells(convert_from_rdf_to_pyerk, res)
     # IPS()
+    raise aux.NotYetFinishedError
 
 
 """

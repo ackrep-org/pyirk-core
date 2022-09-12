@@ -99,6 +99,7 @@ def get_sparql_example_query():
     """
     return qsrc
 
+
 def get_sparql_example_query2():
 
     qsrc = f"""

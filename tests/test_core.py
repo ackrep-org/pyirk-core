@@ -52,6 +52,7 @@ class HouskeeperMixin:
     """
     Class to provide common functions for all our TestCase subclasses
     """
+
     def setUp(self):
         self.print_methodnames()
         self.register_this_module()
@@ -79,7 +80,6 @@ class HouskeeperMixin:
 
 
 class TestCore0(HouskeeperMixin, unittest.TestCase):
-
     def test_a0__process_key_str(self):
         res = p.process_key_str("I1")
         self.assertEqual(res.prefix, None)
@@ -172,7 +172,6 @@ class TestCore0(HouskeeperMixin, unittest.TestCase):
 
 # noinspection PyPep8Naming
 class TestCore1(HouskeeperMixin, unittest.TestCase):
-
     def test_aa0__directory_structure(self):
         pyerk_dir = pjoin(ERK_ROOT_DIR, "pyerk")
         django_gui_dir = pjoin(ERK_ROOT_DIR, "django-erk-gui")
@@ -488,7 +487,6 @@ class TestCore1(HouskeeperMixin, unittest.TestCase):
         label = node.get_dot_label(render=True)
         self.assertEqual(label, 'I0126\\n["12 34567-\\n890abcdefgh"]')
 
-
     def test_ackrep_parser(self):
         mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, TEST_MOD_NAME)
         p1 = os.path.join(TEST_ACKREP_DATA_FOR_UT_PATH, "system_models", "lorenz_system")
@@ -500,12 +498,11 @@ class TestCore1(HouskeeperMixin, unittest.TestCase):
         except AssertionError as e:
             self.assertEqual(e.args[0], 'This key (_R2928["has model representation"]) has to be a relation.')
 
-
     def test_visualization1(self):
 
-
-        res_graph: visualization.nx.DiGraph = \
-            visualization.create_nx_graph_from_entity(p.u("I21__mathematical_relation"))
+        res_graph: visualization.nx.DiGraph = visualization.create_nx_graph_from_entity(
+            p.u("I21__mathematical_relation")
+        )
         self.assertGreater(res_graph.number_of_nodes(), 7)
 
         mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, TEST_MOD_NAME)
@@ -533,7 +530,6 @@ class TestCore1(HouskeeperMixin, unittest.TestCase):
 
 
 class TestCore2(HouskeeperMixin, unittest.TestCase):
-
     def test_ruleengine1(self):
         # test rendering of dot
         p.ruleengine.apply_all_semantic_rules()

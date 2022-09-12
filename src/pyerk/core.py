@@ -18,8 +18,14 @@ from rdflib import Literal
 
 from . import auxiliary as aux
 from . import settings
-from .auxiliary import InvalidURIError, InvalidPrefixError, PyERKError, EmptyURIStackError, InvalidShortKeyError,\
-    UnknownPrefixError
+from .auxiliary import (
+    InvalidURIError,
+    InvalidPrefixError,
+    PyERKError,
+    EmptyURIStackError,
+    InvalidShortKeyError,
+    UnknownPrefixError,
+)
 
 from ipydex import IPS, activate_ips_on_exception, set_trace
 
@@ -138,8 +144,8 @@ class Entity(abc.ABC):
             r4 = getattr(self, "R4", None)
             msg = (
                 f"Unexpected attribute name: '{attr_name}' of entity {self}\n",
-                f'Type hint: self.R3__is_subclass_of: {r3}\n',
-                f'Type hint: self.R4__is_instance_of: {r4}\n',
+                f"Type hint: self.R3__is_subclass_of: {r3}\n",
+                f"Type hint: self.R4__is_instance_of: {r4}\n",
             )
             raise AttributeError(msg)
 
@@ -332,9 +338,7 @@ class Entity(abc.ABC):
         if isinstance(relation, Relation):
 
             if isinstance(obj, (Entity, *allowed_types)) or obj in allowed_types:
-                return self._set_relation(
-                    relation.uri, obj, scope=scope, qualifiers=qualifiers, proxyitem=proxyitem
-                )
+                return self._set_relation(relation.uri, obj, scope=scope, qualifiers=qualifiers, proxyitem=proxyitem)
             # Todo: remove obsolete code:
             # elif isinstance(obj, Iterable):
             #     msg = f"Unsupported iterable type ({type(obj)}) of {obj}, while setting relation {relation.short_key}"
@@ -421,7 +425,7 @@ class Entity(abc.ABC):
         return rledg
 
     def get_relations(
-            self, key_str_or_uri: Optional[str] = None, return_subj: bool = False
+        self, key_str_or_uri: Optional[str] = None, return_subj: bool = False
     ) -> Union[Dict[str, list], list]:
         """
         Return all RelationEdge instance where this item is subject
@@ -438,9 +442,7 @@ class Entity(abc.ABC):
         return self._return_relations(rel_dict, key_str_or_uri, return_subj)
 
     def get_inv_relations(
-            self,
-            key_str_or_uri: Optional[str] = None,
-            return_subj: bool = False
+        self, key_str_or_uri: Optional[str] = None, return_subj: bool = False
     ) -> Union[Dict[str, list], list]:
         """
         Return all RelationEdge instance where this item is object
@@ -459,9 +461,9 @@ class Entity(abc.ABC):
 
     @staticmethod
     def _return_relations(
-            base_dict,
-            key_str_or_uri: str,
-            return_subj: bool,
+        base_dict,
+        key_str_or_uri: str,
+        return_subj: bool,
     ) -> Union[Dict[str, list], list]:
         """
 
@@ -1040,7 +1042,7 @@ def pop_uri_based_key(prefix: Optional[str] = None, prefix2: str = "") -> Union[
 
     active_mod_uri = get_active_mod_uri()
     km = ds.uri_keymanager_dict[active_mod_uri]
-    num_key =  km.pop()
+    num_key = km.pop()
     if prefix is None:
         assert not prefix2
         return num_key
@@ -1253,7 +1255,7 @@ class RelationEdge:
 
         if self.role == RelationRole.SUBJECT:
 
-            subj_rel_edges: Dict[str: List[RelationEdge]] = ds.relation_edges[subj.uri]
+            subj_rel_edges: Dict[str : List[RelationEdge]] = ds.relation_edges[subj.uri]
             tolerant_removal(subj_rel_edges.get(pred.uri, []), self)
 
             # ds.relation_relation_edges: for every relation key stores a list of relevant relation-edges
@@ -1263,7 +1265,7 @@ class RelationEdge:
 
         elif self.role == RelationRole.OBJECT:
             assert isinstance(obj, Entity)
-            obj_rel_edges: Dict[str: List[RelationEdge]] = ds.inv_relation_edges[obj.uri]
+            obj_rel_edges: Dict[str : List[RelationEdge]] = ds.inv_relation_edges[obj.uri]
             # (check before accessing, see above)
             if pred.uri in obj_rel_edges:
                 tolerant_removal(obj_rel_edges[pred.uri], self)

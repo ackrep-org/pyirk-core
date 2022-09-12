@@ -24,7 +24,7 @@ def load_mod_from_path(modpath: str, prefix: str, modname=None, allow_reload=Tru
             modname = os.path.split(modpath)[-1][:-3]  # take the filename but without '.py' at the end
             assert len(modname) > 0
         else:
-            msg= "`modpath` is unexpected. In such situations an explicit modname is mandatory."
+            msg = "`modpath` is unexpected. In such situations an explicit modname is mandatory."
             raise NotImplementedError(msg)
 
     modpath = os.path.abspath(modpath)

@@ -29,7 +29,7 @@ relation_pattern = regex.compile(r"^(Ra?\d+)(\[(.*)\])$")
 function_pattern = regex.compile(r"^(.+)(\(.*\))$")
 
 
-def parse_ackrep(base_path: str=None) -> int:
+def parse_ackrep(base_path: str = None) -> int:
     """parse ackrep entities. if no base path is given, entire ackrep_data repo is parsed. if path is given
     only this path is parsed.
 
@@ -51,28 +51,99 @@ def parse_ackrep(base_path: str=None) -> int:
     retcodes = []
     # parse entire repo
     if "ackrep_data" in os.path.split(ackrep_path)[1]:
-
-        system_models_path = os.path.join(ackrep_path, "system_models")
-        model_folders = os.listdir(system_models_path)
-        for folder in model_folders:
-            # skip template folder
-            if folder[0] == "_":
-                continue
-
-            retcode = parse_system_model(os.path.join(system_models_path, folder))
-            retcodes.append(retcode)
-
-        if sum(retcodes) == 0:
-            print(bgreen("All entities successfully parsed."))
-        else:
-            print(bred("Not all entities parsed, see above."))
+        retcodes.append(parse_all_system_models(ackrep_path))
+        retcodes.append(parse_all_problems_and_solutions(ackrep_path))
 
     # assume path leads to entity folder
     else:
-        retcode = parse_system_model(ackrep_path)
+        if "system_models" in ackrep_path:
+            retcode = parse_system_model(ackrep_path)
+        elif "problem_specifications" in ackrep_path or "problem_solutions" in ackrep_path:
+            retcode = parse_problem_or_solution(ackrep_path)
         retcodes.append(retcode)
 
     return sum(retcodes)
+
+
+def parse_all_problems_and_solutions(ackrep_path):
+    retcodes = []
+    for n in ["problem_specifications", "problem_solutions"]:
+        path = os.path.join(ackrep_path, n)
+        folders = os.listdir(path)
+        for folder in folders:
+            # skip template folder
+            if folder[0] == "_":
+                continue
+            if not os.path.isdir(os.path.join(path, folder)):
+                continue
+
+            retcode = parse_problem_or_solution(os.path.join(path, folder))
+            retcodes.append(retcode)
+
+    if sum(retcodes) == 0:
+        print(bgreen("All entities successfully parsed."))
+    else:
+        print(bred("Not all entities parsed, see above."))
+
+    return sum(retcodes)
+
+
+def parse_all_system_models(ackrep_path):
+    retcodes = []
+    system_models_path = os.path.join(ackrep_path, "system_models")
+    model_folders = os.listdir(system_models_path)
+    for folder in model_folders:
+        # skip template folder
+        if folder[0] == "_":
+            continue
+
+        retcode = parse_system_model(os.path.join(system_models_path, folder))
+        retcodes.append(retcode)
+
+    if sum(retcodes) == 0:
+        print(bgreen("All entities successfully parsed."))
+    else:
+        print(bred("Not all entities parsed, see above."))
+
+    return sum(retcodes)
+
+
+def parse_problem_or_solution(entity_path: str):
+    """very basic to incorporate already existing ocse tags"""
+    metadata_path = os.path.join(entity_path, "metadata.yml")
+
+    if "problem_specifications" in entity_path:
+        e_type = "pspec"
+        erk_class = mod.I5919["problem specification"]
+    elif "problem_solutions" in entity_path:
+        e_type = "psol"
+        erk_class = mod.I4635["problem solution"]
+    else:
+        raise TypeError(f"path {entity_path} doesnt lead to prob spec or prob sol.")
+
+    with open(metadata_path, "r") as metadata_file:
+        try:
+            md = yaml.safe_load(metadata_file)
+        except ParserError as e:
+            msg = f"Metadata file of '{os.path.split(entity_path)[1]}' has yaml syntax error, see message above."
+            raise SyntaxError(msg) from e
+
+    core.start_mod(__URI__)
+
+    entity = instance_of(erk_class, r1=md["name"], r2=md["short_description"])
+    entity.set_relation(mod.R2950["has corresponding ackrep key"], md["key"])
+
+    tags = md["tag_list"]
+    # assume this is just a simple list
+    for tag in tags:
+        if "ocse:" in tag:
+            t = instance_of(mod.I1161["old tag"], r1=tag)
+            entity.set_relation(mod.R1070["has old tag"], t)
+    # IPS()
+    print(entity.get_relations())
+    core.end_mod()
+    return 0
+
 
 def parse_system_model(entity_path: str):
 

@@ -1641,10 +1641,11 @@ def _unlink_entity(uri: str) -> None:
     ds.released_keys.append(uri)
 
 
-def register_mod(uri: str, keymanager: KeyManager):
+def register_mod(uri: str, keymanager: KeyManager, check_uri=True):
     frame = get_caller_frame(upcount=1)
     path = os.path.abspath(frame.f_globals["__file__"])
-    assert frame.f_globals.get("__URI__", None) == uri
+    if check_uri:
+        assert frame.f_globals.get("__URI__", None) == uri
     if uri != settings.BUILTINS_URI:
         # the builtin module is an exception because it should not be unloaded
         ds.mod_path_mapping.add_pair(key_a=uri, key_b=path)

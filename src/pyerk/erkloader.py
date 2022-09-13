@@ -73,6 +73,8 @@ def load_mod_from_path(modpath: str, prefix: str, modname=None, allow_reload=Tru
 
     pyerk.aux.ensure_valid_baseuri(mod_uri)
     pyerk.ds.uri_prefix_mapping.add_pair(mod_uri, prefix)
+
+    # TODO: obsolete?
     pyerk.ds.modnames[mod_uri] = modname
 
     return mod

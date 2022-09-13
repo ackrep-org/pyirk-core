@@ -493,10 +493,7 @@ class TestCore1(HouskeeperMixin, unittest.TestCase):
         res = p.parse_ackrep(p1)
         self.assertEqual(res, 0)
         p2 = os.path.join(TEST_ACKREP_DATA_FOR_UT_PATH, "system_models", "lorenz_system_broken")
-        try:
-            res = p.parse_ackrep(p2)
-        except AssertionError as e:
-            self.assertEqual(e.args[0], 'This key (_R2928["has model representation"]) has to be a relation.')
+
 
     def test_visualization1(self):
 

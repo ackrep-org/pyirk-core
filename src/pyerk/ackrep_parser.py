@@ -15,7 +15,7 @@ from .auxiliary import *
 
 __URI__ = "erk:/models"
 keymanager = core.KeyManager()
-core.register_mod(__URI__, keymanager)
+
 
 ERK_ROOT_DIR = aux.get_erk_root_dir()
 TEST_DATA_PATH = os.path.join(ERK_ROOT_DIR, "erk-data", "control-theory", "control_theory1.py")
@@ -80,10 +80,10 @@ def parse_all_problems_and_solutions(ackrep_path):
             retcode = parse_problem_or_solution(os.path.join(path, folder))
             retcodes.append(retcode)
 
-    if sum(retcodes) == 0:
-        print(bgreen("All entities successfully parsed."))
-    else:
-        print(bred("Not all entities parsed, see above."))
+    # if sum(retcodes) == 0:
+        # print(bgreen("All entities successfully parsed."))
+    # else:
+        # print(bred("Not all entities parsed, see above."))
 
     return sum(retcodes)
 
@@ -100,10 +100,10 @@ def parse_all_system_models(ackrep_path):
         retcode = parse_system_model(os.path.join(system_models_path, folder))
         retcodes.append(retcode)
 
-    if sum(retcodes) == 0:
-        print(bgreen("All entities successfully parsed."))
-    else:
-        print(bred("Not all entities parsed, see above."))
+    # if sum(retcodes) == 0:
+    #     print(bgreen("All entities successfully parsed."))
+    # else:
+    #     print(bred("Not all entities parsed, see above."))
 
     return sum(retcodes)
 
@@ -127,7 +127,7 @@ def parse_problem_or_solution(entity_path: str):
         except ParserError as e:
             msg = f"Metadata file of '{os.path.split(entity_path)[1]}' has yaml syntax error, see message above."
             raise SyntaxError(msg) from e
-
+    core.register_mod(__URI__, keymanager)
     core.start_mod(__URI__)
 
     entity = instance_of(erk_class, r1=md["name"], r2=md["short_description"])
@@ -140,7 +140,7 @@ def parse_problem_or_solution(entity_path: str):
             t = instance_of(mod.I1161["old tag"], r1=tag)
             entity.set_relation(mod.R1070["has old tag"], t)
     # IPS()
-    print(entity.get_relations())
+    # print(entity.get_relations())
     core.end_mod()
     return 0
 
@@ -155,7 +155,8 @@ def parse_system_model(entity_path: str):
         except ParserError as e:
             msg = f"Metadata file of '{os.path.split(entity_path)[1]}' has yaml syntax error, see message above."
             raise SyntaxError(msg) from e
-
+    core.register_mod(__URI__, keymanager, check_uri=False)
+    core.ds.uri_prefix_mapping.add_pair(__URI__, "mod")
     core.start_mod(__URI__)
     model = instance_of(mod.I7641["general system model"], r1=md["name"], r2=md["short_description"])
     model.set_relation(mod.R2950["has corresponding ackrep key"], md["key"])
@@ -163,13 +164,13 @@ def parse_system_model(entity_path: str):
     try:
         ed = md["erk_data"]
     except KeyError:
-        print(byellow(f"{md['key']}({md['name']}) has no erk_data yet."))
+        # print(byellow(f"{md['key']}({md['name']}) has no erk_data yet."))
         core.end_mod()
         return 2
 
     parse_recursive(model, ed)
     # print(model.get_relations())
-    print(bgreen(f"{md['key']}({md['name']}) successfully parsed."))
+    # print(bgreen(f"{md['key']}({md['name']}) successfully parsed."))
 
     core.end_mod()
     return 0

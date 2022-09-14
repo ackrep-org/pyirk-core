@@ -14,6 +14,7 @@ from ipydex import IPS, activate_ips_on_exception
 
 activate_ips_on_exception()
 
+# TODO: make this a  dict to speedup lookup
 #  tuple of Relation keys which are not displayed by default
 REL_BLACKLIST = ("erk:/builtins#R1", "erk:/builtins#R2")
 
@@ -326,7 +327,7 @@ def create_nx_graph_from_entity(uri, url_template="") -> nx.DiGraph:
     re_dict = entity.get_relations()
     inv_re_dict = entity.get_inv_relations()
 
-    G = CustomizedDiGraph()
+    G = nx.DiGraph()
     base_node = create_node(entity, url_template)
     G.add_node(base_node, color="#2ca02c")
 
@@ -353,10 +354,58 @@ def create_nx_graph_from_entity(uri, url_template="") -> nx.DiGraph:
     return G
 
 
+def create_complete_graph(url_template="") -> nx.DiGraph:
+    """
+
+    :param uri:
+    :param url_template:
+    :return:
+    """
+
+    added_items = {}
+    added_relation_edges = {}
+    G = CustomizedDiGraph()
+
+    relation_dict: dict
+    for item_uri, relation_dict in p.ds.relation_edges.items():
+        item = p.ds.get_entity_by_uri(item_uri)
+        if not isinstance(item, p.Item):
+            continue
+        node = create_node(item, url_template)
+        if item_uri not in added_items:
+            # TODO: add color by base_uri
+            G.add_node(node)
+        added_items[item_uri] = 1
+
+        # iterate over relation edges
+        for relation_uri, rledg_list in relation_dict.items():
+            for rledg in rledg_list:
+                if rledg.role != p.RelationRole.SUBJECT:
+                    continue
+                if rledg.relation_tuple[1].uri in REL_BLACKLIST:
+                    continue
+
+                obj = rledg.relation_tuple[-1]
+                if isinstance(obj, p.Item):
+                    if not (other_node := added_items.get(obj.uri)):
+                        other_node = create_node(obj, url_template)
+                        G.add_node(other_node)
+                else:
+                    # obj is a literal
+                    other_node = create_node(obj, url_template)
+                    G.add_node(other_node)
+                G.add_edge(node, other_node)
+
+                assert rledg.uri not in added_relation_edges
+                added_relation_edges[rledg.uri] = 1
+
+    return G
+
+
 def render_graph_to_dot(G: nx.DiGraph) -> str:
     """
 
-    :param G:       the graph to render
+    :param G:       nx.DiGraph; the graph to render
     :return:        dot_data
     """
 
@@ -416,6 +465,72 @@ def visualize_entity(uri: str, url_template="", write_tmp_files: bool = False) -
     # noinspection PyUnresolvedReferences,PyProtectedMember
     raw_svg_data = nxv._graphviz.run(dot_data, algorithm="dot", format="svg", graphviz_bin=None)
 
+    svg_data1: str = raw_svg_data.decode("utf8").format(**REPLACEMENTS)
+
+    if write_tmp_files:
+        # for debugging
+
+        dot_fpath = "./tmp_dot.txt"
+        with open(dot_fpath, "w") as txtfile:
+            txtfile.write(dot_data)
+        print("File written:", os.path.abspath(dot_fpath))
+
+        svg_fpath = "./tmp.svg"
+        with open(svg_fpath, "w") as txtfile:
+            txtfile.write(svg_data1)
+        print("File written:", os.path.abspath(svg_fpath))
+
+    return svg_data1
+
+
+def visualize_all_entities(url_template="", write_tmp_files: bool = False) -> str:
+
+    G = create_complete_graph(url_template)
+
+    print(f"Visualizing {len(G.nodes)} nodes and {len(G.edges)} edges.")
+
+    # styling and rendering
+
+    edge_defaults = {
+        "style": "solid",
+        "arrowType": "normal",
+        "fontsize": 10,
+        # "labeljust": "r",
+    }
+    style = nxv.Style(
+        graph={"rankdir": "BT"},
+        # u: node, d: its attribute dict
+        node=lambda u, d: {
+            "fixedsize": True,
+            "width": 1.3,
+            "fontsize": 10,
+            "color": d.get("color", "black"),
+            "label": d.get("label", "undefined label"),
+            "shape": d.get("shape", "circle"),  # see also AbstractNode.shape
+        },
+        # u: node1, v: node1, d: its attribute dict
+        edge=lambda u, v, d: {**edge_defaults, "label": d["label"]},
+    )
+
+    style = nxv.Style(
+        graph={"rankdir": "BT", "nodesep": 0.05},
+        node=lambda u, d: {
+            "shape": "point",
+            "fixedsize": True,
+            "width": 0.1,
+            "fontsize": 10,
+            "fillcolor": "#454545ff",
+        },
+        edge=lambda u, v, d: {"style": "solid", "arrowhead": "normal", "color": "#959595ff", "arrowsize": 0.5},
+    )
+
+    # noinspection PyTypeChecker
+    raw_dot_data: str = nxv.render(G, style, format="raw")
+
+    # optional: preprocessing
+    dot_data = raw_dot_data
+    # noinspection PyUnresolvedReferences,PyProtectedMember
+    raw_svg_data = nxv._graphviz.run(dot_data, algorithm="dot", format="svg", graphviz_bin=None)
     svg_data1: str = raw_svg_data.decode("utf8").format(**REPLACEMENTS)
 
     if write_tmp_files:

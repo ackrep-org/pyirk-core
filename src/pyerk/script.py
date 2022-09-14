@@ -75,6 +75,11 @@ def main():
     elif args.parse_ackrep_data:
         ackrep_parser.parse_ackrep(args.parse_ackrep_data)
     elif key := args.visualize:
+
+        if key == "__all__":
+            visualization.visualize_all_entities(write_tmp_files=True)
+            return
+
         if not aux.ensure_valid_uri(key, strict=False):
             uri = aux.make_uri(settings.BUILTINS_URI, key)
         else:

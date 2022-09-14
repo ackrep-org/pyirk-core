@@ -1663,7 +1663,7 @@ def start_mod(uri):
     :param uri:
     :return:
     """
-    assert len(_uri_stack) == 0
+    assert len(_uri_stack) == 0, f"Non-empty uri_stack: {_uri_stack}"
     _uri_stack.append(uri)
 
 

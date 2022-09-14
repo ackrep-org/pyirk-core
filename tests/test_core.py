@@ -35,7 +35,8 @@ TEST_DATA_DIR1 = pjoin(ERK_ROOT_DIR, "pyerk", "tests", "test_data")
 TEST_DATA_PATH2 = pjoin(ERK_ROOT_DIR, "erk-data", "control-theory", "control_theory1.py")
 TEST_MOD_NAME = "control_theory1"
 
-
+# TODO: make this more robust (e.g. search for config file or environment variable)
+# TODO: put link to docs here (directory layout)
 TEST_ACKREP_DATA_FOR_UT_PATH = pjoin(ERK_ROOT_DIR, "..", "ackrep", "ackrep_data_for_unittests")
 
 __URI__ = TEST_BASE_URI = "erk:/local/unittest/"
@@ -494,7 +495,6 @@ class TestCore1(HouskeeperMixin, unittest.TestCase):
         self.assertEqual(res, 0)
         p2 = os.path.join(TEST_ACKREP_DATA_FOR_UT_PATH, "system_models", "lorenz_system_broken")
 
-
     def test_visualization1(self):
 
         res_graph: visualization.nx.DiGraph = visualization.create_nx_graph_from_entity(
@@ -528,7 +528,6 @@ class TestCore1(HouskeeperMixin, unittest.TestCase):
 
 class TestCore2(HouskeeperMixin, unittest.TestCase):
     def test_ruleengine1(self):
-        # test rendering of dot
         p.ruleengine.apply_all_semantic_rules()
 
 

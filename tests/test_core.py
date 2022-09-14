@@ -581,3 +581,10 @@ class TestCore3(HouskeeperMixin, unittest.TestCase):
             [m2["test_model 2"], None],
         ]
         self.assertEqual(res2, expected_result)
+
+
+class TestScript1(HouskeeperMixin, unittest.TestCase):
+    def test_visualization(self):
+        cmd = "pyerk -vis I12"
+        res = os.system(cmd)
+        self.assertEqual(res, 0)

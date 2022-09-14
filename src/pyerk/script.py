@@ -6,6 +6,9 @@ import argparse
 from ipydex import IPS, activate_ips_on_exception
 from . import core, erkloader, rdfstack, auxiliary as aux
 from . import ackrep_parser
+from . import visualization
+from . import auxiliary as aux
+from . import settings
 
 activate_ips_on_exception()
 
@@ -43,6 +46,13 @@ def main():
         metavar="path",
     )
 
+    parser.add_argument(
+        "-vis",
+        "--visualize",
+        help="create a visualization for the entity",
+        metavar="uri",
+    )
+
     parser.add_argument("--dbg", help=f"start debug routine", default=None, action="store_true")
 
     args = parser.parse_args()
@@ -64,6 +74,13 @@ def main():
         core.script_main(args.inputfile)
     elif args.parse_ackrep_data:
         ackrep_parser.parse_ackrep(args.parse_ackrep_data)
+    elif key := args.visualize:
+        if not aux.ensure_valid_uri(key, strict=False):
+            uri = aux.make_uri(settings.BUILTINS_URI, key)
+        else:
+            uri = key
+        aux.ensure_valid_uri(uri)
+        visualization.visualize_entity(uri, write_tmp_files=True)
     else:
         print("nothing to do, see option `--help` for more info")
 

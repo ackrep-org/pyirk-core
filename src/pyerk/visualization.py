@@ -17,7 +17,7 @@ activate_ips_on_exception()
 #  tuple of Relation keys which are not displayed by default
 REL_BLACKLIST = ("R1", "R2")
 
-from semantictools import core as smt
+# from semantictools import core as smt
 
 from abc import ABC
 

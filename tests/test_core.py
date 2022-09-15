@@ -488,13 +488,6 @@ class TestCore1(HouskeeperMixin, unittest.TestCase):
         label = node.get_dot_label(render=True)
         self.assertEqual(label, 'I0126\\n["12 34567-\\n890abcdefgh"]')
 
-    def test_ackrep_parser(self):
-        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, TEST_MOD_NAME)
-        p1 = os.path.join(TEST_ACKREP_DATA_FOR_UT_PATH, "system_models", "lorenz_system")
-        res = p.parse_ackrep(p1)
-        self.assertEqual(res, 0)
-        p2 = os.path.join(TEST_ACKREP_DATA_FOR_UT_PATH, "system_models", "lorenz_system_broken")
-
     def test_visualization1(self):
 
         res_graph: visualization.nx.DiGraph = visualization.create_nx_graph_from_entity(
@@ -588,3 +581,75 @@ class TestScript1(HouskeeperMixin, unittest.TestCase):
         cmd = "pyerk -vis I12"
         res = os.system(cmd)
         self.assertEqual(res, 0)
+
+
+# these tests should run after the other tests
+class TestCoreAckrep(HouskeeperMixin, unittest.TestCase):
+
+    def test_ackrep_parser1(self):
+        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct", modname=TEST_MOD_NAME)
+        p1 = os.path.join(TEST_ACKREP_DATA_FOR_UT_PATH, "system_models", "lorenz_system")
+        res = p.parse_ackrep(p1)
+        self.assertEqual(res, 0)
+
+        # TODO: add tests for broken parsing
+        p2 = os.path.join(TEST_ACKREP_DATA_FOR_UT_PATH, "system_models", "lorenz_system_broken")
+
+    def test_ackrep_parser2(self):
+
+        n_items1 = len(p.ds.items)
+
+        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct", modname=TEST_MOD_NAME)
+        n_items2 = len(p.ds.items)
+        self.assertGreater(n_items2, n_items1)
+
+        p1 = os.path.join(TEST_ACKREP_DATA_FOR_UT_PATH, "system_models", "lorenz_system")
+        res = p.parse_ackrep(p1)
+        self.assertEqual(p.ds.uri_prefix_mapping.a["erk:/ocse/0.2"], "ct")
+        n_items3 = len(p.ds.items)
+        self.assertGreater(n_items3, n_items2)
+
+        self.assertEqual(p.ackrep_parser.ensure_ackrep_load_success(strict=False), 1)
+
+        with self.assertRaises(p.aux.ModuleAlreadyLoadedError):
+            p.parse_ackrep(p1)
+
+        p.unload_mod(p.ackrep_parser.__URI__)
+        self.assertEqual(p.ackrep_parser.ensure_ackrep_load_success(strict=False), 0)
+
+        # after unloading it should work again
+        p.ackrep_parser.load_ackrep_entities_if_necessary(p1, strict=False)
+        self.assertEqual(p.ackrep_parser.ensure_ackrep_load_success(strict=False), 1)
+
+    def test_ackrep_parser3(self):
+        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct", modname=TEST_MOD_NAME)
+
+        n_items1 = len(p.ds.items)
+        items1 = set(p.ds.items.keys())
+        p.ackrep_parser.parse_ackrep()
+        n_items2 = len(p.ds.items)
+        items2 = set(p.ds.items.keys())
+
+        self.assertGreater(n_items2 - n_items1, 30)
+
+        # unload ACKREP entities
+        p.unload_mod(p.ackrep_parser.__URI__)
+        n_items3 = len(p.ds.items)
+        items3 = set(p.ds.items.keys())
+        self.assertEqual(n_items1, n_items3)
+        self.assertEqual(items3.difference(items1), set())
+
+        # load again ACKREP entities
+        p.ackrep_parser.load_ackrep_entities_if_necessary()
+        p.ackrep_parser.ensure_ackrep_load_success(strict=True)
+        n_items4 = len(p.ds.items)
+        items4 = set(p.ds.items.keys())
+        self.assertEqual(n_items2, n_items4)
+        self.assertEqual(items4.difference(items2), set())
+
+        # omit loading again ACKREP entities
+        p.ackrep_parser.load_ackrep_entities_if_necessary()
+        n_items5 = len(p.ds.items)
+        items5 = set(p.ds.items.keys())
+        self.assertEqual(n_items2, n_items5)
+        self.assertEqual(items5.difference(items2), set())

@@ -554,6 +554,9 @@ class DataStore:
         # mapping like {uri1: modname1, ...}
         self.modnames = {}
 
+        # dict like {uri1: <mod1>, ...}
+        self.uri_mod_dict = {}
+
     def get_entity_by_key_str(self, key_str, mod_uri=None) -> Entity:
         """
         :param key_str:     str like I1234 or I1234__some_label
@@ -1574,6 +1577,12 @@ def unload_mod(mod_uri: str, strict=True) -> None:
 
     try:
         ds.uri_keymanager_dict.pop(mod_uri)
+    except KeyError:
+        if strict:
+            raise
+
+    try:
+        ds.uri_mod_dict.pop(mod_uri)
     except KeyError:
         if strict:
             raise

@@ -13,9 +13,8 @@ from .erkloader import load_mod_from_path
 from . import builtin_entities
 from .auxiliary import *
 
+# TODO: this should be erk:/ackrep
 __URI__ = "erk:/models"
-keymanager = core.KeyManager()
-
 
 ERK_ROOT_DIR = aux.get_erk_root_dir()
 
@@ -24,13 +23,42 @@ item_pattern = regex.compile(r"^(Ia?\d+)(\[(.*)\])$")
 relation_pattern = regex.compile(r"^(Ra?\d+)(\[(.*)\])$")
 function_pattern = regex.compile(r"^(.+)(\(.*\))$")
 
+# Todo: see bookmark://global01 (below)
+mod = None
+keymanager = None
 
-def parse_ackrep(base_path: str = None) -> int:
+
+def load_ackrep_entities_if_necessary(*args, **kwargs):
+
+    strict = kwargs.get("strict", True)
+    if __URI__ not in core.ds.mod_path_mapping.a:
+        parse_ackrep(*args, **kwargs)
+        ensure_ackrep_load_success(strict=strict)
+    else:
+        ensure_ackrep_load_success(strict=strict)
+
+
+def ensure_ackrep_load_success(strict: bool = True):
+    r2950 = core.ds.get_entity_by_key_str("ct__R2950__has_corresponding_ackrep_key")
+
+    n = len(core.ds.relation_relation_edges[r2950.uri])
+    # this assumes that all entities are loaded
+    if n < 10:
+        if strict:
+            msg = f"Number of found ACKREP entities is unexpectedly low. Found {n}, expected >= 10."
+            raise core.aux.PyERKError(msg)
+    return n
+
+
+# TODO: discuss renaming: parse_ackrep -> load_ackrep_entities
+def parse_ackrep(base_path: str = None, strict: bool = True, prefix="ackrep") -> int:
     """parse ackrep entities. if no base path is given, entire ackrep_data repo is parsed. if path is given
     only this path is parsed.
 
     Args:
         base_path (str, optional): optional target path to parse. Defaults to None.
+        strict (bool, optional): flag to decide whether to complain on reloading. Defaults to None.
+        prefix (str, optional): flag to decide whether to complain on reloading. Defaults to None.
 
     Returns:
         int: sum of returncodes
@@ -44,12 +72,24 @@ def parse_ackrep(base_path: str = None) -> int:
     else:
         ackrep_path = os.path.join(os.getcwd(), base_path)
 
+    if __URI__ in core.ds.mod_path_mapping.a and strict:
+        msg = f"unexpected attempt to reload already loaded module: {__URI__}"
+        raise core.aux.ModuleAlreadyLoadedError(msg)
+
     TEST_DATA_PATH = os.path.join(ERK_ROOT_DIR, "erk-data", "control-theory", "control_theory1.py")
     TEST_MOD_NAME = "control_theory1"
 
+    # bookmark://global01
     # TODO make this more elegant, maybe turn this into AckrepParser class
     global mod
-    mod = load_mod_from_path(TEST_DATA_PATH, prefix="ct", modname=TEST_MOD_NAME)
+    global keymanager
+    mod = load_mod_from_path(TEST_DATA_PATH, prefix="ct", modname=TEST_MOD_NAME, omit_reload=True)
+    keymanager = core.KeyManager()
+
+    # core.ds.uri_prefix_mapping.add_pair(__URI__, prefix)
+    core.register_mod(__URI__, keymanager, check_uri=False)
+    core.ds.uri_prefix_mapping.add_pair(__URI__, "mod")
+    core.ds.uri_mod_dict[__URI__] = mod
 
     retcodes = []
     # parse entire repo
@@ -133,7 +173,7 @@ def parse_problem_or_solution(entity_path: str):
         except ParserError as e:
             msg = f"Metadata file of '{os.path.split(entity_path)[1]}' has yaml syntax error, see message above."
             raise SyntaxError(msg) from e
-    core.register_mod(__URI__, keymanager)
+
     core.start_mod(__URI__)
 
     entity = instance_of(erk_class, r1=md["name"], r2=md["short_description"])
@@ -161,8 +201,7 @@ def parse_system_model(entity_path: str):
         except ParserError as e:
             msg = f"Metadata file of '{os.path.split(entity_path)[1]}' has yaml syntax error, see message above."
             raise SyntaxError(msg) from e
-    core.register_mod(__URI__, keymanager, check_uri=False)
-    core.ds.uri_prefix_mapping.add_pair(__URI__, "mod")
+
     core.start_mod(__URI__)
     model = instance_of(mod.I7641["general system model"], r1=md["name"], r2=md["short_description"])
     model.set_relation(mod.R2950["has corresponding ackrep key"], md["key"])

@@ -1,7 +1,7 @@
 """
 This module contains code for the visualization of ERK-entities.
 """
-from typing import Union, List, Tuple
+from typing import Union, List, Tuple, Optional
 import os
 import urllib
 
@@ -327,7 +327,7 @@ def create_nx_graph_from_entity(uri, url_template="") -> nx.DiGraph:
     re_dict = entity.get_relations()
     inv_re_dict = entity.get_inv_relations()
 
-    G = nx.DiGraph()
+    G = nx.CustomizedDiGraph()
     base_node = create_node(entity, url_template)
     G.add_node(base_node, color="#2ca02c")
 
@@ -354,28 +354,32 @@ def create_nx_graph_from_entity(uri, url_template="") -> nx.DiGraph:
     return G
 
 
-def create_complete_graph(url_template="") -> nx.DiGraph:
+def create_complete_graph(url_template="", limit: Optional[int] = None, ) -> nx.DiGraph:
     """
-
-    :param uri:
-    :param url_template:
+    :param url_template:    template to insert links based on uris
+    :param limit:
     :return:
     """
 
-    added_items = {}
+    added_items_nodes = {}
     added_relation_edges = {}
-    G = CustomizedDiGraph()
+    G = nx.DiGraph()
 
+    i = 0
     relation_dict: dict
     for item_uri, relation_dict in p.ds.relation_edges.items():
         item = p.ds.get_entity_by_uri(item_uri)
         if not isinstance(item, p.Item):
             continue
+        # count only items
+        i += 1
+        if limit and i == limit:
+            break
         node = create_node(item, url_template)
-        if item_uri not in added_items:
+        if item_uri not in added_items_nodes:
             # TODO: add color by base_uri
-            G.add_node(node)
-        added_items[item_uri] = 1
+            G.add_node(node, label=item.short_key)
+        added_items_nodes[item_uri] = node
 
         # iterate over relation edges
         for relation_uri, rledg_list in relation_dict.items():
@@ -387,17 +391,23 @@ def create_complete_graph(url_template="") -> nx.DiGraph:
 
                 obj = rledg.relation_tuple[-1]
                 if isinstance(obj, p.Item):
-                    if not (other_node := added_items.get(obj.uri)):
+                    if other_node := added_items_nodes.get(obj.uri):
+                        pass
+                    else:
                         other_node = create_node(obj, url_template)
-                        G.add_node(other_node)
+                        G.add_node(other_node, label=item.short_key)
                 else:
                     # obj is a literal
                     other_node = create_node(obj, url_template)
-                    G.add_node(other_node)
-                G.add_edge(node, other_node)
+                    continue
+                    G.add_node(other_node, label=item.short_key)
+
+                edge_label = f"{item.short_key} -{rledg.relation_tuple[1].short_key}→ {obj.short_key}"
+                G.add_edge(node, other_node, label=edge_label)
 
                 assert rledg.uri not in added_relation_edges
                 added_relation_edges[rledg.uri] = 1
+                print(edge_label)
 
     return G
 
@@ -509,19 +519,27 @@ def visualize_all_entities(url_template="", write_tmp_files: bool = False) -> st
             "shape": d.get("shape", "circle"),  # see also AbstractNode.shape
         },
         # u: node1, v: node1, d: its attribute dict
-        edge=lambda u, v, d: {**edge_defaults, "label": d["label"]},
+        edge=lambda u, v, d: {
+            **edge_defaults,
+            # "label": d["label"]
+        },
     )
 
     style = nxv.Style(
-        graph={"rankdir": "BT", "nodesep": 0.05},
+        graph={"rankdir": "BT", "nodesep": 1.05},
         node=lambda u, d: {
+            # "shape": "circle",
             "shape": "point",
             "fixedsize": True,
-            "width": 0.1,
+            "width": .2,
             "fontsize": 10,
+            "label": d.get("label", "undefined label"),
             "fillcolor": "#454545ff",
         },
-        edge=lambda u, v, d: {"style": "solid", "arrowhead": "normal", "color": "#959595ff", "arrowsize": 0.5},
+        edge=lambda u, v, d: {
+            "style": "solid", "arrowhead": "normal", "color": "#959595ff", "arrowsize": 0.5,
+            # "label": d["label"]
+        },
     )
 
     # noinspection PyTypeChecker

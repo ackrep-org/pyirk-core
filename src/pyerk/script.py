@@ -3,15 +3,14 @@ Command line interface for erk package
 """
 import os
 import argparse
-from ipydex import IPS, activate_ips_on_exception
-from . import core, erkloader, rdfstack, auxiliary as aux
+from . import core, erkloader, rdfstack
 from . import ackrep_parser
 from . import visualization
 from . import auxiliary as aux
 from . import settings
 
+from ipydex import IPS, activate_ips_on_exception
 activate_ips_on_exception()
-
 
 def main():
 
@@ -91,8 +90,11 @@ def main():
 
 
 def process_mod(path):
-    mod1 = erkloader.load_mod_from_path(path, modname="kbase")
-    rdfstack.check_all_relation_types()
+    # TODO: read prefix from the command line
+    mod1 = erkloader.load_mod_from_path(path, prefix="ocse")
+
+    # perform sanity check
+    # rdfstack.check_all_relation_types()
 
 
 def debug():

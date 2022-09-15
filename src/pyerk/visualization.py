@@ -26,6 +26,10 @@ REPLACEMENTS = {}
 
 NEWLINE_REPLACEMENTS = [("__newline-center__", r"\n"), ("__newline-left__", r"\l")]
 
+# default matplotlib colors
+mpl_colors =\
+    ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf']
+
 
 class AbstractGraphObject(ABC):
     """
@@ -327,7 +331,7 @@ def create_nx_graph_from_entity(uri, url_template="") -> nx.DiGraph:
     re_dict = entity.get_relations()
     inv_re_dict = entity.get_inv_relations()
 
-    G = nx.CustomizedDiGraph()
+    G = CustomizedDiGraph()
     base_node = create_node(entity, url_template)
     G.add_node(base_node, color="#2ca02c")
 
@@ -354,6 +358,22 @@ def create_nx_graph_from_entity(uri, url_template="") -> nx.DiGraph:
     return G
 
 
+def get_color_for_item(item: p.Item) -> str:
+    # TODO: add color by base_uri
+    if item.short_key == "I14":
+        return "red"
+    return "black"
+
+
+def get_color_for_rledg(rledg: p.RelationEdge) -> str:
+    cmap = {
+        "R3": mpl_colors[0],
+        "R4": mpl_colors[1]
+    }
+
+    return cmap.get(rledg.rsk, "black")
+
+
 def create_complete_graph(url_template="", limit: Optional[int] = None, ) -> nx.DiGraph:
     """
     :param url_template:    template to insert links based on uris
@@ -369,20 +389,23 @@ def create_complete_graph(url_template="", limit: Optional[int] = None, ) -> nx.
     relation_dict: dict
     for item_uri, relation_dict in p.ds.relation_edges.items():
         item = p.ds.get_entity_by_uri(item_uri)
-        if not isinstance(item, p.Item):
+        if not isinstance(item, p.Item) or item.short_key in ["I000"]:
             continue
         # count only items
         i += 1
         if limit and i == limit:
             break
-        node = create_node(item, url_template)
-        if item_uri not in added_items_nodes:
-            # TODO: add color by base_uri
-            G.add_node(node, label=item.short_key)
+
+        if node := added_items_nodes.get(item_uri):
+            pass
+        else:
+            node = create_node(item, url_template)
+        G.add_node(node, label=item.short_key, color=get_color_for_item(item))
         added_items_nodes[item_uri] = node
 
         # iterate over relation edges
         for relation_uri, rledg_list in relation_dict.items():
+            rledg: p.RelationEdge
             for rledg in rledg_list:
                 if rledg.role != p.RelationRole.SUBJECT:
                     continue
@@ -395,19 +418,18 @@ def create_complete_graph(url_template="", limit: Optional[int] = None, ) -> nx.
                         pass
                     else:
                         other_node = create_node(obj, url_template)
-                        G.add_node(other_node, label=item.short_key)
+                        G.add_node(other_node, label=obj.short_key, color=get_color_for_item(obj))
+                        added_items_nodes[obj.uri] = other_node
                 else:
-                    # obj is a literal
-                    other_node = create_node(obj, url_template)
+                    # obj is a literal, we omit that for now
                     continue
-                    G.add_node(other_node, label=item.short_key)
 
-                edge_label = f"{item.short_key} -{rledg.relation_tuple[1].short_key}→ {obj.short_key}"
-                G.add_edge(node, other_node, label=edge_label)
+                # edge_label = f"{rledg.relation_tuple[1].short_key}"
+                edge_label = f"{rledg.relation_tuple[1].short_key}"
+                G.add_edge(node, other_node, label=edge_label, color=get_color_for_rledg(rledg))
 
                 assert rledg.uri not in added_relation_edges
                 added_relation_edges[rledg.uri] = 1
-                print(edge_label)
 
     return G
 
@@ -526,18 +548,19 @@ def visualize_all_entities(url_template="", write_tmp_files: bool = False) -> st
     )
 
     style = nxv.Style(
-        graph={"rankdir": "BT", "nodesep": 1.05},
+        graph={"rankdir": "BT", "nodesep": .2},
         node=lambda u, d: {
-            # "shape": "circle",
-            "shape": "point",
+            # "shape": "point",
+            "shape": "circle", "style": "filled",
             "fixedsize": True,
-            "width": .2,
-            "fontsize": 10,
+            "color": d.get("color", "black"),
+            "width": .1,
+            "fontsize": 2,
             "label": d.get("label", "undefined label"),
-            "fillcolor": "#454545ff",
+            "fillcolor": "#45454533",
         },
         edge=lambda u, v, d: {
-            "style": "solid", "arrowhead": "normal", "color": "#959595ff", "arrowsize": 0.5,
+            "style": "solid", "arrowhead": "normal", "color": d.get("color", "#959595ff"), "arrowsize": 0.5,
             # "label": d["label"]
         },
     )

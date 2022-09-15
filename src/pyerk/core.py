@@ -1141,6 +1141,7 @@ class RelationEdge:
         self.base_uri = mod_uri
         self.uri = f"{aux.make_uri(self.base_uri, self.short_key)}"
         self.relation = relation
+        self.rsk = relation.short_key  # to conviniently access this attribute in visualization
         self.relation_tuple = relation_tuple
         self.subject = relation_tuple[0]
         self.role = role

@@ -49,7 +49,7 @@ def parse_ackrep(base_path: str = None) -> int:
 
     # TODO make this more elegant, maybe turn this into AckrepParser class
     global mod
-    mod = load_mod_from_path(TEST_DATA_PATH, TEST_MOD_NAME)
+    mod = load_mod_from_path(TEST_DATA_PATH, prefix="ct", modname=TEST_MOD_NAME)
 
     retcodes = []
     # parse entire repo
@@ -63,6 +63,9 @@ def parse_ackrep(base_path: str = None) -> int:
             retcode = parse_system_model(ackrep_path)
         elif "problem_specifications" in ackrep_path or "problem_solutions" in ackrep_path:
             retcode = parse_problem_or_solution(ackrep_path)
+        else:
+            # TODO: handle this case (set `retcode` to meaningful value)
+            raise NotImplementedError
         retcodes.append(retcode)
 
     return sum(retcodes)

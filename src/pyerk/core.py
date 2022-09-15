@@ -1585,7 +1585,7 @@ def unload_mod(mod_uri: str, strict=True) -> None:
     except KeyError:
         if strict:
             raise
-    
+
     ds.uri_prefix_mapping.remove_pair(mod_uri, strict=strict)
 
     if modname := ds.modnames.get(mod_uri):

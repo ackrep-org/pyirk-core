@@ -13,6 +13,7 @@ from .erkloader import load_mod_from_path
 from . import builtin_entities
 from .auxiliary import *
 
+# TODO: this should be erk:/ackrep
 __URI__ = "erk:/models"
 
 ERK_ROOT_DIR = aux.get_erk_root_dir()
@@ -46,13 +47,14 @@ def ensure_ackrep_load_success():
 
 
 # TODO: discuss renaming: parse_ackrep -> load_ackrep_entities
-def parse_ackrep(base_path: str = None, strict: bool = True) -> int:
+def parse_ackrep(base_path: str = None, strict: bool = True, prefix="ackrep") -> int:
     """parse ackrep entities. if no base path is given, entire ackrep_data repo is parsed. if path is given
     only this path is parsed.
 
     Args:
         base_path (str, optional): optional target path to parse. Defaults to None.
         strict (bool, optional): flag to decide whether to complain on reloading. Defaults to None.
+        prefix (str, optional): flag to decide whether to complain on reloading. Defaults to None.
 
     Returns:
         int: sum of returncodes
@@ -79,6 +81,11 @@ def parse_ackrep(base_path: str = None, strict: bool = True) -> int:
     global keymanager
     mod = load_mod_from_path(TEST_DATA_PATH, prefix="ct", modname=TEST_MOD_NAME, omit_reload=True)
     keymanager = core.KeyManager()
+
+    # core.ds.uri_prefix_mapping.add_pair(__URI__, prefix)
+    core.register_mod(__URI__, keymanager, check_uri=False)
+    core.ds.uri_prefix_mapping.add_pair(__URI__, "mod")
+    core.ds.uri_mod_dict[__URI__] = mod
 
     retcodes = []
     # parse entire repo
@@ -187,9 +194,7 @@ def parse_system_model(entity_path: str):
         except ParserError as e:
             msg = f"Metadata file of '{os.path.split(entity_path)[1]}' has yaml syntax error, see message above."
             raise SyntaxError(msg) from e
-    assert keymanager is not None
-    core.register_mod(__URI__, keymanager, check_uri=False)
-    core.ds.uri_prefix_mapping.add_pair(__URI__, "mod")
+
     core.start_mod(__URI__)
     model = instance_of(mod.I7641["general system model"], r1=md["name"], r2=md["short_description"])
     model.set_relation(mod.R2950["has corresponding ackrep key"], md["key"])

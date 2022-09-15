@@ -3,12 +3,14 @@ Command line interface for erk package
 """
 import os
 import argparse
-from ipydex import IPS, activate_ips_on_exception
-from . import core, erkloader, rdfstack, auxiliary as aux
+from . import core, erkloader, rdfstack
 from . import ackrep_parser
+from . import visualization
+from . import auxiliary as aux
+from . import settings
 
+from ipydex import IPS, activate_ips_on_exception
 activate_ips_on_exception()
-
 
 def main():
 
@@ -43,6 +45,13 @@ def main():
         metavar="path",
     )
 
+    parser.add_argument(
+        "-vis",
+        "--visualize",
+        help="create a visualization for the entity",
+        metavar="uri",
+    )
+
     parser.add_argument("--dbg", help=f"start debug routine", default=None, action="store_true")
 
     args = parser.parse_args()
@@ -64,13 +73,28 @@ def main():
         core.script_main(args.inputfile)
     elif args.parse_ackrep_data:
         ackrep_parser.parse_ackrep(args.parse_ackrep_data)
+    elif key := args.visualize:
+
+        if key == "__all__":
+            visualization.visualize_all_entities(write_tmp_files=True)
+            return
+
+        if not aux.ensure_valid_uri(key, strict=False):
+            uri = aux.make_uri(settings.BUILTINS_URI, key)
+        else:
+            uri = key
+        aux.ensure_valid_uri(uri)
+        visualization.visualize_entity(uri, write_tmp_files=True)
     else:
         print("nothing to do, see option `--help` for more info")
 
 
 def process_mod(path):
-    mod1 = erkloader.load_mod_from_path(path, modname="kbase")
-    rdfstack.check_all_relation_types()
+    # TODO: read prefix from the command line
+    mod1 = erkloader.load_mod_from_path(path, prefix="ocse")
+
+    # perform sanity check
+    # rdfstack.check_all_relation_types()
 
 
 def debug():

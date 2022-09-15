@@ -7,16 +7,17 @@ from ipydex import IPS, activate_ips_on_exception
 
 activate_ips_on_exception()
 
+ModuleType = type(sys)
+
 
 # noinspection PyProtectedMember
-def load_mod_from_path(modpath: str, prefix: str, modname=None, allow_reload=True, omit_reload=False):
+def load_mod_from_path(modpath: str, prefix: str, modname=None, allow_reload=True) -> ModuleType:
     """
 
     :param modpath:         file system path for the module to be loaded
     :param prefix:          prefix which can be used to replace the URI for convenice
     :param modname:
-    :param allow_reload:
-    :param omit_reload:
+    :param allow_reload:    flag; if false, an error is raised if the module was already loades
     :return:
     """
     if modname is None:
@@ -30,11 +31,12 @@ def load_mod_from_path(modpath: str, prefix: str, modname=None, allow_reload=Tru
     modpath = os.path.abspath(modpath)
     old_mod_uri = pyerk.ds.mod_path_mapping.b.get(modpath)
 
-    if omit_reload and old_mod_uri:
-        return
-
-    if allow_reload and old_mod_uri:
-        pyerk.unload_mod(old_mod_uri)
+    if old_mod_uri:
+        if allow_reload:
+            pyerk.unload_mod(old_mod_uri)
+        else:
+            msg = f"Unintended attempt to reload module {old_mod_uri}"
+            raise pyerk.aux.ModuleAlreadyLoadedError(msg)
 
     spec = importlib.util.spec_from_file_location(modname, modpath)
     mod = importlib.util.module_from_spec(spec)
@@ -74,7 +76,10 @@ def load_mod_from_path(modpath: str, prefix: str, modname=None, allow_reload=Tru
     pyerk.aux.ensure_valid_baseuri(mod_uri)
     pyerk.ds.uri_prefix_mapping.add_pair(mod_uri, prefix)
 
-    # TODO: obsolete?
+    pyerk.ds.uri_mod_dict[mod_uri] = mod
+
+    # the modnames are needed to keep sys.modules in sync
     pyerk.ds.modnames[mod_uri] = modname
 
+    mod.__fresh_load__ = True
     return mod

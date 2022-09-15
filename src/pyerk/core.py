@@ -554,6 +554,9 @@ class DataStore:
         # mapping like {uri1: modname1, ...}
         self.modnames = {}
 
+        # dict like {uri1: <mod1>, ...}
+        self.uri_mod_dict = {}
+
     def get_entity_by_key_str(self, key_str, mod_uri=None) -> Entity:
         """
         :param key_str:     str like I1234 or I1234__some_label
@@ -1141,6 +1144,7 @@ class RelationEdge:
         self.base_uri = mod_uri
         self.uri = f"{aux.make_uri(self.base_uri, self.short_key)}"
         self.relation = relation
+        self.rsk = relation.short_key  # to conviniently access this attribute in visualization
         self.relation_tuple = relation_tuple
         self.subject = relation_tuple[0]
         self.role = role
@@ -1577,6 +1581,12 @@ def unload_mod(mod_uri: str, strict=True) -> None:
         if strict:
             raise
 
+    try:
+        ds.uri_mod_dict.pop(mod_uri)
+    except KeyError:
+        if strict:
+            raise
+
     ds.uri_prefix_mapping.remove_pair(mod_uri, strict=strict)
 
     if modname := ds.modnames.get(mod_uri):
@@ -1663,7 +1673,7 @@ def start_mod(uri):
     :param uri:
     :return:
     """
-    assert len(_uri_stack) == 0
+    assert len(_uri_stack) == 0, f"Non-empty uri_stack: {_uri_stack}"
     _uri_stack.append(uri)
 
 

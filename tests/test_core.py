@@ -35,7 +35,8 @@ TEST_DATA_DIR1 = pjoin(ERK_ROOT_DIR, "pyerk", "tests", "test_data")
 TEST_DATA_PATH2 = pjoin(ERK_ROOT_DIR, "erk-data", "control-theory", "control_theory1.py")
 TEST_MOD_NAME = "control_theory1"
 
-
+# TODO: make this more robust (e.g. search for config file or environment variable)
+# TODO: put link to docs here (directory layout)
 TEST_ACKREP_DATA_FOR_UT_PATH = pjoin(ERK_ROOT_DIR, "..", "ackrep", "ackrep_data_for_unittests")
 
 __URI__ = TEST_BASE_URI = "erk:/local/unittest/"
@@ -79,7 +80,7 @@ class HouskeeperMixin:
             print("In method", p.aux.bgreen(self._testMethodName))
 
 
-class TestCore0(HouskeeperMixin, unittest.TestCase):
+class Test_00_Core(HouskeeperMixin, unittest.TestCase):
     def test_a0__process_key_str(self):
         res = p.process_key_str("I1")
         self.assertEqual(res.prefix, None)
@@ -171,7 +172,7 @@ class TestCore0(HouskeeperMixin, unittest.TestCase):
 
 
 # noinspection PyPep8Naming
-class TestCore1(HouskeeperMixin, unittest.TestCase):
+class Test_01_Core(HouskeeperMixin, unittest.TestCase):
     def test_aa0__directory_structure(self):
         pyerk_dir = pjoin(ERK_ROOT_DIR, "pyerk")
         django_gui_dir = pjoin(ERK_ROOT_DIR, "django-erk-gui")
@@ -487,27 +488,19 @@ class TestCore1(HouskeeperMixin, unittest.TestCase):
         label = node.get_dot_label(render=True)
         self.assertEqual(label, 'I0126\\n["12 34567-\\n890abcdefgh"]')
 
-    def test_ackrep_parser(self):
-        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, TEST_MOD_NAME)
-        p1 = os.path.join(TEST_ACKREP_DATA_FOR_UT_PATH, "system_models", "lorenz_system")
-        res = p.parse_ackrep(p1)
-        self.assertEqual(res, 0)
-        p2 = os.path.join(TEST_ACKREP_DATA_FOR_UT_PATH, "system_models", "lorenz_system_broken")
-
-
     def test_visualization1(self):
 
         res_graph: visualization.nx.DiGraph = visualization.create_nx_graph_from_entity(
             p.u("I21__mathematical_relation")
         )
-        self.assertGreater(res_graph.number_of_nodes(), 7)
+        self.assertGreater(res_graph.number_of_nodes(), 6)
 
         mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, TEST_MOD_NAME)
 
         # do not use something like "Ia3699" here directly because this might change when mod1 changes
         auto_item: p.Item = mod1.I3749["Cayley-Hamilton theorem"].A
         res_graph: visualization.nx.DiGraph = visualization.create_nx_graph_from_entity(auto_item.uri)
-        self.assertGreater(res_graph.number_of_nodes(), 8)
+        self.assertGreater(res_graph.number_of_nodes(), 7)
 
     def test_visualization2(self):
         # test rendering of dot
@@ -526,13 +519,12 @@ class TestCore1(HouskeeperMixin, unittest.TestCase):
         self.assertIn(s3, res)
 
 
-class TestCore2(HouskeeperMixin, unittest.TestCase):
+class Test_02_Core(HouskeeperMixin, unittest.TestCase):
     def test_ruleengine1(self):
-        # test rendering of dot
         p.ruleengine.apply_all_semantic_rules()
 
 
-class TestCore3(HouskeeperMixin, unittest.TestCase):
+class Test_03_Core(HouskeeperMixin, unittest.TestCase):
     """
     Collection of test that should be executed last (because they seem to influence othter tests).
     This is achieved by putting "ZZ" in the name (assuming that test classes are executed in alphabetical order).
@@ -582,3 +574,82 @@ class TestCore3(HouskeeperMixin, unittest.TestCase):
             [m2["test_model 2"], None],
         ]
         self.assertEqual(res2, expected_result)
+
+
+class Test_04_Script1(HouskeeperMixin, unittest.TestCase):
+    def test_visualization(self):
+        cmd = "pyerk -vis I12"
+        res = os.system(cmd)
+        self.assertEqual(res, 0)
+
+
+# these tests should run after the other tests
+class Test_05_Ackrep(HouskeeperMixin, unittest.TestCase):
+
+    def test_ackrep_parser1(self):
+        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct", modname=TEST_MOD_NAME)
+        p1 = os.path.join(TEST_ACKREP_DATA_FOR_UT_PATH, "system_models", "lorenz_system")
+        res = p.parse_ackrep(p1)
+        self.assertEqual(res, 0)
+
+        # TODO: add tests for broken parsing
+        p2 = os.path.join(TEST_ACKREP_DATA_FOR_UT_PATH, "system_models", "lorenz_system_broken")
+
+    def test_ackrep_parser2(self):
+
+        n_items1 = len(p.ds.items)
+
+        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct", modname=TEST_MOD_NAME)
+        n_items2 = len(p.ds.items)
+        self.assertGreater(n_items2, n_items1)
+
+        p1 = os.path.join(TEST_ACKREP_DATA_FOR_UT_PATH, "system_models", "lorenz_system")
+        res = p.parse_ackrep(p1)
+        self.assertEqual(p.ds.uri_prefix_mapping.a["erk:/ocse/0.2"], "ct")
+        n_items3 = len(p.ds.items)
+        self.assertGreater(n_items3, n_items2)
+
+        self.assertEqual(p.ackrep_parser.ensure_ackrep_load_success(strict=False), 1)
+
+        with self.assertRaises(p.aux.ModuleAlreadyLoadedError):
+            p.parse_ackrep(p1)
+
+        p.unload_mod(p.ackrep_parser.__URI__)
+        self.assertEqual(p.ackrep_parser.ensure_ackrep_load_success(strict=False), 0)
+
+        # after unloading it should work again
+        p.ackrep_parser.load_ackrep_entities_if_necessary(p1, strict=False)
+        self.assertEqual(p.ackrep_parser.ensure_ackrep_load_success(strict=False), 1)
+
+    def test_ackrep_parser3(self):
+        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct", modname=TEST_MOD_NAME)
+
+        n_items1 = len(p.ds.items)
+        items1 = set(p.ds.items.keys())
+        p.ackrep_parser.parse_ackrep()
+        n_items2 = len(p.ds.items)
+        items2 = set(p.ds.items.keys())
+
+        self.assertGreater(n_items2 - n_items1, 30)
+
+        # unload ACKREP entities
+        p.unload_mod(p.ackrep_parser.__URI__)
+        n_items3 = len(p.ds.items)
+        items3 = set(p.ds.items.keys())
+        self.assertEqual(n_items1, n_items3)
+        self.assertEqual(items3.difference(items1), set())
+
+        # load again ACKREP entities
+        p.ackrep_parser.load_ackrep_entities_if_necessary()
+        p.ackrep_parser.ensure_ackrep_load_success(strict=True)
+        n_items4 = len(p.ds.items)
+        items4 = set(p.ds.items.keys())
+        self.assertEqual(n_items2, n_items4)
+        self.assertEqual(items4.difference(items2), set())
+
+        # omit loading again ACKREP entities
+        p.ackrep_parser.load_ackrep_entities_if_necessary()
+        n_items5 = len(p.ds.items)
+        items5 = set(p.ds.items.keys())
+        self.assertEqual(n_items2, n_items5)
+        self.assertEqual(items5.difference(items2), set())

@@ -500,14 +500,14 @@ class TestCore1(HouskeeperMixin, unittest.TestCase):
         res_graph: visualization.nx.DiGraph = visualization.create_nx_graph_from_entity(
             p.u("I21__mathematical_relation")
         )
-        self.assertGreater(res_graph.number_of_nodes(), 7)
+        self.assertGreater(res_graph.number_of_nodes(), 6)
 
         mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, TEST_MOD_NAME)
 
         # do not use something like "Ia3699" here directly because this might change when mod1 changes
         auto_item: p.Item = mod1.I3749["Cayley-Hamilton theorem"].A
         res_graph: visualization.nx.DiGraph = visualization.create_nx_graph_from_entity(auto_item.uri)
-        self.assertGreater(res_graph.number_of_nodes(), 8)
+        self.assertGreater(res_graph.number_of_nodes(), 7)
 
     def test_visualization2(self):
         # test rendering of dot

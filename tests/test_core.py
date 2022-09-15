@@ -80,7 +80,7 @@ class HouskeeperMixin:
             print("In method", p.aux.bgreen(self._testMethodName))
 
 
-class TestCore0(HouskeeperMixin, unittest.TestCase):
+class Test_00_Core(HouskeeperMixin, unittest.TestCase):
     def test_a0__process_key_str(self):
         res = p.process_key_str("I1")
         self.assertEqual(res.prefix, None)
@@ -172,7 +172,7 @@ class TestCore0(HouskeeperMixin, unittest.TestCase):
 
 
 # noinspection PyPep8Naming
-class TestCore1(HouskeeperMixin, unittest.TestCase):
+class Test_01_Core(HouskeeperMixin, unittest.TestCase):
     def test_aa0__directory_structure(self):
         pyerk_dir = pjoin(ERK_ROOT_DIR, "pyerk")
         django_gui_dir = pjoin(ERK_ROOT_DIR, "django-erk-gui")
@@ -519,12 +519,12 @@ class TestCore1(HouskeeperMixin, unittest.TestCase):
         self.assertIn(s3, res)
 
 
-class TestCore2(HouskeeperMixin, unittest.TestCase):
+class Test_02_Core(HouskeeperMixin, unittest.TestCase):
     def test_ruleengine1(self):
         p.ruleengine.apply_all_semantic_rules()
 
 
-class TestCore3(HouskeeperMixin, unittest.TestCase):
+class Test_03_Core(HouskeeperMixin, unittest.TestCase):
     """
     Collection of test that should be executed last (because they seem to influence othter tests).
     This is achieved by putting "ZZ" in the name (assuming that test classes are executed in alphabetical order).
@@ -576,7 +576,7 @@ class TestCore3(HouskeeperMixin, unittest.TestCase):
         self.assertEqual(res2, expected_result)
 
 
-class TestScript1(HouskeeperMixin, unittest.TestCase):
+class Test_04_Script1(HouskeeperMixin, unittest.TestCase):
     def test_visualization(self):
         cmd = "pyerk -vis I12"
         res = os.system(cmd)
@@ -584,7 +584,7 @@ class TestScript1(HouskeeperMixin, unittest.TestCase):
 
 
 # these tests should run after the other tests
-class TestCoreAckrep(HouskeeperMixin, unittest.TestCase):
+class Test_05_Ackrep(HouskeeperMixin, unittest.TestCase):
 
     def test_ackrep_parser1(self):
         mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct", modname=TEST_MOD_NAME)

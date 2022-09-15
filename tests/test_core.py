@@ -487,14 +487,6 @@ class TestCore1(HouskeeperMixin, unittest.TestCase):
         label = node.get_dot_label(render=True)
         self.assertEqual(label, 'I0126\\n["12 34567-\\n890abcdefgh"]')
 
-    def test_ackrep_parser(self):
-        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, TEST_MOD_NAME)
-        p1 = os.path.join(TEST_ACKREP_DATA_FOR_UT_PATH, "system_models", "lorenz_system")
-        res = p.parse_ackrep(p1)
-        self.assertEqual(res, 0)
-        p2 = os.path.join(TEST_ACKREP_DATA_FOR_UT_PATH, "system_models", "lorenz_system_broken")
-
-
     def test_visualization1(self):
 
         res_graph: visualization.nx.DiGraph = visualization.create_nx_graph_from_entity(
@@ -582,3 +574,27 @@ class TestCore3(HouskeeperMixin, unittest.TestCase):
             [m2["test_model 2"], None],
         ]
         self.assertEqual(res2, expected_result)
+
+
+# these tests should run after the other tests
+class TestCoreAckrep(HouskeeperMixin, unittest.TestCase):
+
+    def test_ackrep_parser1(self):
+        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, TEST_MOD_NAME)
+        p1 = os.path.join(TEST_ACKREP_DATA_FOR_UT_PATH, "system_models", "lorenz_system")
+        res = p.parse_ackrep(p1)
+        self.assertEqual(res, 0)
+        p2 = os.path.join(TEST_ACKREP_DATA_FOR_UT_PATH, "system_models", "lorenz_system_broken")
+
+    def test_ackrep_parser2(self):
+        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, TEST_MOD_NAME)
+        p1 = os.path.join(TEST_ACKREP_DATA_FOR_UT_PATH, "system_models", "lorenz_system")
+        res = p.parse_ackrep(p1)
+
+        with self.assertRaises(p.aux.ModuleAlreadyLoadedError):
+            p.parse_ackrep(p1)
+
+        p.unload_mod(p.ackrep_parser.__URI__)
+
+        # after unloading it should work again
+        p.parse_ackrep(p1)

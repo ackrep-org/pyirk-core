@@ -15,8 +15,6 @@ from .auxiliary import *
 
 __URI__ = "erk:/models"
 
-
-
 ERK_ROOT_DIR = aux.get_erk_root_dir()
 
 entity_pattern = regex.compile(r"^(I|Ra?\d+)(\[(.*)\])$")
@@ -29,12 +27,13 @@ mod = None
 keymanager = None
 
 
-def parse_ackrep(base_path: str = None) -> int:
+def parse_ackrep(base_path: str = None, strict: bool = True) -> int:
     """parse ackrep entities. if no base path is given, entire ackrep_data repo is parsed. if path is given
     only this path is parsed.
 
     Args:
         base_path (str, optional): optional target path to parse. Defaults to None.
+        strict (bool, optional): flag to decide whether to complain on reloading. Defaults to None.
 
     Returns:
         int: sum of returncodes
@@ -47,6 +46,10 @@ def parse_ackrep(base_path: str = None) -> int:
         ackrep_path = base_path
     else:
         ackrep_path = os.path.join(os.getcwd(), base_path)
+
+    if __URI__ in core.ds.mod_path_mapping.a and strict:
+        msg = f"unexpected attempt to reload already loaded module: {__URI__}"
+        raise core.aux.ModuleAlreadyLoadedError(msg)
 
     TEST_DATA_PATH = os.path.join(ERK_ROOT_DIR, "erk-data", "control-theory", "control_theory1.py")
     TEST_MOD_NAME = "control_theory1"

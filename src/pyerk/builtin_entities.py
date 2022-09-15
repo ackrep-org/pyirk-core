@@ -942,7 +942,7 @@ I34 = create_builtin_item(
     key_str="I34",
     R1__has_label="complex number",
     R2__has_description="mathematical type representing all complex numbers",
-    R4__is_instance_of=I12["mathematical object"],
+    R3__is_subclass_of=I12["mathematical object"],
 )
 
 I35 = create_builtin_item(

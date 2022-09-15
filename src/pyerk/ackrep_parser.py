@@ -24,6 +24,10 @@ item_pattern = regex.compile(r"^(Ia?\d+)(\[(.*)\])$")
 relation_pattern = regex.compile(r"^(Ra?\d+)(\[(.*)\])$")
 function_pattern = regex.compile(r"^(.+)(\(.*\))$")
 
+# Todo: see bookmark://global01 (below)
+mod = None
+keymanager = None
+
 
 def parse_ackrep(base_path: str = None) -> int:
     """parse ackrep entities. if no base path is given, entire ackrep_data repo is parsed. if path is given
@@ -47,9 +51,12 @@ def parse_ackrep(base_path: str = None) -> int:
     TEST_DATA_PATH = os.path.join(ERK_ROOT_DIR, "erk-data", "control-theory", "control_theory1.py")
     TEST_MOD_NAME = "control_theory1"
 
+    # bookmark://global01
     # TODO make this more elegant, maybe turn this into AckrepParser class
     global mod
+    global keymanager
     mod = load_mod_from_path(TEST_DATA_PATH, TEST_MOD_NAME)
+    keymanager = core.KeyManager()
 
     retcodes = []
     # parse entire repo
@@ -158,7 +165,7 @@ def parse_system_model(entity_path: str):
         except ParserError as e:
             msg = f"Metadata file of '{os.path.split(entity_path)[1]}' has yaml syntax error, see message above."
             raise SyntaxError(msg) from e
-    keymanager = core.KeyManager()
+    assert keymanager is not None
     core.register_mod(__URI__, keymanager, check_uri=False)
     core.ds.uri_prefix_mapping.add_pair(__URI__, "mod")
     core.start_mod(__URI__)

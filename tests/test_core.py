@@ -580,21 +580,26 @@ class TestCore3(HouskeeperMixin, unittest.TestCase):
 class TestCoreAckrep(HouskeeperMixin, unittest.TestCase):
 
     def test_ackrep_parser1(self):
-        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, TEST_MOD_NAME)
+        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct", modname=TEST_MOD_NAME)
         p1 = os.path.join(TEST_ACKREP_DATA_FOR_UT_PATH, "system_models", "lorenz_system")
         res = p.parse_ackrep(p1)
         self.assertEqual(res, 0)
         p2 = os.path.join(TEST_ACKREP_DATA_FOR_UT_PATH, "system_models", "lorenz_system_broken")
 
     def test_ackrep_parser2(self):
-        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, TEST_MOD_NAME)
+        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct", modname=TEST_MOD_NAME)
         p1 = os.path.join(TEST_ACKREP_DATA_FOR_UT_PATH, "system_models", "lorenz_system")
         res = p.parse_ackrep(p1)
+        self.assertEqual(p.ds.uri_prefix_mapping.a["erk:/ocse/0.2"], "ct")
+
+        self.assertGreater(p.ackrep_parser.ensure_ackrep_load_success(), 10)
 
         with self.assertRaises(p.aux.ModuleAlreadyLoadedError):
             p.parse_ackrep(p1)
 
         p.unload_mod(p.ackrep_parser.__URI__)
+        self.assertEqual(p.ackrep_parser.ensure_ackrep_load_success(strict=False), 0)
 
         # after unloading it should work again
         p.parse_ackrep(p1)
+        self.assertGreater(p.ackrep_parser.ensure_ackrep_load_success(), 10)

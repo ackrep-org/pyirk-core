@@ -37,13 +37,15 @@ def load_ackrep_entities_if_necessary(*args, **kwargs):
         ensure_ackrep_load_success()
 
 
-def ensure_ackrep_load_success():
+def ensure_ackrep_load_success(strict: bool = True):
     r2950 = core.ds.get_entity_by_key_str("ct__R2950__has_corresponding_ackrep_key")
 
     n = len(core.ds.relation_relation_edges[r2950.uri])
     if n < 10:
-        msg = f"Number of found ACKREP entities is unexpectedly low. Found {n}, expected >= 10."
-        raise core.aux.PyERKError(msg)
+        if strict:
+            msg = f"Number of found ACKREP entities is unexpectedly low. Found {n}, expected >= 10."
+            raise core.aux.PyERKError(msg)
+    return n
 
 
 # TODO: discuss renaming: parse_ackrep -> load_ackrep_entities

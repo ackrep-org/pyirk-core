@@ -27,6 +27,25 @@ mod = None
 keymanager = None
 
 
+def load_ackrep_entities_if_necessary(*args, **kwargs):
+
+    if __URI__ not in core.ds.mod_path_mapping.a:
+        parse_ackrep(*args, **kwargs)
+        ensure_ackrep_load_success()
+    else:
+        ensure_ackrep_load_success()
+
+
+def ensure_ackrep_load_success():
+    r2950 = core.ds.get_entity_by_key_str("ct__R2950__has_corresponding_ackrep_key")
+
+    n = len(core.ds.relation_relation_edges[r2950.uri])
+    if n < 10:
+        msg = f"Number of found ACKREP entities is unexpectedly low. Found {n}, expected >= 10."
+        raise core.aux.PyERKError(msg)
+
+
+# TODO: discuss renaming: parse_ackrep -> load_ackrep_entities
 def parse_ackrep(base_path: str = None, strict: bool = True) -> int:
     """parse ackrep entities. if no base path is given, entire ackrep_data repo is parsed. if path is given
     only this path is parsed.
@@ -58,7 +77,7 @@ def parse_ackrep(base_path: str = None, strict: bool = True) -> int:
     # TODO make this more elegant, maybe turn this into AckrepParser class
     global mod
     global keymanager
-    mod = load_mod_from_path(TEST_DATA_PATH, TEST_MOD_NAME)
+    mod = load_mod_from_path(TEST_DATA_PATH, prefix="ct", modname=TEST_MOD_NAME, omit_reload=True)
     keymanager = core.KeyManager()
 
     retcodes = []

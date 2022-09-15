@@ -220,10 +220,12 @@ I2 = create_builtin_item(
     R3__is_subclass_of=I1,
 )
 
-I3 = create_builtin_item("I3", R1="Field of science")
+I3 = create_builtin_item("I3", R1="Field of science", R4__is_instance_of=I2)
 I4 = create_builtin_item("I4", R1="Mathematics", R4__is_instance_of=I3)
 I5 = create_builtin_item("I5", R1="Engineering", R4__is_instance_of=I3)
 I6 = create_builtin_item("I6", R1="mathematical operation", R4__is_instance_of=I2["Metaclass"])
+
+# TODO: model this with a relation instead of subclassing
 I7 = create_builtin_item("I7", R1="mathematical operation with arity 1", R3__is_subclass_of=I6, R7=1)
 I8 = create_builtin_item("I8", R1="mathematical operation with arity 2", R3__is_subclass_of=I6, R7=2)
 I9 = create_builtin_item("I9", R1="mathematical operation with arity 3", R3__is_subclass_of=I6, R7=3)

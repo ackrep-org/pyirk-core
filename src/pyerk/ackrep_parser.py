@@ -9,7 +9,7 @@ from .core import Item, Relation, Entity
 from . import core
 from . import aux
 from .builtin_entities import instance_of
-from .erkloader import load_mod_from_path
+from .erkloader import load_mod_from_path, ModuleType
 from . import builtin_entities
 from .auxiliary import *
 
@@ -76,14 +76,11 @@ def parse_ackrep(base_path: str = None, strict: bool = True, prefix="ackrep") ->
         msg = f"unexpected attempt to reload already loaded module: {__URI__}"
         raise core.aux.ModuleAlreadyLoadedError(msg)
 
-    TEST_DATA_PATH = os.path.join(ERK_ROOT_DIR, "erk-data", "control-theory", "control_theory1.py")
-    TEST_MOD_NAME = "control_theory1"
-
     # bookmark://global01
     # TODO make this more elegant, maybe turn this into AckrepParser class
     global mod
     global keymanager
-    mod = load_mod_from_path(TEST_DATA_PATH, prefix="ct", modname=TEST_MOD_NAME, omit_reload=True)
+    mod = ensure_ocse_is_loaded()
     keymanager = core.KeyManager()
 
     # core.ds.uri_prefix_mapping.add_pair(__URI__, prefix)
@@ -109,6 +106,27 @@ def parse_ackrep(base_path: str = None, strict: bool = True, prefix="ackrep") ->
         retcodes.append(retcode)
 
     return sum(retcodes)
+
+
+def ensure_ocse_is_loaded() -> ModuleType:
+    TEST_DATA_PATH = os.path.join(ERK_ROOT_DIR, "erk-data", "control-theory", "control_theory1.py")
+    TEST_MOD_NAME = "control_theory1"
+
+    # noinspection PyShadowingNames
+
+    ocse_prefix = "ct"
+
+    if ocse_uri := core.ds.uri_prefix_mapping.b.get(ocse_prefix):
+        ocse_mod = core.ds.uri_mod_dict[ocse_uri]
+    else:
+        ocse_mod = load_mod_from_path(TEST_DATA_PATH, prefix=ocse_prefix, modname=TEST_MOD_NAME)
+
+    # ensure that ocse entities are available
+
+    assert core.ds.get_entity_by_key_str(f"{ocse_prefix}__R2950__has_corresponding_ackrep_key") is not None
+    assert core.ds.get_entity_by_key_str(f"{ocse_prefix}__I2931__local_ljapunov_stability") is not None
+
+    return ocse_mod
 
 
 def parse_all_problems_and_solutions(ackrep_path):

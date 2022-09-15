@@ -7,9 +7,11 @@ from ipydex import IPS, activate_ips_on_exception
 
 activate_ips_on_exception()
 
+ModuleType = type(sys)
+
 
 # noinspection PyProtectedMember
-def load_mod_from_path(modpath: str, prefix: str, modname=None, allow_reload=True, omit_reload=False):
+def load_mod_from_path(modpath: str, prefix: str, modname=None, allow_reload=True, omit_reload=False) -> ModuleType:
     """
 
     :param modpath:         file system path for the module to be loaded

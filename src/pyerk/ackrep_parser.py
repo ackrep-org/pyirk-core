@@ -45,7 +45,9 @@ def parse_ackrep(base_path: str = None) -> int:
         ackrep_path = os.path.join(os.getcwd(), base_path)
 
     TEST_DATA_PATH = os.path.join(ERK_ROOT_DIR, "erk-data", "control-theory", "control_theory1.py")
-    TEST_MOD_NAME = "control_theory1"
+
+    # TODO: Read this from settings, so there are no naming conflicts
+    TEST_MOD_NAME = "ct"
 
     # TODO make this more elegant, maybe turn this into AckrepParser class
     global mod

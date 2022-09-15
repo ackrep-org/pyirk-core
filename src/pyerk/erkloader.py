@@ -32,6 +32,7 @@ def load_mod_from_path(modpath: str, prefix: str, modname=None, allow_reload=Tru
 
     if omit_reload and old_mod_uri:
         mod = pyerk.ds.uri_mod_dict[old_mod_uri]
+        mod.__fresh_load__ = False
         return mod
 
     if allow_reload and old_mod_uri:
@@ -80,4 +81,5 @@ def load_mod_from_path(modpath: str, prefix: str, modname=None, allow_reload=Tru
     # the modnames are needed to keep sys.modules in sync
     pyerk.ds.modnames[mod_uri] = modname
 
+    mod.__fresh_load__ = True
     return mod

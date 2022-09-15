@@ -18,10 +18,6 @@ keymanager = core.KeyManager()
 
 
 ERK_ROOT_DIR = aux.get_erk_root_dir()
-TEST_DATA_PATH = os.path.join(ERK_ROOT_DIR, "erk-data", "control-theory", "control_theory1.py")
-TEST_MOD_NAME = "control_theory1"
-
-mod = load_mod_from_path(TEST_DATA_PATH, TEST_MOD_NAME)
 
 entity_pattern = regex.compile(r"^(I|Ra?\d+)(\[(.*)\])$")
 item_pattern = regex.compile(r"^(Ia?\d+)(\[(.*)\])$")
@@ -47,6 +43,12 @@ def parse_ackrep(base_path: str = None) -> int:
         ackrep_path = base_path
     else:
         ackrep_path = os.path.join(os.getcwd(), base_path)
+
+    TEST_DATA_PATH = os.path.join(ERK_ROOT_DIR, "erk-data", "control-theory", "control_theory1.py")
+    TEST_MOD_NAME = "control_theory1"
+
+    global mod
+    mod = load_mod_from_path(TEST_DATA_PATH, TEST_MOD_NAME)
 
     retcodes = []
     # parse entire repo

@@ -50,6 +50,7 @@ def ensure_ackrep_load_success(strict: bool = True):
     return n
 
 
+# TODO: refactoring: separate loading all ackrep entities or only one
 # TODO: discuss renaming: parse_ackrep -> load_ackrep_entities
 def parse_ackrep(base_path: str = None, strict: bool = True, prefix="ackrep") -> int:
     """parse ackrep entities. if no base path is given, entire ackrep_data repo is parsed. if path is given

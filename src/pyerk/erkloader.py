@@ -11,14 +11,13 @@ ModuleType = type(sys)
 
 
 # noinspection PyProtectedMember
-def load_mod_from_path(modpath: str, prefix: str, modname=None, allow_reload=True, omit_reload=False) -> ModuleType:
+def load_mod_from_path(modpath: str, prefix: str, modname=None, allow_reload=True) -> ModuleType:
     """
 
     :param modpath:         file system path for the module to be loaded
     :param prefix:          prefix which can be used to replace the URI for convenice
     :param modname:
-    :param allow_reload:
-    :param omit_reload:
+    :param allow_reload:    flag; if false, an error is raised if the module was already loades
     :return:
     """
     if modname is None:
@@ -32,13 +31,12 @@ def load_mod_from_path(modpath: str, prefix: str, modname=None, allow_reload=Tru
     modpath = os.path.abspath(modpath)
     old_mod_uri = pyerk.ds.mod_path_mapping.b.get(modpath)
 
-    if omit_reload and old_mod_uri:
-        mod = pyerk.ds.uri_mod_dict[old_mod_uri]
-        mod.__fresh_load__ = False
-        return mod
-
-    if allow_reload and old_mod_uri:
-        pyerk.unload_mod(old_mod_uri)
+    if old_mod_uri:
+        if allow_reload:
+            pyerk.unload_mod(old_mod_uri)
+        else:
+            msg = f"Unintended attempt to reload module {old_mod_uri}"
+            raise pyerk.aux.ModuleAlreadyLoadedError(msg)
 
     spec = importlib.util.spec_from_file_location(modname, modpath)
     mod = importlib.util.module_from_spec(spec)

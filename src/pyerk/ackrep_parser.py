@@ -14,7 +14,7 @@ from . import builtin_entities
 from .auxiliary import *
 
 __URI__ = "erk:/models"
-keymanager = core.KeyManager()
+
 
 
 ERK_ROOT_DIR = aux.get_erk_root_dir()
@@ -130,7 +130,7 @@ def parse_problem_or_solution(entity_path: str):
         except ParserError as e:
             msg = f"Metadata file of '{os.path.split(entity_path)[1]}' has yaml syntax error, see message above."
             raise SyntaxError(msg) from e
-    core.register_mod(__URI__, keymanager)
+
     core.start_mod(__URI__)
 
     entity = instance_of(erk_class, r1=md["name"], r2=md["short_description"])
@@ -158,6 +158,7 @@ def parse_system_model(entity_path: str):
         except ParserError as e:
             msg = f"Metadata file of '{os.path.split(entity_path)[1]}' has yaml syntax error, see message above."
             raise SyntaxError(msg) from e
+    keymanager = core.KeyManager()
     core.register_mod(__URI__, keymanager, check_uri=False)
     core.ds.uri_prefix_mapping.add_pair(__URI__, "mod")
     core.start_mod(__URI__)

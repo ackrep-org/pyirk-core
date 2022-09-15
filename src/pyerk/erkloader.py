@@ -31,7 +31,8 @@ def load_mod_from_path(modpath: str, prefix: str, modname=None, allow_reload=Tru
     old_mod_uri = pyerk.ds.mod_path_mapping.b.get(modpath)
 
     if omit_reload and old_mod_uri:
-        return
+        mod = pyerk.ds.uri_mod_dict[old_mod_uri]
+        return mod
 
     if allow_reload and old_mod_uri:
         pyerk.unload_mod(old_mod_uri)
@@ -74,7 +75,9 @@ def load_mod_from_path(modpath: str, prefix: str, modname=None, allow_reload=Tru
     pyerk.aux.ensure_valid_baseuri(mod_uri)
     pyerk.ds.uri_prefix_mapping.add_pair(mod_uri, prefix)
 
-    # TODO: obsolete?
+    pyerk.ds.uri_mod_dict[mod_uri] = mod
+
+    # the modnames are needed to keep sys.modules in sync
     pyerk.ds.modnames[mod_uri] = modname
 
     return mod

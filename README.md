@@ -1,14 +1,20 @@
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 
-# (Python based) Easy Representation of Knowledge (pyERK)
+# Overview: pyerk
 
-- Currently in alpha-phase
-- Inspired by OWL, but more expressive
+Pyerk is the python implementation of the ***e**mergent **r**epresentation of **k**nowledge* framework.
+
+- Designed to formally represent knowledge (including meta levels)
+- Implementation-status: "early alpha"
+- Inspired by OWL, but much more expressive
+    - ... at the cost of guarantied computability
 - Inspired by Wikidata, but much simpler
 - Inspired by SUO-KIF, but with less brackets
-- Represented directly in python
-- Designed to formally represent knowledge (including meta levels)
+- Represented directly in python: → imperative instaead of declarative knowledge representation
+
+
+Pyerk originated and is currently (2022) mainly developed with focus on representing knowledge from the domain of *control theory* as part of the *Automatic Control Knowledge Repository ([ACKREP](https://ackrep.org))*. However, in principle, it aims to be applicable wo a wide range of domains.
 
 
 # Assumed Directory Structure
@@ -28,10 +34,10 @@
 │  └── ...
 │
 ├── erk-data/                       ← directory that contains erk-knowledge packages
-│  ├── control-theory/              ← a knowledge package
+│  ├── ocse0.2/                     ← a knowledge package
 │  │  ├── .git/
 │  │  ├── README.md
-│  │  ├── control_theory1.py        ← a knowledge module
+│  │  ├── ocse.py                  ← a knowledge module
 │  │  │                             (this one is currently used for unit testing)
 │  │  └── ...
 │  └── ...

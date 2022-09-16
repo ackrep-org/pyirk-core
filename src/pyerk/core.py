@@ -1205,11 +1205,15 @@ class RelationEdge:
             self.qualifiers.append(qf_rledg)
 
             # save the qualifyer-relation edge (and its inverse) in the appropriate data structures
-            # _xx!! -> uri
+
+            # this is the RelationEdge from the original RE instance to the object (thus role=SUBJECT)
             ds.set_relation_edge(re_object=qf_rledg)
+
+            # we might also need dual edge
             if isinstance(qf.obj, Entity):
                 # add inverse relation
-                ds.inv_relation_edges[qf.obj.uri][qf.rel.uri].append(qf_rledg.create_dual())
+                dual_rledg = qf_rledg.create_dual()
+                ds.inv_relation_edges[qf.obj.uri][qf.rel.uri].append(dual_rledg)
 
     def create_dual(self):
         if self.role == RelationRole.SUBJECT:

@@ -519,7 +519,57 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         self.assertIn(s3, res)
 
 
-class Test_02_Core(HouskeeperMixin, unittest.TestCase):
+class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.setup_data()
+
+    def tearDown(self) -> None:
+        super().tearDown()
+
+    def setup_data(self):
+
+        with p.uri_context(uri=TEST_BASE_URI):
+            self.rule1 = p.create_item(
+                key_str="I400",
+                R1__has_label="subproperty rule 1",
+                R2__has_description=(
+                    # "specifies the 'transitivity' of I11_mathematical_property-instances via R17_issubproperty_of"
+                    "specifies the 'transitivity' of R17_issubproperty_of"
+                ),
+                R4__is_instance_of=p.I41["semantic rule"],
+            )
+
+            with self.rule1["subproperty rule 1"].scope("context") as cm:
+                cm.new_var(P1=p.instance_of(p.I11["mathematical property"]))
+                cm.new_var(P2=p.instance_of(p.I11["mathematical property"]))
+                cm.new_var(P3=p.instance_of(p.I11["mathematical property"]))
+            #     # A = cm.new_var(sys=instance_of(I1["general item"]))
+            #
+            with self.rule1["subproperty rule 1"].scope("premises") as cm:
+                cm.new_rel(cm.P2, p.R17["is subproperty of"], cm.P1)
+                cm.new_rel(cm.P3, p.R17["is subproperty of"], cm.P2)
+                # todo: state that all variables are different from each other
+
+            with self.rule1["subproperty rule 1"].scope("assertions") as cm:
+                cm.new_rel(cm.P3, p.R17["is subproperty of"], cm.P1)
+
+    def test_01_basics(self):
+
+        self.assertIn(TEST_BASE_URI, p.ds.entities_created_in_mod)
+        self.assertEqual(len(p.ds.entities_created_in_mod), 2)
+        self.tearDown()
+
+        self.assertEqual(len(p.ds.entities_created_in_mod), 1)
+        self.tearDown()
+
+        # would be nice to solve this more elegantly (without the need for explicitly registering the module again)
+        self.register_this_module()
+        self.setup_data()
+        self.assertIn(TEST_BASE_URI, p.ds.entities_created_in_mod)
+        self.assertEqual(len(p.ds.entities_created_in_mod), 2)
+
     def test_ruleengine01(self):
         itm1 = p.I12["mathematical object"]
         res = p.ruleengine.get_simple_properties(itm1)
@@ -543,6 +593,13 @@ class Test_02_Core(HouskeeperMixin, unittest.TestCase):
         self.assertGreater(G.number_of_edges(), 30)
 
     def test_ruleengine03(self):
+
+        premises_rledgs = p.ruleengine.filter_relevant_rledgs(
+            self.rule1.scp__premises.get_inv_relations("R20__has_defining_scope")
+        )
+
+        self.assertEqual(len(premises_rledgs), 2)
+
         p.ruleengine.apply_all_semantic_rules()
 
 

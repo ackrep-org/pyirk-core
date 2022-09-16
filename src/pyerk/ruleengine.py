@@ -33,9 +33,10 @@ def get_all_rules():
     return rule_instances
 
 
-def filter_subject_rledges(re_list: List[core.RelationEdge]) -> List[core.RelationEdge]:
+def filter_relevant_rledgs(re_list: List[core.RelationEdge]) -> List[core.RelationEdge]:
     """
-    From a list of RelationEdge instances select only those with .role == SUBJECT.
+    From a list of RelationEdge instances select only those which are qualifiers and whose subject is an
+    RE with .role == SUBJECT.
     In other words: omit those instances which are created as dual relation edges
 
     :param re_list:
@@ -45,8 +46,8 @@ def filter_subject_rledges(re_list: List[core.RelationEdge]) -> List[core.Relati
     res = []
     for rledg in re_list:
         assert isinstance(rledg, core.RelationEdge)
-        if rledg.role == core.RelationRole.SUBJECT:
-            res.append(rledg)
+        if isinstance(rledg.subject, core.RelationEdge) and rledg.subject.role == core.RelationRole.SUBJECT:
+            res.append(rledg.subject)
     return res
 
 
@@ -54,12 +55,14 @@ def apply_rule(rule: core.Entity) -> None:
 
     # noinspection PyShadowingBuiltins
     vars = rule.scp__context.get_inv_relations("R20__has_defining_scope")
-    premises_rledgs = filter_subject_rledges(rule.scp__premises.get_inv_relations("R20__has_defining_scope"))
-    assertions_rledgs = filter_subject_rledges(rule.scp__assertions.get_inv_relations("R20__has_defining_scope"))
+    premises_rledgs = filter_relevant_rledgs(rule.scp__premises.get_inv_relations("R20__has_defining_scope"))
+    assertions_rledgs = filter_relevant_rledgs(rule.scp__assertions.get_inv_relations("R20__has_defining_scope"))
 
     G = create_simple_graph()
 
 
+def match_subgraph():
+    pass
 
 
 def create_simple_graph() -> nx.DiGraph:

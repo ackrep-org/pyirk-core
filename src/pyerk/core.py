@@ -374,7 +374,10 @@ class Entity(abc.ABC):
             corresponding_literal = None
         else:
             corresponding_entity = None
-            corresponding_literal = repr(rel_content)
+
+            if not isinstance(rel_content, (str, int, float, complex)):
+                rel_content = repr(rel_content)
+            corresponding_literal = rel_content
 
         if qualifiers is None:
             qualifiers = []

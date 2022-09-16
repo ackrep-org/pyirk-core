@@ -521,6 +521,13 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
 
 class Test_02_Core(HouskeeperMixin, unittest.TestCase):
     def test_ruleengine1(self):
+        itm1 = p.I12["mathematical object"]
+        res = p.ruleengine.get_simple_properties(itm1)
+        self.assertEqual(len(res), 2)
+        self.assertEqual(res[p.R1.uri], itm1.R1)
+        self.assertEqual(res[p.R2.uri], itm1.R2)
+
+    def test_ruleengine2(self):
         p.ruleengine.apply_all_semantic_rules()
 
 

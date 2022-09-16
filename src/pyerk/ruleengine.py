@@ -7,6 +7,7 @@ This module contains code to enable semantic inferences based on special items (
 """
 
 from typing import List
+import networkx as nx
 
 from ipydex import IPS
 
@@ -52,3 +53,35 @@ def apply_rule(rule: pyerk.Entity) -> None:
     assertions_rledgs = filter_subject_rledges(rule.scp__assertions.get_inv_relations("R20__has_defining_scope"))
 
     # IPS()  # ← continue here
+
+
+def create_simple_graph():
+    """
+    Create graph without regarding qualifiers. Nodes: uris
+
+    :return:
+    """
+    G = nx.DiGraph
+
+    for item_uri, item in pyerk.ds.items.items():
+
+        simple_properties = get_simple_properties()
+
+        G.add_node(item_uri)
+
+
+def get_simple_properties(item: pyerk.Item) -> dict:
+
+    rledg_dict = item.get_relations()
+    res = {}
+    for rel_uri, rledg_list in rledg_dict.items():
+
+        for rledg in rledg_list:
+            assert isinstance(rledg, pyerk.RelationEdge)
+            assert len(rledg.relation_tuple) == 3
+            if rledg.corresponding_entity is None:
+                res[rel_uri] = rledg.corresponding_literal
+                # TODO: support multiple relations in the graph (MultiDiGraph)
+                break
+
+    return res

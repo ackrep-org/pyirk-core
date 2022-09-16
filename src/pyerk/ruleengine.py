@@ -77,7 +77,17 @@ def create_prototype_subgraph_from_rule(rule: core.Entity) -> nx.DiGraph:
     # noinspection PyShadowingBuiltins
     vars = rule.scp__context.get_inv_relations("R20__has_defining_scope", return_subj=True)
     premises_rledgs = filter_relevant_rledgs(rule.scp__premises.get_inv_relations("R20__has_defining_scope"))
-    return _create_prototype_subgraph_from_premises(vars, premises_rledgs)
+    P = _create_prototype_subgraph_from_premises(vars, premises_rledgs)
+
+    components = list(nx.weakly_connected_components(P))
+    if len(components) != 1:
+        msg = (
+            f"unexpected number of components of prototype graph while applying rule {rule}."
+            f"Expected: 1, but got ({len(components)}). Possible reason: unuesed variables in the rules context."
+        )
+        raise core.aux.SemanticRuleError(msg)
+
+    return P
 
 
 # noinspection PyShadowingBuiltins
@@ -122,8 +132,6 @@ def _create_prototype_subgraph_from_premises(
         n2 = local_nodes.a[obj.uri]
 
         P.add_edge(n1, n2, rel_uri=pred.uri)
-
-    # todo: assert no disconnected nodes
 
     return P
 
@@ -232,8 +240,9 @@ def get_all_node_relations() -> dict:
                 if rledg.corresponding_entity is not None:
                     assert rledg.corresponding_literal is None
                     if not isinstance(rledg.corresponding_entity, core.Item):
-                        msg = f"Unexpected type: expected Item but got {type(rledg.corresponding_entity)}"
-                        raise TypeError(msg)
+                        # some relation edges point to an relation-type
+                        # (maybe this will change in the future)
+                        continue
                     c = Container(rel_uri=rel_uri)
                     res[(entity_uri, rledg.corresponding_entity.uri)] = c
                     # TODO: support multiple relations in the graph (MultiDiGraph)

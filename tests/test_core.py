@@ -523,12 +523,12 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
 
     def setUp(self):
         super().setUp()
-        self.setup_data()
+        self.setup_data1()
 
     def tearDown(self) -> None:
         super().tearDown()
 
-    def setup_data(self):
+    def setup_data1(self):
 
         with p.uri_context(uri=TEST_BASE_URI):
             self.rule1 = p.create_item(
@@ -555,6 +555,9 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
             with self.rule1["subproperty rule 1"].scope("assertions") as cm:
                 cm.new_rel(cm.P3, p.R17["is subproperty of"], cm.P1)
 
+    def setup_data2(self):
+        pass
+
     def test_01_basics(self):
 
         self.assertIn(TEST_BASE_URI, p.ds.entities_created_in_mod)
@@ -566,7 +569,7 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
 
         # would be nice to solve this more elegantly (without the need for explicitly registering the module again)
         self.register_this_module()
-        self.setup_data()
+        self.setup_data1()
         self.assertIn(TEST_BASE_URI, p.ds.entities_created_in_mod)
         self.assertEqual(len(p.ds.entities_created_in_mod), 2)
 
@@ -601,6 +604,11 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
 
         # ensures that the rule does not match itself
         self.assertEqual(len(res_graph), 0)
+
+        # here some properties have subproperties
+        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct", modname=TEST_MOD_NAME)
+
+        res_graph = p.ruleengine.get_graph_match_from_rule(self.rule1)
 
     def test_ruleengine04(self):
 

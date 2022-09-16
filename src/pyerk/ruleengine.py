@@ -6,7 +6,7 @@ This module contains code to enable semantic inferences based on special items (
 
 """
 
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 
 import networkx as nx
 from networkx.algorithms import isomorphism as nxiso
@@ -21,11 +21,13 @@ from . import builtin_entities as bi
 from . import builtin_entities as b
 
 
-def apply_all_semantic_rules():
+def apply_all_semantic_rules(mod_context_uri=None):
     rule_instances = get_all_rules()
+    new_rledg_list = []
     for rule in rule_instances:
-        ra = RuleApplicator(rule)
-        ra.apply()
+        ra = RuleApplicator(rule, mod_context_uri=mod_context_uri)
+        res = ra.apply()
+        new_rledg_list.extend(res)
 
 
 def get_all_rules():
@@ -57,8 +59,10 @@ class RuleApplicator:
     """
     Class to handle the application of a single semantic rule.
     """
-    def __init__(self, rule: core.Entity):
+    def __init__(self, rule: core.Entity, mod_context_uri: Optional[str] = None):
         self.rule = rule
+        self.mod_context_uri = mod_context_uri
+
         self.vars = rule.scp__context.get_inv_relations("R20__has_defining_scope", return_subj=True)
         self.premises_rledgs = filter_relevant_rledgs(rule.scp__premises.get_inv_relations("R20"))
         self.assertions_rledgs = filter_relevant_rledgs(rule.scp__assertions.get_inv_relations("R20"))
@@ -70,16 +74,47 @@ class RuleApplicator:
 
         self.P: nx.DiGraph = self.create_prototype_subgraph_from_rule()
 
-    def apply(self):
+    def apply(self) -> List[core.RelationEdge]:
 
-        # noinspection PyShadowingBuiltins
+        if self.mod_context_uri is None:
+            assert core.get_active_mod_uri(strict=True)
+            res = self._apply()
+        else:
+            core.aux.ensure_valid_baseuri(self.mod_context_uri)
+            with core.uri_context(self.mod_context_uri):
+                res = self._apply()
+        return res
+
+    def _apply(self) -> List[core.RelationEdge]:
 
         result_map = self.match_subgraph_P()
 
         asserted_relation_templates = self.get_asserted_relation_templates()
 
-        # IPS()
-        # apply assertions
+        new_rledg_list = []
+
+        for res_dict in result_map:
+            # res_dict represents one situation where the assertions should be applied
+            # it's a dict like
+            # {
+            #       0: <Item I2931["local ljapunov stability"]>,
+            #       1: <Item I4900["local asymtotical stability"]>,
+            #       2: <Item I9642["local exponential stability"]>
+            #  }
+
+            for n1, rel, n2 in asserted_relation_templates:
+
+                new_subj = res_dict[n1]
+                new_obj = res_dict[n2]
+
+                assert isinstance(rel, core.Relation)
+                assert isinstance(new_subj, core.Entity)
+
+                # TODO: add qualifiers
+                new_rledg = new_subj.set_relation(rel, new_obj)
+                new_rledg_list.append(new_rledg)
+
+        return new_rledg_list
 
     def get_asserted_relation_templates(self) -> List[Tuple[int, core.Relation, int]]:
 

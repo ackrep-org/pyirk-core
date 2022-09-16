@@ -622,11 +622,13 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
 
         mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct", modname=TEST_MOD_NAME)
         self.assertEqual(len(mod1.I9642["local exponential stability"].get_relations("R17__is_subproperty_of")), 1)
-        ra = p.ruleengine.RuleApplicator(self.rule1)
-        ra.apply()
+        ra = p.ruleengine.RuleApplicator(self.rule1, mod_context_uri=TEST_BASE_URI)
+        res = ra.apply()
 
         # ensure that after rule application there is at least one new relation
-        # self.assertEqual(len(mod1.I9642["local exponential stability"].get_relations("R17__is_subproperty_of")), 2)
+        self.assertEqual(len(mod1.I9642["local exponential stability"].get_relations("R17__is_subproperty_of")), 2)
+        for r in res:
+            print(r)
 
     def test_ruleengine05(self):
         premises_rledgs = p.ruleengine.filter_relevant_rledgs(
@@ -634,7 +636,11 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         )
 
         self.assertEqual(len(premises_rledgs), 2)
-        p.ruleengine.apply_all_semantic_rules()
+        with self.assertRaises(p.aux.EmptyURIStackError):
+            p.ruleengine.apply_all_semantic_rules()
+
+        with p.uri_context(uri=TEST_BASE_URI):
+            res = p.ruleengine.apply_all_semantic_rules()
 
 
 class Test_03_Core(HouskeeperMixin, unittest.TestCase):

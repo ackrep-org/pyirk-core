@@ -14,3 +14,7 @@ ACKREP_DATA_REL_PATH = "../ackrep/ackrep_data"
 
 BUILTINS_URI = "erk:/builtins"
 URI_SEP = "#"
+
+# todo: some time in the future pyerk should become indendent from the OCSE
+# for now it is convenient to have the URI stored here
+OCSE_URI = "erk:/ocse/0.2"

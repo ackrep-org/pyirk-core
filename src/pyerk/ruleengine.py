@@ -24,7 +24,8 @@ from . import builtin_entities as b
 def apply_all_semantic_rules():
     rule_instances = get_all_rules()
     for rule in rule_instances:
-        apply_rule(rule)
+        ra = RuleApplicator(rule)
+        ra.apply()
 
 
 def get_all_rules():
@@ -52,88 +53,99 @@ def filter_relevant_rledgs(re_list: List[core.RelationEdge]) -> List[core.Relati
     return res
 
 
-def apply_rule(rule: core.Entity) -> None:
+class RuleApplicator:
+    """
+    Class to handle the application of a single semantic rule.
+    """
+    def __init__(self, rule: core.Entity):
+        self.rule = rule
+        self.vars = rule.scp__context.get_inv_relations("R20__has_defining_scope", return_subj=True)
+        self.premises_rledgs = filter_relevant_rledgs(rule.scp__premises.get_inv_relations("R20"))
+        self.assertions_rledgs = filter_relevant_rledgs(rule.scp__assertions.get_inv_relations("R20"))
 
-    # noinspection PyShadowingBuiltins
-    vars = rule.scp__context.get_inv_relations("R20__has_defining_scope", return_subj=True)
-    premises_rledgs = filter_relevant_rledgs(rule.scp__premises.get_inv_relations("R20__has_defining_scope"))
-    assertions_rledgs = filter_relevant_rledgs(rule.scp__assertions.get_inv_relations("R20__has_defining_scope"))
+        self.G: nx.DiGraph = create_simple_graph()
 
-    res_graph = get_graph_match_from_rule(rule)
+        self.P: nx.DiGraph = self.create_prototype_subgraph_from_rule()
+
+    def apply(self):
+
+        # noinspection PyShadowingBuiltins
+
+        result_map = self.match_subgraph_P()
+
+        #IPS()
 
     # apply assertions
 
+    def match_subgraph_P(self) -> List[dict]:
+        assert self.P is not None
+        GM = nxiso.DiGraphMatcher(self.G, self.P, node_match=None, edge_match=edge_matcher)
+        res = list(GM.subgraph_isomorphisms_iter())
 
-def get_graph_match_from_rule(rule) -> List[dict]:
-    G = create_simple_graph()
-    P = create_prototype_subgraph_from_rule(rule)
+        # invert the dicts (todo: find out why switching G and P does not work)
+        # and introduce items for uris
 
-    res_graph = match_subgraph(G, P)
+        new_res = []
+        for d in res:
+            new_res.append(dict((v, core.ds.get_entity_by_uri(k)) for k, v in d.items()))
 
-    return res_graph
+        # new_res is a list of dicts like
+        # [{
+        #   0: <Item I2931["local ljapunov stability"]>,
+        #   1: <Item I4900["local asymtotical stability"]>,
+        #   2: <Item I9642["local exponential stability"]>
+        #  }, ... ]
 
+        return new_res
 
-def create_prototype_subgraph_from_rule(rule: core.Entity) -> nx.DiGraph:
-    # noinspection PyShadowingBuiltins
-    vars = rule.scp__context.get_inv_relations("R20__has_defining_scope", return_subj=True)
-    premises_rledgs = filter_relevant_rledgs(rule.scp__premises.get_inv_relations("R20__has_defining_scope"))
-    P = _create_prototype_subgraph_from_premises(vars, premises_rledgs)
+    def create_prototype_subgraph_from_rule(self) -> nx.DiGraph:
 
-    components = list(nx.weakly_connected_components(P))
-    if len(components) != 1:
-        msg = (
-            f"unexpected number of components of prototype graph while applying rule {rule}."
-            f"Expected: 1, but got ({len(components)}). Possible reason: unuesed variables in the rules context."
-        )
-        raise core.aux.SemanticRuleError(msg)
+        P = nx.DiGraph()
 
-    return P
+        # counter for node-values
+        i = 0
 
+        local_nodes = core.aux.OneToOneMapping()
 
-# noinspection PyShadowingBuiltins
-def _create_prototype_subgraph_from_premises(
-    vars: List[core.Entity],
-    premises_rledgs: List[core.RelationEdge]
-) -> nx.DiGraph:
+        for var in self.vars:
 
-    P = nx.DiGraph()
+            assert isinstance(var, core.Entity)
 
-    # counter for node-values
-    i = 0
+            if var.uri in local_nodes.a:
+                continue
 
-    local_nodes = core.aux.OneToOneMapping()
+            c = Container()
+            for relname in ["R3", "R4"]:
+                try:
+                    value = getattr(var, relname)
+                except (AttributeError, KeyError):
+                    value = None
+                c[relname] = value
+            P.add_node(i, itm=c)
+            local_nodes.add_pair(var.uri, i)
+            i += 1
 
-    for var in vars:
+        for rledg in self.premises_rledgs:
 
-        assert isinstance(var, core.Entity)
+            subj, pred, obj = rledg.relation_tuple
+            assert isinstance(subj, core.Entity)
+            assert isinstance(pred, core.Relation)
+            assert isinstance(obj, core.Entity)
 
-        if var.uri in local_nodes.a:
-            continue
+            n1 = local_nodes.a[subj.uri]
+            n2 = local_nodes.a[obj.uri]
 
-        c = Container()
-        for relname in ["R3", "R4"]:
-            try:
-                value = getattr(var, relname)
-            except (AttributeError, KeyError):
-                value = None
-            c[relname] = value
-        P.add_node(i, itm=c)
-        local_nodes.add_pair(var.uri, i)
-        i += 1
+            P.add_edge(n1, n2, rel_uri=pred.uri)
 
-    for rledg in premises_rledgs:
+        components = list(nx.weakly_connected_components(P))
+        if len(components) != 1:
+            msg = (
+                f"unexpected number of components of prototype graph while applying rule {self.rule}."
+                f"Expected: 1, but got ({len(components)}). Possible reason: unuesed variables in the rules context."
+            )
+            raise core.aux.SemanticRuleError(msg)
 
-        subj, pred, obj = rledg.relation_tuple
-        assert isinstance(subj, core.Entity)
-        assert isinstance(pred, core.Relation)
-        assert isinstance(obj, core.Entity)
-
-        n1 = local_nodes.a[subj.uri]
-        n2 = local_nodes.a[obj.uri]
-
-        P.add_edge(n1, n2, rel_uri=pred.uri)
-
-    return P
+        return P
 
 
 def edge_matcher(e1d: dict, e2d: dict) -> bool:
@@ -154,13 +166,6 @@ def edge_matcher(e1d: dict, e2d: dict) -> bool:
         return False
 
     return True
-
-
-def match_subgraph(G: nx.DiGraph, P: nx.DiGraph) -> List[dict]:
-    GM = nxiso.DiGraphMatcher(G, P, node_match=None, edge_match=edge_matcher)
-    res = list(GM.subgraph_isomorphisms_iter())
-
-    return res
 
 
 def create_simple_graph() -> nx.DiGraph:

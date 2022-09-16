@@ -596,28 +596,42 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         self.assertGreater(G.number_of_edges(), 30)
 
     def test_ruleengine03(self):
-        P = p.ruleengine.create_prototype_subgraph_from_rule(self.rule1)
+
+        ra = p.ruleengine.RuleApplicator(self.rule1)
+
+        P = ra.create_prototype_subgraph_from_rule()
         self.assertEqual(P.number_of_nodes(), 3)
         self.assertEqual(P.number_of_edges(), 2)
 
-        res_graph = p.ruleengine.get_graph_match_from_rule(self.rule1)
+        res_graph = ra.match_subgraph_P()
 
         # ensures that the rule does not match itself
         self.assertEqual(len(res_graph), 0)
 
-        # here some properties have subproperties
+        # in this erk module some properties have subproperties
         mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct", modname=TEST_MOD_NAME)
 
-        res_graph = p.ruleengine.get_graph_match_from_rule(self.rule1)
+        # create a new RuleApplicator because the overal graph changed
+        ra = p.ruleengine.RuleApplicator(self.rule1)
+        res_graph = ra.match_subgraph_P()
+        self.assertGreater(len(res_graph), 5)
 
     def test_ruleengine04(self):
 
+        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct", modname=TEST_MOD_NAME)
+        self.assertEqual(len(mod1.I9642["local exponential stability"].get_relations("R17__is_subproperty_of")), 1)
+        ra = p.ruleengine.RuleApplicator(self.rule1)
+        ra.apply()
+
+        # ensure that after rule application there is at least one new relation
+        # self.assertEqual(len(mod1.I9642["local exponential stability"].get_relations("R17__is_subproperty_of")), 2)
+
+    def test_ruleengine05(self):
         premises_rledgs = p.ruleengine.filter_relevant_rledgs(
             self.rule1.scp__premises.get_inv_relations("R20__has_defining_scope")
         )
 
         self.assertEqual(len(premises_rledgs), 2)
-
         p.ruleengine.apply_all_semantic_rules()
 
 

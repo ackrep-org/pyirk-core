@@ -599,6 +599,8 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
 
         ra = p.ruleengine.RuleApplicator(self.rule1)
 
+        self.assertEqual(len(ra.get_asserted_relation_templates()), 1)
+
         P = ra.create_prototype_subgraph_from_rule()
         self.assertEqual(P.number_of_nodes(), 3)
         self.assertEqual(P.number_of_edges(), 2)

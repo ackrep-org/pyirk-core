@@ -6,7 +6,7 @@ This module contains code to enable semantic inferences based on special items (
 
 """
 
-from typing import List
+from typing import List, Tuple
 
 import networkx as nx
 from networkx.algorithms import isomorphism as nxiso
@@ -63,6 +63,9 @@ class RuleApplicator:
         self.premises_rledgs = filter_relevant_rledgs(rule.scp__premises.get_inv_relations("R20"))
         self.assertions_rledgs = filter_relevant_rledgs(rule.scp__assertions.get_inv_relations("R20"))
 
+        # a: {rule_sope_uri1: P_node_index1, ...}, b: {P_node_index1: rule_sope_uri1, ...}
+        self.local_nodes = core.aux.OneToOneMapping()
+
         self.G: nx.DiGraph = create_simple_graph()
 
         self.P: nx.DiGraph = self.create_prototype_subgraph_from_rule()
@@ -73,9 +76,23 @@ class RuleApplicator:
 
         result_map = self.match_subgraph_P()
 
-        #IPS()
+        asserted_relation_templates = self.get_asserted_relation_templates()
 
-    # apply assertions
+        # IPS()
+        # apply assertions
+
+    def get_asserted_relation_templates(self) -> List[Tuple[int, core.Relation, int]]:
+
+        res = []
+        for rledg in self.assertions_rledgs:
+            sub, pred, obj = rledg.relation_tuple
+            assert isinstance(pred, core.Relation)
+
+            # todo: handle literals here
+            assert isinstance(obj, core.Entity)
+            res.append((self.local_nodes.a[sub.uri], pred, self.local_nodes.a[obj.uri]))
+
+        return res
 
     def match_subgraph_P(self) -> List[dict]:
         assert self.P is not None
@@ -105,13 +122,11 @@ class RuleApplicator:
         # counter for node-values
         i = 0
 
-        local_nodes = core.aux.OneToOneMapping()
-
         for var in self.vars:
 
             assert isinstance(var, core.Entity)
 
-            if var.uri in local_nodes.a:
+            if var.uri in self.local_nodes.a:
                 continue
 
             c = Container()
@@ -122,7 +137,7 @@ class RuleApplicator:
                     value = None
                 c[relname] = value
             P.add_node(i, itm=c)
-            local_nodes.add_pair(var.uri, i)
+            self.local_nodes.add_pair(var.uri, i)
             i += 1
 
         for rledg in self.premises_rledgs:
@@ -132,8 +147,8 @@ class RuleApplicator:
             assert isinstance(pred, core.Relation)
             assert isinstance(obj, core.Entity)
 
-            n1 = local_nodes.a[subj.uri]
-            n2 = local_nodes.a[obj.uri]
+            n1 = self.local_nodes.a[subj.uri]
+            n2 = self.local_nodes.a[obj.uri]
 
             P.add_edge(n1, n2, rel_uri=pred.uri)
 

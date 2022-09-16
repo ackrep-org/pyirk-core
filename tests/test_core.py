@@ -593,6 +593,11 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         self.assertGreater(G.number_of_edges(), 30)
 
     def test_ruleengine03(self):
+        P = p.ruleengine.create_prototype_subgraph_from_rule(self.rule1)
+        self.assertEqual(P.number_of_nodes(), 3)
+        self.assertEqual(P.number_of_edges(), 2)
+
+    def test_ruleengine04(self):
 
         premises_rledgs = p.ruleengine.filter_relevant_rledgs(
             self.rule1.scp__premises.get_inv_relations("R20__has_defining_scope")

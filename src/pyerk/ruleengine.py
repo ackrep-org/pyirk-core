@@ -54,11 +54,66 @@ def filter_relevant_rledgs(re_list: List[core.RelationEdge]) -> List[core.Relati
 def apply_rule(rule: core.Entity) -> None:
 
     # noinspection PyShadowingBuiltins
-    vars = rule.scp__context.get_inv_relations("R20__has_defining_scope")
+    vars = rule.scp__context.get_inv_relations("R20__has_defining_scope", return_subj=True)
     premises_rledgs = filter_relevant_rledgs(rule.scp__premises.get_inv_relations("R20__has_defining_scope"))
     assertions_rledgs = filter_relevant_rledgs(rule.scp__assertions.get_inv_relations("R20__has_defining_scope"))
 
     G = create_simple_graph()
+    P = create_prototype_subgraph_from_rule(rule)
+
+
+def create_prototype_subgraph_from_rule(rule: core.Entity) -> nx.DiGraph:
+    vars = rule.scp__context.get_inv_relations("R20__has_defining_scope", return_subj=True)
+    premises_rledgs = filter_relevant_rledgs(rule.scp__premises.get_inv_relations("R20__has_defining_scope"))
+    return _create_prototype_subgraph_from_premises(vars, premises_rledgs)
+
+
+# noinspection PyShadowingBuiltins
+def _create_prototype_subgraph_from_premises(
+    vars: List[core.Entity],
+    premises_rledgs: List[core.RelationEdge]
+) -> nx.DiGraph:
+
+    P = nx.DiGraph()
+
+    # counter for node-values
+    i = 0
+
+    local_nodes = core.aux.OneToOneMapping()
+
+    for var in vars:
+
+        assert isinstance(var, core.Entity)
+
+        if var.uri in local_nodes.a:
+            continue
+
+        c = Container()
+        for relname in ["R3", "R4"]:
+            try:
+                value = getattr(var, relname)
+            except (AttributeError, KeyError):
+                value = None
+            c[relname] = value
+        P.add_node(i, itm=c)
+        local_nodes.add_pair(var.uri, i)
+        i += 1
+
+    for rledg in premises_rledgs:
+
+        subj, pred, obj = rledg.relation_tuple
+        assert isinstance(subj, core.Entity)
+        assert isinstance(pred, core.Relation)
+        assert isinstance(obj, core.Entity)
+
+        n1 = local_nodes.a[subj.uri]
+        n2 = local_nodes.a[obj.uri]
+
+        P.add_edge(n1, n2, rel_uri=pred.uri)
+
+    # todo: assert no disconnected nodes
+
+    return P
 
 
 def match_subgraph():
@@ -75,13 +130,12 @@ def create_simple_graph() -> nx.DiGraph:
 
     for item_uri, item in core.ds.items.items():
 
-        simple_properties = get_simple_properties(item)
-
-        G.add_node(item_uri, **simple_properties)
+        G.add_node(item_uri, itm=item)
 
     all_rels = get_all_node_relations()
     for uri_tup, rel_cont in all_rels.items():
-        G.add_edge(*uri_tup, **rel_cont)
+        uri1, uri2 = uri_tup
+        G.add_edge(*uri_tup, itm1=core.ds.get_entity_by_uri(uri1), itm2=core.ds.get_entity_by_uri(uri2), **rel_cont)
 
     return G
 

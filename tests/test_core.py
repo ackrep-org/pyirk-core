@@ -520,7 +520,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
 
 
 class Test_02_Core(HouskeeperMixin, unittest.TestCase):
-    def test_ruleengine1(self):
+    def test_ruleengine01(self):
         itm1 = p.I12["mathematical object"]
         res = p.ruleengine.get_simple_properties(itm1)
         self.assertEqual(len(res), 2)
@@ -534,7 +534,15 @@ class Test_02_Core(HouskeeperMixin, unittest.TestCase):
 
         self.assertEqual(value_container.rel_uri, p.R3.uri)
 
-    def test_ruleengine2(self):
+        all_rules = p.ruleengine.get_all_rules()
+        self.assertGreater(len(all_rules), 0)
+
+    def test_ruleengine02(self):
+        G = p.ruleengine.create_simple_graph()
+        self.assertGreater(G.number_of_nodes(), 30)
+        self.assertGreater(G.number_of_edges(), 30)
+
+    def test_ruleengine03(self):
         p.ruleengine.apply_all_semantic_rules()
 
 

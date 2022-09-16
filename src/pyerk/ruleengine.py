@@ -7,12 +7,16 @@ This module contains code to enable semantic inferences based on special items (
 """
 
 from typing import List
-import networkx as nx
 
+import networkx as nx
+from networkx.algorithms import isomorphism as nxiso
+# noinspection PyUnresolvedReferences
 from addict import Addict as Container
+
+# noinspection PyUnresolvedReferences
 from ipydex import IPS
 
-from . import core as pyerk, auxiliary as aux
+from . import core
 from . import builtin_entities as b
 
 
@@ -29,7 +33,7 @@ def get_all_rules():
     return rule_instances
 
 
-def filter_subject_rledges(re_list: List[pyerk.RelationEdge]) -> List[pyerk.RelationEdge]:
+def filter_subject_rledges(re_list: List[core.RelationEdge]) -> List[core.RelationEdge]:
     """
     From a list of RelationEdge instances select only those with .role == SUBJECT.
     In other words: omit those instances which are created as dual relation edges
@@ -40,47 +44,53 @@ def filter_subject_rledges(re_list: List[pyerk.RelationEdge]) -> List[pyerk.Rela
 
     res = []
     for rledg in re_list:
-        assert isinstance(rledg, pyerk.RelationEdge)
-        if rledg.role == pyerk.RelationRole.SUBJECT:
+        assert isinstance(rledg, core.RelationEdge)
+        if rledg.role == core.RelationRole.SUBJECT:
             res.append(rledg)
     return res
 
 
-def apply_rule(rule: pyerk.Entity) -> None:
+def apply_rule(rule: core.Entity) -> None:
 
     # noinspection PyShadowingBuiltins
     vars = rule.scp__context.get_inv_relations("R20__has_defining_scope")
     premises_rledgs = filter_subject_rledges(rule.scp__premises.get_inv_relations("R20__has_defining_scope"))
     assertions_rledgs = filter_subject_rledges(rule.scp__assertions.get_inv_relations("R20__has_defining_scope"))
 
-    # IPS()  # ← continue here
+    G = create_simple_graph()
 
 
-def create_simple_graph():
+
+
+def create_simple_graph() -> nx.DiGraph:
     """
     Create graph without regarding qualifiers. Nodes: uris
 
     :return:
     """
-    G = nx.DiGraph
+    G = nx.DiGraph()
 
-    for item_uri, item in pyerk.ds.items.items():
+    for item_uri, item in core.ds.items.items():
 
-        simple_properties = get_simple_properties()
+        simple_properties = get_simple_properties(item)
 
         G.add_node(item_uri, **simple_properties)
 
     all_rels = get_all_node_relations()
+    for uri_tup, rel_cont in all_rels.items():
+        G.add_edge(*uri_tup, **rel_cont)
+
+    return G
 
 
-def get_simple_properties(item: pyerk.Item) -> dict:
+def get_simple_properties(item: core.Item) -> dict:
 
     rledg_dict = item.get_relations()
     res = {}
     for rel_uri, rledg_list in rledg_dict.items():
 
         for rledg in rledg_list:
-            assert isinstance(rledg, pyerk.RelationEdge)
+            assert isinstance(rledg, core.RelationEdge)
             assert len(rledg.relation_tuple) == 3
             if rledg.corresponding_entity is None:
                 assert rledg.corresponding_literal is not None
@@ -94,18 +104,18 @@ def get_simple_properties(item: pyerk.Item) -> dict:
 def get_all_node_relations() -> dict:
 
     res = {}
-    for entity_uri, rledg_dict in pyerk.ds.relation_edges.items():
-        entity = pyerk.ds.get_entity_by_uri(entity_uri)
-        if not isinstance(entity, pyerk.Item):
+    for entity_uri, rledg_dict in core.ds.relation_edges.items():
+        entity = core.ds.get_entity_by_uri(entity_uri)
+        if not isinstance(entity, core.Item):
             continue
 
         for rel_uri, rledg_list in rledg_dict.items():
             for rledg in rledg_list:
-                assert isinstance(rledg, pyerk.RelationEdge)
+                assert isinstance(rledg, core.RelationEdge)
                 assert len(rledg.relation_tuple) == 3
                 if rledg.corresponding_entity is not None:
                     assert rledg.corresponding_literal is None
-                    if not isinstance(rledg.corresponding_entity, pyerk.Item):
+                    if not isinstance(rledg.corresponding_entity, core.Item):
                         msg = f"Unexpected type: expected Item but got {type(rledg.corresponding_entity)}"
                         raise TypeError(msg)
                     c = Container(rel_uri=rel_uri)

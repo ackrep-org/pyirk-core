@@ -527,6 +527,13 @@ class Test_02_Core(HouskeeperMixin, unittest.TestCase):
         self.assertEqual(res[p.R1.uri], itm1.R1)
         self.assertEqual(res[p.R2.uri], itm1.R2)
 
+        all_rels = p.ruleengine.get_all_node_relations()
+        self.assertGreater(len(all_rels), 30)
+        key = (p.I2.uri, p.I1.uri)
+        value_container: p.ruleengine.Container = all_rels[key]
+
+        self.assertEqual(value_container.rel_uri, p.R3.uri)
+
     def test_ruleengine2(self):
         p.ruleengine.apply_all_semantic_rules()
 

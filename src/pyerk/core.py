@@ -520,7 +520,7 @@ class DataStore:
         # mappings like .a = {"my/mod/uri": "/path/to/mod.py"} and .b = {"/path/to/mod.py": "my/mod/uri"}
         self.mod_path_mapping = aux.OneToOneMapping()
 
-        # for every entity key store a dict that maps relation uris to lists of corresponding relation-edges
+        # for every entity uri store a dict that maps relation uris to lists of corresponding relation-edges
         self.relation_edges = defaultdict(dict)
 
         # also do this for the inverse relations (for easy querying)

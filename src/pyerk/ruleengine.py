@@ -9,6 +9,7 @@ This module contains code to enable semantic inferences based on special items (
 from typing import List
 import networkx as nx
 
+from addict import Addict as Container
 from ipydex import IPS
 
 from . import core as pyerk, auxiliary as aux
@@ -67,7 +68,9 @@ def create_simple_graph():
 
         simple_properties = get_simple_properties()
 
-        G.add_node(item_uri)
+        G.add_node(item_uri, **simple_properties)
+
+    all_rels = get_all_node_relations()
 
 
 def get_simple_properties(item: pyerk.Item) -> dict:
@@ -80,8 +83,33 @@ def get_simple_properties(item: pyerk.Item) -> dict:
             assert isinstance(rledg, pyerk.RelationEdge)
             assert len(rledg.relation_tuple) == 3
             if rledg.corresponding_entity is None:
+                assert rledg.corresponding_literal is not None
                 res[rel_uri] = rledg.corresponding_literal
                 # TODO: support multiple relations in the graph (MultiDiGraph)
                 break
 
+    return res
+
+
+def get_all_node_relations() -> dict:
+
+    res = {}
+    for entity_uri, rledg_dict in pyerk.ds.relation_edges.items():
+        entity = pyerk.ds.get_entity_by_uri(entity_uri)
+        if not isinstance(entity, pyerk.Item):
+            continue
+
+        for rel_uri, rledg_list in rledg_dict.items():
+            for rledg in rledg_list:
+                assert isinstance(rledg, pyerk.RelationEdge)
+                assert len(rledg.relation_tuple) == 3
+                if rledg.corresponding_entity is not None:
+                    assert rledg.corresponding_literal is None
+                    if not isinstance(rledg.corresponding_entity, pyerk.Item):
+                        msg = f"Unexpected type: expected Item but got {type(rledg.corresponding_entity)}"
+                        raise TypeError(msg)
+                    c = Container(rel_uri=rel_uri)
+                    res[(entity_uri, rledg.corresponding_entity.uri)] = c
+                    # TODO: support multiple relations in the graph (MultiDiGraph)
+                    break
     return res

@@ -17,6 +17,7 @@ from addict import Addict as Container
 from ipydex import IPS
 
 from . import core
+from . import builtin_entities as bi
 from . import builtin_entities as b
 
 
@@ -58,11 +59,22 @@ def apply_rule(rule: core.Entity) -> None:
     premises_rledgs = filter_relevant_rledgs(rule.scp__premises.get_inv_relations("R20__has_defining_scope"))
     assertions_rledgs = filter_relevant_rledgs(rule.scp__assertions.get_inv_relations("R20__has_defining_scope"))
 
+    res_graph = get_graph_match_from_rule(rule)
+
+    # apply assertions
+
+
+def get_graph_match_from_rule(rule) -> List[dict]:
     G = create_simple_graph()
     P = create_prototype_subgraph_from_rule(rule)
 
+    res_graph = match_subgraph(G, P)
+
+    return res_graph
+
 
 def create_prototype_subgraph_from_rule(rule: core.Entity) -> nx.DiGraph:
+    # noinspection PyShadowingBuiltins
     vars = rule.scp__context.get_inv_relations("R20__has_defining_scope", return_subj=True)
     premises_rledgs = filter_relevant_rledgs(rule.scp__premises.get_inv_relations("R20__has_defining_scope"))
     return _create_prototype_subgraph_from_premises(vars, premises_rledgs)
@@ -116,8 +128,31 @@ def _create_prototype_subgraph_from_premises(
     return P
 
 
-def match_subgraph():
-    pass
+def edge_matcher(e1d: dict, e2d: dict) -> bool:
+    """
+
+    :param e1d:     attribute data of edge from "main graph" (see below)
+    :param e2d:     attribute data of edge from "prototype graph" (see below)
+
+    :return:        boolean matching result
+
+    An edge should match if
+        - the relation uri is the same
+
+
+    """
+
+    if e1d["rel_uri"] != e2d["rel_uri"]:
+        return False
+
+    return True
+
+
+def match_subgraph(G: nx.DiGraph, P: nx.DiGraph) -> List[dict]:
+    GM = nxiso.DiGraphMatcher(G, P, node_match=None, edge_match=edge_matcher)
+    res = list(GM.subgraph_isomorphisms_iter())
+
+    return res
 
 
 def create_simple_graph() -> nx.DiGraph:
@@ -130,14 +165,38 @@ def create_simple_graph() -> nx.DiGraph:
 
     for item_uri, item in core.ds.items.items():
 
-        G.add_node(item_uri, itm=item)
+        if is_node_for_simple_graph(item):
+            G.add_node(item_uri, itm=item)
 
     all_rels = get_all_node_relations()
     for uri_tup, rel_cont in all_rels.items():
         uri1, uri2 = uri_tup
-        G.add_edge(*uri_tup, itm1=core.ds.get_entity_by_uri(uri1), itm2=core.ds.get_entity_by_uri(uri2), **rel_cont)
+        if uri1 in G.nodes and uri2 in G.nodes:
+            G.add_edge(*uri_tup, itm1=core.ds.get_entity_by_uri(uri1), itm2=core.ds.get_entity_by_uri(uri2), **rel_cont)
 
     return G
+
+
+def is_node_for_simple_graph(item: core.Item) -> bool:
+    """
+    exclude nodes which are defined inside certain scopes
+
+    :param item:
+    :return:
+    """
+    assert isinstance(item, core.Item)
+    r20_rels = item.get_relations("R20__has_defining_scope")
+
+    if not r20_rels:
+        return True
+    assert len(r20_rels) == 1  # R20 is functional (R22)
+
+    obj = r20_rels[0].relation_tuple[-1]
+    assert obj.R4__is_instance_of == bi.I16["scope"]
+
+    # TODO: maybe add some exceptions (allowed scopes for inferrencing) here
+
+    return False
 
 
 def get_simple_properties(item: core.Item) -> dict:

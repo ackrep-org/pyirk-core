@@ -597,6 +597,11 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         self.assertEqual(P.number_of_nodes(), 3)
         self.assertEqual(P.number_of_edges(), 2)
 
+        res_graph = p.ruleengine.get_graph_match_from_rule(self.rule1)
+
+        # ensures that the rule does not match itself
+        self.assertEqual(len(res_graph), 0)
+
     def test_ruleengine04(self):
 
         premises_rledgs = p.ruleengine.filter_relevant_rledgs(

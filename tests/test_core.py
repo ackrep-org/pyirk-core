@@ -29,7 +29,7 @@ current_dir = os.path.dirname(os.path.abspath(sys.modules.get(__name__).__file__
 ERK_ROOT_DIR = p.aux.get_erk_root_dir()
 
 # path for basic (staged) test data
-TEST_DATA_DIR1 = pjoin(ERK_ROOT_DIR, "pyerk", "tests", "test_data")
+TEST_DATA_DIR1 = pjoin(ERK_ROOT_DIR, "pyerk-core", "tests", "test_data")
 
 # path for "realistic" test data
 TEST_DATA_PATH2 = pjoin(ERK_ROOT_DIR, "erk-data", "control-theory", "control_theory1.py")
@@ -174,8 +174,8 @@ class Test_00_Core(HouskeeperMixin, unittest.TestCase):
 # noinspection PyPep8Naming
 class Test_01_Core(HouskeeperMixin, unittest.TestCase):
     def test_aa0__directory_structure(self):
-        pyerk_dir = pjoin(ERK_ROOT_DIR, "pyerk")
-        django_gui_dir = pjoin(ERK_ROOT_DIR, "django-erk-gui")
+        pyerk_dir = pjoin(ERK_ROOT_DIR, "pyerk-core")
+        django_gui_dir = pjoin(ERK_ROOT_DIR, "pyerk-django")
         erk_data_dir = pjoin(ERK_ROOT_DIR, "erk-data")
 
         self.assertTrue(os.path.isdir(pyerk_dir))

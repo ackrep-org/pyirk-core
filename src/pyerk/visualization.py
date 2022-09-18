@@ -554,7 +554,7 @@ def visualize_all_entities(url_template="", write_tmp_files: bool = False) -> st
             "shape": "circle", "style": "filled",
             "fixedsize": True,
             "color": d.get("color", "black"),
-            "width": .1,
+            "width": .3,
             "fontsize": 2,
             "label": d.get("label", "undefined label"),
             "fillcolor": "#45454533",
@@ -586,6 +586,9 @@ def visualize_all_entities(url_template="", write_tmp_files: bool = False) -> st
         with open(svg_fpath, "w") as txtfile:
             txtfile.write(svg_data1)
         print("File written:", os.path.abspath(svg_fpath))
+
+    print(G.number_of_nodes(), "nodes")
+    print(G.number_of_edges(), "edges")
 
     return svg_data1
 

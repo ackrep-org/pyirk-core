@@ -249,6 +249,7 @@ I11 = create_builtin_item(
     ),
 )
 
+# TODO: clearify the difference between the I12 and I18
 I12 = create_builtin_item(
     key_str="I12",
     R1__has_label="mathematical object",

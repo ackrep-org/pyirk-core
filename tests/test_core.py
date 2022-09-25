@@ -294,6 +294,17 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         non_builtin_entities += [k for k in p.ds.relations.keys() if not k.startswith(p.BUILTINS_URI)]
         self.assertEqual(len(non_builtin_entities), 0)
 
+    def test_c01__ct_loads_math(self):
+        """
+        test if the control_theory module successfully loads the math module
+
+        :return:
+        """
+        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
+        self.assertIn("ma", p.ds.uri_prefix_mapping.b)
+        itm1 = p.ds.get_entity_by_key_str("ma__I5000__scalar_zero")
+        self.assertEqual(itm1, mod1.ma.I5000["scalar zero"])
+
     def test_evaluated_mapping(self):
 
         res = p.ds.relation_edges.get("RE6229")

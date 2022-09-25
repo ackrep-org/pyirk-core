@@ -576,7 +576,7 @@ class DataStore:
         else:
             uri = aux.make_uri(mod_uri, processed_key.short_key)
 
-        res = self.get_entity_by_uri(uri, processed_key.etype)
+        res = self.get_entity_by_uri(uri, processed_key.etype, strict=False)
         if res is None:
             mod_uri = get_active_mod_uri(strict=False)
             msg = (
@@ -587,7 +587,7 @@ class DataStore:
 
         return res
 
-    def get_entity_by_uri(self, uri: str, etype=None) -> Union[Entity, None]:
+    def get_entity_by_uri(self, uri: str, etype=None, strict=True) -> Union[Entity, None]:
 
         if etype is not None:
             # only one lookup is needed
@@ -601,6 +601,10 @@ class DataStore:
             if res is None:
                 # try relation (might also be None)
                 res = self.relations.get(uri)
+
+        if strict and res is None:
+            msg = f"No entity found for URI {uri}."
+            raise aux.UnknownURIError(msg)
 
         return res
 
@@ -823,7 +827,7 @@ def _resolve_prefix(pr_key: ProcessedStmtKey) -> None:
 
             # 1. check active mod
             candidate_uri = aux.make_uri(mod_uri, pr_key.short_key)
-            res_entity = ds.get_entity_by_uri(candidate_uri)
+            res_entity = ds.get_entity_by_uri(candidate_uri, strict=False)
 
             if res_entity is not None:
                 pr_key.uri = candidate_uri
@@ -831,7 +835,7 @@ def _resolve_prefix(pr_key: ProcessedStmtKey) -> None:
 
             # try builtin_entities as fallback
             candidate_uri = aux.make_uri(settings.BUILTINS_URI, pr_key.short_key)
-            res_entity = ds.get_entity_by_uri(candidate_uri)
+            res_entity = ds.get_entity_by_uri(candidate_uri, strict=False)
 
             # if res_entity is still None no entity could be found
             if res_entity is not None:

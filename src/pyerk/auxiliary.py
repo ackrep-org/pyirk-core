@@ -108,6 +108,10 @@ class UnknownPrefixError(PyERKError):
     pass
 
 
+class UnknownURIError(PyERKError):
+    pass
+
+
 class InvalidURIError(PyERKError):
     pass
 

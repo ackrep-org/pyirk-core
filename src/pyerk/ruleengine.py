@@ -284,7 +284,7 @@ def get_all_node_relations() -> dict:
 
     res = {}
     for entity_uri, rledg_dict in core.ds.relation_edges.items():
-        entity = core.ds.get_entity_by_uri(entity_uri)
+        entity = core.ds.get_entity_by_uri(entity_uri, strict=False)
         if not isinstance(entity, core.Item):
             continue
 

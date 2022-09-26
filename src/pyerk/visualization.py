@@ -27,8 +27,18 @@ REPLACEMENTS = {}
 NEWLINE_REPLACEMENTS = [("__newline-center__", r"\n"), ("__newline-left__", r"\l")]
 
 # default matplotlib colors
-mpl_colors =\
-    ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf']
+mpl_colors = [
+    "#1f77b4",
+    "#ff7f0e",
+    "#2ca02c",
+    "#d62728",
+    "#9467bd",
+    "#8c564b",
+    "#e377c2",
+    "#7f7f7f",
+    "#bcbd22",
+    "#17becf",
+]
 
 
 class AbstractGraphObject(ABC):
@@ -366,15 +376,15 @@ def get_color_for_item(item: p.Item) -> str:
 
 
 def get_color_for_rledg(rledg: p.RelationEdge) -> str:
-    cmap = {
-        "R3": mpl_colors[0],
-        "R4": mpl_colors[1]
-    }
+    cmap = {"R3": mpl_colors[0], "R4": mpl_colors[1]}
 
     return cmap.get(rledg.rsk, "black")
 
 
-def create_complete_graph(url_template="", limit: Optional[int] = None, ) -> nx.DiGraph:
+def create_complete_graph(
+    url_template="",
+    limit: Optional[int] = None,
+) -> nx.DiGraph:
     """
     :param url_template:    template to insert links based on uris
     :param limit:
@@ -548,19 +558,23 @@ def visualize_all_entities(url_template="", write_tmp_files: bool = False) -> st
     )
 
     style = nxv.Style(
-        graph={"rankdir": "BT", "nodesep": .2},
+        graph={"rankdir": "BT", "nodesep": 0.2},
         node=lambda u, d: {
             # "shape": "point",
-            "shape": "circle", "style": "filled",
+            "shape": "circle",
+            "style": "filled",
             "fixedsize": True,
             "color": d.get("color", "black"),
-            "width": .1,
+            "width": 0.1,
             "fontsize": 2,
             "label": d.get("label", "undefined label"),
             "fillcolor": "#45454533",
         },
         edge=lambda u, v, d: {
-            "style": "solid", "arrowhead": "normal", "color": d.get("color", "#959595ff"), "arrowsize": 0.5,
+            "style": "solid",
+            "arrowhead": "normal",
+            "color": d.get("color", "#959595ff"),
+            "arrowsize": 0.5,
             # "label": d["label"]
         },
     )

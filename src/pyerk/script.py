@@ -10,7 +10,9 @@ from . import auxiliary as aux
 from . import settings
 
 from ipydex import IPS, activate_ips_on_exception
+
 activate_ips_on_exception()
+
 
 def main():
 
@@ -72,7 +74,7 @@ def main():
     elif args.inputfile is not None:
         core.script_main(args.inputfile)
     elif args.parse_ackrep_data:
-        ackrep_parser.parse_ackrep(args.parse_ackrep_data)
+        ackrep_parser.load_ackrep_entities(args.parse_ackrep_data)
     elif key := args.visualize:
 
         if key == "__all__":
@@ -101,7 +103,7 @@ def debug():
     ERK_ROOT_DIR = aux.get_erk_root_dir()
     TEST_DATA_PATH = os.path.join(ERK_ROOT_DIR, "erk-data", "control-theory", "control_theory1.py")
     mod1 = erkloader.load_mod_from_path(TEST_DATA_PATH, prefix="ct")
-    ackrep_parser.parse_ackrep()
+    ackrep_parser.load_ackrep_entities()
     ds = core.ds
     ds.rdfgraph = rdfstack.create_rdf_triples()
     qsrc = rdfstack.get_sparql_example_query2()

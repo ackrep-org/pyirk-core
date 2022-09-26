@@ -39,6 +39,8 @@ TEST_MOD_NAME = "control_theory1"
 # TODO: put link to docs here (directory layout)
 TEST_ACKREP_DATA_FOR_UT_PATH = pjoin(ERK_ROOT_DIR, "..", "ackrep", "ackrep_data_for_unittests")
 
+os.environ["UNITTEST"] = "True"
+
 __URI__ = TEST_BASE_URI = "erk:/local/unittest/"
 
 
@@ -179,7 +181,9 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         erk_data_dir = pjoin(ERK_ROOT_DIR, "erk-data")
 
         self.assertTrue(os.path.isdir(pyerk_dir))
-        self.assertTrue(os.path.isdir(django_gui_dir))
+        # since there is no reason to have the django gui in this repos CI:
+        if os.environ.get("CI") != "true":
+            self.assertTrue(os.path.isdir(django_gui_dir))
         self.assertTrue(os.path.isdir(erk_data_dir))
 
     def test_aa1(self):

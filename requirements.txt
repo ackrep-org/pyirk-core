@@ -7,3 +7,4 @@ colorama
 addict
 networkx
 nxv
+rdflib

@@ -66,7 +66,10 @@ def parse_ackrep(base_path: str = None, strict: bool = True, prefix="ackrep") ->
     """
     # default path
     if base_path is None:
-        base_path = os.path.join(ERK_ROOT_DIR, settings.ACKREP_DATA_REL_PATH)
+        if os.environ.get("UNITTEST") == "True":
+            base_path = os.path.join(ERK_ROOT_DIR, settings.ACKREP_DATA_UT_REL_PATH)
+        else:
+            base_path = os.path.join(ERK_ROOT_DIR, settings.ACKREP_DATA_REL_PATH)
 
     if os.path.isabs(base_path):
         ackrep_path = base_path

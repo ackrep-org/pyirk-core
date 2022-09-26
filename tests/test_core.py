@@ -9,6 +9,7 @@ import rdflib
 from ipydex import IPS, activate_ips_on_exception, set_trace
 import pyerk as p
 import pyerk.visualization as visualization
+import git
 
 """
 recommended ways to run the tests from the repo root (where setup.py lives):
@@ -32,8 +33,13 @@ ERK_ROOT_DIR = p.aux.get_erk_root_dir()
 TEST_DATA_DIR1 = pjoin(ERK_ROOT_DIR, "pyerk-core", "tests", "test_data")
 
 # path for "realistic" test data
-TEST_DATA_PATH2 = pjoin(ERK_ROOT_DIR, "erk-data", "control-theory", "control_theory1.py")
+TEST_DATA_REPO_PATH = pjoin(ERK_ROOT_DIR, "erk-data-for-unittests", "erk-ocse")
+TEST_DATA_PATH2 = pjoin(TEST_DATA_REPO_PATH, "control_theory1.py")
 TEST_MOD_NAME = "control_theory1"
+
+# useful to get the currently latest sha strings:
+# git log --pretty=oneline | head
+TEST_DATA_REPO_COMMIT_SHA = "eaf764f89bd0201b221ff8b2fdf8b04c11374061"
 
 # TODO: make this more robust (e.g. search for config file or environment variable)
 # TODO: put link to docs here (directory layout)
@@ -81,7 +87,20 @@ class HouskeeperMixin:
 
 
 class Test_00_Core(HouskeeperMixin, unittest.TestCase):
-    def test_a0__process_key_str(self):
+    def test_a0__ensure_expected_test_data(self):
+        """
+        Construct a list of all sha-strings which where commited in the current branch and assert that
+        the expected string is among them. This heuristics assumes that it is OK if the data-repo is newer than
+        expected. But the tests fails if it is older (or on a unexpeced branch).
+        """
+        
+        repo = git.Repo(TEST_DATA_REPO_PATH)
+        log_list = repo.git.log("--pretty=oneline").split("\n")
+        sha_list = [line.split(" ")[0] for line in log_list]
+
+        self.assertIn(TEST_DATA_REPO_COMMIT_SHA, sha_list)
+
+    def test_a1__process_key_str(self):
         res = p.process_key_str("I1")
         self.assertEqual(res.prefix, None)
         self.assertEqual(res.short_key, "I1")

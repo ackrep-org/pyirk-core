@@ -6,6 +6,7 @@ import argparse
 from . import core, erkloader, rdfstack
 from . import ackrep_parser
 from . import visualization
+from . import reportgenerator
 from . import auxiliary as aux
 from . import settings
 
@@ -48,6 +49,13 @@ def main():
     )
 
     parser.add_argument(
+        "-grp",
+        "--generate-report",
+        help="generate report for entity",
+        metavar="uri",
+    )
+
+    parser.add_argument(
         "-vis",
         "--visualize",
         help="create a visualization for the entity",
@@ -73,6 +81,8 @@ def main():
 
     elif args.inputfile is not None:
         core.script_main(args.inputfile)
+    elif args.generate_report:
+        reportgenerator.generate_report()
     elif args.parse_ackrep_data:
         ackrep_parser.load_ackrep_entities(args.parse_ackrep_data)
     elif key := args.visualize:

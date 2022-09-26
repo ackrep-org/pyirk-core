@@ -29,7 +29,7 @@ current_dir = os.path.dirname(os.path.abspath(sys.modules.get(__name__).__file__
 ERK_ROOT_DIR = p.aux.get_erk_root_dir()
 
 # path for basic (staged) test data
-TEST_DATA_DIR1 = pjoin(ERK_ROOT_DIR, "pyerk", "tests", "test_data")
+TEST_DATA_DIR1 = pjoin(ERK_ROOT_DIR, "pyerk-core", "tests", "test_data")
 
 # path for "realistic" test data
 TEST_DATA_PATH2 = pjoin(ERK_ROOT_DIR, "erk-data", "control-theory", "control_theory1.py")
@@ -38,6 +38,8 @@ TEST_MOD_NAME = "control_theory1"
 # TODO: make this more robust (e.g. search for config file or environment variable)
 # TODO: put link to docs here (directory layout)
 TEST_ACKREP_DATA_FOR_UT_PATH = pjoin(ERK_ROOT_DIR, "..", "ackrep", "ackrep_data_for_unittests")
+
+os.environ["UNITTEST"] = "True"
 
 __URI__ = TEST_BASE_URI = "erk:/local/unittest/"
 
@@ -174,12 +176,14 @@ class Test_00_Core(HouskeeperMixin, unittest.TestCase):
 # noinspection PyPep8Naming
 class Test_01_Core(HouskeeperMixin, unittest.TestCase):
     def test_aa0__directory_structure(self):
-        pyerk_dir = pjoin(ERK_ROOT_DIR, "pyerk")
-        django_gui_dir = pjoin(ERK_ROOT_DIR, "django-erk-gui")
+        pyerk_dir = pjoin(ERK_ROOT_DIR, "pyerk-core")
+        django_gui_dir = pjoin(ERK_ROOT_DIR, "pyerk-django")
         erk_data_dir = pjoin(ERK_ROOT_DIR, "erk-data")
 
         self.assertTrue(os.path.isdir(pyerk_dir))
-        self.assertTrue(os.path.isdir(django_gui_dir))
+        # since there is no reason to have the django gui in this repos CI:
+        if os.environ.get("CI") != "true":
+            self.assertTrue(os.path.isdir(django_gui_dir))
         self.assertTrue(os.path.isdir(erk_data_dir))
 
     def test_aa1(self):

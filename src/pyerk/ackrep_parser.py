@@ -13,8 +13,7 @@ from .erkloader import load_mod_from_path, ModuleType
 from . import builtin_entities
 from .auxiliary import *
 
-# TODO: this should be erk:/ackrep
-__URI__ = "erk:/models"
+__URI__ = "erk:/ackrep"
 
 ERK_ROOT_DIR = aux.get_erk_root_dir()
 
@@ -32,7 +31,7 @@ def load_ackrep_entities_if_necessary(*args, **kwargs):
 
     strict = kwargs.get("strict", True)
     if __URI__ not in core.ds.mod_path_mapping.a:
-        parse_ackrep(*args, **kwargs)
+        load_ackrep_entities(*args, **kwargs)
         ensure_ackrep_load_success(strict=strict)
     else:
         ensure_ackrep_load_success(strict=strict)
@@ -51,8 +50,7 @@ def ensure_ackrep_load_success(strict: bool = True):
 
 
 # TODO: refactoring: separate loading all ackrep entities or only one
-# TODO: discuss renaming: parse_ackrep -> load_ackrep_entities
-def parse_ackrep(base_path: str = None, strict: bool = True, prefix="ackrep") -> int:
+def load_ackrep_entities(base_path: str = None, strict: bool = True, prefix="ackrep") -> int:
     """parse ackrep entities. if no base path is given, entire ackrep_data repo is parsed. if path is given
     only this path is parsed.
 
@@ -81,7 +79,6 @@ def parse_ackrep(base_path: str = None, strict: bool = True, prefix="ackrep") ->
         raise core.aux.ModuleAlreadyLoadedError(msg)
 
     # bookmark://global01
-    # TODO make this more elegant, maybe turn this into AckrepParser class
     global mod
     global keymanager
     mod = ensure_ocse_is_loaded()
@@ -105,8 +102,8 @@ def parse_ackrep(base_path: str = None, strict: bool = True, prefix="ackrep") ->
         elif "problem_specifications" in ackrep_path or "problem_solutions" in ackrep_path:
             retcode = parse_problem_or_solution(ackrep_path)
         else:
-            # TODO: handle this case (set `retcode` to meaningful value)
-            raise NotImplementedError
+            # not implemented
+            retcode = 1
         retcodes.append(retcode)
 
     return sum(retcodes)
@@ -284,7 +281,6 @@ def handle_literal(literal: Union[int, float, str]) -> Union[int, float, str, It
         item = literal
     # literal is string or item
     elif isinstance(literal, str):
-        # TODO: how to differentiate between bad entity and regular string and function?
         # see if this is an item by examining pattern
         if item_pattern.match(literal):
             item = get_entity_from_string(literal)

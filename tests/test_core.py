@@ -589,11 +589,10 @@ class Test_04_Script1(HouskeeperMixin, unittest.TestCase):
 
 # these tests should run after the other tests
 class Test_05_Ackrep(HouskeeperMixin, unittest.TestCase):
-
     def test_ackrep_parser1(self):
         mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct", modname=TEST_MOD_NAME)
         p1 = os.path.join(TEST_ACKREP_DATA_FOR_UT_PATH, "system_models", "lorenz_system")
-        res = p.parse_ackrep(p1)
+        res = p.load_ackrep_entities(p1)
         self.assertEqual(res, 0)
 
         # TODO: add tests for broken parsing
@@ -608,7 +607,7 @@ class Test_05_Ackrep(HouskeeperMixin, unittest.TestCase):
         self.assertGreater(n_items2, n_items1)
 
         p1 = os.path.join(TEST_ACKREP_DATA_FOR_UT_PATH, "system_models", "lorenz_system")
-        res = p.parse_ackrep(p1)
+        res = p.load_ackrep_entities(p1)
         self.assertEqual(p.ds.uri_prefix_mapping.a["erk:/ocse/0.2"], "ct")
         n_items3 = len(p.ds.items)
         self.assertGreater(n_items3, n_items2)
@@ -616,7 +615,7 @@ class Test_05_Ackrep(HouskeeperMixin, unittest.TestCase):
         self.assertEqual(p.ackrep_parser.ensure_ackrep_load_success(strict=False), 1)
 
         with self.assertRaises(p.aux.ModuleAlreadyLoadedError):
-            p.parse_ackrep(p1)
+            p.load_ackrep_entities(p1)
 
         p.unload_mod(p.ackrep_parser.__URI__)
         self.assertEqual(p.ackrep_parser.ensure_ackrep_load_success(strict=False), 0)
@@ -630,7 +629,7 @@ class Test_05_Ackrep(HouskeeperMixin, unittest.TestCase):
 
         n_items1 = len(p.ds.items)
         items1 = set(p.ds.items.keys())
-        p.ackrep_parser.parse_ackrep()
+        p.ackrep_parser.load_ackrep_entities()
         n_items2 = len(p.ds.items)
         items2 = set(p.ds.items.keys())
 

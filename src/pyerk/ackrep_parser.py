@@ -64,7 +64,7 @@ def load_ackrep_entities(base_path: str = None, strict: bool = True, prefix="ack
     """
     # default path
     if base_path is None:
-        if os.environ.get("UNITTEST") == "True":
+        if os.environ.get("UNITTEST") == "True" or os.environ.get("CI") == "true":
             base_path = os.path.join(ERK_ROOT_DIR, settings.ACKREP_DATA_UT_REL_PATH)
         else:
             base_path = os.path.join(ERK_ROOT_DIR, settings.ACKREP_DATA_REL_PATH)
@@ -92,15 +92,15 @@ def load_ackrep_entities(base_path: str = None, strict: bool = True, prefix="ack
     retcodes = []
     # parse entire repo
     if "ackrep_data" in os.path.split(ackrep_path)[1]:
-        retcodes.append(parse_all_system_models(ackrep_path))
-        retcodes.append(parse_all_problems_and_solutions(ackrep_path))
+        retcodes.append(load_all_system_models(ackrep_path))
+        retcodes.append(load_all_problems_and_solutions(ackrep_path))
 
     # assume path leads to entity folder
     else:
         if "system_models" in ackrep_path:
-            retcode = parse_system_model(ackrep_path)
+            retcode = load_system_model(ackrep_path)
         elif "problem_specifications" in ackrep_path or "problem_solutions" in ackrep_path:
-            retcode = parse_problem_or_solution(ackrep_path)
+            retcode = load_problem_or_solution(ackrep_path)
         else:
             # not implemented
             retcode = 1
@@ -130,7 +130,7 @@ def ensure_ocse_is_loaded() -> ModuleType:
     return ocse_mod
 
 
-def parse_all_problems_and_solutions(ackrep_path):
+def load_all_problems_and_solutions(ackrep_path):
     retcodes = []
     for n in ["problem_specifications", "problem_solutions"]:
         path = os.path.join(ackrep_path, n)
@@ -142,7 +142,7 @@ def parse_all_problems_and_solutions(ackrep_path):
             if not os.path.isdir(os.path.join(path, folder)):
                 continue
 
-            retcode = parse_problem_or_solution(os.path.join(path, folder))
+            retcode = load_problem_or_solution(os.path.join(path, folder))
             retcodes.append(retcode)
 
     # if sum(retcodes) == 0:
@@ -153,7 +153,7 @@ def parse_all_problems_and_solutions(ackrep_path):
     return sum(retcodes)
 
 
-def parse_all_system_models(ackrep_path):
+def load_all_system_models(ackrep_path):
     retcodes = []
     system_models_path = os.path.join(ackrep_path, "system_models")
     model_folders = os.listdir(system_models_path)
@@ -162,7 +162,7 @@ def parse_all_system_models(ackrep_path):
         if folder[0] == "_":
             continue
 
-        retcode = parse_system_model(os.path.join(system_models_path, folder))
+        retcode = load_system_model(os.path.join(system_models_path, folder))
         retcodes.append(retcode)
 
     # if sum(retcodes) == 0:
@@ -173,7 +173,7 @@ def parse_all_system_models(ackrep_path):
     return sum(retcodes)
 
 
-def parse_problem_or_solution(entity_path: str):
+def load_problem_or_solution(entity_path: str):
     """very basic to incorporate already existing ocse tags"""
     metadata_path = os.path.join(entity_path, "metadata.yml")
 
@@ -210,7 +210,7 @@ def parse_problem_or_solution(entity_path: str):
     return 0
 
 
-def parse_system_model(entity_path: str):
+def load_system_model(entity_path: str):
 
     metadata_path = os.path.join(entity_path, "metadata.yml")
 

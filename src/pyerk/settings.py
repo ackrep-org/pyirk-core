@@ -11,6 +11,7 @@ DEFAULT_DATA_LANGUAGE = "en"
 
 
 ACKREP_DATA_REL_PATH = "../ackrep/ackrep_data"
+ACKREP_DATA_UT_REL_PATH = "../ackrep/ackrep_data_for_unittests"
 
 BUILTINS_URI = "erk:/builtins"
 URI_SEP = "#"

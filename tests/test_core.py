@@ -45,6 +45,8 @@ TEST_DATA_REPO_COMMIT_SHA = "eaf764f89bd0201b221ff8b2fdf8b04c11374061"
 # TODO: put link to docs here (directory layout)
 TEST_ACKREP_DATA_FOR_UT_PATH = pjoin(ERK_ROOT_DIR, "..", "ackrep", "ackrep_data_for_unittests")
 
+os.environ["UNITTEST"] = "True"
+
 __URI__ = TEST_BASE_URI = "erk:/local/unittest/"
 
 
@@ -93,7 +95,7 @@ class Test_00_Core(HouskeeperMixin, unittest.TestCase):
         the expected string is among them. This heuristics assumes that it is OK if the data-repo is newer than
         expected. But the tests fails if it is older (or on a unexpeced branch).
         """
-        
+
         repo = git.Repo(TEST_DATA_REPO_PATH)
         log_list = repo.git.log("--pretty=oneline").split("\n")
         sha_list = [line.split(" ")[0] for line in log_list]
@@ -198,7 +200,9 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         erk_data_dir = pjoin(ERK_ROOT_DIR, "erk-data")
 
         self.assertTrue(os.path.isdir(pyerk_dir))
-        self.assertTrue(os.path.isdir(django_gui_dir))
+        # since there is no reason to have the django gui in this repos CI:
+        if os.environ.get("CI") != "true":
+            self.assertTrue(os.path.isdir(django_gui_dir))
         self.assertTrue(os.path.isdir(erk_data_dir))
 
     def test_aa1(self):
@@ -734,11 +738,10 @@ class Test_04_Script1(HouskeeperMixin, unittest.TestCase):
 
 # these tests should run after the other tests
 class Test_05_Ackrep(HouskeeperMixin, unittest.TestCase):
-
     def test_ackrep_parser1(self):
         mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct", modname=TEST_MOD_NAME)
         p1 = os.path.join(TEST_ACKREP_DATA_FOR_UT_PATH, "system_models", "lorenz_system")
-        res = p.parse_ackrep(p1)
+        res = p.load_ackrep_entities(p1)
         self.assertEqual(res, 0)
 
         # TODO: add tests for broken parsing
@@ -753,7 +756,7 @@ class Test_05_Ackrep(HouskeeperMixin, unittest.TestCase):
         self.assertGreater(n_items2, n_items1)
 
         p1 = os.path.join(TEST_ACKREP_DATA_FOR_UT_PATH, "system_models", "lorenz_system")
-        res = p.parse_ackrep(p1)
+        res = p.load_ackrep_entities(p1)
         self.assertEqual(p.ds.uri_prefix_mapping.a["erk:/ocse/0.2"], "ct")
         n_items3 = len(p.ds.items)
         self.assertGreater(n_items3, n_items2)
@@ -761,7 +764,7 @@ class Test_05_Ackrep(HouskeeperMixin, unittest.TestCase):
         self.assertEqual(p.ackrep_parser.ensure_ackrep_load_success(strict=False), 1)
 
         with self.assertRaises(p.aux.ModuleAlreadyLoadedError):
-            p.parse_ackrep(p1)
+            p.load_ackrep_entities(p1)
 
         p.unload_mod(p.ackrep_parser.__URI__)
         self.assertEqual(p.ackrep_parser.ensure_ackrep_load_success(strict=False), 0)
@@ -775,7 +778,7 @@ class Test_05_Ackrep(HouskeeperMixin, unittest.TestCase):
 
         n_items1 = len(p.ds.items)
         items1 = set(p.ds.items.keys())
-        p.ackrep_parser.parse_ackrep()
+        p.ackrep_parser.load_ackrep_entities()
         n_items2 = len(p.ds.items)
         items2 = set(p.ds.items.keys())
 

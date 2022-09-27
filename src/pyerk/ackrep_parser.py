@@ -56,8 +56,8 @@ def load_ackrep_entities(base_path: str = None, strict: bool = True, prefix="ack
 
     Args:
         base_path (str, optional): optional target path to parse. Defaults to None.
-        strict (bool, optional): flag to decide whether to complain on reloading. Defaults to None.
-        prefix (str, optional): flag to decide whether to complain on reloading. Defaults to None.
+        strict (bool, optional): flag to decide whether to complain on reloading. Defaults to True.
+        prefix (str, optional): flag to decide whether to complain on reloading. Defaults to ackrep.
 
     Returns:
         int: sum of returncodes
@@ -74,6 +74,9 @@ def load_ackrep_entities(base_path: str = None, strict: bool = True, prefix="ack
     else:
         ackrep_path = os.path.join(os.getcwd(), base_path)
 
+    if __URI__ in core.ds.uri_mod_dict.keys():
+            core.unload_mod(__URI__)
+    # TODO: the above just made the below obsolete
     if __URI__ in core.ds.mod_path_mapping.a and strict:
         msg = f"unexpected attempt to reload already loaded module: {__URI__}"
         raise core.aux.ModuleAlreadyLoadedError(msg)
@@ -86,7 +89,7 @@ def load_ackrep_entities(base_path: str = None, strict: bool = True, prefix="ack
 
     # core.ds.uri_prefix_mapping.add_pair(__URI__, prefix)
     core.register_mod(__URI__, keymanager, check_uri=False)
-    core.ds.uri_prefix_mapping.add_pair(__URI__, "mod")
+    core.ds.uri_prefix_mapping.add_pair(__URI__, prefix)
     core.ds.uri_mod_dict[__URI__] = mod
 
     retcodes = []

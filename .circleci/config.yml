@@ -49,23 +49,6 @@ jobs: # A basic unit of work in a run
             cd ackrep_data_for_unittests
             git checkout for_unittests
       - run:
-          name: Check Tree
-          command: |
-            echo pdw
-            echo $PWD
-            echo 1
-            cd ../../
-            ls
-            echo 2
-            cd ackrep
-            ls
-            echo 3
-            cd ../erk
-            ls
-            echo 4
-            cd erk-data
-            ls
-      - run:
           name: Test Core
           command: |
             . venv/bin/activate

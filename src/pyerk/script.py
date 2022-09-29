@@ -4,7 +4,6 @@ Command line interface for erk package
 import os
 import argparse
 from . import core, erkloader, rdfstack
-from . import ackrep_parser
 from . import visualization
 from . import auxiliary as aux
 from . import settings
@@ -40,14 +39,6 @@ def main():
     )
 
     parser.add_argument(
-        "-pad",
-        "--parse-ackrep-data",
-        help="parse ackrep data repository, create items and relations. specify path to ackrep_data base dir \
-            (.../ackrep_data)",
-        metavar="path",
-    )
-
-    parser.add_argument(
         "-vis",
         "--visualize",
         help="create a visualization for the entity",
@@ -73,8 +64,6 @@ def main():
 
     elif args.inputfile is not None:
         core.script_main(args.inputfile)
-    elif args.parse_ackrep_data:
-        ackrep_parser.load_ackrep_entities(args.parse_ackrep_data)
     elif key := args.visualize:
 
         if key == "__all__":
@@ -103,7 +92,6 @@ def debug():
     ERK_ROOT_DIR = aux.get_erk_root_dir()
     TEST_DATA_PATH = os.path.join(ERK_ROOT_DIR, "erk-data", "control-theory", "control_theory1.py")
     mod1 = erkloader.load_mod_from_path(TEST_DATA_PATH, prefix="ct")
-    ackrep_parser.load_ackrep_entities()
     ds = core.ds
     ds.rdfgraph = rdfstack.create_rdf_triples()
     qsrc = rdfstack.get_sparql_example_query2()

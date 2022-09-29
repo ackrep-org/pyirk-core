@@ -14,7 +14,7 @@ import re as regex
 from addict import Dict as attr_dict
 from typing import Dict, Union, List, Iterable, Optional
 from rdflib import Literal
-
+import re
 
 from . import auxiliary as aux
 from . import settings
@@ -672,6 +672,38 @@ class DataStore:
             msg = f"Unknown prefix: {prefix}. No matching URI found."
             raise UnknownPrefixError(msg)
         return res
+
+    def preprocess_query(self, query):
+        if "__" in query:
+            prefixes = re.findall(r"[\w]*:[ ]*<.*?>", query)
+            prefix_dict = {}
+            for prefix in prefixes:
+                parts = prefix.split(" ")
+                key = parts[0]
+                value = parts[-1].replace("<", "").replace(">", "")
+                prefix_dict[key] = value
+            print(prefix_dict)
+
+            entities = re.findall(r"[\w]*:[\w]+__[\w]+", query)
+            for e in entities:
+                # check sanity
+                prefix, rest = e.split(":")
+                prefix = prefix + ":"
+                erk_key, description = rest.split("__")
+
+                entity_uri = prefix_dict.get(prefix) + erk_key
+                entity = self.get_entity_by_uri(entity_uri)
+
+                label = description.replace("_", " ")
+
+                msg = f"Entity label '{entity.R1}' for entity '{e}' and given label '{label}' do not match!"
+                assert entity.R1 == label, msg
+
+            new_query = re.sub(r"__[\w]+", "", query)
+        else:
+            new_query = query
+
+        return new_query
 
 
 ds = DataStore()

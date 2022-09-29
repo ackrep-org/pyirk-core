@@ -579,80 +579,65 @@ class Test_03_Core(HouskeeperMixin, unittest.TestCase):
         ]
         self.assertEqual(res2, expected_result)
 
+    def test_sparql_zz_preprocessing(self):
+        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, TEST_MOD_NAME)
+
+        with p.uri_context(uri=TEST_BASE_URI):
+            m1 = p.instance_of(mod1.I7641["general system model"], r1="test_model 1", r2="a test model")
+            m2 = p.instance_of(mod1.I7641["general system model"], r1="test_model 2", r2="a test model")
+
+            m1.set_relation(p.R16["has property"], mod1.I9210["stabilizability"])
+            m2.set_relation(p.R16["has property"], mod1.I7864["controllability"])
+
+        # graph has to be created after the entities
+        p.ds.rdfgraph = p.rdfstack.create_rdf_triples()
+
+        # syntactically correct query:
+        condition_list = [
+            "?s :R16__has_property ct:I7864__controllability.",
+            "?s :R16__has_property ct:I7864__controllability .",
+            "?s   :R16__has_property   ct:I7864__controllability   .",
+            "?s (:R4__is_instance_of|:R3__is_subclass_of)* :I1__general_item .",
+        ]
+
+        for condition in condition_list:
+            qsrc_corr = f"""
+            PREFIX : <{p.rdfstack.ERK_URI}>
+            PREFIX ct: <{mod1.__URI__}#>
+            SELECT ?s ?o
+            WHERE {{
+                {condition}
+            }}
+            """
+            q = p.ds.preprocess_query(qsrc_corr)
+            res = p.ds.rdfgraph.query(q)
+            res2 = p.aux.apply_func_to_table_cells(p.rdfstack.convert_from_rdf_to_pyerk, res)
+            self.assertGreater(len(res2), 0)
+
+        # syntactically incorrect querys:
+        condition_list = [
+            "?s :R16__wrong ct:I7864__controllability.",
+        ]
+        msg_list = [
+            "Entity label 'has property' for entity ':R16__wrong' and given label 'wrong' do not match!",
+        ]
+
+        for condition, msg in zip(condition_list, msg_list):
+            qsrc_incorr_1 = f"""
+            PREFIX : <{p.rdfstack.ERK_URI}>
+            PREFIX ct: <{mod1.__URI__}#>
+            SELECT ?s ?o
+            WHERE {{
+                {condition}
+            }}
+            """
+            with self.assertRaises(AssertionError) as cm:
+                p.ds.preprocess_query(qsrc_incorr_1)
+            self.assertEqual(cm.exception.args[0], msg)
+
 
 class Test_04_Script1(HouskeeperMixin, unittest.TestCase):
     def test_visualization(self):
         cmd = "pyerk -vis I12"
         res = os.system(cmd)
         self.assertEqual(res, 0)
-
-
-# these tests should run after the other tests
-class Test_05_Ackrep(HouskeeperMixin, unittest.TestCase):
-    def test_ackrep_parser1(self):
-        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct", modname=TEST_MOD_NAME)
-        p1 = os.path.join(TEST_ACKREP_DATA_FOR_UT_PATH, "system_models", "lorenz_system")
-        res = p.load_ackrep_entities(p1)
-        self.assertEqual(res, 0)
-
-        # TODO: add tests for broken parsing
-        p2 = os.path.join(TEST_ACKREP_DATA_FOR_UT_PATH, "system_models", "lorenz_system_broken")
-
-    def test_ackrep_parser2(self):
-
-        n_items1 = len(p.ds.items)
-
-        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct", modname=TEST_MOD_NAME)
-        n_items2 = len(p.ds.items)
-        self.assertGreater(n_items2, n_items1)
-
-        p1 = os.path.join(TEST_ACKREP_DATA_FOR_UT_PATH, "system_models", "lorenz_system")
-        res = p.load_ackrep_entities(p1)
-        self.assertEqual(p.ds.uri_prefix_mapping.a["erk:/ocse/0.2"], "ct")
-        n_items3 = len(p.ds.items)
-        self.assertGreater(n_items3, n_items2)
-
-        self.assertEqual(p.ackrep_parser.ensure_ackrep_load_success(strict=False), 1)
-
-        with self.assertRaises(p.aux.ModuleAlreadyLoadedError):
-            p.load_ackrep_entities(p1)
-
-        p.unload_mod(p.ackrep_parser.__URI__)
-        self.assertEqual(p.ackrep_parser.ensure_ackrep_load_success(strict=False), 0)
-
-        # after unloading it should work again
-        p.ackrep_parser.load_ackrep_entities_if_necessary(p1, strict=False)
-        self.assertEqual(p.ackrep_parser.ensure_ackrep_load_success(strict=False), 1)
-
-    def test_ackrep_parser3(self):
-        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct", modname=TEST_MOD_NAME)
-
-        n_items1 = len(p.ds.items)
-        items1 = set(p.ds.items.keys())
-        p.ackrep_parser.load_ackrep_entities()
-        n_items2 = len(p.ds.items)
-        items2 = set(p.ds.items.keys())
-
-        self.assertGreater(n_items2 - n_items1, 30)
-
-        # unload ACKREP entities
-        p.unload_mod(p.ackrep_parser.__URI__)
-        n_items3 = len(p.ds.items)
-        items3 = set(p.ds.items.keys())
-        self.assertEqual(n_items1, n_items3)
-        self.assertEqual(items3.difference(items1), set())
-
-        # load again ACKREP entities
-        p.ackrep_parser.load_ackrep_entities_if_necessary()
-        p.ackrep_parser.ensure_ackrep_load_success(strict=True)
-        n_items4 = len(p.ds.items)
-        items4 = set(p.ds.items.keys())
-        self.assertEqual(n_items2, n_items4)
-        self.assertEqual(items4.difference(items2), set())
-
-        # omit loading again ACKREP entities
-        p.ackrep_parser.load_ackrep_entities_if_necessary()
-        n_items5 = len(p.ds.items)
-        items5 = set(p.ds.items.keys())
-        self.assertEqual(n_items2, n_items5)
-        self.assertEqual(items5.difference(items2), set())

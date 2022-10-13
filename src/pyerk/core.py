@@ -682,7 +682,7 @@ class DataStore:
                 key = parts[0]
                 value = parts[-1].replace("<", "").replace(">", "")
                 prefix_dict[key] = value
-            print(prefix_dict)
+            # print(prefix_dict)
 
             entities = re.findall(r"[\w]*:[\w]+__[\w]+", query)
             for e in entities:

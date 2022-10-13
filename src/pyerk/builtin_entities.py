@@ -148,6 +148,14 @@ R16 = create_builtin_relation(
     # R8__has_domain_of_argument_1=I4235("mathematical object"),
     # R10__has_range_of_result=...
 )
+R61 = create_builtin_relation(
+    key_str="R61",
+    R1="does not have property",
+    R2="relates an entity with a mathematical property that it specifically does not have",
+    # R8__has_domain_of_argument_1=I4235("mathematical object"),
+    # R10__has_range_of_result=...
+)
+# TODO: rule: consistency of R16 and R61
 R17 = create_builtin_relation(
     key_str="R17", R1="is subproperty of", R2="specifies that arg1 (subj) is a subproperty of arg2 (obj)"
 )
@@ -156,6 +164,7 @@ R18 = create_builtin_relation(
 )
 
 R16.set_relation(R18["has usage hint"], "this relation should be used on conrete instances, not on generic types")
+R61.set_relation(R18["has usage hint"], "this relation should be used on conrete instances, not on generic types")
 
 R19 = create_builtin_relation(
     key_str="R19",

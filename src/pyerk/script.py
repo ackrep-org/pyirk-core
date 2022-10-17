@@ -80,13 +80,10 @@ def main():
 
     elif args.inputfile is not None:
         core.script_main(args.inputfile)
-<<<<<<< HEAD
-=======
     elif args.generate_report:
         reportgenerator.generate_report()
     elif args.parse_ackrep_data:
         ackrep_parser.load_ackrep_entities(args.parse_ackrep_data)
->>>>>>> develop_carsten
     elif key := args.visualize:
 
         if key == "__all__":

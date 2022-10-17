@@ -9,6 +9,7 @@ import rdflib
 from ipydex import IPS, activate_ips_on_exception, set_trace
 import pyerk as p
 import pyerk.visualization as visualization
+import git
 
 """
 recommended ways to run the tests from the repo root (where setup.py lives):
@@ -32,8 +33,13 @@ ERK_ROOT_DIR = p.aux.get_erk_root_dir()
 TEST_DATA_DIR1 = pjoin(ERK_ROOT_DIR, "pyerk-core", "tests", "test_data")
 
 # path for "realistic" test data
-TEST_DATA_PATH2 = pjoin(ERK_ROOT_DIR, "erk-data", "control-theory", "control_theory1.py")
+TEST_DATA_REPO_PATH = pjoin(ERK_ROOT_DIR, "erk-data-for-unittests", "erk-ocse")
+TEST_DATA_PATH2 = pjoin(TEST_DATA_REPO_PATH, "control_theory1.py")
 TEST_MOD_NAME = "control_theory1"
+
+# useful to get the currently latest sha strings:
+# git log --pretty=oneline | head
+TEST_DATA_REPO_COMMIT_SHA = "eaf764f89bd0201b221ff8b2fdf8b04c11374061"
 
 # TODO: make this more robust (e.g. search for config file or environment variable)
 # TODO: put link to docs here (directory layout)
@@ -83,7 +89,20 @@ class HouskeeperMixin:
 
 
 class Test_00_Core(HouskeeperMixin, unittest.TestCase):
-    def test_a0__process_key_str(self):
+    def test_a0__ensure_expected_test_data(self):
+        """
+        Construct a list of all sha-strings which where commited in the current branch and assert that
+        the expected string is among them. This heuristics assumes that it is OK if the data-repo is newer than
+        expected. But the tests fails if it is older (or on a unexpeced branch).
+        """
+
+        repo = git.Repo(TEST_DATA_REPO_PATH)
+        log_list = repo.git.log("--pretty=oneline").split("\n")
+        sha_list = [line.split(" ")[0] for line in log_list]
+
+        self.assertIn(TEST_DATA_REPO_COMMIT_SHA, sha_list)
+
+    def test_a1__process_key_str(self):
         res = p.process_key_str("I1")
         self.assertEqual(res.prefix, None)
         self.assertEqual(res.short_key, "I1")
@@ -297,6 +316,17 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         non_builtin_entities = [k for k in p.ds.items.keys() if not k.startswith(p.BUILTINS_URI)]
         non_builtin_entities += [k for k in p.ds.relations.keys() if not k.startswith(p.BUILTINS_URI)]
         self.assertEqual(len(non_builtin_entities), 0)
+
+    def test_c01__ct_loads_math(self):
+        """
+        test if the control_theory module successfully loads the math module
+
+        :return:
+        """
+        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
+        self.assertIn("ma", p.ds.uri_prefix_mapping.b)
+        itm1 = p.ds.get_entity_by_key_str("ma__I5000__scalar_zero")
+        self.assertEqual(itm1, mod1.ma.I5000["scalar zero"])
 
     def test_evaluated_mapping(self):
 
@@ -523,9 +553,128 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         self.assertIn(s3, res)
 
 
-class Test_02_Core(HouskeeperMixin, unittest.TestCase):
-    def test_ruleengine1(self):
-        p.ruleengine.apply_all_semantic_rules()
+class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
+
+    def setUp(self):
+        super().setUp()
+        self.setup_data1()
+
+    def tearDown(self) -> None:
+        super().tearDown()
+
+    def setup_data1(self):
+
+        with p.uri_context(uri=TEST_BASE_URI):
+            self.rule1 = p.create_item(
+                key_str="I400",
+                R1__has_label="subproperty rule 1",
+                R2__has_description=(
+                    # "specifies the 'transitivity' of I11_mathematical_property-instances via R17_issubproperty_of"
+                    "specifies the 'transitivity' of R17_issubproperty_of"
+                ),
+                R4__is_instance_of=p.I41["semantic rule"],
+            )
+
+            with self.rule1["subproperty rule 1"].scope("context") as cm:
+                cm.new_var(P1=p.instance_of(p.I11["mathematical property"]))
+                cm.new_var(P2=p.instance_of(p.I11["mathematical property"]))
+                cm.new_var(P3=p.instance_of(p.I11["mathematical property"]))
+            #     # A = cm.new_var(sys=instance_of(I1["general item"]))
+            #
+            with self.rule1["subproperty rule 1"].scope("premises") as cm:
+                cm.new_rel(cm.P2, p.R17["is subproperty of"], cm.P1)
+                cm.new_rel(cm.P3, p.R17["is subproperty of"], cm.P2)
+                # todo: state that all variables are different from each other
+
+            with self.rule1["subproperty rule 1"].scope("assertions") as cm:
+                cm.new_rel(cm.P3, p.R17["is subproperty of"], cm.P1)
+
+    def setup_data2(self):
+        pass
+
+    def test_01_basics(self):
+
+        self.assertIn(TEST_BASE_URI, p.ds.entities_created_in_mod)
+        self.assertEqual(len(p.ds.entities_created_in_mod), 2)
+        self.tearDown()
+
+        self.assertEqual(len(p.ds.entities_created_in_mod), 1)
+        self.tearDown()
+
+        # would be nice to solve this more elegantly (without the need for explicitly registering the module again)
+        self.register_this_module()
+        self.setup_data1()
+        self.assertIn(TEST_BASE_URI, p.ds.entities_created_in_mod)
+        self.assertEqual(len(p.ds.entities_created_in_mod), 2)
+
+    def test_ruleengine01(self):
+        itm1 = p.I12["mathematical object"]
+        res = p.ruleengine.get_simple_properties(itm1)
+        self.assertEqual(len(res), 2)
+        self.assertEqual(res[p.R1.uri], itm1.R1)
+        self.assertEqual(res[p.R2.uri], itm1.R2)
+
+        all_rels = p.ruleengine.get_all_node_relations()
+        self.assertGreater(len(all_rels), 30)
+        key = (p.I2.uri, p.I1.uri)
+        value_container: p.ruleengine.Container = all_rels[key]
+
+        self.assertEqual(value_container.rel_uri, p.R3.uri)
+
+        all_rules = p.ruleengine.get_all_rules()
+        self.assertGreater(len(all_rules), 0)
+
+    def test_ruleengine02(self):
+        G = p.ruleengine.create_simple_graph()
+        self.assertGreater(G.number_of_nodes(), 30)
+        self.assertGreater(G.number_of_edges(), 30)
+
+    def test_ruleengine03(self):
+
+        ra = p.ruleengine.RuleApplicator(self.rule1)
+
+        self.assertEqual(len(ra.get_asserted_relation_templates()), 1)
+
+        P = ra.create_prototype_subgraph_from_rule()
+        self.assertEqual(P.number_of_nodes(), 3)
+        self.assertEqual(P.number_of_edges(), 2)
+
+        res_graph = ra.match_subgraph_P()
+
+        # ensures that the rule does not match itself
+        self.assertEqual(len(res_graph), 0)
+
+        # in this erk module some properties have subproperties
+        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct", modname=TEST_MOD_NAME)
+
+        # create a new RuleApplicator because the overal graph changed
+        ra = p.ruleengine.RuleApplicator(self.rule1)
+        res_graph = ra.match_subgraph_P()
+        self.assertGreater(len(res_graph), 5)
+
+    def test_ruleengine04(self):
+
+        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct", modname=TEST_MOD_NAME)
+        self.assertEqual(len(mod1.I9642["local exponential stability"].get_relations("R17__is_subproperty_of")), 1)
+        ra = p.ruleengine.RuleApplicator(self.rule1, mod_context_uri=TEST_BASE_URI)
+        res = ra.apply()
+
+        # ensure that after rule application there is at least one new relation
+        self.assertEqual(len(mod1.I9642["local exponential stability"].get_relations("R17__is_subproperty_of")), 2)
+        for r in res:
+            print(r)
+
+    def test_ruleengine05(self):
+        premises_rledgs = p.ruleengine.filter_relevant_rledgs(
+            self.rule1.scp__premises.get_inv_relations("R20__has_defining_scope")
+        )
+
+        self.assertEqual(len(premises_rledgs), 2)
+        with self.assertRaises(p.aux.EmptyURIStackError):
+            p.ruleengine.apply_all_semantic_rules()
+
+        with p.uri_context(uri=TEST_BASE_URI):
+            res = p.ruleengine.apply_all_semantic_rules()
 
 
 class Test_03_Core(HouskeeperMixin, unittest.TestCase):

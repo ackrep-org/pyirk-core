@@ -5,6 +5,7 @@ import os
 import argparse
 from . import core, erkloader, rdfstack
 from . import visualization
+from . import reportgenerator
 from . import auxiliary as aux
 from . import settings
 
@@ -39,6 +40,21 @@ def main():
     )
 
     parser.add_argument(
+        "-pad",
+        "--parse-ackrep-data",
+        help="parse ackrep data repository, create items and relations. specify path to ackrep_data base dir \
+            (.../ackrep_data)",
+        metavar="path",
+    )
+
+    parser.add_argument(
+        "-grp",
+        "--generate-report",
+        help="generate report for entity",
+        metavar="uri",
+    )
+
+    parser.add_argument(
         "-vis",
         "--visualize",
         help="create a visualization for the entity",
@@ -56,7 +72,7 @@ def main():
     if args.load_mod is not None:
         process_mod(path=args.load_mod)
 
-    # typical call: pyerk --new-key --load-mod ../erk-data/control-theory/control_theory1.py --nk 100
+    # typical call: pyerk --new-key --load-mod ../erk-data/ocse/control_theory1.py --nk 100
     if args.new_keys:
         if not args.load_mod:
             print(aux.byellow("No module loaded. There might be key clashes. Use `--load-mod` to prevent this."))
@@ -64,6 +80,13 @@ def main():
 
     elif args.inputfile is not None:
         core.script_main(args.inputfile)
+<<<<<<< HEAD
+=======
+    elif args.generate_report:
+        reportgenerator.generate_report()
+    elif args.parse_ackrep_data:
+        ackrep_parser.load_ackrep_entities(args.parse_ackrep_data)
+>>>>>>> develop_carsten
     elif key := args.visualize:
 
         if key == "__all__":
@@ -90,7 +113,7 @@ def process_mod(path):
 
 def debug():
     ERK_ROOT_DIR = aux.get_erk_root_dir()
-    TEST_DATA_PATH = os.path.join(ERK_ROOT_DIR, "erk-data", "control-theory", "control_theory1.py")
+    TEST_DATA_PATH = os.path.join(ERK_ROOT_DIR, "erk-data", "ocse", "control_theory1.py")
     mod1 = erkloader.load_mod_from_path(TEST_DATA_PATH, prefix="ct")
     ds = core.ds
     ds.rdfgraph = rdfstack.create_rdf_triples()

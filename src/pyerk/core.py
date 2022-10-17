@@ -374,7 +374,10 @@ class Entity(abc.ABC):
             corresponding_literal = None
         else:
             corresponding_entity = None
-            corresponding_literal = repr(rel_content)
+
+            if not isinstance(rel_content, (str, int, float, complex)):
+                rel_content = repr(rel_content)
+            corresponding_literal = rel_content
 
         if qualifiers is None:
             qualifiers = []
@@ -517,7 +520,7 @@ class DataStore:
         # mappings like .a = {"my/mod/uri": "/path/to/mod.py"} and .b = {"/path/to/mod.py": "my/mod/uri"}
         self.mod_path_mapping = aux.OneToOneMapping()
 
-        # for every entity key store a dict that maps relation uris to lists of corresponding relation-edges
+        # for every entity uri store a dict that maps relation uris to lists of corresponding relation-edges
         self.relation_edges = defaultdict(dict)
 
         # also do this for the inverse relations (for easy querying)
@@ -573,7 +576,7 @@ class DataStore:
         else:
             uri = aux.make_uri(mod_uri, processed_key.short_key)
 
-        res = self.get_entity_by_uri(uri, processed_key.etype)
+        res = self.get_entity_by_uri(uri, processed_key.etype, strict=False)
         if res is None:
             mod_uri = get_active_mod_uri(strict=False)
             msg = (
@@ -584,7 +587,7 @@ class DataStore:
 
         return res
 
-    def get_entity_by_uri(self, uri: str, etype=None) -> Union[Entity, None]:
+    def get_entity_by_uri(self, uri: str, etype=None, strict=True) -> Union[Entity, None]:
 
         if etype is not None:
             # only one lookup is needed
@@ -598,6 +601,10 @@ class DataStore:
             if res is None:
                 # try relation (might also be None)
                 res = self.relations.get(uri)
+
+        if strict and res is None:
+            msg = f"No entity found for URI {uri}."
+            raise aux.UnknownURIError(msg)
 
         return res
 
@@ -852,7 +859,7 @@ def _resolve_prefix(pr_key: ProcessedStmtKey) -> None:
 
             # 1. check active mod
             candidate_uri = aux.make_uri(mod_uri, pr_key.short_key)
-            res_entity = ds.get_entity_by_uri(candidate_uri)
+            res_entity = ds.get_entity_by_uri(candidate_uri, strict=False)
 
             if res_entity is not None:
                 pr_key.uri = candidate_uri
@@ -860,7 +867,7 @@ def _resolve_prefix(pr_key: ProcessedStmtKey) -> None:
 
             # try builtin_entities as fallback
             candidate_uri = aux.make_uri(settings.BUILTINS_URI, pr_key.short_key)
-            res_entity = ds.get_entity_by_uri(candidate_uri)
+            res_entity = ds.get_entity_by_uri(candidate_uri, strict=False)
 
             # if res_entity is still None no entity could be found
             if res_entity is not None:
@@ -1234,11 +1241,15 @@ class RelationEdge:
             self.qualifiers.append(qf_rledg)
 
             # save the qualifyer-relation edge (and its inverse) in the appropriate data structures
-            # _xx!! -> uri
+
+            # this is the RelationEdge from the original RE instance to the object (thus role=SUBJECT)
             ds.set_relation_edge(re_object=qf_rledg)
+
+            # we might also need dual edge
             if isinstance(qf.obj, Entity):
                 # add inverse relation
-                ds.inv_relation_edges[qf.obj.uri][qf.rel.uri].append(qf_rledg.create_dual())
+                dual_rledg = qf_rledg.create_dual()
+                ds.inv_relation_edges[qf.obj.uri][qf.rel.uri].append(dual_rledg)
 
     def create_dual(self):
         if self.role == RelationRole.SUBJECT:

@@ -249,6 +249,7 @@ I11 = create_builtin_item(
     ),
 )
 
+# TODO: clearify the difference between the I12 and I18
 I12 = create_builtin_item(
     key_str="I12",
     R1__has_label="mathematical object",
@@ -476,10 +477,10 @@ class _proposition__CM:
 
         return variable_object
 
-    def new_rel(self, sub, pred, obj) -> None:
+    def new_rel(self, sub, pred, obj) -> RelationEdge:
         assert isinstance(sub, Entity)
         assert isinstance(pred, Relation)
-        sub.set_relation(pred, obj, scope=self.scope)
+        return sub.set_relation(pred, obj, scope=self.scope)
 
     def new_equation(self, lhs: Item, rhs: Item) -> Item:
         """
@@ -1089,31 +1090,31 @@ I41["semantic rule"].add_method(_proposition__scope, name="scope")
 # ######################################################################################################################
 # Testing and debugging entities
 
-I041 = create_builtin_item(
-    key_str="I041",
-    R1__has_label="subproperty rule 1",
-    R2__has_description=(
-        # "specifies the 'transitivity' of I11_mathematical_property-instances via R17_issubproperty_of"
-        "specifies the 'transitivity' of R17_issubproperty_of"
-    ),
-    R4__is_instance_of=I41["semantic rule"],
-)
-
-
-with I041["subproperty rule 1"].scope("context") as cm:
-
-    cm.new_var(P1=instance_of(I11["mathematical property"]))
-    cm.new_var(P2=instance_of(I11["mathematical property"]))
-    cm.new_var(P3=instance_of(I11["mathematical property"]))
-#     # A = cm.new_var(sys=instance_of(I1["general item"]))
+# I041 = create_builtin_item(
+#     key_str="I041",
+#     R1__has_label="subproperty rule 1",
+#     R2__has_description=(
+#         # "specifies the 'transitivity' of I11_mathematical_property-instances via R17_issubproperty_of"
+#         "specifies the 'transitivity' of R17_issubproperty_of"
+#     ),
+#     R4__is_instance_of=I41["semantic rule"],
+# )
 #
-with I041["subproperty rule 1"].scope("premises") as cm:
-    cm.new_rel(cm.P2, R17["is subproperty of"], cm.P1)
-    cm.new_rel(cm.P3, R17["is subproperty of"], cm.P2)
-    # todo: state that all variables are different from each other
-
-with I041["subproperty rule 1"].scope("assertions") as cm:
-    cm.new_rel(cm.P3, R17["is subproperty of"], cm.P1)
+#
+# with I041["subproperty rule 1"].scope("context") as cm:
+#
+#     cm.new_var(P1=instance_of(I11["mathematical property"]))
+#     cm.new_var(P2=instance_of(I11["mathematical property"]))
+#     cm.new_var(P3=instance_of(I11["mathematical property"]))
+# #     # A = cm.new_var(sys=instance_of(I1["general item"]))
+# #
+# with I041["subproperty rule 1"].scope("premises") as cm:
+#     cm.new_rel(cm.P2, R17["is subproperty of"], cm.P1)
+#     cm.new_rel(cm.P3, R17["is subproperty of"], cm.P2)
+#     # todo: state that all variables are different from each other
+#
+# with I041["subproperty rule 1"].scope("assertions") as cm:
+#     cm.new_rel(cm.P3, R17["is subproperty of"], cm.P1)
 
 # noinspection PyUnresolvedReferences
 I900.set_relation(R1["has label"], "test item with english label" @ en)

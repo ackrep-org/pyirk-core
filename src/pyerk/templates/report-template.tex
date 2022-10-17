@@ -1,0 +1,124 @@
+\documentclass[11pt,a4paper,twocolumn]{article}
+% \documentclass[sigconf, nonacm]{acmart}
+
+
+%pdftk *-preprint.pdf stamp preprintwarning/wartermark.pdf output preprint-result.pdf
+
+
+\makeatletter
+\makeatother
+\synctex=1
+\usepackage[utf8]{inputenc}
+\usepackage[absolute,overlay]{textpos} % für \textblock
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{algorithmic}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\hypersetup{
+    pdftitle = {latex-pdf},
+    colorlinks = true,
+    linkcolor={red!20!black},
+    citecolor={blue!50!black},
+    urlcolor={blue!80!black},
+}
+
+
+
+\usepackage[doi=false,url=true,isbn=false,maxbibnames=6,giveninits=true,sorting=none,style=numeric-comp,backend=biber,date=year]{biblatex}
+
+
+
+\DeclareFieldFormat[article]{volume}{Vol. #1}
+
+% switch off urls for all types but misc
+\AtEveryBibitem{
+%
+\ifentrytype{misc}{
+  % do nothing
+  }{
+  % else:
+    \clearfield{url}%
+    \clearfield{urlyear}%
+    \clearfield{month}
+    \clearfield{day}
+    \clearfield{pagetotal}
+  }%
+}
+
+
+\addbibresource{references.bib}
+
+
+\usepackage{authblk} % specify authors affilation
+
+\usepackage[a4paper,bindingoffset=0.2in,%
+            left=20mm,right=20mm,top=20mm,bottom=20mm,%
+            footskip=10mm]{geometry}
+            
+\usepackage{fancyhdr}
+
+\fancyhead{}
+
+\fancyhead[R]{\tiny Virtual Journal of Formalized Control Theory (VJFCT)...}
+\setlength{\headheight}{14pt}
+
+
+% this is optional 
+% 
+% \usepackage{fontspec}
+% \setmainfont{TeX Gyre Pagella}
+% \setsansfont{Titillium}
+% 
+% % this is fine-tuned by hand, only change, when you know!
+% \newfontfamily{\tagfont}[Scale=2]{Titillium SemiBold}
+% \newfontfamily{\titlefont}{Titillium SemiBold}
+
+
+\begin{document}
+\pagestyle{fancy}
+
+
+
+\twocolumn[%
+{\centering{\huge\bfseries\sffamily%
+% title
+Augmenting OCSE with {{c.nodes + c.edges}} new Entities
+\par}\vspace{3ex}
+% authors
+{\Large%
+First Author${}^{1,*}$,
+Next Author${}^{2}$,
+Last Author${}^{1,3}$
+}\par\vspace{2ex}
+% affiliations
+${}^1$\,Affiliation 1 \quad 
+${}^2$\,Affiliation 2 \quad 
+${}^3$\,Affiliation 3\par
+${}^*$\,Corresponding author; \texttt{<firstname>.<lastname>@some-university.org}
+\par\vspace{2ex}
+	{{c.date}}\par\vspace{4ex}}
+{\centering\bfseries Abstract\par}
+\smallbreak
+This semi-automatically generated paper describes {{c.nodes}} and {{c.edges}} which where added to the OCSE knowledge graph by the authors.
+
+% \par\vspace{2ex}
+
+ \noindent\hrulefill 
+
+\par\vspace{2ex}
+]
+
+
+\section{Introduction}
+
+Some content
+
+
+% \printbibliography
+
+
+
+\end{document}
+

@@ -110,7 +110,7 @@ def load_ackrep_entities(base_path: str = None, strict: bool = True, prefix="ack
 
 
 def ensure_ocse_is_loaded() -> ModuleType:
-    TEST_DATA_PATH = os.path.join(ERK_ROOT_DIR, "erk-data", "control-theory", "control_theory1.py")
+    TEST_DATA_PATH = os.path.join(ERK_ROOT_DIR, "erk-data", "ocse", "control_theory1.py")
     TEST_MOD_NAME = "control_theory1"
 
     # noinspection PyShadowingNames

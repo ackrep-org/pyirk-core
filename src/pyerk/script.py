@@ -73,7 +73,7 @@ def main():
     if args.load_mod is not None:
         process_mod(path=args.load_mod)
 
-    # typical call: pyerk --new-key --load-mod ../erk-data/control-theory/control_theory1.py --nk 100
+    # typical call: pyerk --new-key --load-mod ../erk-data/ocse/control_theory1.py --nk 100
     if args.new_keys:
         if not args.load_mod:
             print(aux.byellow("No module loaded. There might be key clashes. Use `--load-mod` to prevent this."))
@@ -111,7 +111,7 @@ def process_mod(path):
 
 def debug():
     ERK_ROOT_DIR = aux.get_erk_root_dir()
-    TEST_DATA_PATH = os.path.join(ERK_ROOT_DIR, "erk-data", "control-theory", "control_theory1.py")
+    TEST_DATA_PATH = os.path.join(ERK_ROOT_DIR, "erk-data", "ocse", "control_theory1.py")
     mod1 = erkloader.load_mod_from_path(TEST_DATA_PATH, prefix="ct")
     ackrep_parser.load_ackrep_entities()
     ds = core.ds

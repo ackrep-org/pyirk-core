@@ -29,20 +29,27 @@ Pyerk originated and is currently (2022) mainly developed with focus on represen
 │  └── ...
 │
 ├── django-erk-gui/                 ← repo with the code for the django gui (project and! app)
+│  │                                  (this package is optional)
 │  ├── .git/
 │  ├── manage.py
 │  └── ...
 │
 ├── erk-data/                       ← directory that contains erk-knowledge packages
-│  ├── ocse0.2/                     ← a knowledge package
+│  ├── ocse/                        ← a knowledge package (ontology of control systems engineering)
 │  │  ├── .git/
 │  │  ├── README.md
-│  │  ├── ocse.py                  ← a knowledge module
+│  │  ├── ocse.py                   ← a knowledge module
 │  │  │                             (this one is currently used for unit testing)
 │  │  └── ...
+│  ├── xyz123/                      ← another knowledge package
+│  │  └── ...
 │  └── ...
-└...
+└──...
 ```
+
+# Documentation
+
+There is not yet "real" documentation available. However, to get an overview of the most importent features you might want to have a look at the source code, especially at the files [builtin_entities.py](/src/pyerk/builtin_entities.py) and the [test_core.py](tests/test_core.py).
 
 # Coding style
 

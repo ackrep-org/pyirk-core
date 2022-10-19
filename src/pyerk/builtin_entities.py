@@ -565,8 +565,8 @@ def get_ui_short_representation(self) -> str:
     :return: mathjax-ready LaTeX source code
     """
     latex_src = self.R24
-    assert latex_src.startswith("$")
-    assert latex_src.endswith("$")
+    assert latex_src.startswith("$"), f"{latex_src} of {self} does not start with $"
+    assert latex_src.endswith("$"), f"{latex_src} of {self} does not end with $"
 
     # latex make recognizable for mathjax
     res = f"\\({latex_src[1:-1]}\\)"

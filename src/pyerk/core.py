@@ -1424,24 +1424,31 @@ def generate_new_key(prefix, prefix2="", mod_uri=None):
             uri = aux.make_uri(mod_uri, key)
             try:
                 ds.get_entity_by_uri(uri)
-            except KeyError:
+            except aux.UnknownURIError:
                 # the key was new -> no problem
                 return key
             else:
                 continue
 
 
-def print_new_keys(n=30):
+def print_new_keys(n=30, loaded_mod=None):
     """
     print n random integer keys from the pregenerated list.
 
     :return:
     """
 
+    if loaded_mod:
+        # this ensures that the new keys are created wrt the loaded module (see also: script.py)
+        mod_uri = loaded_mod.__URI__
+    else:
+        mod_uri = None
+    if n > 0:
+        print(aux.bcyan("supposed keys:    "))
     for i in range(n):
-        k = generate_new_key("I")[1:]
+        k = generate_new_key("I", mod_uri=mod_uri)[1:]
 
-        print(f"supposed key:    I{k}      R{k}")
+        print(f"I{k}      R{k}")
 
 
 def get_caller_frame(upcount: int) -> types.FrameType:

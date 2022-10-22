@@ -1040,11 +1040,18 @@ class KeyManager:
     # TODO: the term "maxval" is misleading because it will be used in range where the upper bound is exclusive
     # however, using range(minval, maxval+1) would results in different shuffling and thus will probably need some
     # refactoring of existing modules
-    def __init__(self, minval=1000, maxval=9999):
+    def __init__(self, minval=1000, maxval=9999, keyseed=None):
+        """
+
+        :param minval:  int
+        :param maxval:  int
+        :param keyseed: int; This allows a module to create its own random key order
+        """
 
         self.instance = self
         self.minval = minval
         self.maxval = maxval
+        self.keyseed = keyseed
 
         self.key_reservoir = None
 
@@ -1062,13 +1069,19 @@ class KeyManager:
 
         This function is also called after unloading a module because the respective keys are "free" again
 
+        Rationale behind random keys: During creation of knowledge bases it frees the mind of thinking too much
+        about a meaningful order in which to create entities.
+
         :return:    list of integers
         """
 
         assert self.key_reservoir is None
 
         # passing seed (arg `x`) ensures "reproducible randomness" accross runs
-        random_ng = random.Random(x=1750)
+        if not self.keyseed:
+            # use hardcoded fallback
+            self.keyseed = 1750
+        random_ng = random.Random(x=self.keyseed)
         self.key_reservoir = list(range(self.minval, self.maxval))
         random_ng.shuffle(self.key_reservoir)
 

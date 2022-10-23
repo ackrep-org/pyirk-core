@@ -113,7 +113,12 @@ class Entity(abc.ABC):
 
         # check if the used label matches the description
         assert isinstance(adhoc_label, str)
-        if adhoc_label != self.R1 and not getattr(self, "_ignore_mismatching_adhoc_label", False):
+
+        if getattr(self, "_ignore_mismatching_adhoc_label", False):
+            # we do not need to test the adhoc label
+            return self
+
+        if adhoc_label != self.R1:
             msg = f"got mismatiching label for Entity {self}: '{adhoc_label}'"
             raise ValueError(msg)
 

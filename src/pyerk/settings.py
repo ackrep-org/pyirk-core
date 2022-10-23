@@ -8,6 +8,8 @@ import sys
 SUPPORTED_LANGUAGES = ["en", "de"]
 # https://en.wikipedia.org/wiki/IETF_language_tag
 
+
+# TODO: This should be specifyable for every module
 DEFAULT_DATA_LANGUAGE = "en"
 
 

@@ -425,7 +425,7 @@ def add_scope_to_defining_relation_edge(ent: Entity, scope: Item) -> None:
     re.scope = scope
 
 
-class _proposition__CM:
+class ScopingCM:
     """
     Context manager to for creating ("atomic") statements in the scope of other (bigger statements).
     E.g. establishing a relationship between two items as part of the assertions of a theorem-item
@@ -446,6 +446,20 @@ class _proposition__CM:
     def __exit__(self, exc_type, exc_val, exc_tb):
         # this is the place to handle exceptions
         pass
+
+    def __getattr__(self, name: str):
+        """
+        This function allows to use `cm.<local variable> instead of I2345.<local variable> where I2345 is the
+        parent object of the scope.
+
+        :param name:
+        :return:
+        """
+
+        if name in self.__dict__:
+            return self.dict__[name]
+
+        return getattr(self.item, name)
 
     def new_var(self, **kwargs) -> Entity:
         """
@@ -491,6 +505,12 @@ class _proposition__CM:
         assert isinstance(pred, Relation)
         return sub.set_relation(pred, obj, scope=self.scope)
 
+
+class _proposition__CM (ScopingCM):
+    """
+    Context manager taylored for mathematical theorems and definitions
+    """
+
     def new_equation(self, lhs: Item, rhs: Item) -> Item:
         """
         convenience method to create a equation-related RelationEdge
@@ -505,20 +525,6 @@ class _proposition__CM:
 
         eq = new_equation(lhs, rhs, scope=self.scope)
         return eq
-
-    def __getattr__(self, name: str):
-        """
-        This function allows to use `cm.<local variable> instead of I2345.<local variable> where I2345 is the
-        parent object of the scope.
-
-        :param name:
-        :return:
-        """
-
-        if name in self.__dict__:
-            return self.dict__[name]
-
-        return getattr(self.item, name)
 
 
 def _proposition__scope(self: Item, scope_name: str):

@@ -682,9 +682,9 @@ class DataStore:
                 key = parts[0]
                 value = parts[-1].replace("<", "").replace(">", "")
                 prefix_dict[key] = value
-            print(prefix_dict)
+            # print(prefix_dict)
 
-            entities = re.findall(r"[\w]*:[\w]+__[\w]+", query)
+            entities = re.findall(r"[\w]*:[\w]+__[\w]+(?:–_instance)?", query)
             for e in entities:
                 # check sanity
                 prefix, rest = e.split(":")
@@ -699,7 +699,7 @@ class DataStore:
                 msg = f"Entity label '{entity.R1}' for entity '{e}' and given label '{label}' do not match!"
                 assert entity.R1 == label, msg
 
-            new_query = re.sub(r"__[\w]+", "", query)
+            new_query = re.sub(r"__[\w]+(?:–_instance)?", "", query)
         else:
             new_query = query
 

@@ -38,7 +38,7 @@ jobs: # A basic unit of work in a run
             cd erk-ocse
             git checkout for-unittests
             cd ..
-            tree
+            ls -R
       - run:
           name: Load Test Data
           command: |

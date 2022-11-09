@@ -34,7 +34,7 @@ Pyerk originated and is currently (2022) mainly developed with focus on represen
 │  ├── manage.py
 │  └── ...
 │
-├── erk-data/                       ← directory that contains erk-knowledge packages
+├── erk-data/                       ← directory that contains erk-knowledge packages (for actual usage)
 │  ├── ocse/                        ← a knowledge package (ontology of control systems engineering)
 │  │  ├── .git/
 │  │  ├── README.md
@@ -44,6 +44,9 @@ Pyerk originated and is currently (2022) mainly developed with focus on represen
 │  ├── xyz123/                      ← another knowledge package
 │  │  └── ...
 │  └── ...
+├── erk-data-for-unittests/         ← directory that contains erk-knowledge packages
+│  └── ...                            (unittest version, probably older and different from
+│                                      production data.)
 └──...
 ```
 

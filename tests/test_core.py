@@ -33,7 +33,8 @@ ERK_ROOT_DIR = p.aux.get_erk_root_dir()
 TEST_DATA_DIR1 = pjoin(ERK_ROOT_DIR, "pyerk-core", "tests", "test_data")
 
 # path for "realistic" test data
-TEST_DATA_REPO_PATH = pjoin(ERK_ROOT_DIR, "erk-data-for-unittests", "erk-ocse")
+TEST_DATA_PARENT_PATH = pjoin(ERK_ROOT_DIR, "erk-data-for-unittests")
+TEST_DATA_REPO_PATH = pjoin(TEST_DATA_PARENT_PATH, "erk-ocse")
 TEST_DATA_PATH2 = pjoin(TEST_DATA_REPO_PATH, "control_theory1.py")
 TEST_MOD_NAME = "control_theory1"
 
@@ -197,13 +198,12 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
     def test_aa0__directory_structure(self):
         pyerk_dir = pjoin(ERK_ROOT_DIR, "pyerk-core")
         django_gui_dir = pjoin(ERK_ROOT_DIR, "pyerk-django")
-        erk_data_dir = pjoin(ERK_ROOT_DIR, "erk-data")
 
         self.assertTrue(os.path.isdir(pyerk_dir))
         # since there is no reason to have the django gui in this repos CI:
         if os.environ.get("CI") != "true":
             self.assertTrue(os.path.isdir(django_gui_dir))
-        self.assertTrue(os.path.isdir(erk_data_dir))
+        self.assertTrue(os.path.isdir(TEST_DATA_PARENT_PATH))
 
     def test_aa1(self):
         """

@@ -1099,6 +1099,42 @@ I41 = create_builtin_item(
 
 I41["semantic rule"].add_method(_proposition__scope, name="scope")
 
+R44 = create_builtin_relation(
+    key_str="R44",
+    R1__has_label="is universally quantified",
+    R2__has_description=(
+        "specifies that the subject represents an universally quantified variable (usually denoted by '∀')"
+    ),
+    R8__has_domain_of_argument_1=I1["general item"],
+    R11__has_range_of_result=bool,
+    R18__has_usage_hint="used to specify the free variables in theorems and similar statements",
+)
+
+
+def uq_instance_of(type_entity: Item, r1: str = None, r2: str = None) -> Item:
+    """
+    Shortcut to create an instance and set the relation R1145["is universally quantified"] to True in one step
+    to allow compact notation.
+
+    :param type_entity:     the type of which an instance is created
+    :param r1:              the label (tried to extract from calling context)
+    :param r2:              optional description
+
+    :return:                new item
+    """
+
+    if r1 is None:
+        try:
+            r1 = p.core.get_key_str_by_inspection(upcount=1)
+        # TODO: make this except clause more specific
+        except:
+            # note this fallback naming can be avoided by explicitly passing r1=...  as kwarg
+            r1 = f"{type_entity.R1} – instance"
+
+    instance = instance_of(type_entity, r1, r2)
+    instance.set_relation(R44["is universally quantified"], True)
+    return instance
+
 # testing
 
 

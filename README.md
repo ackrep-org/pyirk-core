@@ -51,6 +51,16 @@ Pyerk originated and is currently (2022) mainly developed with focus on represen
 
 There is not yet "real" documentation available. However, to get an overview of the most importent features you might want to have a look at the source code, especially at the files [builtin_entities.py](/src/pyerk/builtin_entities.py) and the [test_core.py](tests/test_core.py).
 
+## Visualization
+
+Currently there is some basic visualization support via the command line. To visualize your a module (including its relations to the builtin_entities) you can use a command like
+
+```
+pyerk -rwd --load-mod demo-module.py demo -vis __all__
+```
+
+
+
 # Coding style
 
 We use `black -l 120 ./` to ensure coding style consistency.

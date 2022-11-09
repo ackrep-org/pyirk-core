@@ -500,10 +500,34 @@ class ScopingCM:
 
         return variable_object
 
+    # TODO: add qualifiers
     def new_rel(self, sub, pred, obj) -> RelationEdge:
         assert isinstance(sub, Entity)
         assert isinstance(pred, Relation)
         return sub.set_relation(pred, obj, scope=self.scope)
+
+    @classmethod
+    def create_scopingcm_factory(cls):
+
+        def scopingcm_factory(self: Item, scope_name: str) -> ScopingCM:
+            """
+            This function will be used as a method for Items which can create a scoping context manager.
+            It will return a `cls`-instance, where `cls` is either `ScopingCM` or a subclass of it.
+            For details see examples
+
+            :param self:        Item; the item to which the scope should be associated
+            :param scope_name:  str; the name of the scope
+
+            :return:            an instance of ScopingCM
+            """
+            namespace, scope = self._register_scope(scope_name)
+
+            cm = cls(itm=self, namespace=namespace, scope=scope)
+
+            return cm
+
+        # return that function object
+        return scopingcm_factory
 
 
 class _proposition__CM (ScopingCM):

@@ -328,6 +328,65 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         itm1 = p.ds.get_entity_by_key_str("ma__I5000__scalar_zero")
         self.assertEqual(itm1, mod1.ma.I5000["scalar zero"])
 
+    def test_c02__multilingual_relations(self):
+        """
+        test how to create items with labels in multiple languages
+        """
+
+        with p.uri_context(uri=TEST_BASE_URI):
+            itm = p.create_item(
+                key_str=p.pop_uri_based_key("I"),
+
+                # multiple values to R1 can be passed using a list
+                R1__has_label=[
+                    "test-label in english"@p.en,  # `@p.en` is recommended, if you use multiple languages
+                    "test-label auf deutsch"@p.de
+                    ],
+                R2__has_description="test-description in english",
+            )
+
+        # this returns only one label according to the default language
+        default_label = itm.R1
+
+        # to access all labels use this:
+        label1, label2 = itm.get_relations("R1", return_obj=True)
+        self.assertEqual(default_label, label1)
+        self.assertEqual(label1.value, "test-label in english")
+        self.assertEqual(label1.language, "en")
+        self.assertEqual(label2.value, "test-label auf deutsch")
+        self.assertEqual(label2.language, "de")
+
+        # add another language later
+
+        with p.uri_context(uri=TEST_BASE_URI):
+            itm.set_relation(p.R2, "test-beschreibung auf deutsch"@p.de)
+
+        desc1, desc2 = itm.get_relations("R2", return_obj=True)
+
+        self.assertTrue(isinstance(desc1, str))
+        self.assertTrue(isinstance(desc2, p.Literal))
+
+        self.assertEqual(desc2.language, "de")
+
+        # change the default language
+
+        p.settings.DEFAULT_DATA_LANGUAGE = "de"
+
+        new_default_label = itm.R1
+        self.assertEqual(new_default_label, label2)
+        self.assertEqual(new_default_label.language, "de")
+
+        # however, changing the default language leaves undefined how to interpret raw strings (i.e. non-Literals)
+        # currently they are interpreted as from the default language
+        # thus this gives an error:
+
+        try:
+            new_default_description = itm.R2
+        except ValueError:
+            print("unexpectedly found more then one object for relation R2 and language de")
+            pass
+
+
     def test_evaluated_mapping(self):
 
         res = p.ds.relation_edges.get("RE6229")

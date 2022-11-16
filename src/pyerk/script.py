@@ -27,10 +27,12 @@ def main():
     parser.add_argument("--new-keys", help=f"generate new key", default=None, action="store_true")
 
     parser.add_argument(
+        "-l",
         "--load-mod",
         help=f"load module from path with prefix. You might want to provide the `-rwd` flag",
         nargs=2,
         default=None,
+        metavar="MOD_PATH",
     )
 
     # background: by default erk-module paths are specified wrt the path of the pyerk.core python module
@@ -72,6 +74,13 @@ def main():
         metavar="uri",
     )
 
+    parser.add_argument(
+        "-i",
+        "--interactive-session",
+        help="start an interactive session (with the specified module loaded)",
+        action="store_true",
+    )
+
     parser.add_argument("--dbg", help=f"start debug routine", default=None, action="store_true")
 
     args = parser.parse_args()
@@ -87,6 +96,11 @@ def main():
         loaded_mod = process_mod(path=path, prefix=prefix, relative_to_workdir=rtwd)
     else:
         loaded_mod = None
+        prefix = None
+
+    if args.interactive_session:
+        interactive_seesion(loaded_mod, prefix)
+        exit()
 
     # typical calls to generate new keys:
 
@@ -144,4 +158,15 @@ def debug():
     qsrc = rdfstack.get_sparql_example_query2()
     res = ds.rdfgraph.query(qsrc)
     z = aux.apply_func_to_table_cells(rdfstack.convert_from_rdf_to_pyerk, res)
+    IPS()
+
+
+def interactive_seesion(loaded_mod, prefix):
+    """
+    Start an interactive IPython session where the (optinally) loaded mod is available under its prefix name.
+    """
+    import pyerk as p
+    if loaded_mod is not None and prefix is not None:
+        locals()[prefix] = loaded_mod
+
     IPS()

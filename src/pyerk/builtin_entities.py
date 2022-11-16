@@ -1028,7 +1028,9 @@ R36 = create_builtin_relation(
     R8__has_domain_of_argument_1=I32["evaluated mapping"],
     R9__has_domain_of_argument_2=I33["tuple"],
     R18__has_usage_hint=(
-        "Example: if subj = P(A) then we have: subj.R4__is_instance_of = I32; subj.R35 = P; subj.R36 = A"
+        "Example: if subj = P(A) then we have: subj.R4__is_instance_of -> I32__evaluated_mapping; ",
+        "subj.R35__is_applied_mapping_of -> P; ",
+        "subj.R36__has_argument_tuple -> A"
     ),
     R22__is_functional=True,
 )

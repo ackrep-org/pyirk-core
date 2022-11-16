@@ -65,6 +65,18 @@ Currently there is some basic visualization support via the command line. To vis
 pyerk -rwd --load-mod demo-module.py demo -vis __all__
 ```
 
+## Interactive Usage
+
+To open an IPython shell with a loaded module run e.g.
+
+```
+pyerk -i -rwd -l control_theory1.py ct
+```
+
+Then, you have `ct` as variable in your namespace and can e.g. run `print(ct.I5167.R1`).
+
+(The above command assumes that the file `control_theory1.py` is in your current working directory.)
+
 ## Multilinguality
 
 Pyerk aims to support an arbitrary number of languages by so called *language specified strings*. Currently support for English and German is preconfigured in `pyerk.settings`. These language specified strings are instances of the class `rdflib.Literal` where the `.language`-attribute is set to one of the values from `pyerk.setting.SUPPORTED_LANGUAGES` and can be created like:

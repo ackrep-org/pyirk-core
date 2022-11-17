@@ -40,8 +40,7 @@ TEST_MOD_NAME = "control_theory1"
 
 # useful to get the currently latest sha strings:
 # git log --pretty=oneline | head
-# TEST_DATA_REPO_COMMIT_SHA = "eaf764f89bd0201b221ff8b2fdf8b04c11374061"
-TEST_DATA_REPO_COMMIT_SHA = "695e41102c577f49561721582e267316853e5407"
+TEST_DATA_REPO_COMMIT_SHA = "77dd57a47b8a2b9263441ed8f25a6c3f8c4d56f5"
 
 # TODO: make this more robust (e.g. search for config file or environment variable)
 # TODO: put link to docs here (directory layout)

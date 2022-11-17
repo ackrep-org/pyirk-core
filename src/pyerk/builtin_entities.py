@@ -190,7 +190,8 @@ R21 = create_builtin_relation(
     R2="specifies that the subject of that relation is a scope-item of the object (statement-item)",
     R18=(
         "This relation is used to bind scope items to its 'semantic parents'. "
-        "This is *not* the inverse relation to R20"
+        "This is *not* the inverse relation to R20. "
+        "This is not to be confused with R45__has_subscope."
     ),
     R22__is_functional=True,
 )
@@ -441,11 +442,12 @@ class ScopingCM:
         implicitly called in the head of the with statemet
         :return:
         """
+        ds.append_scope(self.scope)
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         # this is the place to handle exceptions
-        pass
+        ds.remove_scope(self.scope)
 
     def __getattr__(self, name: str):
         """
@@ -1185,7 +1187,19 @@ def uq_instance_of(type_entity: Item, r1: str = None, r2: str = None) -> Item:
     return instance
 
 
-# TODO: this class currently is an stub (empty hull) and needs actual functionality
+R45 = create_builtin_relation(
+    key_str="R45",
+    R1__has_label="is subscope of",
+    R2__has_description=(
+        "..."
+    ),
+    R8__has_domain_of_argument_1=I16["scope"],
+    R11__has_range_of_result=I16["scope"],
+    R18__has_usage_hint="used to specify that the subject (a scope instance is a subscope of another scope instance",
+    R22__is_functional=True,
+)
+
+
 class ImplicationStatement:
     """
     Context manager to model conditional statements.
@@ -1201,8 +1215,20 @@ class ImplicationStatement:
     """
 
     def __init__(self):
-        # TODO: create a new subscope objects
-        pass
+
+        parent_scope = ds.get_current_scope()
+
+        scope_name_a = f"imp_stmt_antcdt in {parent_scope}"
+        scope_name_c = f"imp_stmt_cnsqt in {parent_scope}"
+
+        r2a = f"antecedent scope of implication statement in {parent_scope}"
+        r2c = f"consequent scope of implication statement in {parent_scope}"
+
+        self.antecedent_scope = instance_of(I16["scope"], r1=scope_name_a, r2=r2a)
+        self.antecedent_scope.set_relation(R45["is subscope of"], parent_scope)
+
+        self.consequent_scope = instance_of(I16["scope"], r1=scope_name_c, r2=r2c)
+        self.consequent_scope.set_relation(R45["is subscope of"], parent_scope)
 
     def __enter__(self):
         """
@@ -1216,12 +1242,16 @@ class ImplicationStatement:
         pass
 
     def antecedent_relation(self, **kwargs):
-        # new_mathematical_relation(lhs, rsgn, rhs, scope=self.antecedent_scope)
-        pass
+        assert "scope" not in kwargs
+        kwargs.update(scope=self.antecedent_scope)
+        rel = new_mathematical_relation(**kwargs)
+        return rel
 
     def consequent_relation(self, **kwargs):
-        # new_mathematical_relation(lhs, rsgn, rhs, scope=self.consequent_scope)
-        pass
+        assert "scope" not in kwargs
+        kwargs.update(scope=self.consequent_scope)
+        rel = new_mathematical_relation(**kwargs)
+        return rel
 
 
 # testing

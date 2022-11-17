@@ -579,6 +579,9 @@ class DataStore:
         # dict like {uri1: <mod1>, ...}
         self.uri_mod_dict = {}
 
+        # this list serves to keep track of nested scopes
+        self.scope_stack = []
+
     def get_entity_by_key_str(self, key_str, mod_uri=None) -> Entity:
         """
         :param key_str:     str like I1234 or I1234__some_label
@@ -730,6 +733,31 @@ class DataStore:
             new_query = query
 
         return new_query
+
+    def append_scope(self, scope):
+        """
+        Called when __enter__-ing a scoping context manager
+        """
+        self.scope_stack.append(scope)
+
+    def remove_scope(self, scope):
+        """
+        Called when __exit__-ing a scoping context manager
+        """
+
+        current_scope = self.get_current_scope()
+        if current_scope != scope:
+            msg = "Refuse to remove scope which is not the topmost on the stack (i.e. the last in the list)"
+            raise PyERKError(msg)
+
+        self.scope_stack.pop()
+
+    def get_current_scope(self):
+        try:
+            return self.scope_stack[-1]
+        except IndexError:
+            msg = "unexepectedly found the scope stack empty"
+            raise PyERKError(msg)
 
 
 ds = DataStore()

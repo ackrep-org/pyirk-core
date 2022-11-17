@@ -1184,6 +1184,46 @@ def uq_instance_of(type_entity: Item, r1: str = None, r2: str = None) -> Item:
     instance.set_relation(R44["is universally quantified"], True)
     return instance
 
+
+# TODO: this class currently is an stub (empty hull) and needs actual functionality
+class ImplicationStatement:
+    """
+    Context manager to model conditional statements.
+
+    Example from erk:/math/0.2#I7169["definition of identity matrix"]
+
+    ```
+    with p.ImplicationStatement() as imp1:
+        imp1.antecedent_relation(lhs=cm.i, rsgn="!=", rhs=cm.j)
+        imp1.consequent_relation(lhs=M_ij, rhs=I5000["scalar zero"])
+    ```
+
+    """
+
+    def __init__(self):
+        # TODO: create a new subscope objects
+        pass
+
+    def __enter__(self):
+        """
+        implicitly called in the head of the with-statemet
+        """
+
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        # this is the place to handle exceptions
+        pass
+
+    def antecedent_relation(self, **kwargs):
+        # new_mathematical_relation(lhs, rsgn, rhs, scope=self.antecedent_scope)
+        pass
+
+    def consequent_relation(self, **kwargs):
+        # new_mathematical_relation(lhs, rsgn, rhs, scope=self.consequent_scope)
+        pass
+
+
 # testing
 
 

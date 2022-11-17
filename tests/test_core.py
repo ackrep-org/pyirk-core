@@ -40,7 +40,8 @@ TEST_MOD_NAME = "control_theory1"
 
 # useful to get the currently latest sha strings:
 # git log --pretty=oneline | head
-TEST_DATA_REPO_COMMIT_SHA = "eaf764f89bd0201b221ff8b2fdf8b04c11374061"
+# TEST_DATA_REPO_COMMIT_SHA = "eaf764f89bd0201b221ff8b2fdf8b04c11374061"
+TEST_DATA_REPO_COMMIT_SHA = "695e41102c577f49561721582e267316853e5407"
 
 # TODO: make this more robust (e.g. search for config file or environment variable)
 # TODO: put link to docs here (directory layout)
@@ -469,7 +470,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
 
         itm1 = p.ds.get_entity_by_key_str("I2__Metaclass")
-        itm2 = p.ds.get_entity_by_key_str("ct__I4235__mathematical_object")
+        itm2 = p.ds.get_entity_by_key_str("ma__I4235__mathematical_object")
         itm3 = p.ds.get_entity_by_key_str("ct__I4239__monovariate_polynomial")
 
         # metaclass itself is not an instance of metaclass

@@ -550,6 +550,24 @@ class _proposition__CM (ScopingCM):
         eq = new_equation(lhs, rhs, scope=self.scope)
         return eq
 
+    # TODO: this makes  self.new_equation obsolete, doesnt it?
+    def new_math_relation(self, lhs: Item, rsgn: str, rhs: Item) -> Item:
+        """
+        convenience method to create a math_relation-related StatementObject (aka "RelationEdge")
+
+        :param lhs:   left hand side
+        :param rsgn:  relation sign
+        :param rhs:   rght hand sign
+
+        :return:      new instance of
+        """
+
+        # prevent accidental identity of both sides of the equation
+        assert lhs is not rhs
+
+        rel = new_mathematical_relation(lhs, rsgn, rhs, scope=self.scope)
+        return rel
+
 
 def _proposition__scope(self: Item, scope_name: str):
     """
@@ -855,7 +873,7 @@ R31 = create_builtin_relation(
 def new_equation(lhs: Item, rhs: Item, doc=None, scope: Optional[Item] = None) -> Item:
     """common speacial case of mathematical relation, also ensures backwards compatibility"""
 
-    eq = new_mathematical_relation(lhs, "=", rhs, doc, scope)
+    eq = new_mathematical_relation(lhs, "==", rhs, doc, scope)
 
     return eq
 
@@ -863,11 +881,12 @@ def new_equation(lhs: Item, rhs: Item, doc=None, scope: Optional[Item] = None) -
 def new_mathematical_relation(lhs: Item, rsgn: str, rhs: Item, doc=None, scope: Optional[Item] = None) -> Item:
 
     rsgn_dict = {
-        "=": I23["equation"],
+        "==": I23["equation"],
         "<": I29["less-than-relation"],
         ">": I28["greater-than-relation"],
         "<=": I31["less-or-equal-than-relation"],
         ">=": I30["greater-or-equal-than-relation"],
+        "!=": I26["strict inequality"],
     }
     if doc is not None:
         assert isinstance(doc, str)
@@ -1035,6 +1054,10 @@ R36 = create_builtin_relation(
     R22__is_functional=True,
 )
 
+
+# TODO: it would be more convenient to have the inverse relation because this could be stated when creating
+# the definition; In contrast, the current R37 has to be stated after the creation of both entities
+# also this relation should be 1:1
 R37 = create_builtin_relation(
     key_str="R37",
     R1__has_label="has definition",
@@ -1151,7 +1174,7 @@ def uq_instance_of(type_entity: Item, r1: str = None, r2: str = None) -> Item:
 
     if r1 is None:
         try:
-            r1 = p.core.get_key_str_by_inspection(upcount=1)
+            r1 = core.get_key_str_by_inspection(upcount=1)
         # TODO: make this except clause more specific
         except:
             # note this fallback naming can be avoided by explicitly passing r1=...  as kwarg
@@ -1216,7 +1239,7 @@ I000._ignore_mismatching_adhoc_label = True
 R000._ignore_mismatching_adhoc_label = True
 
 
-# TODO: evaluate the necessity of this class
+# TODO: evaluate the necessity of this class (especially in face of IntegerRangeElement (ocse.ma))
 class Sequence:
     r"""
     Models a sequence like y, `\dot y, ..., y^(k)`

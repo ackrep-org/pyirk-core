@@ -53,14 +53,6 @@ def main():
     )
 
     parser.add_argument(
-        "-pad",
-        "--parse-ackrep-data",
-        help="parse ackrep data repository, create items and relations. specify path to ackrep_data base dir \
-            (.../ackrep_data)",
-        metavar="path",
-    )
-
-    parser.add_argument(
         "-grp",
         "--generate-report",
         help="generate report for entity",
@@ -118,11 +110,6 @@ def main():
         core.script_main(args.inputfile)
     elif args.generate_report:
         reportgenerator.generate_report()
-    elif args.parse_ackrep_data:
-
-        # TODO @Julius
-        raise NotImplementedError("This functionality was removed")
-        # ackrep_parser.load_ackrep_entities(args.parse_ackrep_data)
     elif key := args.visualize:
 
         if key == "__all__":

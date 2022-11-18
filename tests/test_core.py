@@ -33,13 +33,14 @@ ERK_ROOT_DIR = p.aux.get_erk_root_dir()
 TEST_DATA_DIR1 = pjoin(ERK_ROOT_DIR, "pyerk-core", "tests", "test_data")
 
 # path for "realistic" test data
-TEST_DATA_REPO_PATH = pjoin(ERK_ROOT_DIR, "erk-data-for-unittests", "erk-ocse")
+TEST_DATA_PARENT_PATH = pjoin(ERK_ROOT_DIR, "erk-data-for-unittests")
+TEST_DATA_REPO_PATH = pjoin(TEST_DATA_PARENT_PATH, "erk-ocse")
 TEST_DATA_PATH2 = pjoin(TEST_DATA_REPO_PATH, "control_theory1.py")
 TEST_MOD_NAME = "control_theory1"
 
 # useful to get the currently latest sha strings:
 # git log --pretty=oneline | head
-TEST_DATA_REPO_COMMIT_SHA = "eaf764f89bd0201b221ff8b2fdf8b04c11374061"
+TEST_DATA_REPO_COMMIT_SHA = "77dd57a47b8a2b9263441ed8f25a6c3f8c4d56f5"
 
 # TODO: make this more robust (e.g. search for config file or environment variable)
 # TODO: put link to docs here (directory layout)
@@ -197,13 +198,12 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
     def test_aa0__directory_structure(self):
         pyerk_dir = pjoin(ERK_ROOT_DIR, "pyerk-core")
         django_gui_dir = pjoin(ERK_ROOT_DIR, "pyerk-django")
-        erk_data_dir = pjoin(ERK_ROOT_DIR, "erk-data")
 
         self.assertTrue(os.path.isdir(pyerk_dir))
         # since there is no reason to have the django gui in this repos CI:
         if os.environ.get("CI") != "true":
             self.assertTrue(os.path.isdir(django_gui_dir))
-        self.assertTrue(os.path.isdir(erk_data_dir))
+        self.assertTrue(os.path.isdir(TEST_DATA_PARENT_PATH))
 
     def test_aa1(self):
         """
@@ -328,6 +328,65 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         itm1 = p.ds.get_entity_by_key_str("ma__I5000__scalar_zero")
         self.assertEqual(itm1, mod1.ma.I5000["scalar zero"])
 
+    def test_c02__multilingual_relations(self):
+        """
+        test how to create items with labels in multiple languages
+        """
+
+        with p.uri_context(uri=TEST_BASE_URI):
+            itm = p.create_item(
+                key_str=p.pop_uri_based_key("I"),
+
+                # multiple values to R1 can be passed using a list
+                R1__has_label=[
+                    "test-label in english"@p.en,  # `@p.en` is recommended, if you use multiple languages
+                    "test-label auf deutsch"@p.de
+                    ],
+                R2__has_description="test-description in english",
+            )
+
+        # this returns only one label according to the default language
+        default_label = itm.R1
+
+        # to access all labels use this:
+        label1, label2 = itm.get_relations("R1", return_obj=True)
+        self.assertEqual(default_label, label1)
+        self.assertEqual(label1.value, "test-label in english")
+        self.assertEqual(label1.language, "en")
+        self.assertEqual(label2.value, "test-label auf deutsch")
+        self.assertEqual(label2.language, "de")
+
+        # add another language later
+
+        with p.uri_context(uri=TEST_BASE_URI):
+            itm.set_relation(p.R2, "test-beschreibung auf deutsch"@p.de)
+
+        desc1, desc2 = itm.get_relations("R2", return_obj=True)
+
+        self.assertTrue(isinstance(desc1, str))
+        self.assertTrue(isinstance(desc2, p.Literal))
+
+        self.assertEqual(desc2.language, "de")
+
+        # change the default language
+
+        p.settings.DEFAULT_DATA_LANGUAGE = "de"
+
+        new_default_label = itm.R1
+        self.assertEqual(new_default_label, label2)
+        self.assertEqual(new_default_label.language, "de")
+
+        # however, changing the default language leaves undefined how to interpret raw strings (i.e. non-Literals)
+        # currently they are interpreted as from the default language
+        # thus this gives an error:
+
+        try:
+            new_default_description = itm.R2
+        except ValueError:
+            print("unexpectedly found more then one object for relation R2 and language de")
+            pass
+
+
     def test_evaluated_mapping(self):
 
         res = p.ds.relation_edges.get("RE6229")
@@ -410,7 +469,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
 
         itm1 = p.ds.get_entity_by_key_str("I2__Metaclass")
-        itm2 = p.ds.get_entity_by_key_str("ct__I4235__mathematical_object")
+        itm2 = p.ds.get_entity_by_key_str("ma__I4235__mathematical_object")
         itm3 = p.ds.get_entity_by_key_str("ct__I4239__monovariate_polynomial")
 
         # metaclass itself is not an instance of metaclass

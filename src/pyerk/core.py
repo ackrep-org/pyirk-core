@@ -433,7 +433,7 @@ class Entity(abc.ABC):
         return rledg
 
     def get_relations(
-        self, key_str_or_uri: Optional[str] = None, return_subj: bool = False
+        self, key_str_or_uri: Optional[str] = None, return_subj: bool = False, return_obj: bool = False
     ) -> Union[Dict[str, list], list]:
         """
         Return all RelationEdge instance where this item is subject
@@ -447,17 +447,19 @@ class Entity(abc.ABC):
         """
 
         rel_dict = ds.relation_edges[self.uri]
-        return self._return_relations(rel_dict, key_str_or_uri, return_subj)
+        return self._return_relations(rel_dict, key_str_or_uri, return_subj, return_obj)
 
     def get_inv_relations(
-        self, key_str_or_uri: Optional[str] = None, return_subj: bool = False
+        self, key_str_or_uri: Optional[str] = None, return_subj: bool = False, return_obj: bool = False
     ) -> Union[Dict[str, list], list]:
         """
         Return all RelationEdge instance where this item is object
 
         :param key_str_or_uri:      optional; either a verbose key_str (of a builtin entity) or a full uri;
                                     if passed only return the result for this key
-        :param return_subj:         default False; if True only return the subject(s) of the relation edges,
+        :param return_subj:         default False; if True only return the subject(s) of the relation edge(s),
+                                    not the whole RE
+        :param return_obj:          default False; if True only return the object(s) of the relation edge(s),
                                     not the whole RE
 
         :return:            either the whole dict or just one value (of type list)
@@ -465,20 +467,23 @@ class Entity(abc.ABC):
 
         inv_rel_dict = ds.inv_relation_edges[self.uri]
 
-        return self._return_relations(inv_rel_dict, key_str_or_uri, return_subj)
+        return self._return_relations(inv_rel_dict, key_str_or_uri, return_subj, return_obj)
 
     @staticmethod
     def _return_relations(
         base_dict,
         key_str_or_uri: str,
-        return_subj: bool,
+        return_subj: bool = False,
+        return_obj: bool = False,
     ) -> Union[Dict[str, list], list]:
         """
 
         :param base_dict:           either ds.relation_edges or ds.inv_relation_edges
         :param key_str_or_uri:      optional; either a verbose key_str (of a builtin entity) or a full uri;
                                     if passed only return the result for this key
-        :param return_subj:         default False; if True only return the subject(s) of the relation edges,
+        :param return_subj:         default False; if True only return the subject(s) of the relation edge(s),
+                                    not the whole RE
+        :param return_obj:          default False; if True only return the object(s) of the relation edge(s),
                                     not the whole RE
         :return:
         """
@@ -503,6 +508,15 @@ class Entity(abc.ABC):
             else:
                 assert isinstance(rledg_res, RelationEdge)
                 res = rledg_res.subject
+        elif return_obj:
+            # do not return the RelationEdge instance(s) but only the object(s)
+            if isinstance(rledg_res, list):
+                rledg_res: List[RelationEdge]
+                res = [re.object for re in rledg_res]
+            else:
+                assert isinstance(rledg_res, RelationEdge)
+                res = rledg_res.object
+
         else:
             res = rledg_res
         return res
@@ -564,6 +578,9 @@ class DataStore:
 
         # dict like {uri1: <mod1>, ...}
         self.uri_mod_dict = {}
+
+        # this list serves to keep track of nested scopes
+        self.scope_stack = []
 
     def get_entity_by_key_str(self, key_str, mod_uri=None) -> Entity:
         """
@@ -716,6 +733,31 @@ class DataStore:
             new_query = query
 
         return new_query
+
+    def append_scope(self, scope):
+        """
+        Called when __enter__-ing a scoping context manager
+        """
+        self.scope_stack.append(scope)
+
+    def remove_scope(self, scope):
+        """
+        Called when __exit__-ing a scoping context manager
+        """
+
+        current_scope = self.get_current_scope()
+        if current_scope != scope:
+            msg = "Refuse to remove scope which is not the topmost on the stack (i.e. the last in the list)"
+            raise PyERKError(msg)
+
+        self.scope_stack.pop()
+
+    def get_current_scope(self):
+        try:
+            return self.scope_stack[-1]
+        except IndexError:
+            msg = "unexepectedly found the scope stack empty"
+            raise PyERKError(msg)
 
 
 ds = DataStore()
@@ -1204,6 +1246,8 @@ class RelationEdge:
         self.rsk = relation.short_key  # to conviniently access this attribute in visualization
         self.relation_tuple = relation_tuple
         self.subject = relation_tuple[0]
+        self.predicate = relation_tuple[1]
+        self.object = relation_tuple[2]
         self.role = role
         self.scope = scope
         self.corresponding_entity = corresponding_entity

@@ -34,7 +34,7 @@ Pyerk originated and is currently (2022) mainly developed with focus on represen
 │  ├── manage.py
 │  └── ...
 │
-├── erk-data/                       ← directory that contains erk-knowledge packages
+├── erk-data/                       ← directory that contains erk-knowledge packages (for actual usage)
 │  ├── ocse/                        ← a knowledge package (ontology of control systems engineering)
 │  │  ├── .git/
 │  │  ├── README.md
@@ -44,12 +44,59 @@ Pyerk originated and is currently (2022) mainly developed with focus on represen
 │  ├── xyz123/                      ← another knowledge package
 │  │  └── ...
 │  └── ...
+├── erk-data-for-unittests/         ← directory that contains erk-knowledge packages
+│  └── ...                            (unittest version, probably older and different from
+│                                      production data.)
 └──...
 ```
 
 # Documentation
 
 There is not yet "real" documentation available. However, to get an overview of the most importent features you might want to have a look at the source code, especially at the files [builtin_entities.py](/src/pyerk/builtin_entities.py) and the [test_core.py](tests/test_core.py).
+
+
+Nevertheless, some topics are explained here until there is some more comprehensive documentation.
+
+## Visualization
+
+Currently there is some basic visualization support via the command line. To visualize your a module (including its relations to the builtin_entities) you can use a command like
+
+```
+pyerk -rwd --load-mod demo-module.py demo -vis __all__
+```
+
+## Interactive Usage
+
+To open an IPython shell with a loaded module run e.g.
+
+```
+pyerk -i -rwd -l control_theory1.py ct
+```
+
+Then, you have `ct` as variable in your namespace and can e.g. run `print(ct.I5167.R1`).
+
+(The above command assumes that the file `control_theory1.py` is in your current working directory.)
+
+## Multilinguality
+
+Pyerk aims to support an arbitrary number of languages by so called *language specified strings*. Currently support for English and German is preconfigured in `pyerk.settings`. These language specified strings are instances of the class `rdflib.Literal` where the `.language`-attribute is set to one of the values from `pyerk.setting.SUPPORTED_LANGUAGES` and can be created like:
+
+```python
+from pyerk import de, en
+
+# ...
+
+lss1 = "some english words"@en
+lss2 = "ein paar deutsche Wörter"@de
+```
+
+where `en, de` are instances of `pyerk.core.LangaguageCode`.
+
+The usage inside pyerk is best demonstrated by the unittest `test_c02__multilingual_relations`, see [test_core.py](tests/test_core.py).
+
+
+
+
 
 # Coding style
 

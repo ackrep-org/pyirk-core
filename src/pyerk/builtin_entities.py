@@ -190,7 +190,8 @@ R21 = create_builtin_relation(
     R2="specifies that the subject of that relation is a scope-item of the object (statement-item)",
     R18=(
         "This relation is used to bind scope items to its 'semantic parents'. "
-        "This is *not* the inverse relation to R20"
+        "This is *not* the inverse relation to R20. "
+        "This is not to be confused with R45__has_subscope."
     ),
     R22__is_functional=True,
 )
@@ -441,11 +442,12 @@ class ScopingCM:
         implicitly called in the head of the with statemet
         :return:
         """
+        ds.append_scope(self.scope)
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         # this is the place to handle exceptions
-        pass
+        ds.remove_scope(self.scope)
 
     def __getattr__(self, name: str):
         """
@@ -549,6 +551,24 @@ class _proposition__CM (ScopingCM):
 
         eq = new_equation(lhs, rhs, scope=self.scope)
         return eq
+
+    # TODO: this makes  self.new_equation obsolete, doesnt it?
+    def new_math_relation(self, lhs: Item, rsgn: str, rhs: Item) -> Item:
+        """
+        convenience method to create a math_relation-related StatementObject (aka "RelationEdge")
+
+        :param lhs:   left hand side
+        :param rsgn:  relation sign
+        :param rhs:   rght hand sign
+
+        :return:      new instance of
+        """
+
+        # prevent accidental identity of both sides of the equation
+        assert lhs is not rhs
+
+        rel = new_mathematical_relation(lhs, rsgn, rhs, scope=self.scope)
+        return rel
 
 
 def _proposition__scope(self: Item, scope_name: str):
@@ -855,7 +875,7 @@ R31 = create_builtin_relation(
 def new_equation(lhs: Item, rhs: Item, doc=None, scope: Optional[Item] = None) -> Item:
     """common speacial case of mathematical relation, also ensures backwards compatibility"""
 
-    eq = new_mathematical_relation(lhs, "=", rhs, doc, scope)
+    eq = new_mathematical_relation(lhs, "==", rhs, doc, scope)
 
     return eq
 
@@ -863,11 +883,12 @@ def new_equation(lhs: Item, rhs: Item, doc=None, scope: Optional[Item] = None) -
 def new_mathematical_relation(lhs: Item, rsgn: str, rhs: Item, doc=None, scope: Optional[Item] = None) -> Item:
 
     rsgn_dict = {
-        "=": I23["equation"],
+        "==": I23["equation"],
         "<": I29["less-than-relation"],
         ">": I28["greater-than-relation"],
         "<=": I31["less-or-equal-than-relation"],
         ">=": I30["greater-or-equal-than-relation"],
+        "!=": I26["strict inequality"],
     }
     if doc is not None:
         assert isinstance(doc, str)
@@ -1028,11 +1049,17 @@ R36 = create_builtin_relation(
     R8__has_domain_of_argument_1=I32["evaluated mapping"],
     R9__has_domain_of_argument_2=I33["tuple"],
     R18__has_usage_hint=(
-        "Example: if subj = P(A) then we have: subj.R4__is_instance_of = I32; subj.R35 = P; subj.R36 = A"
+        "Example: if subj = P(A) then we have: subj.R4__is_instance_of -> I32__evaluated_mapping; ",
+        "subj.R35__is_applied_mapping_of -> P; ",
+        "subj.R36__has_argument_tuple -> A"
     ),
     R22__is_functional=True,
 )
 
+
+# TODO: it would be more convenient to have the inverse relation because this could be stated when creating
+# the definition; In contrast, the current R37 has to be stated after the creation of both entities
+# also this relation should be 1:1
 R37 = create_builtin_relation(
     key_str="R37",
     R1__has_label="has definition",
@@ -1149,7 +1176,7 @@ def uq_instance_of(type_entity: Item, r1: str = None, r2: str = None) -> Item:
 
     if r1 is None:
         try:
-            r1 = p.core.get_key_str_by_inspection(upcount=1)
+            r1 = core.get_key_str_by_inspection(upcount=1)
         # TODO: make this except clause more specific
         except:
             # note this fallback naming can be avoided by explicitly passing r1=...  as kwarg
@@ -1158,6 +1185,74 @@ def uq_instance_of(type_entity: Item, r1: str = None, r2: str = None) -> Item:
     instance = instance_of(type_entity, r1, r2)
     instance.set_relation(R44["is universally quantified"], True)
     return instance
+
+
+R45 = create_builtin_relation(
+    key_str="R45",
+    R1__has_label="is subscope of",
+    R2__has_description=(
+        "..."
+    ),
+    R8__has_domain_of_argument_1=I16["scope"],
+    R11__has_range_of_result=I16["scope"],
+    R18__has_usage_hint="used to specify that the subject (a scope instance is a subscope of another scope instance",
+    R22__is_functional=True,
+)
+
+
+class ImplicationStatement:
+    """
+    Context manager to model conditional statements.
+
+    Example from erk:/math/0.2#I7169["definition of identity matrix"]
+
+    ```
+    with p.ImplicationStatement() as imp1:
+        imp1.antecedent_relation(lhs=cm.i, rsgn="!=", rhs=cm.j)
+        imp1.consequent_relation(lhs=M_ij, rhs=I5000["scalar zero"])
+    ```
+
+    """
+
+    def __init__(self):
+
+        parent_scope = ds.get_current_scope()
+
+        scope_name_a = f"imp_stmt_antcdt in {parent_scope}"
+        scope_name_c = f"imp_stmt_cnsqt in {parent_scope}"
+
+        r2a = f"antecedent scope of implication statement in {parent_scope}"
+        r2c = f"consequent scope of implication statement in {parent_scope}"
+
+        self.antecedent_scope = instance_of(I16["scope"], r1=scope_name_a, r2=r2a)
+        self.antecedent_scope.set_relation(R45["is subscope of"], parent_scope)
+
+        self.consequent_scope = instance_of(I16["scope"], r1=scope_name_c, r2=r2c)
+        self.consequent_scope.set_relation(R45["is subscope of"], parent_scope)
+
+    def __enter__(self):
+        """
+        implicitly called in the head of the with-statemet
+        """
+
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        # this is the place to handle exceptions
+        pass
+
+    def antecedent_relation(self, **kwargs):
+        assert "scope" not in kwargs
+        kwargs.update(scope=self.antecedent_scope)
+        rel = new_mathematical_relation(**kwargs)
+        return rel
+
+    def consequent_relation(self, **kwargs):
+        assert "scope" not in kwargs
+        kwargs.update(scope=self.consequent_scope)
+        rel = new_mathematical_relation(**kwargs)
+        return rel
+
 
 # testing
 
@@ -1214,7 +1309,7 @@ I000._ignore_mismatching_adhoc_label = True
 R000._ignore_mismatching_adhoc_label = True
 
 
-# TODO: evaluate the necessity of this class
+# TODO: evaluate the necessity of this class (especially in face of IntegerRangeElement (ocse.ma))
 class Sequence:
     r"""
     Models a sequence like y, `\dot y, ..., y^(k)`

@@ -31,13 +31,14 @@ jobs: # A basic unit of work in a run
           name: Load ERK Modules
           command: |
             echo Cloning erk-data
-            cd ../
-            mkdir erk-data
-            cd erk-data
-            git clone https://github.com/ackrep-org/erk-data-control-theory.git
-            mv erk-data-control-theory control-theory
-            cd control-theory
-            git checkout develop
+            cd ..
+            mkdir erk-data-for-unittests
+            cd erk-data-for-unittests
+            git clone https://github.com/ackrep-org/ocse.git erk-ocse
+            cd erk-ocse
+            git checkout for-unittests
+            cd ..
+            ls -R
       - run:
           name: Load Test Data
           command: |

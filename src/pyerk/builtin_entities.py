@@ -258,6 +258,7 @@ I11 = create_builtin_item(
     ),
 )
 
+# TODO: clearify the difference between the I12 and I18
 I12 = create_builtin_item(
     key_str="I12",
     R1__has_label="mathematical object",
@@ -424,7 +425,7 @@ def add_scope_to_defining_relation_edge(ent: Entity, scope: Item) -> None:
     re.scope = scope
 
 
-class _proposition__CM:
+class ScopingCM:
     """
     Context manager to for creating ("atomic") statements in the scope of other (bigger statements).
     E.g. establishing a relationship between two items as part of the assertions of a theorem-item
@@ -445,6 +446,20 @@ class _proposition__CM:
     def __exit__(self, exc_type, exc_val, exc_tb):
         # this is the place to handle exceptions
         pass
+
+    def __getattr__(self, name: str):
+        """
+        This function allows to use `cm.<local variable> instead of I2345.<local variable> where I2345 is the
+        parent object of the scope.
+
+        :param name:
+        :return:
+        """
+
+        if name in self.__dict__:
+            return self.dict__[name]
+
+        return getattr(self.item, name)
 
     def new_var(self, **kwargs) -> Entity:
         """
@@ -485,10 +500,40 @@ class _proposition__CM:
 
         return variable_object
 
-    def new_rel(self, sub, pred, obj) -> None:
+    # TODO: add qualifiers
+    def new_rel(self, sub, pred, obj) -> RelationEdge:
         assert isinstance(sub, Entity)
         assert isinstance(pred, Relation)
-        sub.set_relation(pred, obj, scope=self.scope)
+        return sub.set_relation(pred, obj, scope=self.scope)
+
+    @classmethod
+    def create_scopingcm_factory(cls):
+
+        def scopingcm_factory(self: Item, scope_name: str) -> ScopingCM:
+            """
+            This function will be used as a method for Items which can create a scoping context manager.
+            It will return a `cls`-instance, where `cls` is either `ScopingCM` or a subclass of it.
+            For details see examples
+
+            :param self:        Item; the item to which the scope should be associated
+            :param scope_name:  str; the name of the scope
+
+            :return:            an instance of ScopingCM
+            """
+            namespace, scope = self._register_scope(scope_name)
+
+            cm = cls(itm=self, namespace=namespace, scope=scope)
+
+            return cm
+
+        # return that function object
+        return scopingcm_factory
+
+
+class _proposition__CM (ScopingCM):
+    """
+    Context manager taylored for mathematical theorems and definitions
+    """
 
     def new_equation(self, lhs: Item, rhs: Item) -> Item:
         """
@@ -504,20 +549,6 @@ class _proposition__CM:
 
         eq = new_equation(lhs, rhs, scope=self.scope)
         return eq
-
-    def __getattr__(self, name: str):
-        """
-        This function allows to use `cm.<local variable> instead of I2345.<local variable> where I2345 is the
-        parent object of the scope.
-
-        :param name:
-        :return:
-        """
-
-        if name in self.__dict__:
-            return self.dict__[name]
-
-        return getattr(self.item, name)
 
 
 def _proposition__scope(self: Item, scope_name: str):
@@ -1092,37 +1123,73 @@ I41 = create_builtin_item(
 
 I41["semantic rule"].add_method(_proposition__scope, name="scope")
 
+R44 = create_builtin_relation(
+    key_str="R44",
+    R1__has_label="is universally quantified",
+    R2__has_description=(
+        "specifies that the subject represents an universally quantified variable (usually denoted by '∀')"
+    ),
+    R8__has_domain_of_argument_1=I1["general item"],
+    R11__has_range_of_result=bool,
+    R18__has_usage_hint="used to specify the free variables in theorems and similar statements",
+)
+
+
+def uq_instance_of(type_entity: Item, r1: str = None, r2: str = None) -> Item:
+    """
+    Shortcut to create an instance and set the relation R1145["is universally quantified"] to True in one step
+    to allow compact notation.
+
+    :param type_entity:     the type of which an instance is created
+    :param r1:              the label (tried to extract from calling context)
+    :param r2:              optional description
+
+    :return:                new item
+    """
+
+    if r1 is None:
+        try:
+            r1 = p.core.get_key_str_by_inspection(upcount=1)
+        # TODO: make this except clause more specific
+        except:
+            # note this fallback naming can be avoided by explicitly passing r1=...  as kwarg
+            r1 = f"{type_entity.R1} – instance"
+
+    instance = instance_of(type_entity, r1, r2)
+    instance.set_relation(R44["is universally quantified"], True)
+    return instance
+
 # testing
 
 
 # ######################################################################################################################
 # Testing and debugging entities
 
-I041 = create_builtin_item(
-    key_str="I041",
-    R1__has_label="subproperty rule 1",
-    R2__has_description=(
-        # "specifies the 'transitivity' of I11_mathematical_property-instances via R17_issubproperty_of"
-        "specifies the 'transitivity' of R17_issubproperty_of"
-    ),
-    R4__is_instance_of=I41["semantic rule"],
-)
-
-
-with I041["subproperty rule 1"].scope("context") as cm:
-
-    cm.new_var(P1=instance_of(I11["mathematical property"]))
-    cm.new_var(P2=instance_of(I11["mathematical property"]))
-    cm.new_var(P3=instance_of(I11["mathematical property"]))
-#     # A = cm.new_var(sys=instance_of(I1["general item"]))
+# I041 = create_builtin_item(
+#     key_str="I041",
+#     R1__has_label="subproperty rule 1",
+#     R2__has_description=(
+#         # "specifies the 'transitivity' of I11_mathematical_property-instances via R17_issubproperty_of"
+#         "specifies the 'transitivity' of R17_issubproperty_of"
+#     ),
+#     R4__is_instance_of=I41["semantic rule"],
+# )
 #
-with I041["subproperty rule 1"].scope("premises") as cm:
-    cm.new_rel(cm.P2, R17["is subproperty of"], cm.P1)
-    cm.new_rel(cm.P3, R17["is subproperty of"], cm.P2)
-    # todo: state that all variables are different from each other
-
-with I041["subproperty rule 1"].scope("assertions") as cm:
-    cm.new_rel(cm.P3, R17["is subproperty of"], cm.P1)
+#
+# with I041["subproperty rule 1"].scope("context") as cm:
+#
+#     cm.new_var(P1=instance_of(I11["mathematical property"]))
+#     cm.new_var(P2=instance_of(I11["mathematical property"]))
+#     cm.new_var(P3=instance_of(I11["mathematical property"]))
+# #     # A = cm.new_var(sys=instance_of(I1["general item"]))
+# #
+# with I041["subproperty rule 1"].scope("premises") as cm:
+#     cm.new_rel(cm.P2, R17["is subproperty of"], cm.P1)
+#     cm.new_rel(cm.P3, R17["is subproperty of"], cm.P2)
+#     # todo: state that all variables are different from each other
+#
+# with I041["subproperty rule 1"].scope("assertions") as cm:
+#     cm.new_rel(cm.P3, R17["is subproperty of"], cm.P1)
 
 # noinspection PyUnresolvedReferences
 I900.set_relation(R1["has label"], "test item with english label" @ en)

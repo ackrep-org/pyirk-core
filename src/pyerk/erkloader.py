@@ -1,6 +1,7 @@
 import importlib.util
 import sys
 import os
+import inspect
 import pyerk
 
 from ipydex import IPS, activate_ips_on_exception
@@ -11,13 +12,15 @@ ModuleType = type(sys)
 
 
 # noinspection PyProtectedMember
-def load_mod_from_path(modpath: str, prefix: str, modname=None, allow_reload=True) -> ModuleType:
+def load_mod_from_path(modpath: str, prefix: str, modname=None, allow_reload=True, smart_relative=True) -> ModuleType:
     """
 
     :param modpath:         file system path for the module to be loaded
     :param prefix:          prefix which can be used to replace the URI for convenice
     :param modname:
-    :param allow_reload:    flag; if false, an error is raised if the module was already loades
+    :param allow_reload:    flag; if False, an error is raised if the module was already loades
+    :param smart_relative:  flag; if True, relative paths are interpreted w.r.t. the calling module
+                            (not w.r.t. current working path)
     :return:
     """
     if modname is None:
@@ -28,7 +31,14 @@ def load_mod_from_path(modpath: str, prefix: str, modname=None, allow_reload=Tru
             msg = "`modpath` is unexpected. In such situations an explicit modname is mandatory."
             raise NotImplementedError(msg)
 
-    modpath = os.path.abspath(modpath)
+    if smart_relative and not os.path.isabs(modpath):
+        # the path is relative and should be interpreted w.r.t. the calling module
+        caller_dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe().f_back)))
+        modpath = os.path.join(caller_dir, modpath)
+    else:
+        # the path is either absolute or should be interpreted w.r.t. current working directory
+        modpath = os.path.abspath(modpath)
+
     old_mod_uri = pyerk.ds.mod_path_mapping.b.get(modpath)
 
     if old_mod_uri:

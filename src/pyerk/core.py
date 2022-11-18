@@ -113,7 +113,12 @@ class Entity(abc.ABC):
 
         # check if the used label matches the description
         assert isinstance(adhoc_label, str)
-        if adhoc_label != self.R1 and not getattr(self, "_ignore_mismatching_adhoc_label", False):
+
+        if getattr(self, "_ignore_mismatching_adhoc_label", False):
+            # we do not need to test the adhoc label
+            return self
+
+        if adhoc_label != self.R1:
             msg = f"got mismatiching label for Entity {self}: '{adhoc_label}'"
             raise ValueError(msg)
 
@@ -374,7 +379,10 @@ class Entity(abc.ABC):
             corresponding_literal = None
         else:
             corresponding_entity = None
-            corresponding_literal = repr(rel_content)
+
+            if not isinstance(rel_content, (str, int, float, complex)):
+                rel_content = repr(rel_content)
+            corresponding_literal = rel_content
 
         if qualifiers is None:
             qualifiers = []
@@ -517,7 +525,7 @@ class DataStore:
         # mappings like .a = {"my/mod/uri": "/path/to/mod.py"} and .b = {"/path/to/mod.py": "my/mod/uri"}
         self.mod_path_mapping = aux.OneToOneMapping()
 
-        # for every entity key store a dict that maps relation uris to lists of corresponding relation-edges
+        # for every entity uri store a dict that maps relation uris to lists of corresponding relation-edges
         self.relation_edges = defaultdict(dict)
 
         # also do this for the inverse relations (for easy querying)
@@ -573,7 +581,7 @@ class DataStore:
         else:
             uri = aux.make_uri(mod_uri, processed_key.short_key)
 
-        res = self.get_entity_by_uri(uri, processed_key.etype)
+        res = self.get_entity_by_uri(uri, processed_key.etype, strict=False)
         if res is None:
             mod_uri = get_active_mod_uri(strict=False)
             msg = (
@@ -584,7 +592,7 @@ class DataStore:
 
         return res
 
-    def get_entity_by_uri(self, uri: str, etype=None) -> Union[Entity, None]:
+    def get_entity_by_uri(self, uri: str, etype=None, strict=True) -> Union[Entity, None]:
 
         if etype is not None:
             # only one lookup is needed
@@ -598,6 +606,10 @@ class DataStore:
             if res is None:
                 # try relation (might also be None)
                 res = self.relations.get(uri)
+
+        if strict and res is None:
+            msg = f"No entity found for URI {uri}."
+            raise aux.UnknownURIError(msg)
 
         return res
 
@@ -852,7 +864,7 @@ def _resolve_prefix(pr_key: ProcessedStmtKey) -> None:
 
             # 1. check active mod
             candidate_uri = aux.make_uri(mod_uri, pr_key.short_key)
-            res_entity = ds.get_entity_by_uri(candidate_uri)
+            res_entity = ds.get_entity_by_uri(candidate_uri, strict=False)
 
             if res_entity is not None:
                 pr_key.uri = candidate_uri
@@ -860,7 +872,7 @@ def _resolve_prefix(pr_key: ProcessedStmtKey) -> None:
 
             # try builtin_entities as fallback
             candidate_uri = aux.make_uri(settings.BUILTINS_URI, pr_key.short_key)
-            res_entity = ds.get_entity_by_uri(candidate_uri)
+            res_entity = ds.get_entity_by_uri(candidate_uri, strict=False)
 
             # if res_entity is still None no entity could be found
             if res_entity is not None:
@@ -1033,11 +1045,18 @@ class KeyManager:
     # TODO: the term "maxval" is misleading because it will be used in range where the upper bound is exclusive
     # however, using range(minval, maxval+1) would results in different shuffling and thus will probably need some
     # refactoring of existing modules
-    def __init__(self, minval=1000, maxval=9999):
+    def __init__(self, minval=1000, maxval=9999, keyseed=None):
+        """
+
+        :param minval:  int
+        :param maxval:  int
+        :param keyseed: int; This allows a module to create its own random key order
+        """
 
         self.instance = self
         self.minval = minval
         self.maxval = maxval
+        self.keyseed = keyseed
 
         self.key_reservoir = None
 
@@ -1055,13 +1074,19 @@ class KeyManager:
 
         This function is also called after unloading a module because the respective keys are "free" again
 
+        Rationale behind random keys: During creation of knowledge bases it frees the mind of thinking too much
+        about a meaningful order in which to create entities.
+
         :return:    list of integers
         """
 
         assert self.key_reservoir is None
 
         # passing seed (arg `x`) ensures "reproducible randomness" accross runs
-        random_ng = random.Random(x=1750)
+        if not self.keyseed:
+            # use hardcoded fallback
+            self.keyseed = 1750
+        random_ng = random.Random(x=self.keyseed)
         self.key_reservoir = list(range(self.minval, self.maxval))
         random_ng.shuffle(self.key_reservoir)
 
@@ -1234,11 +1259,15 @@ class RelationEdge:
             self.qualifiers.append(qf_rledg)
 
             # save the qualifyer-relation edge (and its inverse) in the appropriate data structures
-            # _xx!! -> uri
+
+            # this is the RelationEdge from the original RE instance to the object (thus role=SUBJECT)
             ds.set_relation_edge(re_object=qf_rledg)
+
+            # we might also need dual edge
             if isinstance(qf.obj, Entity):
                 # add inverse relation
-                ds.inv_relation_edges[qf.obj.uri][qf.rel.uri].append(qf_rledg.create_dual())
+                dual_rledg = qf_rledg.create_dual()
+                ds.inv_relation_edges[qf.obj.uri][qf.rel.uri].append(dual_rledg)
 
     def create_dual(self):
         if self.role == RelationRole.SUBJECT:
@@ -1413,24 +1442,31 @@ def generate_new_key(prefix, prefix2="", mod_uri=None):
             uri = aux.make_uri(mod_uri, key)
             try:
                 ds.get_entity_by_uri(uri)
-            except KeyError:
+            except aux.UnknownURIError:
                 # the key was new -> no problem
                 return key
             else:
                 continue
 
 
-def print_new_keys(n=30):
+def print_new_keys(n=30, loaded_mod=None):
     """
     print n random integer keys from the pregenerated list.
 
     :return:
     """
 
+    if loaded_mod:
+        # this ensures that the new keys are created wrt the loaded module (see also: script.py)
+        mod_uri = loaded_mod.__URI__
+    else:
+        mod_uri = None
+    if n > 0:
+        print(aux.bcyan("supposed keys:    "))
     for i in range(n):
-        k = generate_new_key("I")[1:]
+        k = generate_new_key("I", mod_uri=mod_uri)[1:]
 
-        print(f"supposed key:    I{k}      R{k}")
+        print(f"I{k}      R{k}")
 
 
 def get_caller_frame(upcount: int) -> types.FrameType:

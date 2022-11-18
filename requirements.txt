@@ -8,3 +8,5 @@ addict
 networkx
 nxv
 rdflib
+jinja2
+

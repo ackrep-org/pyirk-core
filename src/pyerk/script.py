@@ -5,6 +5,7 @@ import os
 import argparse
 from . import core, erkloader, rdfstack
 from . import visualization
+from . import reportgenerator
 from . import auxiliary as aux
 from . import settings
 
@@ -27,8 +28,19 @@ def main():
 
     parser.add_argument(
         "--load-mod",
-        help=f"load module",
+        help=f"load module from path with prefix. You might want to provide the `-rwd` flag",
+        nargs=2,
         default=None,
+    )
+
+    # background: by default erk-module paths are specified wrt the path of the pyerk.core python module
+    # (and thus not wrt the current working dir)
+    parser.add_argument(
+        "-rwd",
+        "--relative-to-workdir",
+        help=f"specifies that the module path is interpreted relative to working dir (not the modules install path)",
+        default=False,
+        action="store_true",
     )
 
     parser.add_argument(
@@ -36,6 +48,21 @@ def main():
         help=f"number of keys",
         type=int,
         default=30,
+    )
+
+    parser.add_argument(
+        "-pad",
+        "--parse-ackrep-data",
+        help="parse ackrep data repository, create items and relations. specify path to ackrep_data base dir \
+            (.../ackrep_data)",
+        metavar="path",
+    )
+
+    parser.add_argument(
+        "-grp",
+        "--generate-report",
+        help="generate report for entity",
+        metavar="uri",
     )
 
     parser.add_argument(
@@ -54,16 +81,34 @@ def main():
         exit()
 
     if args.load_mod is not None:
-        process_mod(path=args.load_mod)
 
-    # typical call: pyerk --new-key --load-mod ../erk-data/control-theory/control_theory1.py --nk 100
+        rtwd = args.relative_to_workdir
+        path, prefix = args.load_mod
+        loaded_mod = process_mod(path=path, prefix=prefix, relative_to_workdir=rtwd)
+    else:
+        loaded_mod = None
+
+    # typical calls to generate new keys:
+
+    # with path relative to the module (not current working dir)
+    # pyerk --load-mod ../../../erk-data/ocse/control_theory1.py ocse --new-keys --nk 100
+
+    # with true relative path
+    # pyerk --new-keys 30 --load-mod ../knowledge-base/rules/rules1.py rl -rwd
     if args.new_keys:
         if not args.load_mod:
             print(aux.byellow("No module loaded. There might be key clashes. Use `--load-mod` to prevent this."))
-        core.print_new_keys(args.nk)
+        core.print_new_keys(args.nk, loaded_mod)
 
     elif args.inputfile is not None:
         core.script_main(args.inputfile)
+    elif args.generate_report:
+        reportgenerator.generate_report()
+    elif args.parse_ackrep_data:
+
+        # TODO @Julius
+        raise NotImplementedError("This functionality was removed")
+        # ackrep_parser.load_ackrep_entities(args.parse_ackrep_data)
     elif key := args.visualize:
 
         if key == "__all__":
@@ -80,17 +125,19 @@ def main():
         print("nothing to do, see option `--help` for more info")
 
 
-def process_mod(path):
-    # TODO: read prefix from the command line
-    mod1 = erkloader.load_mod_from_path(path, prefix="ocse")
+def process_mod(path: str, prefix: str, relative_to_workdir: bool = False) -> erkloader.ModuleType:
+
+    smart_relative = not relative_to_workdir
+    mod1 = erkloader.load_mod_from_path(path, prefix=prefix, smart_relative=smart_relative)
 
     # perform sanity check
     # rdfstack.check_all_relation_types()
+    return mod1
 
 
 def debug():
     ERK_ROOT_DIR = aux.get_erk_root_dir()
-    TEST_DATA_PATH = os.path.join(ERK_ROOT_DIR, "erk-data", "control-theory", "control_theory1.py")
+    TEST_DATA_PATH = os.path.join(ERK_ROOT_DIR, "erk-data", "ocse", "control_theory1.py")
     mod1 = erkloader.load_mod_from_path(TEST_DATA_PATH, prefix="ct")
     ds = core.ds
     ds.rdfgraph = rdfstack.create_rdf_triples()

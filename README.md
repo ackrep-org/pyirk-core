@@ -95,9 +95,6 @@ where `en, de` are instances of `pyerk.core.LangaguageCode`.
 The usage inside pyerk is best demonstrated by the unittest `test_c02__multilingual_relations`, see [test_core.py](tests/test_core.py).
 
 
-
-
-
 # Coding style
 
 We use `black -l 120 ./` to ensure coding style consistency.

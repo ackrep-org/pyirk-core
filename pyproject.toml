@@ -1,6 +1,8 @@
 [build-system]
 
 # setuptools-scm helps to find package-data which is tracked by git
+# anyway, make sure the following packages are installed
+# pip install build setuptools_scm
 requires = ["setuptools>=45", "setuptools_scm[toml]>=6.2"]
 build-backend = "setuptools.build_meta"
 
@@ -12,14 +14,13 @@ description = "Python based 'Easy Representation of Knowledge' (pyERK)"
 authors=[{name = "Carsten Knoll", email = "firstname.lastname@posteo.de"}]
 readme = "README.md"
 requires-python = ">=3.8"
-license = { file = "LICENSE" }
+license = { text = "GNU General Public License v3 (GPLv3)" }
 
 dynamic = ["dependencies", "version"]
 
 classifiers=[
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
     "Programming Language :: Python :: 3",
 ]
 

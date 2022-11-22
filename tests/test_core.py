@@ -372,20 +372,23 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         tmp1 = itm["test-label in english"]
         self.assertTrue(tmp1 is itm)
 
-        tmp2 = itm["test-label in english"@p.en]
+        tmp2 = itm["test-label auf deutsch"]
+        self.assertTrue(tmp1 is itm)
+
+        tmp3 = itm["test-label in english"@p.en]
         self.assertTrue(tmp2 is itm)
 
-        tmp3 = itm["test-label auf deutsch"@p.de]
+        tmp4 = itm["test-label auf deutsch"@p.de]
         self.assertTrue(tmp3 is itm)
 
         with self.assertRaises(ValueError):
-            tmp4 = itm["wrong label"]
+            tmp5 = itm["wrong label"]
 
         with self.assertRaises(ValueError):
-            tmp4 = itm["wrong label"@p.de]
+            tmp5 = itm["wrong label"@p.de]
 
         with self.assertRaises(ValueError):
-            tmp4 = itm["wrong label"@p.en]
+            tmp5 = itm["wrong label"@p.en]
 
         # change the default language
 

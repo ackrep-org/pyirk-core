@@ -368,6 +368,25 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
 
         self.assertEqual(desc2.language, "de")
 
+        # use the labels of different languages in index-labeld key notation
+        tmp1 = itm["test-label in english"]
+        self.assertTrue(tmp1 is itm)
+
+        tmp2 = itm["test-label in english"@p.en]
+        self.assertTrue(tmp2 is itm)
+
+        tmp3 = itm["test-label auf deutsch"@p.de]
+        self.assertTrue(tmp3 is itm)
+
+        with self.assertRaises(ValueError):
+            tmp4 = itm["wrong label"]
+
+        with self.assertRaises(ValueError):
+            tmp4 = itm["wrong label"@p.de]
+
+        with self.assertRaises(ValueError):
+            tmp4 = itm["wrong label"@p.en]
+
         # change the default language
 
         p.settings.DEFAULT_DATA_LANGUAGE = "de"

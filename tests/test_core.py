@@ -375,14 +375,14 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         self.assertTrue(tmp1 is itm)
 
         tmp2 = itm["test-label auf deutsch"]
-        self.assertTrue(tmp1 is itm)
+        self.assertTrue(tmp2 is itm)
 
         # second: with explicitly specifying the language
         tmp3 = itm["test-label in english"@p.en]
-        self.assertTrue(tmp2 is itm)
+        self.assertTrue(tmp3 is itm)
 
         tmp4 = itm["test-label auf deutsch"@p.de]
-        self.assertTrue(tmp3 is itm)
+        self.assertTrue(tmp4 is itm)
 
         with self.assertRaises(ValueError):
             tmp5 = itm["wrong label"]
@@ -391,7 +391,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
             tmp5 = itm["wrong label"@p.de]
 
         with self.assertRaises(ValueError):
-            tmp5 = itm["wrong label"@p.en]
+            tmp5 = itm["wrong label"@p.en]  # noqa
 
         # change the default language
 
@@ -410,7 +410,6 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         except ValueError:
             print("unexpectedly found more then one object for relation R2 and language de")
             pass
-
 
     def test_evaluated_mapping(self):
 

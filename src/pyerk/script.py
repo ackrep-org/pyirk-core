@@ -19,20 +19,20 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "inputfile",
-        help=f"input file",
+        help="input file",
         nargs="?",
         default=None,
     )
 
-    parser.add_argument("--new-keys", help=f"generate new key", default=None, action="store_true")
+    parser.add_argument("--new-keys", help="generate new key", default=None, action="store_true")
 
     parser.add_argument(
         "-l",
         "--load-mod",
-        help=f"load module from path with prefix. You might want to provide the `-rwd` flag",
+        help="load module from path with prefix. You might want to provide the `-rwd` flag",
         nargs=2,
         default=None,
-        metavar="MOD_PATH",
+        metavar=("MOD_PATH", "PREFIX"),
     )
 
     # background: by default erk-module paths are specified wrt the path of the pyerk.core python module
@@ -40,14 +40,14 @@ def main():
     parser.add_argument(
         "-rwd",
         "--relative-to-workdir",
-        help=f"specifies that the module path is interpreted relative to working dir (not the modules install path)",
+        help="specifies that the module path is interpreted relative to working dir (not the modules install path)",
         default=False,
         action="store_true",
     )
 
     parser.add_argument(
         "--nk",
-        help=f"number of keys",
+        help="number of keys",
         type=int,
         default=30,
     )
@@ -81,7 +81,7 @@ def main():
         action="store_true",
     )
 
-    parser.add_argument("--dbg", help=f"start debug routine", default=None, action="store_true")
+    parser.add_argument("--dbg", help="start debug routine", default=None, action="store_true")
 
     args = parser.parse_args()
 
@@ -152,12 +152,12 @@ def process_mod(path: str, prefix: str, relative_to_workdir: bool = False) -> er
 def debug():
     ERK_ROOT_DIR = aux.get_erk_root_dir()
     TEST_DATA_PATH = os.path.join(ERK_ROOT_DIR, "erk-data", "ocse", "control_theory1.py")
-    mod1 = erkloader.load_mod_from_path(TEST_DATA_PATH, prefix="ct")
+    mod1 = erkloader.load_mod_from_path(TEST_DATA_PATH, prefix="ct")  # noqa
     ds = core.ds
     ds.rdfgraph = rdfstack.create_rdf_triples()
     qsrc = rdfstack.get_sparql_example_query2()
     res = ds.rdfgraph.query(qsrc)
-    z = aux.apply_func_to_table_cells(rdfstack.convert_from_rdf_to_pyerk, res)
+    z = aux.apply_func_to_table_cells(rdfstack.convert_from_rdf_to_pyerk, res)  # noqa
     IPS()
 
 
@@ -165,7 +165,7 @@ def interactive_seesion(loaded_mod, prefix):
     """
     Start an interactive IPython session where the (optinally) loaded mod is available under its prefix name.
     """
-    import pyerk as p
+    import pyerk as p  # noqa
     if loaded_mod is not None and prefix is not None:
         locals()[prefix] = loaded_mod
 

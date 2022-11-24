@@ -81,6 +81,13 @@ def main():
         action="store_true",
     )
 
+    parser.add_argument(
+        "-dj",
+        "--start-django",
+        help="start the django server from the current directory",
+        action="store_true",
+    )
+
     parser.add_argument("--dbg", help="start debug routine", default=None, action="store_true")
 
     args = parser.parse_args()
@@ -135,6 +142,14 @@ def main():
             uri = key
         aux.ensure_valid_uri(uri)
         visualization.visualize_entity(uri, write_tmp_files=True)
+    elif args.start_django:
+        try:
+            import pyerkdjango.core
+        except ImportError:
+            print(aux.bred("Error:"), "the module pyerkdjango seems not to be installed.")
+            # exit(10)
+            raise
+        pyerkdjango.core.start_django()
     else:
         print("nothing to do, see option `--help` for more info")
 

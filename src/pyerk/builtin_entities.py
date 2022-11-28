@@ -999,11 +999,34 @@ def new_tuple(*args, **kwargs) -> Item:
 
 # different number types (complex, real, rational, integer, ...)
 
+
+R46 = create_builtin_relation(
+    key_str="R46",
+    R1__has_label="is secondary subclass of",
+    R2__has_description=(
+        "specifies that the subject is an subclass of a class-item, in addtion to its unambiguous parent class."
+    ),
+    R18__has_usage_hint=(
+        "Note that this relation is not functional. This construction allows to combine single (R3) "
+        "and multiple inheritance."
+    ),
+)
+
+
+I42 = create_builtin_item(
+    key_str="I42",
+    R1__has_label="mathematical type (metaclass)",
+    R2__has_description="base class of mathematical data types",
+    R3__is_subclass_of=I2["Metaclass"],  # because its instances are metaclasses
+)
+
+
 I34 = create_builtin_item(
     key_str="I34",
     R1__has_label="complex number",
     R2__has_description="mathematical type representing all complex numbers",
-    R3__is_subclass_of=I12["mathematical object"],
+    R4__is_instance_of=I42["mathematical type (metaclass)"],
+    R46__is_secondary_subclass_of=I12["mathematical object"],
 )
 
 I35 = create_builtin_item(

@@ -106,7 +106,7 @@ def main():
         prefix = None
 
     if args.interactive_session:
-        interactive_seesion(loaded_mod, prefix)
+        interactive_session(loaded_mod, prefix)
         exit()
 
     # typical calls to generate new keys:
@@ -165,6 +165,11 @@ def process_mod(path: str, prefix: str, relative_to_workdir: bool = False) -> er
 
 
 def debug():
+    """
+    Debug function for development of core and script modules.
+    To interactively examine modules (builtin and others) use `--interactive-session`
+    """
+
     ERK_ROOT_DIR = aux.get_erk_root_dir()
     TEST_DATA_PATH = os.path.join(ERK_ROOT_DIR, "erk-data", "ocse", "control_theory1.py")
     mod1 = erkloader.load_mod_from_path(TEST_DATA_PATH, prefix="ct")  # noqa
@@ -176,7 +181,7 @@ def debug():
     IPS()
 
 
-def interactive_seesion(loaded_mod, prefix):
+def interactive_session(loaded_mod, prefix):
     """
     Start an interactive IPython session where the (optinally) loaded mod is available under its prefix name.
     """

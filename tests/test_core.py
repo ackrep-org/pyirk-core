@@ -40,7 +40,7 @@ TEST_MOD_NAME = "control_theory1"
 
 # useful to get the currently latest sha strings:
 # git log --pretty=oneline | head
-TEST_DATA_REPO_COMMIT_SHA = "77dd57a47b8a2b9263441ed8f25a6c3f8c4d56f5"
+TEST_DATA_REPO_COMMIT_SHA = "1e6c63ae19c4321e2260692616d39f3496a43da7"
 
 # TODO: make this more robust (e.g. search for config file or environment variable)
 # TODO: put link to docs here (directory layout)
@@ -427,7 +427,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
             poly1 = p.instance_of(mod1.I4239["monovariate polynomial"])
 
         # test that an arbitrary item is *not* callable
-        self.assertRaises(TypeError, mod1.I2738["field of complex numnbers"], 0)
+        self.assertRaises(TypeError, mod1.ma.I2738["field of complex numbers"], 0)
 
         # test that some special items are callable (note that its parent class is a subclass of one which has
         # a _custom_call-method defined)
@@ -499,7 +499,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
 
         itm1 = p.ds.get_entity_by_key_str("I2__Metaclass")
-        itm2 = p.ds.get_entity_by_key_str("ma__I4235__mathematical_object")
+        itm2 = p.ds.get_entity_by_key_str("I12__mathematical_object")
         itm3 = p.ds.get_entity_by_key_str("ct__I4239__monovariate_polynomial")
 
         # metaclass could be considered as an instance of itself because metaclasses are allowed to have

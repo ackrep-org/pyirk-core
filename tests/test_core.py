@@ -411,6 +411,12 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
             print("unexpectedly found more then one object for relation R2 and language de")
             pass
 
+    def test_c03__nontrivial_metaclasses(self):
+        with p.uri_context(uri=TEST_BASE_URI):
+            i1 = p.instance_of(p.I34["complex number"])
+
+        self.assertTrue(i1.R4, p.I34)
+
     def test_evaluated_mapping(self):
 
         res = p.ds.relation_edges.get("RE6229")
@@ -496,15 +502,17 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         itm2 = p.ds.get_entity_by_key_str("ma__I4235__mathematical_object")
         itm3 = p.ds.get_entity_by_key_str("ct__I4239__monovariate_polynomial")
 
-        # metaclass itself is not an instance of metaclass
-        self.assertFalse(p.is_instance_of_generalized_metaclass(itm1))
+        # metaclass could be considered as an instance of itself because metaclasses are allowed to have
+        # subclasses and instances (which is both true for I2__metaclass)
+        self.assertTrue(p.allows_instantiation(itm1))
 
-        self.assertTrue(p.is_instance_of_generalized_metaclass(itm2))
-        self.assertTrue(p.is_instance_of_generalized_metaclass(itm3))
+        self.assertTrue(p.allows_instantiation(itm2))
+        self.assertTrue(p.allows_instantiation(itm3))
 
         with p.uri_context(uri=TEST_BASE_URI):
+            # itm3 is a normal class -> itm4 is not allowed to have instances (itm4 is no metaclass-instance)
             itm4 = p.instance_of(itm3)
-        self.assertFalse(p.is_instance_of_generalized_metaclass(itm4))
+        self.assertFalse(p.allows_instantiation(itm4))
 
     def test_qualifiers(self):
         mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")

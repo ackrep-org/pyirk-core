@@ -57,51 +57,30 @@ def allows_instantiation(itm: Item) -> bool:
     :return:        bool
     """
 
-    if itm == I2["Metaclass"]:
-        return True
+    taxtree = get_taxonomy_tree(itm)
 
-    # Note:
-    # parent_class refers to R4__is_instance, super_class refers to R3__is_subclass_of
-    super_class = itm.R3__is_subclass_of
-    parent_class = itm.R4__is_instance_of
+    # This is a list of 2-tuples like the following:
+    # [(None, <Item I4239["monovariate polynomial"]>),
+    #  ('R3', <Item I4237["monovariate rational function"]>),
+    #  ('R3', <Item I4236["mathematical expression"]>),
+    #  ('R3', <Item I4235["mathematical object"]>),
+    #  ('R4', <Item I2["Metaclass"]>),
+    #  ('R3', <Item I1["general item"]>)]
 
-    if (super_class is not None) and (parent_class is not None):
-        msg = f"currently not allowed together: R3__is_subclass_of and R4__is_instnace_of (Entity: {itm}"
-        raise NotImplementedError(msg)
-
-    if is_metaclass(super_class):
-        # in fact, itm is itself a metaclass
-        return True
-
-    if is_metaclass(parent_class):
-        # itm is a direct instance of a metaclass
-        return True
-
-    # now the only True-possibility is that R4 is somewhere in the middle
-
-    return False
-
-
-def is_metaclass(itm: Item):
-    """
-    Decide whether `itm` is either I2__metaclass or a subclass of it.
-    """
-    if itm is None:
+    if len(taxtree) < 2:
         return False
 
-    if itm == I2["Metaclass"]:
-        return True
-
-    super_class = itm.R3__is_subclass_of
-
-    if super_class is None:
+    relation_keys, items = zip(*taxtree)
+    if items[-2] is not I2["Metaclass"]:
         return False
 
-    assert isinstance(super_class, Item)
-    return is_metaclass(super_class)
+    if relation_keys.count("R4") > 1:
+        return False
+
+    return True
 
 
-def get_taxonomy_tree(itm, add_self=True) -> dict:
+def get_taxonomy_tree(itm, add_self=True) -> list:
     """
     Recursively iterate over super and parent classes and
 
@@ -109,7 +88,7 @@ def get_taxonomy_tree(itm, add_self=True) -> dict:
     :raises NotImplementedError: DESCRIPTION
 
 
-    :return:
+    :return:  list of 2-tuples like [(None, I456), ("R3", I123), ("R4", I2)]
     :rtype: dict
 
     """

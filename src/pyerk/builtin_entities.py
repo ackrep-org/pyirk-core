@@ -28,24 +28,114 @@ keymanager = core.KeyManager()
 core.register_mod(__URI__, keymanager)
 
 
-def is_instance_of_generalized_metaclass(entity) -> bool:
+def allows_instantiation(itm: Item) -> bool:
     """
-    Check if `entity` is a metaclass or a subclass of metaclass
+    Check if `itm` is an instance of metaclass or a subclass of it. If true, this entity is considered
+    a class by itself and is thus allowed to have instances and subclasses
 
-    :param entity:
+    Possibilities:
+
+        I2 = itm -> True (by our definition)
+        I2 -R4-> itm -> True (trivial, itm is an ordinary class)
+        I2 -R4-> I100 -R4-> itm -> False (I100 is ordinary class → itm is ordinary instance)
+
+        I2 -R3-> itm -> True (subclasses of I2 are also metaclasses)
+        I2 -R3-> I100 -R4-> itm -> True (I100 is subclass of metaclass → itm is metaclass instance)
+        I2 -R3-> I100 -R3-> I101 -R3-> I102 -R4-> itm -> True (same)
+
+        # multiple times R4: false
+        I2 -R4-> I100 -R3-> I101 -R3-> I102 -R4-> itm -> False
+                                (I100 is ordinary class → itm is ordinary instance of its sub-sub-class)
+        I2 -R3-> I100 -R4-> I101 -R3-> I102 -R4-> itm -> False (same)
+
+        I2 -R3-> I100 -R3-> I101 -R3-> I102 -R4-> itm -> True (same)
+        I2 -R4-> I100 -R3-> I101 -R3-> I102 -R3-> itm -> True (itm is an ordinary sub-sub-sub-subclass)
+        I2 -R3-> I100 -R4-> I101 -R3-> I102 -R3-> itm -> True
+                                (itm is an sub-sub-subclass of I101 which is an instance of a subclass of I2)
+
+    :param itm:     item to test
     :return:        bool
     """
 
-    test_entity = entity
+    if itm == I2["Metaclass"]:
+        return True
 
-    while test_entity is not None:
-        if test_entity.R4__is_instance_of == I2["Metaclass"]:
-            return True
+    # Note:
+    # parent_class refers to R4__is_instance, super_class refers to R3__is_subclass_of
+    super_class = itm.R3__is_subclass_of
+    parent_class = itm.R4__is_instance_of
 
-        test_entity = test_entity.R3__is_subclass_of
+    if (super_class is not None) and (parent_class is not None):
+        msg = f"currently not allowed together: R3__is_subclass_of and R4__is_instnace_of (Entity: {itm}"
+        raise NotImplementedError(msg)
 
-    # the loop was finished
+    if is_metaclass(super_class):
+        # in fact, itm is itself a metaclass
+        return True
+
+    if is_metaclass(parent_class):
+        # itm is a direct instance of a metaclass
+        return True
+
+    # now the only True-possibility is that R4 is somewhere in the middle
+
     return False
+
+
+def is_metaclass(itm: Item):
+    """
+    Decide whether `itm` is either I2__metaclass or a subclass of it.
+    """
+    if itm is None:
+        return False
+
+    if itm == I2["Metaclass"]:
+        return True
+
+    super_class = itm.R3__is_subclass_of
+
+    if super_class is None:
+        return False
+
+    assert isinstance(super_class, Item)
+    return is_metaclass(super_class)
+
+
+def get_taxonomy_tree(itm, add_self=True) -> dict:
+    """
+    Recursively iterate over super and parent classes and
+
+    :param imt: DESCRIPTION
+    :raises NotImplementedError: DESCRIPTION
+
+
+    :return:
+    :rtype: dict
+
+    """
+
+    res = []
+
+    if add_self:
+        res.append((None, itm))
+
+    # Note:
+    # parent_class refers to R4__is_instance, super_class refers to R3__is_subclass_of
+    super_class = itm.R3__is_subclass_of
+    parent_class = itm.R4__is_instance_of
+
+    if (super_class is not None) and (parent_class is not None):
+        msg = f"currently not allowed together: R3__is_subclass_of and R4__is_instnace_of (Entity: {itm}"
+        raise NotImplementedError(msg)
+
+    if super_class:
+        res.append(("R3", super_class))
+        res.extend(get_taxonomy_tree(super_class, add_self=False))
+    elif parent_class:
+        res.append(("R4", parent_class))
+        res.extend(get_taxonomy_tree(parent_class, add_self=False))
+
+    return res
 
 
 def instance_of(entity, r1: str = None, r2: str = None) -> Item:
@@ -61,9 +151,9 @@ def instance_of(entity, r1: str = None, r2: str = None) -> Item:
 
     has_super_class = entity.R3 is not None
 
-    # we have to determine if `entity` is a metaclass or a subclass of metaclass
+    # we have to determine if `entity` is an instnace of I2_metaclass or a subclass of it
 
-    is_instance_of_metaclass = is_instance_of_generalized_metaclass(entity)
+    is_instance_of_metaclass = allows_instantiation(entity)
 
     if (not has_super_class) and (not is_instance_of_metaclass):
         msg = f"the entity '{entity}' is not a class, and thus could not be instantiated"

@@ -14,6 +14,7 @@ from .core import (
     de,
     en,
     QualifierFactory,
+    RawQualifier,
     ds,
 )
 
@@ -571,11 +572,26 @@ class ScopingCM:
 
         return variable_object
 
-    # TODO: add qualifiers
-    def new_rel(self, sub, pred, obj) -> RelationEdge:
+    def new_rel(self, sub: Entity, pred: Relation, obj: Entity, qualifiers=None) -> RelationEdge:
+        """
+        Create a new statement ("relation edge") in the current scope
+
+        :param sub:         subject
+        :param pred:        predicate (Relation-Instance)
+        :param obj:         object
+        :param qualifiers:  List of RawQualifiers
+
+        :return: statement (relation edge)
+
+        """
+
         assert isinstance(sub, Entity)
         assert isinstance(pred, Relation)
-        return sub.set_relation(pred, obj, scope=self.scope)
+        if isinstance(qualifiers, RawQualifier):
+            qualifiers = [qualifiers]
+        assert isinstance(qualifiers, (type(None), list))
+
+        return sub.set_relation(pred, obj, scope=self.scope, qualifiers=qualifiers)
 
     @classmethod
     def create_scopingcm_factory(cls):
@@ -1010,6 +1026,7 @@ R34 = create_builtin_relation(
     ),
 )
 
+# TODO: obsolete?
 proxy_item = QualifierFactory(R34["has proxy item"])
 
 
@@ -1250,13 +1267,15 @@ R44 = create_builtin_relation(
     ),
     R8__has_domain_of_argument_1=I1["general item"],
     R11__has_range_of_result=bool,
-    R18__has_usage_hint="used to specify the free variables in theorems and similar statements",
+    R18__has_usage_hint="should be used as qualifier to specify the free variables in theorems and similar statements",
 )
 
+univ_quant = QualifierFactory(R44["is universally quantified"])
 
+# TODO: obsolete
 def uq_instance_of(type_entity: Item, r1: str = None, r2: str = None) -> Item:
     """
-    Shortcut to create an instance and set the relation R1145["is universally quantified"] to True in one step
+    Shortcut to create an instance and set the relation R44["is universally quantified"] to True in one step
     to allow compact notation.
 
     :param type_entity:     the type of which an instance is created
@@ -1275,6 +1294,7 @@ def uq_instance_of(type_entity: Item, r1: str = None, r2: str = None) -> Item:
             r1 = f"{type_entity.R1} – instance"
 
     instance = instance_of(type_entity, r1, r2)
+    # TODO: This should be used as a qualifier
     instance.set_relation(R44["is universally quantified"], True)
     return instance
 
@@ -1345,6 +1365,18 @@ class ImplicationStatement:
         rel = new_mathematical_relation(**kwargs)
         return rel
 
+
+# R46 is used above
+
+
+R47 = create_builtin_relation(
+    key_str="R47",
+    R1__has_label="is same as",
+    R2__has_description=(
+        "specifies that subject and object are identical"
+    ),
+    # TODO: model that this is (probably)  equivalent to "owl:sameAs"
+)
 
 # testing
 

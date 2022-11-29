@@ -1270,6 +1270,12 @@ R44 = create_builtin_relation(
     R18__has_usage_hint="should be used as qualifier to specify the free variables in theorems and similar statements",
 )
 
+
+# this qualifier is can be used to express universal quatification (mathematically expressed with ∀) of a relation
+# e.g. `some_item.set_relation(p.R15["is element of"], other_item, qualifiers=univ_quant(True))`
+# means that the statements where `some_item` is used claim to hold for all elements of `other_item` (which should be
+# a set)
+# see docs for more general information about qualifiers
 univ_quant = QualifierFactory(R44["is universally quantified"])
 
 # TODO: obsolete

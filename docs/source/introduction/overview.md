@@ -55,3 +55,7 @@ Background, see <https://en.wikipedia.org/wiki/Quantifier_(logic)>.
 > commonly used quantifiers are ∀ (`$\forall$`) and ∃ (`$\exists$`).
 
 They are also called *universal quantifier* and *existential quantifier*. In pyerk they can be expressed via [qualifiers](sec_qualifiers)
+
+```{warning}
+Despite having similar phonetics (and spelling) quantifiers (logic operators) and qualifiers (knowledge modeling technique, in triple-based knowledge graphs) are totally different concepts. However, qualifiers can (among many other use cases) be used to model universal or existential quantification of an statement.
+```

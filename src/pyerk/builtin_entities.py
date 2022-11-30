@@ -715,8 +715,12 @@ R24["has LaTeX string"].set_relation(R8["has domain of argument 1"], I18["mathem
 R24["has LaTeX string"].set_relation(R11["has range of result"], str)
 
 
-# TODO: how does this relate to I23["equation"]?
+# TODO: how does this relate to I21["mathmatical relation"]?
+# -> Latex expressions are for human readable representation
+# they should be used only as an addendum to semantic representations
+# TODO: Fix ocse_ct.I6091["control affinity"]
 def create_expression(latex_src: str, r1: str = None, r2: str = None) -> Item:
+
     if r1 is None:
         r1 = f"generic expression ({latex_src})"
 

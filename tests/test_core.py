@@ -36,11 +36,12 @@ TEST_DATA_DIR1 = pjoin(ERK_ROOT_DIR, "pyerk-core", "tests", "test_data")
 TEST_DATA_PARENT_PATH = pjoin(ERK_ROOT_DIR, "erk-data-for-unittests")
 TEST_DATA_REPO_PATH = pjoin(TEST_DATA_PARENT_PATH, "erk-ocse")
 TEST_DATA_PATH2 = pjoin(TEST_DATA_REPO_PATH, "control_theory1.py")
+TEST_DATA_PATH3 = pjoin(TEST_DATA_REPO_PATH, "agents1.py")
 TEST_MOD_NAME = "control_theory1"
 
 # useful to get the currently latest sha strings:
 # git log --pretty=oneline | head
-TEST_DATA_REPO_COMMIT_SHA = "1e6c63ae19c4321e2260692616d39f3496a43da7"
+TEST_DATA_REPO_COMMIT_SHA = "df15f02c8c0667b5a289bb7d0583aeee83a68e8b"  # (2022-11-30 14:06:52)
 
 # TODO: make this more robust (e.g. search for config file or environment variable)
 # TODO: put link to docs here (directory layout)
@@ -516,9 +517,10 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
 
     def test_qualifiers(self):
         mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
+        mod2 = p.erkloader.load_mod_from_path(TEST_DATA_PATH3, prefix="ag")
 
-        itm1: p.Item = p.ds.get_entity_by_key_str("ct__I2746__Rudolf_Kalman")
-        rel1, rel2 = itm1.get_relations("ct__R1833__has_employer")[:2]
+        itm1: p.Item = p.ds.get_entity_by_key_str("ag__I2746__Rudolf_Kalman")
+        rel1, rel2 = itm1.get_relations("ag__R1833__has_employer")[:2]
         self.assertEqual(len(rel1.qualifiers), 2)
         self.assertEqual(len(rel2.qualifiers), 2)
 

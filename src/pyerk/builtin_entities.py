@@ -1388,6 +1388,22 @@ R47 = create_builtin_relation(
     # TODO: model that this is (probably)  equivalent to "owl:sameAs"
 )
 
+R48 = create_builtin_relation(
+    key_str="R48",
+    R1__has_label="has start time",
+    R2__has_description="specifies when a statement becomes true",
+    R18__has_usage_hint="to be used as a qualifier",
+    R33__has_corresponding_wikidata_entity="P580",
+)
+
+R49 = create_builtin_relation(
+    key_str="R49",
+    R1__has_label="has end time",
+    R2__has_description="specifies when a statement ends to be true",
+    R18__has_usage_hint="to be used as a qualifier",
+    R33__has_corresponding_wikidata_entity="P582",
+)
+
 # testing
 
 

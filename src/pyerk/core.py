@@ -1207,6 +1207,7 @@ class QualifierFactory:
         :param relation:
         :param registry_name:   optional str; if not None this is the key under which this QF is stored in ds.qff_dict.
         """
+        assert isinstance(relation, Relation)
         self.relation = relation
 
         # TODO: maybe this 'registry name should be uri-based?'

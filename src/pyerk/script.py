@@ -171,8 +171,17 @@ def debug():
 def interactive_session(loaded_mod, prefix):
     """
     Start an interactive IPython session where the (optinally) loaded mod is available under its prefix name.
+    Also: perepare interactive pyerk-module -- a namespacew for experimentally creating entities.
     """
     import pyerk as p  # noqa
+
+    __URI__ = "erk:/_interactive"
+
+    keymanager = p.KeyManager()
+    p.register_mod(__URI__, keymanager, check_uri=False)
+
+    print("to create entities in this interactive scope use `p.start_mod(__URI__)`")
+
     if loaded_mod is not None and prefix is not None:
         locals()[prefix] = loaded_mod
 

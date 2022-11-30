@@ -10,6 +10,7 @@ from ipydex import IPS, activate_ips_on_exception, set_trace
 import pyerk as p
 import pyerk.visualization as visualization
 import git
+import pyerk.reportgenerator as rgen
 
 """
 recommended ways to run the tests from the repo root (where setup.py lives):
@@ -789,7 +790,7 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
             res = p.ruleengine.apply_all_semantic_rules()
 
 
-class Test_03_Core(HouskeeperMixin, unittest.TestCase):
+class Test_Z_Core(HouskeeperMixin, unittest.TestCase):
     """
     Collection of test that should be executed last (because they seem to influence othter tests).
     This is achieved by putting "ZZ" in the name (assuming that test classes are executed in alphabetical order).
@@ -897,8 +898,27 @@ class Test_03_Core(HouskeeperMixin, unittest.TestCase):
             self.assertEqual(cm.exception.args[0], msg)
 
 
-class Test_04_Script1(HouskeeperMixin, unittest.TestCase):
+class Test_05_Script1(HouskeeperMixin, unittest.TestCase):
     def test_visualization(self):
         cmd = "pyerk -vis I12"
         res = os.system(cmd)
         self.assertEqual(res, 0)
+
+
+class Test_06_reportgenerator(HouskeeperMixin, unittest.TestCase):
+
+    def test_01(self):
+
+        reind = rgen.resolve_entities_in_nested_data
+        some_list = [1, 123.4, "foobar"]
+        self.assertEqual(reind(some_list), some_list)
+
+        data1 = {"key1": some_list, "key2": ":I1"}
+        data1exp = {"key1": some_list, "key2": p.I1}
+        self.assertEqual(reind(data1), data1exp)
+
+        mod2 = p.erkloader.load_mod_from_path(TEST_DATA_PATH3, prefix="ag")
+
+        data1 = {"key1": ':ag__I2746["Rudolf Kalman"]', "key2": {"nested_key": ':ag__R1833["has employer"]'}}
+        data1exp = {"key1": mod2.I2746, "key2": {"nested_key": mod2.R1833}}
+        self.assertEqual(reind(data1), data1exp)

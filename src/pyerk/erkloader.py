@@ -3,6 +3,8 @@ import sys
 import os
 import inspect
 import pyerk
+import pathlib
+import functools
 
 from ipydex import IPS, activate_ips_on_exception
 
@@ -11,8 +13,23 @@ activate_ips_on_exception()
 ModuleType = type(sys)
 
 
+def preserve_cwd(function):
+    """
+    This is a decorator that ensures that the current working directory is unchanged during the function call.
+    """
+    @functools.wraps(function)
+    def decorator(*args, **kwargs):
+        cwd = os.getcwd()
+        try:
+            return function(*args, **kwargs)
+        finally:
+            os.chdir(cwd)
+    return decorator
+
+
 # noinspection PyProtectedMember
-def load_mod_from_path(modpath: str, prefix: str, modname=None, allow_reload=True, smart_relative=True) -> ModuleType:
+@preserve_cwd
+def load_mod_from_path(modpath: str, prefix: str, modname=None, allow_reload=True, smart_relative=None) -> ModuleType:
     """
 
     :param modpath:         file system path for the module to be loaded
@@ -23,6 +40,12 @@ def load_mod_from_path(modpath: str, prefix: str, modname=None, allow_reload=Tru
                             (not w.r.t. current working path)
     :return:
     """
+    if smart_relative is not None:
+        msg = "Using 'smart_relative' paths is deprecated since pyerk version 0.6.0. Please use real paths now."
+        raise DeprecationWarning(msg)
+
+    smart_relative = False
+
     if modname is None:
         if modpath.endswith(".py"):
             modname = os.path.split(modpath)[-1][:-3]  # take the filename but without '.py' at the end
@@ -47,6 +70,17 @@ def load_mod_from_path(modpath: str, prefix: str, modname=None, allow_reload=Tru
         else:
             msg = f"Unintended attempt to reload module {old_mod_uri}"
             raise pyerk.aux.ModuleAlreadyLoadedError(msg)
+
+    # the following code is newer and thus uses pathlib.Path
+    # TODO: simplify the above code (after removing smart_relative)
+    modpath = os.path.abspath(modpath)
+    modpathfull = pathlib.Path(modpath)
+    modpathdir = modpathfull.parent
+
+    # change the working directory; this allows to load dependency modules which are specified in a module with
+    # relative paths
+    # this will be reverted at the end of the function due to decorator
+    os.chdir(modpathdir)
 
     spec = importlib.util.spec_from_file_location(modname, modpath)
     mod = importlib.util.module_from_spec(spec)

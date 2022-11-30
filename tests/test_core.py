@@ -131,6 +131,25 @@ class Test_00_Core(HouskeeperMixin, unittest.TestCase):
         with self.assertRaises(KeyError):
             res = p.process_key_str("some_prefix_literal_value", check=False)
 
+        res = p.process_key_str("some_prefix__I000['test_label']", check=False, resolve_prefix=False)
+        self.assertEqual(res.prefix, "some_prefix")
+        self.assertEqual(res.short_key, "I000")
+        self.assertEqual(res.label, "test_label")
+
+        res = p.process_key_str('some_prefix__I000["test_label"]', check=False, resolve_prefix=False)
+        self.assertEqual(res.prefix, "some_prefix")
+        self.assertEqual(res.short_key, "I000")
+        self.assertEqual(res.label, "test_label")
+
+        with self.assertRaises(KeyError):
+            res = p.process_key_str("some_prefix__I000['missing bracket'", check=False)
+
+        with self.assertRaises(KeyError):
+            res = p.process_key_str("some_prefix__I000[missing quotes]", check=False)
+
+        with self.assertRaises(KeyError):
+            res = p.process_key_str("some_prefix__I000__double_label_['redundant']", check=False)
+
     def test_b1__uri_contex_manager(self):
         """
         Test defined behavior of errors occur in uri_context
@@ -573,7 +592,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         self.assertEqual(pkey2.label, "my_label")
 
         # wrong syntax of key_str (missing "__")
-        self.assertRaises(p.InvalidShortKeyError, p.process_key_str, "R1234XYZ")
+        self.assertRaises(KeyError, p.process_key_str, "R1234XYZ")
 
         pkey3 = p.process_key_str("R2__has_description")
 

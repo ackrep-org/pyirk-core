@@ -708,7 +708,7 @@ class DataStore:
         res = self.uri_prefix_mapping.b.get(prefix)
 
         if res is None:
-            msg = f"Unknown prefix: {prefix}. No matching URI found."
+            msg = f"Unknown prefix: '{prefix}'. No matching URI found."
             raise UnknownPrefixError(msg)
         return res
 
@@ -842,6 +842,13 @@ def unpack_l1d(l1d: Dict[str, object]):
     return tuple(*l1d.items())
 
 
+# define regular expressions outside of the function (they have to be compiled only once)
+# use https://pythex.org/ with fixture e. g `some_prefix__RE000['test label']` to understand these
+re_prefix_shortkey_suffix = re.compile(r"^((.+?)__)?((Ia?)|(Ra?)|(RE))(\d+)(.*)$")
+re_suffix_underscore = re.compile(r"^__([\w\-]+)$")  # \w means alphanumeric (including `_`);
+re_suffix_square_brackets = re.compile(r"""^\[["'](.+)["']\]""")
+
+
 def process_key_str(key_str: str, check: bool = True, resolve_prefix: bool = True) -> ProcessedStmtKey:
     """
     In ERK there are the following kinds of keys:
@@ -851,10 +858,11 @@ def process_key_str(key_str: str, check: bool = True, resolve_prefix: bool = Tru
         - d) prefixed name-labeled key like `bi__R1234__my_relation`
 
         - e) index-labeld key like  `R1234["my relation"]`
+        - f) prefixed index-labeld key like  `bi__R1234["my relation"]`
 
     Also, the leading character indicates the entity type (EType).
 
-    This function expects either of the cases a) to d).
+    This function expects any of these cases.
     :param key_str:     a string like "R1234__my_relation" or "R1234" or "bi__R1234__my_relation"
     :param check:       boolean flag; determines if the label part should be checked wrt its consistency to
     :param resolve_prefix:
@@ -866,21 +874,39 @@ def process_key_str(key_str: str, check: bool = True, resolve_prefix: bool = Tru
 
     res = ProcessedStmtKey()
     res.original_key_str = key_str
-    res.delimiter = "__"
 
-    parts = key_str.split("__")
-    if len(parts) == 1:
-        # no prefix, no label
-        parts = [None, *parts, None]
-    elif len(parts) == 2:
-        if parts[0].startswith("I") or parts[0].startswith("R"):
-            # no prefix
-            parts = [None, *parts]
-        else:
-            # no label
-            parts = [*parts, None]
+    match1 = re_prefix_shortkey_suffix.match(key_str)
 
-    res.prefix, res.short_key, res.label = parts
+    errmsg = f"unxexpected key_str: `{key_str}` (maybe a literal or syntax error)"
+    if not match1:
+        raise KeyError(errmsg)
+
+    if match1.group(3) is None or match1.group(7) is None:
+        raise KeyError(errmsg)
+
+    res.prefix = match1.group(2)  # this might be None
+    res.short_key = match1.group(3) + match1.group(7)
+
+    suffix = match1.group(8) or ""
+
+    match2 = re_suffix_underscore.match(suffix)
+    match3 = re_suffix_square_brackets.match(suffix)
+
+    errmsg = f"invalid suffix of key_str `{key_str}` (probably syntax error)"
+    if match2 and match3:
+        # key seems to mix underscores and square brackets
+        raise KeyError(errmsg)
+
+    if suffix and (not match2) and (not match3):
+        # syntax of suffix seems to be wrong (e., g. missing bracket)
+        raise KeyError(errmsg)
+
+    if match2:
+        res.label = match2.group(1)
+    elif match3:
+        res.label = match3.group(1)
+    else:
+        res.label = None
 
     if res.short_key.startswith("I"):
         res.etype = EType.ITEM

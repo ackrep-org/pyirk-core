@@ -24,7 +24,14 @@ def main():
         default=None,
     )
 
-    parser.add_argument("--new-keys", help="generate new key", default=None, action="store_true")
+    parser.add_argument(
+        "-nk",
+        "--new-keys",
+        help="generate new keys",
+        default=None,
+        type=int,
+        metavar="NUMBER_OF_NEW_KEYS",
+    )
 
     parser.add_argument(
         "-l",
@@ -35,28 +42,34 @@ def main():
         metavar=("MOD_PATH", "PREFIX"),
     )
 
-    # background: by default erk-module paths are specified wrt the path of the pyerk.core python module
-    # (and thus not wrt the current working dir)
+    # background: in earlier versions default erk-module paths were specified wrt the path of the
+    # pyerk.core python module (and thus not wrt the current working dir).
+    # This flag served to switch to "real" paths (interpreted wrt the current working directory)
+    # This behavior is now deprecated
     parser.add_argument(
         "-rwd",
         "--relative-to-workdir",
-        help="specifies that the module path is interpreted relative to working dir (not the modules install path)",
+        help=(
+            "DEPRECATED; "
+            "specifies that the module path is interpreted relative to working dir (not the modules install path)"
+        ),
         default=False,
         action="store_true",
     )
 
     parser.add_argument(
-        "--nk",
-        help="number of keys",
-        type=int,
-        default=30,
+        "-pad",
+        "--parse-ackrep-data",
+        help="parse ackrep data repository, create items and relations. specify path to ackrep_data base dir \
+            (.../ackrep_data)",
+        metavar="path",
     )
 
     parser.add_argument(
         "-grp",
         "--generate-report",
-        help="generate report for entity",
-        metavar="uri",
+        help="generate report based on configuration file (e.g. reportconf.toml)",
+        metavar="reportconf-path",
     )
 
     parser.add_argument(
@@ -80,7 +93,9 @@ def main():
         action="store_true",
     )
 
-    parser.add_argument("--dbg", help="start debug routine", default=None, action="store_true")
+    parser.add_argument(
+        "--dbg", help="start debug routine", default=None, action="store_true"
+    )
 
     args = parser.parse_args()
 
@@ -90,9 +105,8 @@ def main():
 
     if args.load_mod is not None:
 
-        rtwd = args.relative_to_workdir
         path, prefix = args.load_mod
-        loaded_mod = process_mod(path=path, prefix=prefix, relative_to_workdir=rtwd)
+        loaded_mod = process_mod(path=path, prefix=prefix, relative_to_workdir=True)
     else:
         loaded_mod = None
         prefix = None
@@ -102,21 +116,18 @@ def main():
         exit()
 
     # typical calls to generate new keys:
-
-    # with path relative to the module (not current working dir)
-    # pyerk --load-mod ../../../erk-data/ocse/control_theory1.py ocse --new-keys --nk 100
-
-    # with true relative path
-    # pyerk --new-keys 30 --load-mod ../knowledge-base/rules/rules1.py rl -rwd
+    # pyerk --new-keys 30 --load-mod ../knowledge-base/rules/rules1.py rl
+    # short version: pyerk -nk 100 -l rules1.py rl
     if args.new_keys:
         if not args.load_mod:
-            print(aux.byellow("No module loaded. There might be key clashes. Use `--load-mod` to prevent this."))
-        core.print_new_keys(args.nk, loaded_mod)
+            print(aux.byellow("No module loaded. Nothing to do."))
+            exit()
+        core.print_new_keys(args.new_keys, loaded_mod)
 
     elif args.inputfile is not None:
         core.script_main(args.inputfile)
-    elif args.generate_report:
-        reportgenerator.generate_report()
+    elif reportconf_path := args.generate_report:
+        reportgenerator.generate_report(reportconf_path)
     elif key := args.visualize:
 
         if key == "__all__":
@@ -133,7 +144,9 @@ def main():
         try:
             import pyerkdjango.core
         except ImportError:
-            print(aux.bred("Error:"), "the module pyerkdjango seems not to be installed.")
+            print(
+                aux.bred("Error:"), "the module pyerkdjango seems not to be installed."
+            )
             # exit(10)
             raise
         pyerkdjango.core.start_django()
@@ -141,10 +154,18 @@ def main():
         print("nothing to do, see option `--help` for more info")
 
 
-def process_mod(path: str, prefix: str, relative_to_workdir: bool = False) -> erkloader.ModuleType:
+def process_mod(
+    path: str, prefix: str, relative_to_workdir: bool = False
+) -> erkloader.ModuleType:
+
+    if not relative_to_workdir:
+        msg = "using mod paths which are not relative to workdir is deprecated since pyerk version 0.6.0"
+        raise DeprecationWarning(msg)
 
     smart_relative = not relative_to_workdir
-    mod1 = erkloader.load_mod_from_path(path, prefix=prefix, smart_relative=smart_relative)
+    mod1 = erkloader.load_mod_from_path(
+        path, prefix=prefix, smart_relative=smart_relative
+    )
 
     # perform sanity check
     # rdfstack.check_all_relation_types()
@@ -158,7 +179,9 @@ def debug():
     """
 
     ERK_ROOT_DIR = aux.get_erk_root_dir()
-    TEST_DATA_PATH = os.path.join(ERK_ROOT_DIR, "erk-data", "ocse", "control_theory1.py")
+    TEST_DATA_PATH = os.path.join(
+        ERK_ROOT_DIR, "erk-data", "ocse", "control_theory1.py"
+    )
     mod1 = erkloader.load_mod_from_path(TEST_DATA_PATH, prefix="ct")  # noqa
     ds = core.ds
     ds.rdfgraph = rdfstack.create_rdf_triples()

@@ -42,7 +42,7 @@ TEST_MOD_NAME = "control_theory1"
 
 # useful to get the currently latest sha strings:
 # git log --pretty=oneline | head
-TEST_DATA_REPO_COMMIT_SHA = "df15f02c8c0667b5a289bb7d0583aeee83a68e8b"  # (2022-11-30 14:06:52)
+TEST_DATA_REPO_COMMIT_SHA = "b795a5f16ca1e385e03b300f2e9601c6f3c03233"  # (2022-12-01 01:45:51)
 
 # TODO: make this more robust (e.g. search for config file or environment variable)
 # TODO: put link to docs here (directory layout)
@@ -907,7 +907,7 @@ class Test_05_Script1(HouskeeperMixin, unittest.TestCase):
 
 class Test_06_reportgenerator(HouskeeperMixin, unittest.TestCase):
 
-    def test_01(self):
+    def test_01__resolve_entities_in_nested_data(self):
 
         reind = rgen.resolve_entities_in_nested_data
         some_list = [1, 123.4, "foobar"]
@@ -922,3 +922,10 @@ class Test_06_reportgenerator(HouskeeperMixin, unittest.TestCase):
         data1 = {"key1": ':ag__I2746["Rudolf Kalman"]', "key2": {"nested_key": ':ag__R1833["has employer"]'}}
         data1exp = {"key1": mod2.I2746, "key2": {"nested_key": mod2.R1833}}
         self.assertEqual(reind(data1), data1exp)
+
+    def test_02__report_generation1(self):
+
+        reportconf_path1 = pjoin(TEST_DATA_DIR1, "reports", "reportconf.toml")
+        rg = rgen.ReportGenerator(reportconf_path1)
+
+        self.assertEqual(len(rg.authors), 2)

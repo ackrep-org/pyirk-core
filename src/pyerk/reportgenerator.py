@@ -43,10 +43,11 @@ class ReportGenerator:
 
     def __init__(self, reportconf_path: str):
 
-        self.reportconf = self.load_report_conf(reportconf_path)
+        self.reportconf_raw = self.load_report_conf(reportconf_path)
         self.mods = self.load_modules()
         self.authors = None
         self.content = None
+        self.reportconf = resolve_entities_in_nested_data(self.reportconf_raw)
         self.resolve_entities()
 
     @staticmethod
@@ -66,26 +67,27 @@ class ReportGenerator:
     def load_modules(self) -> list:
 
         res = []
-        if not (lmdict := self.reportconf.get("load_modules")):
+        if not (lmdict := self.reportconf_raw.get("load_modules")):
             return res
 
         assert isinstance(lmdict, dict)
 
         for prefix, path in lmdict.items():
+            if path.startswith("$"):
+                path = path[1:].replace("__erk-root__", p.aux.get_erk_root_dir())
             mod = erkloader.load_mod_from_path(path, prefix=prefix)
             res.append(mod)
 
         return res
 
     def resolve_entities(self):
-        self.authors = self.reportconf.get("authors")
+        self.authors = self.reportconf.get("authors").values()
         self.content = self.reportconf.get("content")
         assert len(self.authors) > 0
         assert len(self.content) > 0
 
-        IPS()
 
-
+# this is a function to be easier testable
 def resolve_entities_in_nested_data(data):
     assert isinstance(data, (dict, str, list, int, float))
 

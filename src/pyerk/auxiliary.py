@@ -10,6 +10,8 @@ from . import settings
 Some auxiliary classes and functions for pyerk.
 """
 
+startup_workdir = os.path.abspath(os.getcwd())
+
 
 class NotYetFinishedError(NotImplementedError):
     pass

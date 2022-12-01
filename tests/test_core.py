@@ -907,6 +907,15 @@ class Test_05_Script1(HouskeeperMixin, unittest.TestCase):
 
 class Test_06_reportgenerator(HouskeeperMixin, unittest.TestCase):
 
+    @p.erkloader.preserve_cwd
+    def tearDown(self) -> None:
+        super().tearDown()
+        os.chdir(pjoin(TEST_DATA_DIR1, "reports"))
+        try:
+            os.unlink("report.tex")
+        except FileNotFoundError:
+            pass
+
     def test_01__resolve_entities_in_nested_data(self):
 
         reind = rgen.resolve_entities_in_nested_data
@@ -923,9 +932,15 @@ class Test_06_reportgenerator(HouskeeperMixin, unittest.TestCase):
         data1exp = {"key1": mod2.I2746, "key2": {"nested_key": mod2.R1833}}
         self.assertEqual(reind(data1), data1exp)
 
+    @p.erkloader.preserve_cwd
     def test_02__report_generation1(self):
 
         reportconf_path1 = pjoin(TEST_DATA_DIR1, "reports", "reportconf.toml")
-        rg = rgen.ReportGenerator(reportconf_path1)
+        reporttex_path1 = pjoin(TEST_DATA_DIR1, "reports", "report.tex")
+        os.chdir(pjoin(TEST_DATA_DIR1, "reports"))
+        self.assertFalse(os.path.exists(reporttex_path1))
+        rg = rgen.ReportGenerator(reportconf_path1, write_file=True)
+        rg.generate_report()
+        self.assertTrue(os.path.exists(reporttex_path1))
 
         self.assertEqual(len(rg.authors), 2)

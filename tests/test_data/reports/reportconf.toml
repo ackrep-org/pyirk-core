@@ -25,6 +25,10 @@ item = ":ag__I8124__Carsten_Knoll"
 affiliation = ":ag__I2478__TU_Dresden"
 
 
+[content.title]
+
+text = "Defining basic mathematical objects in pyerk"
+
 [content.Abstract]
 
 text='''

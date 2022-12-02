@@ -45,8 +45,7 @@ jobs: # A basic unit of work in a run
             cd ../../
             mkdir ackrep
             cd ackrep
-            git clone https://github.com/ackrep-org/ackrep_data.git
-            mv ackrep_data ackrep_data_for_unittests
+            git clone https://github.com/ackrep-org/ackrep_data.git ackrep_data_for_unittests
             cd ackrep_data_for_unittests
             git checkout for_unittests
       - run:

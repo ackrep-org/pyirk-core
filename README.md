@@ -1,5 +1,5 @@
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-
+[![PyPI version](https://badge.fury.io/py/pyerk.svg)](https://pypi.org/project/pyerk/)
 
 # Overview: pyerk
 
@@ -93,9 +93,6 @@ lss2 = "ein paar deutsche Wörter"@de
 where `en, de` are instances of `pyerk.core.LangaguageCode`.
 
 The usage inside pyerk is best demonstrated by the unittest `test_c02__multilingual_relations`, see [test_core.py](tests/test_core.py).
-
-
-
 
 
 # Coding style

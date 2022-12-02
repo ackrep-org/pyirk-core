@@ -40,7 +40,7 @@ TEST_MOD_NAME = "control_theory1"
 
 # useful to get the currently latest sha strings:
 # git log --pretty=oneline | head
-TEST_DATA_REPO_COMMIT_SHA = "77dd57a47b8a2b9263441ed8f25a6c3f8c4d56f5"
+TEST_DATA_REPO_COMMIT_SHA = "1e6c63ae19c4321e2260692616d39f3496a43da7"
 
 # TODO: make this more robust (e.g. search for config file or environment variable)
 # TODO: put link to docs here (directory layout)
@@ -368,6 +368,31 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
 
         self.assertEqual(desc2.language, "de")
 
+        # use the labels of different languages in index-labeld key notation
+
+        # first: without explicitly specifying the language
+        tmp1 = itm["test-label in english"]
+        self.assertTrue(tmp1 is itm)
+
+        tmp2 = itm["test-label auf deutsch"]
+        self.assertTrue(tmp2 is itm)
+
+        # second: with explicitly specifying the language
+        tmp3 = itm["test-label in english"@p.en]
+        self.assertTrue(tmp3 is itm)
+
+        tmp4 = itm["test-label auf deutsch"@p.de]
+        self.assertTrue(tmp4 is itm)
+
+        with self.assertRaises(ValueError):
+            tmp5 = itm["wrong label"]
+
+        with self.assertRaises(ValueError):
+            tmp5 = itm["wrong label"@p.de]
+
+        with self.assertRaises(ValueError):
+            tmp5 = itm["wrong label"@p.en]  # noqa
+
         # change the default language
 
         p.settings.DEFAULT_DATA_LANGUAGE = "de"
@@ -386,6 +411,11 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
             print("unexpectedly found more then one object for relation R2 and language de")
             pass
 
+    def test_c03__nontrivial_metaclasses(self):
+        with p.uri_context(uri=TEST_BASE_URI):
+            i1 = p.instance_of(p.I34["complex number"])
+
+        self.assertTrue(i1.R4, p.I34)
 
     def test_evaluated_mapping(self):
 
@@ -397,7 +427,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
             poly1 = p.instance_of(mod1.I4239["monovariate polynomial"])
 
         # test that an arbitrary item is *not* callable
-        self.assertRaises(TypeError, mod1.I2738["field of complex numnbers"], 0)
+        self.assertRaises(TypeError, mod1.ma.I2738["field of complex numbers"], 0)
 
         # test that some special items are callable (note that its parent class is a subclass of one which has
         # a _custom_call-method defined)
@@ -469,18 +499,20 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
 
         itm1 = p.ds.get_entity_by_key_str("I2__Metaclass")
-        itm2 = p.ds.get_entity_by_key_str("ma__I4235__mathematical_object")
+        itm2 = p.ds.get_entity_by_key_str("I12__mathematical_object")
         itm3 = p.ds.get_entity_by_key_str("ct__I4239__monovariate_polynomial")
 
-        # metaclass itself is not an instance of metaclass
-        self.assertFalse(p.is_instance_of_generalized_metaclass(itm1))
+        # metaclass could be considered as an instance of itself because metaclasses are allowed to have
+        # subclasses and instances (which is both true for I2__metaclass)
+        self.assertTrue(p.allows_instantiation(itm1))
 
-        self.assertTrue(p.is_instance_of_generalized_metaclass(itm2))
-        self.assertTrue(p.is_instance_of_generalized_metaclass(itm3))
+        self.assertTrue(p.allows_instantiation(itm2))
+        self.assertTrue(p.allows_instantiation(itm3))
 
         with p.uri_context(uri=TEST_BASE_URI):
+            # itm3 is a normal class -> itm4 is not allowed to have instances (itm4 is no metaclass-instance)
             itm4 = p.instance_of(itm3)
-        self.assertFalse(p.is_instance_of_generalized_metaclass(itm4))
+        self.assertFalse(p.allows_instantiation(itm4))
 
     def test_qualifiers(self):
         mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")

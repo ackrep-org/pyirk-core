@@ -14,6 +14,7 @@ from .core import (
     de,
     en,
     QualifierFactory,
+    RawQualifier,
     ds,
 )
 
@@ -28,24 +29,93 @@ keymanager = core.KeyManager()
 core.register_mod(__URI__, keymanager)
 
 
-def is_instance_of_generalized_metaclass(entity) -> bool:
+def allows_instantiation(itm: Item) -> bool:
     """
-    Check if `entity` is a metaclass or a subclass of metaclass
+    Check if `itm` is an instance of metaclass or a subclass of it. If true, this entity is considered
+    a class by itself and is thus allowed to have instances and subclasses
 
-    :param entity:
+    Possibilities:
+
+        I2 = itm -> True (by our definition)
+        I2 -R4-> itm -> True (trivial, itm is an ordinary class)
+        I2 -R4-> I100 -R4-> itm -> False (I100 is ordinary class → itm is ordinary instance)
+
+        I2 -R3-> itm -> True (subclasses of I2 are also metaclasses)
+        I2 -R3-> I100 -R4-> itm -> True (I100 is subclass of metaclass → itm is metaclass instance)
+        I2 -R3-> I100 -R3-> I101 -R3-> I102 -R4-> itm -> True (same)
+
+        # multiple times R4: false
+        I2 -R4-> I100 -R3-> I101 -R3-> I102 -R4-> itm -> False
+                                (I100 is ordinary class → itm is ordinary instance of its sub-sub-class)
+        I2 -R3-> I100 -R4-> I101 -R3-> I102 -R4-> itm -> False (same)
+
+        I2 -R3-> I100 -R3-> I101 -R3-> I102 -R4-> itm -> True (same)
+        I2 -R4-> I100 -R3-> I101 -R3-> I102 -R3-> itm -> True (itm is an ordinary sub-sub-sub-subclass)
+        I2 -R3-> I100 -R4-> I101 -R3-> I102 -R3-> itm -> True
+                                (itm is an sub-sub-subclass of I101 which is an instance of a subclass of I2)
+
+    :param itm:     item to test
     :return:        bool
     """
 
-    test_entity = entity
+    taxtree = get_taxonomy_tree(itm)
 
-    while test_entity is not None:
-        if test_entity.R4__is_instance_of == I2["Metaclass"]:
-            return True
+    # This is a list of 2-tuples like the following:
+    # [(None, <Item I4239["monovariate polynomial"]>),
+    #  ('R3', <Item I4237["monovariate rational function"]>),
+    #  ('R3', <Item I4236["mathematical expression"]>),
+    #  ('R3', <Item I4235["mathematical object"]>),
+    #  ('R4', <Item I2["Metaclass"]>),
+    #  ('R3', <Item I1["general item"]>)]
 
-        test_entity = test_entity.R3__is_subclass_of
+    if len(taxtree) < 2:
+        return False
 
-    # the loop was finished
-    return False
+    relation_keys, items = zip(*taxtree)
+    if items[-2] is not I2["Metaclass"]:
+        return False
+
+    if relation_keys.count("R4") > 1:
+        return False
+
+    return True
+
+
+def get_taxonomy_tree(itm, add_self=True) -> list:
+    """
+    Recursively iterate over super and parent classes and
+
+    :param imt: DESCRIPTION
+    :raises NotImplementedError: DESCRIPTION
+
+
+    :return:  list of 2-tuples like [(None, I456), ("R3", I123), ("R4", I2)]
+    :rtype: dict
+
+    """
+
+    res = []
+
+    if add_self:
+        res.append((None, itm))
+
+    # Note:
+    # parent_class refers to R4__is_instance, super_class refers to R3__is_subclass_of
+    super_class = itm.R3__is_subclass_of
+    parent_class = itm.R4__is_instance_of
+
+    if (super_class is not None) and (parent_class is not None):
+        msg = f"currently not allowed together: R3__is_subclass_of and R4__is_instnace_of (Entity: {itm}"
+        raise NotImplementedError(msg)
+
+    if super_class:
+        res.append(("R3", super_class))
+        res.extend(get_taxonomy_tree(super_class, add_self=False))
+    elif parent_class:
+        res.append(("R4", parent_class))
+        res.extend(get_taxonomy_tree(parent_class, add_self=False))
+
+    return res
 
 
 def instance_of(entity, r1: str = None, r2: str = None) -> Item:
@@ -61,9 +131,9 @@ def instance_of(entity, r1: str = None, r2: str = None) -> Item:
 
     has_super_class = entity.R3 is not None
 
-    # we have to determine if `entity` is a metaclass or a subclass of metaclass
+    # we have to determine if `entity` is an instnace of I2_metaclass or a subclass of it
 
-    is_instance_of_metaclass = is_instance_of_generalized_metaclass(entity)
+    is_instance_of_metaclass = allows_instantiation(entity)
 
     if (not has_super_class) and (not is_instance_of_metaclass):
         msg = f"the entity '{entity}' is not a class, and thus could not be instantiated"
@@ -502,11 +572,26 @@ class ScopingCM:
 
         return variable_object
 
-    # TODO: add qualifiers
-    def new_rel(self, sub, pred, obj) -> RelationEdge:
+    def new_rel(self, sub: Entity, pred: Relation, obj: Entity, qualifiers=None) -> RelationEdge:
+        """
+        Create a new statement ("relation edge") in the current scope
+
+        :param sub:         subject
+        :param pred:        predicate (Relation-Instance)
+        :param obj:         object
+        :param qualifiers:  List of RawQualifiers
+
+        :return: statement (relation edge)
+
+        """
+
         assert isinstance(sub, Entity)
         assert isinstance(pred, Relation)
-        return sub.set_relation(pred, obj, scope=self.scope)
+        if isinstance(qualifiers, RawQualifier):
+            qualifiers = [qualifiers]
+        assert isinstance(qualifiers, (type(None), list))
+
+        return sub.set_relation(pred, obj, scope=self.scope, qualifiers=qualifiers)
 
     @classmethod
     def create_scopingcm_factory(cls):
@@ -941,6 +1026,7 @@ R34 = create_builtin_relation(
     ),
 )
 
+# TODO: obsolete?
 proxy_item = QualifierFactory(R34["has proxy item"])
 
 
@@ -999,11 +1085,34 @@ def new_tuple(*args, **kwargs) -> Item:
 
 # different number types (complex, real, rational, integer, ...)
 
+
+R46 = create_builtin_relation(
+    key_str="R46",
+    R1__has_label="is secondary subclass of",
+    R2__has_description=(
+        "specifies that the subject is an subclass of a class-item, in addtion to its unambiguous parent class."
+    ),
+    R18__has_usage_hint=(
+        "Note that this relation is not functional. This construction allows to combine single (R3) "
+        "and multiple inheritance."
+    ),
+)
+
+
+I42 = create_builtin_item(
+    key_str="I42",
+    R1__has_label="mathematical type (metaclass)",
+    R2__has_description="base class of mathematical data types",
+    R3__is_subclass_of=I2["Metaclass"],  # because its instances are metaclasses
+)
+
+
 I34 = create_builtin_item(
     key_str="I34",
     R1__has_label="complex number",
     R2__has_description="mathematical type representing all complex numbers",
-    R3__is_subclass_of=I12["mathematical object"],
+    R4__is_instance_of=I42["mathematical type (metaclass)"],
+    R46__is_secondary_subclass_of=I12["mathematical object"],
 )
 
 I35 = create_builtin_item(
@@ -1158,13 +1267,21 @@ R44 = create_builtin_relation(
     ),
     R8__has_domain_of_argument_1=I1["general item"],
     R11__has_range_of_result=bool,
-    R18__has_usage_hint="used to specify the free variables in theorems and similar statements",
+    R18__has_usage_hint="should be used as qualifier to specify the free variables in theorems and similar statements",
 )
 
 
+# this qualifier is can be used to express universal quatification (mathematically expressed with ∀) of a relation
+# e.g. `some_item.set_relation(p.R15["is element of"], other_item, qualifiers=univ_quant(True))`
+# means that the statements where `some_item` is used claim to hold for all elements of `other_item` (which should be
+# a set)
+# see docs for more general information about qualifiers
+univ_quant = QualifierFactory(R44["is universally quantified"])
+
+# TODO: obsolete
 def uq_instance_of(type_entity: Item, r1: str = None, r2: str = None) -> Item:
     """
-    Shortcut to create an instance and set the relation R1145["is universally quantified"] to True in one step
+    Shortcut to create an instance and set the relation R44["is universally quantified"] to True in one step
     to allow compact notation.
 
     :param type_entity:     the type of which an instance is created
@@ -1183,6 +1300,7 @@ def uq_instance_of(type_entity: Item, r1: str = None, r2: str = None) -> Item:
             r1 = f"{type_entity.R1} – instance"
 
     instance = instance_of(type_entity, r1, r2)
+    # TODO: This should be used as a qualifier
     instance.set_relation(R44["is universally quantified"], True)
     return instance
 
@@ -1253,6 +1371,18 @@ class ImplicationStatement:
         rel = new_mathematical_relation(**kwargs)
         return rel
 
+
+# R46 is used above
+
+
+R47 = create_builtin_relation(
+    key_str="R47",
+    R1__has_label="is same as",
+    R2__has_description=(
+        "specifies that subject and object are identical"
+    ),
+    # TODO: model that this is (probably)  equivalent to "owl:sameAs"
+)
 
 # testing
 

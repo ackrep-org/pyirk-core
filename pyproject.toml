@@ -1,0 +1,53 @@
+[build-system]
+
+# setuptools-scm helps to find package-data which is tracked by git
+# anyway, make sure the following packages are installed
+# pip install build setuptools_scm
+requires = ["setuptools>=45", "setuptools_scm[toml]>=6.2"]
+build-backend = "setuptools.build_meta"
+
+[project]
+
+
+name = "pyerk"
+description = "Python based 'Easy Representation of Knowledge' (pyERK)"
+authors=[{name = "Carsten Knoll", email = "firstname.lastname@posteo.de"}]
+readme = "README.md"
+requires-python = ">=3.8"
+license = { text = "GNU General Public License v3 (GPLv3)" }
+
+dynamic = ["dependencies", "version"]
+
+classifiers=[
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+]
+
+# copied from the original setup.py
+# long_description="""
+# (Python based) Easy Representation of Knowledge (pyERK).
+#
+# - Inspired by OWL, but more expressive
+# - Inspired by Wikidata, but much simpler
+# - Inspired by SUO-KIF, but with less brackets
+# - Represented directly in python
+# - Designed to formally represent knowledge (including meta levels)
+# """
+
+# see also https://realpython.com/python-toml/
+# https://setuptools.pypa.io/en/latest/userguide/pyproject_config.html
+
+[project.urls]
+Homepage = "https://github.com/ackrep-org/pyerk-core/"
+
+[project.scripts]
+pyerk = "pyerk.script:main"
+
+[tool.setuptools.packages.find]
+# note: `include-package-data = true` by default in pyproject.toml
+where = ["src"]
+
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}
+version = {attr = "pyerk.__version__"}

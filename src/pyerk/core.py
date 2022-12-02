@@ -111,7 +111,8 @@ class Entity(abc.ABC):
         :return:    self
         """
 
-        # check if the used label matches the description
+        # check if the used ad hoc label in indexed-key notation matches the stored label
+        # note: this also passes for rdflib.term.Literal
         assert isinstance(adhoc_label, str)
 
         if getattr(self, "_ignore_mismatching_adhoc_label", False):
@@ -119,10 +120,19 @@ class Entity(abc.ABC):
             return self
 
         if adhoc_label != self.R1:
-            msg = f"got mismatiching label for Entity {self}: '{adhoc_label}'"
-            raise ValueError(msg)
+            # due to multilinguality there might be multiple labels. As adhoc label we accept any language
+            all_labels = self.get_relations("R1", return_obj=True)
+            all_labels_dict = dict((str(label), None) for label in all_labels)
+            adhoc_label_str = str(adhoc_label)
 
-        # TODO: check consistency between adhoc_label and self.label
+            if adhoc_label_str not in all_labels_dict:
+                msg = (
+                    f"Mismatiching label for Entity {self.short_key}!\nGot '{adhoc_label}' but valid labels are: "
+                    f" {all_labels}.\n\n"
+                    f"Note: in index-labeled key notation the language of the labels is ignored for convenience."
+                )
+                raise ValueError(msg)
+
         return self
 
     def __getitem__(self, adhoc_label):

@@ -3,6 +3,12 @@
 import os
 import sys
 
+try:
+    # this will be part of standard library for python >= 3.11
+    import tomllib
+except ModuleNotFoundError:
+    import tomli as tomllib
+
 # for now we only support a subset of languages with wich the authors are familiar
 # if you miss a language, please consider contributing
 SUPPORTED_LANGUAGES = ["en", "de"]
@@ -27,3 +33,30 @@ URI_SEP = "#"
 # todo: some time in the future pyerk should become indendent from the OCSE
 # for now it is convenient to have the URI stored here
 OCSE_URI = "erk:/ocse/0.2"
+
+
+BASE_DIR = os.getenv("PYERK_BASE_DIR", "")
+if not BASE_DIR:
+    BASE_DIR = os.path.abspath("./")
+
+
+confpath = os.path.join(BASE_DIR, "pyerkconf.toml")
+confpath_fallback = os.path.join(BASE_DIR, "pyerkconf-default.toml")
+
+
+try:
+    with open(confpath, "rb") as fp:
+        CONF = tomllib.load(fp)
+except FileNotFoundError:
+    try:
+        with open(confpath_fallback, "rb") as fp:
+            CONF = tomllib.load(fp)
+    except FileNotFoundError:
+        CONF = None
+
+if CONF is None:
+    msg = (
+        f"Could not load config file {confpath} from `BASE_DIR`. Please set env var `PYERK_BASE_DIR` or change "
+        "working directory to location of `pyerkconf.toml`."
+    )
+    raise FileNotFoundError(msg)

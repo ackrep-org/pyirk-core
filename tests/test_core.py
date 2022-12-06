@@ -257,6 +257,15 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         self.assertEqual(len(diff3), 0)
         self.assertEqual(len(diff4), 0)
 
+    def test_a01(self):
+        """
+        ensure that the default settingsfile is loaded correctly
+        """
+        # this is a variable which should be present in every pyerkconf file
+        conf = p.settings.CONF
+
+        self.assertTrue(len(conf) != 0)
+
     # noinspection PyUnresolvedReferences
     # (above noinspection is necessary because of the @-operator which is undecleared for strings)
     def test_core1(self):

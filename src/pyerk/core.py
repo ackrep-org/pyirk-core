@@ -261,13 +261,22 @@ class Entity(abc.ABC):
             # todo: specify currently relevant language here (influences the return value); for now: using default
             language = settings.DEFAULT_DATA_LANGUAGE
 
-            filtered_res = []
+            filtered_res_explicit_lang = []
+            filtered_res_without_lang = []
             for elt in res:
 
-                # if no language is defined (e.g. ordinary string) -> use default
-                lng = getattr(elt, "language", settings.DEFAULT_DATA_LANGUAGE)
-                if lng == language:
-                    filtered_res.append(elt)
+                # if no language is defined (e.g. ordinary string) -> use interpret this as match
+                # (but only if no other result with matching language attribute is available)
+                lng = getattr(elt, "language", None)
+                if lng is None:
+                    filtered_res_without_lang.append(elt)
+                elif lng == language:
+                    filtered_res_explicit_lang.append(elt)
+
+            if filtered_res_explicit_lang:
+                filtered_res = filtered_res_explicit_lang
+            else:
+                filtered_res = filtered_res_without_lang
 
             if len(filtered_res) == 0:
                 return None

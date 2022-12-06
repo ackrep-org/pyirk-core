@@ -422,15 +422,29 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         self.assertEqual(new_default_label, label2)
         self.assertEqual(new_default_label.language, "de")
 
-        # however, changing the default language leaves undefined how to interpret raw strings (i.e. non-Literals)
-        # currently they are interpreted as from the default language
-        # thus this gives an error:
+        new_default_description = itm.R2
+        self.assertEqual(new_default_description, "test-beschreibung auf deutsch"@p.de)
 
-        try:
-            new_default_description = itm.R2
-        except ValueError:
-            print("unexpectedly found more then one object for relation R2 and language de")
-            pass
+        with p.uri_context(uri=TEST_BASE_URI):
+            itm2 = p.create_item(
+                key_str=p.pop_uri_based_key("I"),
+
+                # multiple values to R1 can be passed using a list
+                R1__has_label=["test-label2", "test-label2-de"@p.de],
+                R2__has_description="test-description2 in english",
+            )
+
+        # in case of ordinary strings they should be used if no value is available for current language
+
+        self.assertEqual(p.settings.DEFAULT_DATA_LANGUAGE, "de")
+        self.assertEqual(itm2.R1, "test-label2-de"@p.de)
+        self.assertEqual(itm2.R2, "test-description2 in english")
+
+        p.settings.DEFAULT_DATA_LANGUAGE = "en"
+        self.assertEqual(itm2.R1, "test-label2")
+        self.assertEqual(itm2.R2, "test-description2 in english")
+
+        p.settings.DEFAULT_DATA_LANGUAGE = "en"
 
     def test_c03__nontrivial_metaclasses(self):
         with p.uri_context(uri=TEST_BASE_URI):

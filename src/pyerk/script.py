@@ -94,6 +94,13 @@ def main():
     )
 
     parser.add_argument(
+        "-djs",
+        "--start-django-shell",
+        help="start the django shell from the current directory (mainly useful for development)",
+        action="store_true",
+    )
+
+    parser.add_argument(
         "--dbg", help="start debug routine", default=None, action="store_true"
     )
 
@@ -150,6 +157,16 @@ def main():
             # exit(10)
             raise
         pyerkdjango.core.start_django()
+    elif args.start_django_shell:
+        try:
+            import pyerkdjango.core
+        except ImportError:
+            print(
+                aux.bred("Error:"), "the module pyerkdjango seems not to be installed."
+            )
+            # exit(10)
+            raise
+        pyerkdjango.core.start_django_shell()
     else:
         print("nothing to do, see option `--help` for more info")
 

@@ -36,7 +36,7 @@ def main():
     parser.add_argument(
         "-l",
         "--load-mod",
-        help="load module from path with prefix. You might want to provide the `-rwd` flag",
+        help="load module from path with prefix.",
         nargs=2,
         default=None,
         metavar=("MOD_PATH", "PREFIX"),
@@ -179,7 +179,7 @@ def process_mod(
         msg = "using mod paths which are not relative to workdir is deprecated since pyerk version 0.6.0"
         raise DeprecationWarning(msg)
 
-    smart_relative = not relative_to_workdir
+    smart_relative = None
     mod1 = erkloader.load_mod_from_path(
         path, prefix=prefix, smart_relative=smart_relative
     )

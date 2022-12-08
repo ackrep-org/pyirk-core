@@ -309,6 +309,7 @@ def get_erk_root_dir() -> str:
 
     # this allows to have a local-deployment copy of the erk-root which does not change on every edit of the
     # knowledge base
+    # TODO: obsolete? (this should respect pyerkconf.toml)
     if os.path.isfile(os.path.join(current_dir, "__erk-root__")):
         return current_dir
     dir_of_this_file = os.path.dirname(os.path.abspath(sys.modules.get(__name__).__file__))

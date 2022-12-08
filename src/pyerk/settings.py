@@ -37,7 +37,8 @@ OCSE_URI = "erk:/ocse/0.2"
 
 BASE_DIR = os.getenv("PYERK_BASE_DIR", "")
 if not BASE_DIR:
-    BASE_DIR = os.path.abspath("./")
+    BASE_DIR = "./"
+BASE_DIR = os.path.abspath(BASE_DIR)
 
 
 confpath = os.path.join(BASE_DIR, "pyerkconf.toml")

@@ -6,9 +6,6 @@ import pyerk
 import pathlib
 import functools
 
-from ipydex import IPS, activate_ips_on_exception
-
-activate_ips_on_exception()
 
 ModuleType = type(sys)
 

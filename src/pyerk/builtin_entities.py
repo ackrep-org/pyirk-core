@@ -1,8 +1,6 @@
 from typing import List, Union, Optional
 
-from ipydex import IPS, activate_ips_on_exception, set_trace
-
-activate_ips_on_exception()
+from ipydex import IPS  # noqa
 
 from .core import (
     create_builtin_relation,

@@ -29,8 +29,8 @@ from .auxiliary import (
 
 from ipydex import IPS, activate_ips_on_exception, set_trace
 
-
-activate_ips_on_exception()
+if os.environ.get("IPYDEX_AIOE") == "true":
+    activate_ips_on_exception()
 
 
 """

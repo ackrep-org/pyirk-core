@@ -41,23 +41,11 @@ if not BASE_DIR:
 BASE_DIR = os.path.abspath(BASE_DIR)
 
 
-confpath = os.path.join(BASE_DIR, "pyerkconf.toml")
-confpath_fallback = os.path.join(BASE_DIR, "pyerkconf-default.toml")
+confpath = os.path.join(BASE_DIR, "erkpackage.toml")
 
 
 try:
     with open(confpath, "rb") as fp:
         CONF = tomllib.load(fp)
 except FileNotFoundError:
-    try:
-        with open(confpath_fallback, "rb") as fp:
-            CONF = tomllib.load(fp)
-    except FileNotFoundError:
-        CONF = None
-
-if CONF is None:
-    msg = (
-        f"Could not load config file {confpath} from `BASE_DIR`. Please set env var `PYERK_BASE_DIR` or change "
-        "working directory to location of `pyerkconf.toml`."
-    )
-    raise FileNotFoundError(msg)
+    CONF = {}

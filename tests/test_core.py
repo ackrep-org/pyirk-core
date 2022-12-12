@@ -533,6 +533,13 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         with self.assertRaises(TypeError):
             Ia001.set_relation(p.R5["is part of"], [p.I4["Mathematics"], p.I5["Engineering"]])
 
+        with p.uri_context(uri=TEST_BASE_URI):
+            # check that assigning sequences is possible with explicit method.
+            Ia001.set_mutliple_relations(p.R5["is part of"], [p.I4["Mathematics"], p.I5["Engineering"]])
+
+        rel_objs = Ia001.get_relations("R5", return_obj=True)
+        self.assertEqual(rel_objs, [p.I4, p.I5])
+
         mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
         itm = p.ds.get_entity_by_key_str("ct__I4466__Systems_Theory")
         # construction: R5__is_part_of=[p.I4["Mathematics"], p.I5["Engineering"]]

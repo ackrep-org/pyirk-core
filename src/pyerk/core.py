@@ -332,6 +332,18 @@ class Entity(abc.ABC):
             else:
                 self.set_relation(key, value)
 
+    def set_mutliple_relations(
+            self, relation: Union["Relation", str], obj_seq: Union[tuple, list], *args, **kwargs
+    ) -> List["RelationEdge"]:
+        """
+        Convenience function to create multiple RelationEdges at once
+        """
+        res_list = []
+        for obj in obj_seq:
+            res_list.append(self.set_relation(relation, obj, *args, **kwargs))
+
+        return res_list
+
     def set_relation(
         self,
         relation: Union["Relation", str],

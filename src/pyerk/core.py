@@ -16,9 +16,9 @@ from typing import Dict, Union, List, Iterable, Optional
 from rdflib import Literal
 import re
 
-from . import auxiliary as aux
-from . import settings
-from .auxiliary import (
+from pyerk import auxiliary as aux
+from pyerk import settings
+from  pyerk.auxiliary import (
     InvalidURIError,
     InvalidPrefixError,
     PyERKError,
@@ -151,8 +151,8 @@ class Entity(abc.ABC):
             pass
         try:
             res = process_key_str(attr_name)
-        except KeyError as err:
-            # this happens if a syntactically valid short key could not be resolved
+        except (KeyError, aux.UnknownURIError) as err:
+            # this happens if a syntactically valid key string could not be resolved
             raise AttributeError(*err.args)
         if not res.etype == EType.RELATION:
             r3 = getattr(self, "R3", None)
@@ -1004,7 +1004,7 @@ def check_processed_key_label(pkey: ProcessedStmtKey) -> None:
         return
 
     try:
-        entity = ds.get_entity_by_key_str(pkey.short_key)
+        entity = ds.get_entity_by_uri(pkey.uri)
     except KeyError:
         # entity does not exist -> no label to compare with
         return
@@ -1682,8 +1682,9 @@ class uri_context:
     Context manager for creating entities with a given uri
     """
 
-    def __init__(self, uri: str):
+    def __init__(self, uri: str, prefix: str = None):
         self.uri = uri
+        self.prefix = prefix
 
     def __enter__(self):
         """
@@ -1691,6 +1692,9 @@ class uri_context:
         :return:
         """
         _uri_stack.append(self.uri)
+
+        if self.prefix:
+            ds.uri_prefix_mapping.add_pair(self.uri, self.prefix)
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
@@ -1698,6 +1702,8 @@ class uri_context:
 
         res = _uri_stack.pop()
         assert res == self.uri
+        if self.prefix:
+            ds.uri_prefix_mapping.remove_pair(self.uri, self.prefix)
 
 
 def unload_mod(mod_uri: str, strict=True) -> None:

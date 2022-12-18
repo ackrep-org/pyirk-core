@@ -638,6 +638,52 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         # now, check label consistency in the test data
         _ = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, TEST_MOD_NAME)
 
+    def test_c12a__process_key_str2(self):
+
+        ct = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
+
+        p.ds.get_entity_by_key_str("ct__R7641__has_approximation") == ct.R7641["has approximation"]
+
+        with p.uri_context(uri=TEST_BASE_URI):
+            e0 = p.create_item(key_str="I0124", R1="some label")
+
+            # test prefix notation in keyword attributes
+            # first: missing prefix -> unknown key
+            with self.assertRaises(KeyError):
+                _ = p.create_item(key_str="I0125", R1="some label", R7641__has_approximation=e0)
+
+            # second: use prefix to adresse the correct relation
+            e1 = p.create_item(key_str="I0125", R1="some label", ct__R7641__has_approximation=e0)
+
+            # third: create a relation which has a short key collission with a relation from the ct module
+            _ = p.create_relation(key_str="R7641", R1="some test relation")
+            e2 = p.create_item(
+                key_str="I0126", R1="some label", ct__R7641__has_approximation=e0, R7641__some_test_relation="foo"
+            )
+
+        # this is the verbose way to adress a builtin relation
+        self.assertEqual(e1.bi__R1, "some label")
+
+        # this is the (necessary) way to adress a relation from an external module
+        self.assertEqual(e1.ct__R7641[0], e0)
+        self.assertEqual(e2.ct__R7641[0], e0)
+
+        # unittest module is also "extern" (because it is currently not active)
+        with self.assertRaises(AttributeError):
+            _ = e2.R7641__some_test_relation
+
+        with p.uri_context(uri=TEST_BASE_URI, prefix="ut"):
+
+            # adress the relation with correct prefix
+            self.assertEqual(e2.ut__R7641__some_test_relation[0], "foo")
+
+            # adress the relation without prefix (but with activated unittet module)
+            self.assertEqual(e2.R7641__some_test_relation[0], "foo")
+
+        # activate different module and use attribute without prefix
+        with p.uri_context(uri=ct.__URI__):
+            self.assertEqual(e2.R7641__has_approximation[0], e0)
+
     def test_c13__format_label(self):
         with p.uri_context(uri=TEST_BASE_URI):
             e1 = p.create_item(key_str="I0123", R1="1234567890")

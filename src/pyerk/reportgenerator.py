@@ -120,6 +120,14 @@ class ReportGenerator:
 
 # this is a function to be easier testable
 def resolve_entities_in_nested_data(data):
+    """
+    process data: detect and resolve pyerk key strings, leaving everything else unchanged (assuming literals)
+
+    :param data:    one of (dict, str, list, int, float)
+
+    If data is a structure this function is applied recursively to its elements (dict-case: to the values).
+    """
+
     assert isinstance(data, (dict, str, list, int, float))
 
     if isinstance(data, (int, float)):

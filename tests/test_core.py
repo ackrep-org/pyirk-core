@@ -619,7 +619,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         self.assertEqual(pkey1.short_key, "I0008234")
         self.assertEqual(pkey1.label, None)
 
-        pkey2 = p.process_key_str("R00001234__my_label")
+        pkey2 = p.process_key_str("R00001234__my_label", check=False)
 
         self.assertEqual(pkey2.short_key, "R00001234")
         self.assertEqual(pkey2.label, "my_label")
@@ -627,7 +627,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         # wrong syntax of key_str (missing "__")
         self.assertRaises(KeyError, p.process_key_str, "R1234XYZ")
 
-        pkey3 = p.process_key_str("R2__has_description")
+        pkey3 = p.process_key_str("R2__has_description", check=False)
 
         self.assertEqual(pkey3.short_key, "R2")
         self.assertEqual(pkey3.label, "has_description")

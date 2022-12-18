@@ -621,7 +621,7 @@ class DataStore:
         :return:            corresponding entity
         """
 
-        processed_key = process_key_str(key_str)
+        processed_key = process_key_str(key_str, mod_uri=mod_uri)
         assert processed_key.etype in (EType.ITEM, EType.RELATION)
 
         if mod_uri is None:
@@ -870,7 +870,9 @@ re_suffix_underscore = re.compile(r"^__([\w\-]+)$")  # \w means alphanumeric (in
 re_suffix_square_brackets = re.compile(r"""^\[["'](.+)["']\]""")
 
 
-def process_key_str(key_str: str, check: bool = True, resolve_prefix: bool = True) -> ProcessedStmtKey:
+def process_key_str(
+        key_str: str, check: bool = True, resolve_prefix: bool = True, mod_uri: str = None,
+) -> ProcessedStmtKey:
     """
     In ERK there are the following kinds of keys:
         - a) short_key like `R1234`
@@ -888,6 +890,7 @@ def process_key_str(key_str: str, check: bool = True, resolve_prefix: bool = Tru
     :param check:       boolean flag; determines if the label part should be checked wrt its consistency to
     :param resolve_prefix:
                         boolean flag; determines if
+    :param mod_uri:     optional uri of the module
 
 
     :return:            a data structure which allows to access short_key, type and label separately
@@ -940,7 +943,7 @@ def process_key_str(key_str: str, check: bool = True, resolve_prefix: bool = Tru
         raise KeyError(msg)
 
     if resolve_prefix:
-        _resolve_prefix(res)
+        _resolve_prefix(res, passed_mod_uri=mod_uri)
 
     if check:
         aux.ensure_valid_short_key(res.short_key)
@@ -949,20 +952,33 @@ def process_key_str(key_str: str, check: bool = True, resolve_prefix: bool = Tru
     return res
 
 
-def _resolve_prefix(pr_key: ProcessedStmtKey) -> None:
-    # get uri from prefix
-    mod_uri = get_active_mod_uri(strict=False)
+def _resolve_prefix(pr_key: ProcessedStmtKey, passed_mod_uri: str = None) -> None:
+    """
+    get uri from prefix or from passed argument or from active module
+    """
+    active_mod_uri = get_active_mod_uri(strict=False)
 
     if pr_key.prefix is None:
-        if mod_uri is None:
-            # assume that `builtin_entities` is meant
-            mod_uri = settings.BUILTINS_URI
+        if active_mod_uri is None:
+            if passed_mod_uri:
+                mod_uri = passed_mod_uri
+            else:
+                # assume that `builtin_entities` is meant
+                mod_uri = settings.BUILTINS_URI
         else:
             # Situation: create_item(..., R321="some value") within an active module
             # (no prefix). short_key R321 could refer to active module or to builtin_entities -> search in this order
 
-            # 1. check active mod
-            candidate_uri = aux.make_uri(mod_uri, pr_key.short_key)
+            # 1. check that passed_mod_uri does not contradict
+            if passed_mod_uri and (passed_mod_uri != active_mod_uri):
+                msg = (
+                    f"encountered inconsistent uris for object with key_str {pr_key.original_key_str}. "
+                    f"from active mod: '{active_mod_uri}' vs explicitly passed: '{passed_mod_uri}'."
+                )
+                raise aux.InvalidURIError(msg)
+
+            # 2. check active mod
+            candidate_uri = aux.make_uri(active_mod_uri, pr_key.short_key)
             res_entity = ds.get_entity_by_uri(candidate_uri, strict=False)
 
             if res_entity is not None:
@@ -973,19 +989,26 @@ def _resolve_prefix(pr_key: ProcessedStmtKey) -> None:
             candidate_uri = aux.make_uri(settings.BUILTINS_URI, pr_key.short_key)
             res_entity = ds.get_entity_by_uri(candidate_uri, strict=False)
 
-            # if res_entity is still None no entity could be found
             if res_entity is not None:
                 pr_key.uri = candidate_uri
                 return
             else:
                 # if res_entity is still None no entity could be found
                 msg = (
-                    f"No entity could be found for short_key {pr_key.short_key}, neither in active module ({mod_uri}) "
-                    f"nor in builin_entities ({settings.BUILTINS_URI})"
+                    f"No entity could be found for short_key {pr_key.short_key}, neither in active module "
+                    f"({active_mod_uri}) nor in builin_entities ({settings.BUILTINS_URI})"
                 )
                 raise KeyError(msg)
     else:
+        # prefix was not not None
         mod_uri = ds.get_uri_for_prefix(pr_key.prefix)
+
+        if passed_mod_uri and (passed_mod_uri != active_mod_uri):
+            msg = (
+                f"encountered inconsistent uris for object with key_str {pr_key.original_key_str}. "
+                f"from prefix mod: '{mod_uri}' vs explicitly passed: '{passed_mod_uri}'."
+            )
+            raise aux.InvalidURIError(msg)
 
     pr_key.uri = aux.make_uri(mod_uri, pr_key.short_key)
 
@@ -1008,12 +1031,14 @@ def check_processed_key_label(pkey: ProcessedStmtKey) -> None:
     except KeyError:
         # entity does not exist -> no label to compare with
         return
-    label_compare_str = entity.R1.replace(" ", "_")
+    label_compare_str1 = entity.R1
+    label_compare_str2 = entity.R1.replace(" ", "_")
 
-    if label_compare_str.lower() != pkey.label.lower():
+    if pkey.label.lower() not in (label_compare_str1.lower(), label_compare_str2.lower()):
         msg = (
-            f'check of label consistency failed for key {pkey.original_key_str}. Expected:  "{label_compare_str}"  '
-            f'but got   "{pkey.label}"  . Note: this test is *not* case-sensitive.'
+            f'check of label consistency failed for key {pkey.original_key_str}. Expected:  one of '
+            f'("{label_compare_str1}", "{label_compare_str2}") but got  "{pkey.label}". '
+            'Note: this test is *not* case-sensitive.'
         )
         raise ValueError(msg)
 

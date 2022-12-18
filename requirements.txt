@@ -1,12 +1,11 @@
 pyyaml
 ipydex
 colorama
-# owlready2
-# rdflib
-# pydantic
+rdflib
 addict
 networkx
 nxv
 rdflib
 jinja2
 gitpython
+tomli >= 1.1.0 ; python_version < "3.11"

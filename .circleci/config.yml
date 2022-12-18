@@ -28,6 +28,11 @@ jobs: # A basic unit of work in a run
           paths:
             - "venv"
       - run:
+          name: Test cli
+          command: |
+            . venv/bin/activate
+            pyerk --help
+      - run:
           name: Load ERK Modules
           command: |
             echo Cloning erk-data

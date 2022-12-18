@@ -6,7 +6,7 @@ from os.path import join as pjoin
 import rdflib
 
 # noinspection PyUnresolvedReferences
-from ipydex import IPS, activate_ips_on_exception, set_trace
+from ipydex import IPS, activate_ips_on_exception, set_trace  # noqa
 import pyerk as p
 import pyerk.visualization as visualization
 import git
@@ -199,7 +199,7 @@ class Test_00_Core(HouskeeperMixin, unittest.TestCase):
         self.assertEqual(p.I1.uri, f"{p.BUILTINS_URI}#I1")
         self.assertEqual(p.R1.uri, f"{p.BUILTINS_URI}#R1")
 
-        with self.assertRaises(p.EmptyURIStackError) as cm:
+        with self.assertRaises(p.EmptyURIStackError):
             itm = p.create_item(key_str=p.pop_uri_based_key("I"), R1="unit test item")
 
         with p.uri_context(uri=TEST_BASE_URI):
@@ -210,13 +210,13 @@ class Test_00_Core(HouskeeperMixin, unittest.TestCase):
         self.assertEqual(rel.uri, f"{TEST_BASE_URI}#{rel.short_key}")
 
     def test_load_multiple_modules(self):
-        tmod1 = p.erkloader.load_mod_from_path(pjoin(TEST_DATA_DIR1, "tmod1.py"), prefix="tm1")
+        _ = p.erkloader.load_mod_from_path(pjoin(TEST_DATA_DIR1, "tmod1.py"), prefix="tm1")
         # TODO: to be continued where tmod1 itself loads tmod2...
 
 
 # noinspection PyPep8Naming
 class Test_01_Core(HouskeeperMixin, unittest.TestCase):
-    def test_aa0__directory_structure(self):
+    def test_a01__directory_structure(self):
         pyerk_dir = pjoin(ERK_ROOT_DIR, "pyerk-core")
         django_gui_dir = pjoin(ERK_ROOT_DIR, "pyerk-django")
 
@@ -226,12 +226,12 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
             self.assertTrue(os.path.isdir(django_gui_dir))
         self.assertTrue(os.path.isdir(TEST_DATA_PARENT_PATH))
 
-    def test_aa1(self):
+    def test_a01__test_independence(self):
         """
         The first test ensures, that TestCases do not influence each other
         """
 
-        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
+        _ = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
 
         self.tearDown()
 
@@ -257,20 +257,29 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         self.assertEqual(len(diff3), 0)
         self.assertEqual(len(diff4), 0)
 
-    # TODO: trigger loading of unittest version of ocse via envvar
-    def test_a01(self):
+    def test_a03_tear_down(self):
         """
-        ensure that the default settingsfile is loaded correctly
-        """
-        # this is a variable which should be present in every pyerkconf file
-        conf = p.settings.CONF
+        test if tear_down of TestClass works properly
 
-        # self.assertTrue(len(conf) != 0)
-        self.assertTrue(len(conf) >= 0)
+        :return:
+        """
+
+        # ensure that builtins are loaded
+        self.assertGreater(len(p.ds.items), 40)
+        self.assertGreater(len(p.ds.relations), 40)
+        self.assertGreater(len(p.ds.relation_edge_uri_map), 300)
+
+        # ensure that no residuals are left from last test
+        non_builtin_rledges = [k for k in p.ds.relation_edge_uri_map.keys() if not k.startswith(p.BUILTINS_URI)]
+        self.assertEqual(len(non_builtin_rledges), 0)
+
+        non_builtin_entities = [k for k in p.ds.items.keys() if not k.startswith(p.BUILTINS_URI)]
+        non_builtin_entities += [k for k in p.ds.relations.keys() if not k.startswith(p.BUILTINS_URI)]
+        self.assertEqual(len(non_builtin_entities), 0)
 
     # noinspection PyUnresolvedReferences
     # (above noinspection is necessary because of the @-operator which is undecleared for strings)
-    def test_core1(self):
+    def test_b01__core1_basics(self):
         mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
         self.assertEqual(mod1.I3749.R1, "Cayley-Hamilton theorem")
 
@@ -294,7 +303,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         mod_uri = p.ds.uri_prefix_mapping.b["ct"]
         p.unload_mod(mod_uri)
 
-    def test_b01_builtins1(self):
+    def test_b02_builtins1(self):
         """
         Test the mechanism to endow the Entity class with custom methods (on class and on instance level)
         :return:
@@ -329,25 +338,16 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         with self.assertRaises(AttributeError):
             itm2.example_func2(1234)
 
-    def test_b02_tear_down(self):
+    # TODO: trigger loading of unittest version of ocse via envvar
+    def test_a02__load_settings(self):
         """
-        test if tear_down of TestClass works properly
-
-        :return:
+        ensure that the default settingsfile is loaded correctly
         """
+        # this is a variable which should be present in every pyerkconf file
+        conf = p.settings.CONF
 
-        # ensure that builtins are loaded
-        self.assertGreater(len(p.ds.items), 40)
-        self.assertGreater(len(p.ds.relations), 40)
-        self.assertGreater(len(p.ds.relation_edge_uri_map), 300)
-
-        # ensure that no residuals are left from last test
-        non_builtin_rledges = [k for k in p.ds.relation_edge_uri_map.keys() if not k.startswith(p.BUILTINS_URI)]
-        self.assertEqual(len(non_builtin_rledges), 0)
-
-        non_builtin_entities = [k for k in p.ds.items.keys() if not k.startswith(p.BUILTINS_URI)]
-        non_builtin_entities += [k for k in p.ds.relations.keys() if not k.startswith(p.BUILTINS_URI)]
-        self.assertEqual(len(non_builtin_entities), 0)
+        # self.assertTrue(len(conf) != 0)
+        self.assertTrue(len(conf) >= 0)
 
     def test_c01__ct_loads_math(self):
         """
@@ -463,7 +463,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
 
         self.assertTrue(i1.R4, p.I34)
 
-    def test_evaluated_mapping(self):
+    def test_c04__evaluated_mapping(self):
 
         res = p.ds.relation_edges.get("RE6229")
         self.assertIsNone(res)
@@ -483,7 +483,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
 
         self.assertEqual(res.R4__is_instance_of, p.I32["evaluated mapping"])
 
-    def test_evaluated_mapping2(self):
+    def test_c05__evaluated_mapping2(self):
         mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
 
         with p.uri_context(uri=TEST_BASE_URI):
@@ -501,7 +501,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         elements = arg_tup.R39__has_element
         self.assertEqual(tuple(elements), (h, f, x))
 
-    def test_tuple(self):
+    def test_c06__tuple(self):
 
         data = (10, 11, 12, 13, p.I1, "some string")
 
@@ -517,15 +517,15 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         res = tup.R39__has_element
         self.assertEqual(data, tuple(res))
 
-    def test_scope_vars(self):
+    def test_c07__scope_vars(self):
 
         # this tests for a bug with labels of scope vars
-        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
+        _ = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
         def_itm = p.ds.get_entity_by_key_str("ct__I9907__definition_of_square_matrix")
         matrix_instance = def_itm.M
         self.assertEqual(matrix_instance.R1, "M")
 
-    def test_relations_with_sequence_as_argument(self):
+    def test_c08__relations_with_sequence_as_argument(self):
         with p.uri_context(uri=TEST_BASE_URI):
             Ia001 = p.create_item(R1__has_label="test item")
 
@@ -540,7 +540,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         rel_objs = Ia001.get_relations("R5", return_obj=True)
         self.assertEqual(rel_objs, [p.I4, p.I5])
 
-        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
+        _ = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
         itm = p.ds.get_entity_by_key_str("ct__I4466__Systems_Theory")
         # construction: R5__is_part_of=[p.I4["Mathematics"], p.I5["Engineering"]]
         res = itm.R5
@@ -548,8 +548,8 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         self.assertIn(p.I4["Mathematics"], res)
         self.assertIn(p.I5["Engineering"], res)
 
-    def test_is_instance_of_generalized_metaclass(self):
-        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
+    def test_c09__is_instance_of_generalized_metaclass(self):
+        _ = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
 
         itm1 = p.ds.get_entity_by_key_str("I2__Metaclass")
         itm2 = p.ds.get_entity_by_key_str("I12__mathematical_object")
@@ -567,16 +567,16 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
             itm4 = p.instance_of(itm3)
         self.assertFalse(p.allows_instantiation(itm4))
 
-    def test_qualifiers(self):
-        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
-        mod2 = p.erkloader.load_mod_from_path(TEST_DATA_PATH3, prefix="ag")
+    def test_c10__qualifiers(self):
+        _ = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
+        _ = p.erkloader.load_mod_from_path(TEST_DATA_PATH3, prefix="ag")
 
         itm1: p.Item = p.ds.get_entity_by_key_str("ag__I2746__Rudolf_Kalman")
         rel1, rel2 = itm1.get_relations("ag__R1833__has_employer")[:2]
         self.assertEqual(len(rel1.qualifiers), 2)
         self.assertEqual(len(rel2.qualifiers), 2)
 
-    def test_equation(self):
+    def test_c11__equation(self):
         mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
 
         # get item via prefix and key
@@ -610,7 +610,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         tmp = P(A)
         self.assertEqual(lhs, tmp)
 
-    def test_process_key_str(self):
+    def test_c12__process_key_str(self):
 
         # first, check label consistency in builtin_enities
         # note these keys do not to exist
@@ -636,9 +636,9 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         self.assertRaises(ValueError, p.process_key_str, "R2__has_description_XYZ")
 
         # now, check label consistency in the test data
-        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, TEST_MOD_NAME)
+        _ = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, TEST_MOD_NAME)
 
-    def test_format_label(self):
+    def test_c13__format_label(self):
         with p.uri_context(uri=TEST_BASE_URI):
             e1 = p.create_item(key_str="I0123", R1="1234567890")
         node = visualization.create_node(e1, url_template="")
@@ -667,7 +667,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         label = node.get_dot_label(render=True)
         self.assertEqual(label, 'I0126\\n["12 34567-\\n890abcdefgh"]')
 
-    def test_visualization1(self):
+    def test_c14__visualization1(self):
 
         res_graph: visualization.nx.DiGraph = visualization.create_nx_graph_from_entity(
             p.u("I21__mathematical_relation")
@@ -681,7 +681,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         res_graph: visualization.nx.DiGraph = visualization.create_nx_graph_from_entity(auto_item.uri)
         self.assertGreater(res_graph.number_of_nodes(), 7)
 
-    def test_visualization2(self):
+    def test_c15__visualization2(self):
         # test rendering of dot
 
         res = visualization.visualize_entity(p.u("I21__mathematical_relation"), write_tmp_files=WRITE_TMP_FILES)
@@ -737,7 +737,7 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
     def setup_data2(self):
         pass
 
-    def test_01_basics(self):
+    def test_a01__basics(self):
 
         self.assertIn(TEST_BASE_URI, p.ds.entities_created_in_mod)
         self.assertEqual(len(p.ds.entities_created_in_mod), 2)
@@ -752,7 +752,7 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         self.assertIn(TEST_BASE_URI, p.ds.entities_created_in_mod)
         self.assertEqual(len(p.ds.entities_created_in_mod), 2)
 
-    def test_ruleengine01(self):
+    def test_c02__ruleengine01(self):
         itm1 = p.I12["mathematical object"]
         res = p.ruleengine.get_simple_properties(itm1)
         self.assertEqual(len(res), 2)
@@ -769,12 +769,12 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         all_rules = p.ruleengine.get_all_rules()
         self.assertGreater(len(all_rules), 0)
 
-    def test_ruleengine02(self):
+    def test_c03__ruleengine02(self):
         G = p.ruleengine.create_simple_graph()
         self.assertGreater(G.number_of_nodes(), 30)
         self.assertGreater(G.number_of_edges(), 30)
 
-    def test_ruleengine03(self):
+    def test_c04__ruleengine03(self):
 
         ra = p.ruleengine.RuleApplicator(self.rule1)
 
@@ -790,14 +790,14 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         self.assertEqual(len(res_graph), 0)
 
         # in this erk module some properties have subproperties
-        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct", modname=TEST_MOD_NAME)
+        _ = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct", modname=TEST_MOD_NAME)
 
         # create a new RuleApplicator because the overal graph changed
         ra = p.ruleengine.RuleApplicator(self.rule1)
         res_graph = ra.match_subgraph_P()
         self.assertGreater(len(res_graph), 5)
 
-    def test_ruleengine04(self):
+    def test_c05__ruleengine04(self):
 
         mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct", modname=TEST_MOD_NAME)
         self.assertEqual(len(mod1.I9642["local exponential stability"].get_relations("R17__is_subproperty_of")), 1)
@@ -809,7 +809,7 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         for r in res:
             print(r)
 
-    def test_ruleengine05(self):
+    def test_c06__ruleengine05(self):
         premises_rledgs = p.ruleengine.filter_relevant_rledgs(
             self.rule1.scp__premises.get_inv_relations("R20__has_defining_scope")
         )
@@ -819,7 +819,7 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
             p.ruleengine.apply_all_semantic_rules()
 
         with p.uri_context(uri=TEST_BASE_URI):
-            res = p.ruleengine.apply_all_semantic_rules()
+            _ = p.ruleengine.apply_all_semantic_rules()
 
 
 class Test_Z_Core(HouskeeperMixin, unittest.TestCase):
@@ -843,7 +843,7 @@ class Test_Z_Core(HouskeeperMixin, unittest.TestCase):
         ]
         self.assertEqual(res2, expected_result)
 
-    def test_sparql_query2(self):
+    def test_c01__sparql_query2(self):
         # TODO: replace by Model entity once it exists
         mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, TEST_MOD_NAME)
 
@@ -873,7 +873,7 @@ class Test_Z_Core(HouskeeperMixin, unittest.TestCase):
         ]
         self.assertEqual(res2, expected_result)
 
-    def test_sparql_zz_preprocessing(self):
+    def test_c02__sparql_zz_preprocessing(self):
         mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, TEST_MOD_NAME)
 
         with p.uri_context(uri=TEST_BASE_URI):
@@ -931,7 +931,7 @@ class Test_Z_Core(HouskeeperMixin, unittest.TestCase):
 
 
 class Test_05_Script1(HouskeeperMixin, unittest.TestCase):
-    def test_visualization(self):
+    def test_c01__visualization(self):
         cmd = "pyerk -vis I12"
         res = os.system(cmd)
         self.assertEqual(res, 0)
@@ -948,7 +948,7 @@ class Test_06_reportgenerator(HouskeeperMixin, unittest.TestCase):
         except FileNotFoundError:
             pass
 
-    def test_01__resolve_entities_in_nested_data(self):
+    def test_c01__resolve_entities_in_nested_data(self):
 
         reind = rgen.resolve_entities_in_nested_data
         some_list = [1, 123.4, "foobar"]
@@ -965,7 +965,7 @@ class Test_06_reportgenerator(HouskeeperMixin, unittest.TestCase):
         self.assertEqual(reind(data1), data1exp)
 
     @p.erkloader.preserve_cwd
-    def test_02__report_generation1(self):
+    def test_c02__report_generation1(self):
 
         reportconf_path1 = pjoin(TEST_DATA_DIR1, "reports", "reportconf.toml")
         reporttex_path1 = pjoin(TEST_DATA_DIR1, "reports", "report.tex")

@@ -1095,7 +1095,11 @@ def create_item(key_str: str = "", **kwargs) -> Item:
             msg = f"unexpected key: {dict_key} during creation of item {item_key}."
             raise ValueError(msg)
 
-        new_kwargs[processed_key.short_key] = value
+        if processed_key.prefix:
+            new_key = f"{processed_key.prefix}__{processed_key.short_key}"
+        else:
+            new_key = processed_key.short_key
+        new_kwargs[new_key] = value
 
     itm = Item(base_uri=mod_uri, key_str=item_key, **new_kwargs)
     assert itm.uri not in ds.items, f"Problematic (duplicated) uri: {itm.uri}"

@@ -20,7 +20,7 @@ def create_parser():
     generate the cli docs.
     """
 
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(description="command line interface to ERK (emergent representation of knowledge)")
     parser.add_argument(
         "inputfile",
         help="input file",

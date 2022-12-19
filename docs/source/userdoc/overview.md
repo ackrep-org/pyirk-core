@@ -29,7 +29,7 @@ pyerk --load-mod demo-module.py demo -vis __all__
 
 ## Command Line Interface
 
-For an overview of available command line options, see:
+For an overview of available command line options, see the [CLI page](cli) or the command:
 
 ```
 pyerk -h

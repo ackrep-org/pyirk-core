@@ -902,7 +902,6 @@ def create_evaluated_mapping(mapping: Item, *args) -> Item:
             arg_repr_list.append(str(arg))
 
     args_repr = ", ".join(arg_repr_list)
-    r1 = f"applied mapping: {mapping.R1}({args_repr})"
 
     # achieve determinism: if this mapping-item was already evaluated with the same args we want to return
     # the same evaluated-mapping-item again
@@ -922,8 +921,18 @@ def create_evaluated_mapping(mapping: Item, *args) -> Item:
             if tuple(old_arg_tup.R39__has_element) == args:
                 return i32_instance
 
+    target_class = mapping.R11__has_range_of_result
+    
+    # TODO: this should be ensured by consistency check: for operatators R11 should be functional
+    if target_class:
+        assert len(target_class) == 1
+        target_class = target_class[0]
+    else:
+        target_class = I32["evaluated mapping"]
+    
+    r1 = f"{target_class.R1}: {mapping.R1}({args_repr})"
     # for loop finished regularly -> the application `mapping(arg)` has not been created before -> create new item
-    ev_mapping = instance_of(I32["evaluated mapping"], r1=r1)
+    ev_mapping = instance_of(target_class, r1=r1)
     ev_mapping.set_relation(R35["is applied mapping of"], mapping)
 
     arg_tup = new_tuple(*args)

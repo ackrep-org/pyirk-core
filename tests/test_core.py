@@ -492,9 +492,11 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
             x = p.instance_of(mod1.I1168["point in state space"])
 
             Lderiv = mod1.I1347["Lie derivative of scalar field"]
+            
+            # this creates a new item (and thus must be executed with a non-empty uri stack, i.e. within this context)
             h2 = Lderiv(h, f, x)
 
-        self.assertEqual(h2.R4__is_instance_of, p.I32["evaluated mapping"])
+        self.assertEqual(h2.R4__is_instance_of, mod1.I9923["scalar field"])
 
         arg_tup = h2.R36__has_argument_tuple
         self.assertEqual(arg_tup.R4__is_instance_of, p.I33["tuple"])

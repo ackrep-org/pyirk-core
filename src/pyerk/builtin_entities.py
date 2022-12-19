@@ -1402,6 +1402,21 @@ R49 = create_builtin_relation(
     R33__has_corresponding_wikidata_entity="P582",
 )
 
+
+R50 = create_builtin_relation(
+    key_str="R50",
+    R1__has_label="is different from",
+    R2__has_description=(
+        "specifies that subject and object are different"
+    ),
+    R42__is_symmetrical=True,
+    R18__has_usage_hint=(
+        "this might be used in two situations: a) to prevent accidental confusion during modeling; "
+        "b) to express a nontrivial fact of inequality, e.g. that a person has two childs and not just one with "
+        "two names."
+    ),
+)
+
 # testing
 
 

@@ -31,14 +31,6 @@ Pyerk also aims to allow for much greater [expressive power](https://en.wikipedi
 The whole Pyerk project and even much more this documentation is currently still under development and should be considered as incomplete and only partially functional. Nevertheless some usefulness cannot be excluded.
 
 
-```{toctree}
-:caption: Introductory Information
-:maxdepth: 1
-:hidden:
-introduction/overview
-```
-[Overview](introduction/overview)
-
 ## User Documentation
 Information regarding the local usage of pyerk.
 ```{toctree}

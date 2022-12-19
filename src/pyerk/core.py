@@ -89,9 +89,7 @@ class Entity(abc.ABC):
         self.uri = None  # will be set in __post_init__
 
     def __call__(self, *args, **kwargs):
-        # returning self allows to use I1234 and I1234("human readable item name") interchageably
-        # (once the object is created)
-
+        
         custom_call_method = getattr(self, "_custom_call", None)
         if custom_call_method is None:
             msg = f"entity {self} has not defined a _custom_call-method and thus cannot be called"
@@ -883,6 +881,8 @@ def process_key_str(
         - e) index-labeld key like  `R1234["my relation"]`
         - f) prefixed index-labeld key like  `bi__R1234["my relation"]`
 
+    See also: userdoc/overview.html#keys-in-pyerk
+    
     Also, the leading character indicates the entity type (EType).
 
     This function expects any of these cases.

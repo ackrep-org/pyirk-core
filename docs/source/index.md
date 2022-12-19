@@ -52,3 +52,28 @@ devdoc/overview
 ```
 - [Overview](devdoc/overview)
 
+
+## CLI
+
+```{toctree}
+:maxdepth: 1
+:caption: Command Line Interface
+:hidden:
+userdoc/cli
+```
+- [Command Line Interface (CLI)](userdoc/cli)
+
+
+## More
+
+
+```{admonition} Note
+The following links are not yet functional.
+```
+```{eval-rst}
+
+* :ref:`genindex`
+* :ref:`modindex`
+* :ref:`search`
+
+```

@@ -14,7 +14,11 @@ from ipydex import IPS, activate_ips_on_exception
 activate_ips_on_exception()
 
 
-def main():
+def create_parser():
+    """
+    Returns the parser object which is then evaluated in  main(). This is neccessary for sphinx to automatically
+    generate the cli docs.
+    """
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -103,8 +107,13 @@ def main():
     parser.add_argument(
         "--dbg", help="start debug routine", default=None, action="store_true"
     )
+    
+    return parser
+    
 
-    args = parser.parse_args()
+def main():
+
+    args = create_parser().parse_args()
 
     if args.dbg:
         debug()

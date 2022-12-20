@@ -35,7 +35,7 @@ TEST_DATA_DIR1 = pjoin(ERK_ROOT_DIR, "pyerk-core", "tests", "test_data")
 
 # path for "realistic" test data
 TEST_DATA_PARENT_PATH = pjoin(ERK_ROOT_DIR, "erk-data-for-unittests")
-TEST_DATA_REPO_PATH = pjoin(TEST_DATA_PARENT_PATH, "erk-ocse")
+TEST_DATA_REPO_PATH = pjoin(TEST_DATA_PARENT_PATH, "ocse")
 TEST_DATA_PATH2 = pjoin(TEST_DATA_REPO_PATH, "control_theory1.py")
 TEST_DATA_PATH3 = pjoin(TEST_DATA_REPO_PATH, "agents1.py")
 TEST_MOD_NAME = "control_theory1"

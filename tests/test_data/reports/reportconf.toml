@@ -11,8 +11,8 @@ journal = "default"
 
 # use absolute or relative paths here
 # (to simplify unittests, a path beginning with `$` will be preprocessed accordingly)
-ct = "$__erk-root__/erk-data-for-unittests/erk-ocse/control_theory1.py"
-ag = "$__erk-root__/erk-data-for-unittests/erk-ocse/agents1.py"
+ct = "$__erk-root__/erk-data-for-unittests/ocse/control_theory1.py"
+ag = "$__erk-root__/erk-data-for-unittests/ocse/agents1.py"
 
 
 # use an obviously fictious author combinations

@@ -9,6 +9,7 @@ import inspect
 import types
 import abc
 import random
+import functools
 from enum import Enum, unique
 import re as regex
 from addict import Dict as attr_dict
@@ -555,6 +556,16 @@ class Entity(abc.ABC):
         else:
             res = rledg_res
         return res
+    
+
+def wrap_function_with_uri_context(func, uri):
+    
+    @functools.wraps(func)
+    def wrapped_func(*args, **kwargs):
+        with uri_context(uri=uri):
+            return func(*args, **kwargs)
+    
+    return wrapped_func
 
 
 class DataStore:

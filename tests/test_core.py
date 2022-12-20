@@ -37,6 +37,7 @@ TEST_DATA_DIR1 = pjoin(ERK_ROOT_DIR, "pyerk-core", "tests", "test_data")
 TEST_DATA_PARENT_PATH = pjoin(ERK_ROOT_DIR, "erk-data-for-unittests")
 TEST_DATA_REPO_PATH = pjoin(TEST_DATA_PARENT_PATH, "ocse")
 TEST_DATA_PATH2 = pjoin(TEST_DATA_REPO_PATH, "control_theory1.py")
+TEST_DATA_PATH_MA = pjoin(TEST_DATA_REPO_PATH, "math1.py")
 TEST_DATA_PATH3 = pjoin(TEST_DATA_REPO_PATH, "agents1.py")
 TEST_MOD_NAME = "control_theory1"
 
@@ -744,6 +745,33 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         self.assertIn(s1, res)
         self.assertIn(s2, res)
         self.assertIn(s3, res)
+        
+    def test_d01__wrap_function_with_uri_context(self):
+        ma = p.erkloader.load_mod_from_path(TEST_DATA_PATH_MA, prefix="ma")
+        
+        with p.uri_context(uri=TEST_BASE_URI, prefix="ut"):
+            A = p.instance_of(ma.I9906["square matrix"])
+            A.set_relation("ma__R5939__has_column_number", 7)
+        
+        
+        def test_func():
+            """
+            docstring
+            """
+            # this fails outside uri-context of math
+            n = A.R5939__has_column_number
+            return n
+        
+        with self.assertRaises(AttributeError):
+            test_func()
+        
+        wrapped_func = p.wrap_function_with_uri_context(test_func, ma.__URI__)
+        
+        self.assertEqual(wrapped_func.__doc__, test_func.__doc__)
+        
+        # now this call works as expected
+        res = wrapped_func()
+        self.assertEqual(res, 7)
 
 
 class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):

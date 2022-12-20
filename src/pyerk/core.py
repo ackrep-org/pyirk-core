@@ -313,7 +313,12 @@ class Entity(abc.ABC):
         """
         if name is None:
             name = getattr(func, "given_name", func.__name__)
-
+            
+        caller_frame = get_caller_frame(1)
+        
+        if mod_uri := caller_frame.f_locals.get("__URI__"):
+            func = wrap_function_with_uri_context(func, mod_uri)
+        
         # ensure that the func object has a `.given_name` attribute
         func.given_name = name
 

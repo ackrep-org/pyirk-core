@@ -43,7 +43,7 @@ TEST_MOD_NAME = "control_theory1"
 
 # useful to get the currently latest sha strings:
 # git log --pretty=oneline | head
-TEST_DATA_REPO_COMMIT_SHA = "c14fce05b92f8a23904d857167204c9a2a55a98c"  # (2022-12-20 03:05:45)
+TEST_DATA_REPO_COMMIT_SHA = "2ef9c27bf7b0743956edda558506626ac8b2dba0"  # (2022-12-20 17:11:24)
 
 # TODO: make this more robust (e.g. search for config file or environment variable)
 # TODO: put link to docs here (directory layout)
@@ -772,6 +772,24 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         # now this call works as expected
         res = wrapped_func()
         self.assertEqual(res, 7)
+
+    def test_d02__custom_call_post_process1(self):
+        
+        ma = p.erkloader.load_mod_from_path(TEST_DATA_PATH_MA, prefix="ma")
+        
+        
+        with p.uri_context(uri=TEST_BASE_URI, prefix="ut"):
+            A = p.instance_of(ma.I9906["square matrix"])
+            s = p.instance_of(ma.I5030["variable"])
+            
+            # construct sI - A
+            M = ma.I6324["canonical first order monic polynomial matrix"](A, s)
+            d = ma.I5359["determinant"](M)
+        
+        self.assertTrue(M.R4__is_instance_of, ma.I1935["polynomial matrix"])
+        self.assertTrue(M.ma__R8736__depends_polyonomially_on, s)
+        
+        self.assertTrue(d.ma__R8736__depends_polyonomially_on, s)
 
 
 class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):

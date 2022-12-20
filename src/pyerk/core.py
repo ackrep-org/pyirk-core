@@ -96,7 +96,13 @@ class Entity(abc.ABC):
             raise TypeError(msg)
         else:
             assert callable(custom_call_method)
-            return custom_call_method(*args, **kwargs)
+            
+            res = custom_call_method(*args, **kwargs)
+            
+            if custom_call_post_process := getattr(self, "_custom_call_post_process", None):
+                res = custom_call_post_process(res, *args, **kwargs)
+            
+            return res
 
     def idoc(self, adhoc_label: str):
         """

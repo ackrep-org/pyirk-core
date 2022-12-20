@@ -38,7 +38,7 @@ jobs: # A basic unit of work in a run
             cd erk-data-for-unittests
             git clone https://github.com/ackrep-org/ocse.git erk-ocse
             cd erk-ocse
-            git checkout for-unittests
+            git checkout ut__pyerk__main
             cd ..
             ls -R
       - run:

@@ -42,7 +42,7 @@ TEST_MOD_NAME = "control_theory1"
 
 # useful to get the currently latest sha strings:
 # git log --pretty=oneline | head
-TEST_DATA_REPO_COMMIT_SHA = "b795a5f16ca1e385e03b300f2e9601c6f3c03233"  # (2022-12-01 01:45:51)
+TEST_DATA_REPO_COMMIT_SHA = "c14fce05b92f8a23904d857167204c9a2a55a98c"  # (2022-12-20 03:05:45)
 
 # TODO: make this more robust (e.g. search for config file or environment variable)
 # TODO: put link to docs here (directory layout)
@@ -555,7 +555,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
 
         itm1 = p.ds.get_entity_by_key_str("I2__Metaclass")
         itm2 = p.ds.get_entity_by_key_str("I12__mathematical_object")
-        itm3 = p.ds.get_entity_by_key_str("ct__I4239__monovariate_polynomial")
+        itm3 = p.ds.get_entity_by_key_str("ma__I4239__monovariate_polynomial")
 
         # metaclass could be considered as an instance of itself because metaclasses are allowed to have
         # subclasses and instances (which is both true for I2__metaclass)

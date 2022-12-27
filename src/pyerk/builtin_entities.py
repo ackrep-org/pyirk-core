@@ -568,7 +568,8 @@ class ScopingCM:
         assert isinstance(variable_object, Entity)
 
         # allow simple access to the variables → put them into dict (after checking that the name is still free)
-        assert variable_name not in self.__dict__
+        msg = f"The name '{variable_name}' is already occupied in the scope `{self.scope}` of item `{self.item}`."
+        assert variable_name not in self.item.__dict__ and variable_name not in self.__dict__, msg
         self.item.__dict__[variable_name] = variable_object
 
         # keep track of added context vars

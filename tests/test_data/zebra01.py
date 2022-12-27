@@ -129,10 +129,9 @@ I902 = p.create_item(
 )
 
 with I902.scope("context") as cm:
-    cm.new_var(C1=p.instance_of(p.I2["Metaclass"])) # this is the class
+    cm.new_var(C1=p.instance_of(p.I2["Metaclass"]))  # this is the class
+    cm.new_var(P1=p.instance_of(cm.C1))  # this is the instance
     
-    # TODO: solve this more elegantly: adding the R4__is_instance_of-statement to this scope
-    cm.new_var(P1=p.instance_of(cm.C1, qualifiers=[p.qff_has_defining_scope(cm.scope)]))  # this is the instance
     cm.new_var(T1=p.instance_of(p.I33["tuple"]))
     cm.new_var(T2=p.instance_of(p.I33["tuple"]))
     cm.uses_external_entities(I902)

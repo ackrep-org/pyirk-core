@@ -919,14 +919,13 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
             _ = p.ruleengine.apply_all_semantic_rules()
 
     def test_c07__zebra_puzzle01(self):
-        ##!
         zb = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA01, prefix="zb")
         
         
         matching_rules = zb.unknown_beverage.get_relations("R54__is_matched_by_rule", return_obj=True)
         
         self.assertEqual(matching_rules, [])
-        new_stms = p.ruleengine.apply_all_semantic_rules(mod_context_uri=zb.__URI__)
+        new_stms = p.ruleengine.apply_semantic_rule(zb.I901, mod_context_uri=zb.__URI__)
         self.assertEqual(len(new_stms), 1)
         matching_rules = zb.unknown_beverage.get_relations("R54__is_matched_by_rule", return_obj=True)
         self.assertEqual(matching_rules, [zb.I901])

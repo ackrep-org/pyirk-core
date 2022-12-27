@@ -25,16 +25,27 @@ LITERAL_BASE_URI = "erk:/tmp/literals"
 
 def apply_all_semantic_rules(mod_context_uri=None) -> List[core.RelationEdge]:
     """
-    Create a RuleApplicator object for all rules and execute its apply-method.
+    Extract all semantic rules and apply them.
+    
+    :returns:  list of newly created statements
     """
     rule_instances = get_all_rules()
     new_rledg_list = []
     for rule in rule_instances:
-        ra = RuleApplicator(rule, mod_context_uri=mod_context_uri)
-        res = ra.apply()
+        res = apply_semantic_rule(rule, mod_context_uri)
         new_rledg_list.extend(res)
         
     return new_rledg_list
+
+def apply_semantic_rule(rule: core.Item, mod_context_uri: str = None) -> List[core.RelationEdge]:
+    """
+    Create a RuleApplicator instance for the rules, execute its apply-method, return the result (list of new statements)
+    """
+    assert rule.R4__is_instance_of == b.I41["semantic rule"]
+    ra = RuleApplicator(rule, mod_context_uri=mod_context_uri)
+    res = ra.apply()
+    return res
+    
 
 
 def get_all_rules():

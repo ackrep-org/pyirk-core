@@ -486,6 +486,10 @@ class Entity(abc.ABC):
 
         :return:            either the whole dict or just one value (of type list)
         """
+        
+        if key_str_or_uri is not None and not isinstance(key_str_or_uri, (str)):
+            msg = f"unexpected type for key_str_or_uri: {type(key_str_or_uri)}. Expected a str or None."
+            raise TypeError(msg)
 
         rel_dict = ds.relation_edges[self.uri]
         return self._return_relations(rel_dict, key_str_or_uri, return_subj, return_obj)

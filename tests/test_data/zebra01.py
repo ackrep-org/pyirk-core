@@ -119,18 +119,20 @@ with I901.scope("premises") as cm:
 with I901.scope("assertions") as cm:
     cm.new_rel(cm.P1, p.R54["is matched by rule"], I901)
 
+# ###############################################################################
+
 
 I902 = p.create_item(
     R1__has_label="zebra puzzle reasoning rule2",
     R2__has_description=(
-        "identify beverage by principle of exclusion"
+        "a step towards identification of beverage by principle of exclusion"
     ),
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
 with I902.scope("context") as cm:
     cm.new_var(C1=p.instance_of(p.I2["Metaclass"]))  # this is the class
-    cm.new_var(P1=p.instance_of(cm.C1))  # this is the instance
+    cm.new_var(P1=p.instance_of(cm.C1))  # this is the instance (this will be the beverage)
     
     cm.new_var(T1=p.instance_of(p.I33["tuple"]))
     cm.new_var(T2=p.instance_of(p.I33["tuple"]))
@@ -143,6 +145,37 @@ with I902.scope("premises") as cm:
 with I902.scope("assertions") as cm:
     cm.new_rel(cm.P1, p.R54["is matched by rule"], I902)
     
+# ###############################################################################
+
+
+
+I903 = p.create_item(
+    R1__has_label="zebra puzzle reasoning rule3",
+    R2__has_description=(
+        "identify beverage by principle of exclusion"
+    ),
+    R4__is_instance_of=p.I41["semantic rule"],
+)
+
+# TODO: prevent a scope from being called again
+with I903.scope("context") as cm:
+    cm.new_var(C1=p.instance_of(p.I2["Metaclass"]))  # this is the class
+    cm.new_var(P1=p.instance_of(cm.C1))  # this is the instance (this will be the beverage)
+    
+    cm.new_var(T1=p.instance_of(p.I33["tuple"]))
+    cm.new_var(T2=p.instance_of(p.I33["tuple"]))
+    cm.uses_external_entities(I903)
+    
+    
+with I903.scope("premises") as cm:
+    cm.new_rel(cm.C1, p.R51["is one of"], cm.T1)
+    cm.new_rel(cm.P1, p.R52["is none of"], cm.T2)
+    
+with I903.scope("assertions") as cm:
+    cm.new_rel(cm.P1, p.R54["is matched by rule"], I903)
+    
+# ###############################################################################
+
 
 p.end_mod()
 

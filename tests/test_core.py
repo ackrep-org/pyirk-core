@@ -34,7 +34,11 @@ ERK_ROOT_DIR = p.aux.get_erk_root_dir()
 TEST_DATA_DIR1 = pjoin(ERK_ROOT_DIR, "pyerk-core", "tests", "test_data")
 
 # path for "realistic" test data
-TEST_DATA_PARENT_PATH = pjoin(ERK_ROOT_DIR, "erk-data-for-unittests")
+
+# taking this from envvar allows to flexibly use other test-data during debugging
+TEST_DATA_PARENT_PATH = os.getenv("PYERK_TEST_DATA_PARENT_PATH", default=pjoin(ERK_ROOT_DIR, "erk-data-for-unittests"))
+
+
 TEST_DATA_REPO_PATH = pjoin(TEST_DATA_PARENT_PATH, "ocse")
 TEST_DATA_PATH2 = pjoin(TEST_DATA_REPO_PATH, "control_theory1.py")
 TEST_DATA_PATH_MA = pjoin(TEST_DATA_REPO_PATH, "math1.py")
@@ -68,11 +72,11 @@ class HouskeeperMixin:
     """
 
     def setUp(self):
-        self.print_methodnames()
         self.register_this_module()
 
     def tearDown(self) -> None:
         self.unload_all_mods()
+        self.print_methodnames()
 
     @staticmethod
     def unload_all_mods():
@@ -90,8 +94,15 @@ class HouskeeperMixin:
     def print_methodnames(self):
         if PRINT_TEST_METHODNAMES:
             # noinspection PyUnresolvedReferences
-            print("In method", p.aux.bgreen(self._testMethodName))
-
+            cls = self.__class__
+            method_repr = f"{cls.__module__}:{cls.__qualname__}.{self._testMethodName}"
+            method_repr = f"{method_repr:<85}"
+            
+            if self._outcome.errors:
+                print(method_repr, p.aux.bred("failed"))
+            else:
+                print(method_repr, p.aux.bgreen("passed"))
+            
 
 class Test_00_Core(HouskeeperMixin, unittest.TestCase):
     def test_a0__ensure_expected_test_data(self):

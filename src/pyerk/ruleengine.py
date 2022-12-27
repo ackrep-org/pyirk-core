@@ -20,14 +20,21 @@ from . import core
 from . import builtin_entities as bi
 from . import builtin_entities as b
 
+LITERAL_BASE_URI = "erk:/tmp/literals"
 
-def apply_all_semantic_rules(mod_context_uri=None):
+
+def apply_all_semantic_rules(mod_context_uri=None) -> List[core.RelationEdge]:
+    """
+    Create a RuleApplicator object for all rules and execute its apply-method.
+    """
     rule_instances = get_all_rules()
     new_rledg_list = []
     for rule in rule_instances:
         ra = RuleApplicator(rule, mod_context_uri=mod_context_uri)
         res = ra.apply()
         new_rledg_list.extend(res)
+        
+    return new_rledg_list
 
 
 def get_all_rules():
@@ -63,18 +70,27 @@ class RuleApplicator:
         self.rule = rule
         self.mod_context_uri = mod_context_uri
 
-        self.vars = rule.scp__context.get_inv_relations("R20__has_defining_scope", return_subj=True)
+        # get all subjects (Entities or Statements of the setting-scope)
+        subjects = rule.scp__context.get_inv_relations("R20__has_defining_scope", return_subj=True)
+        self.vars = [s for s in subjects if isinstance(s, core.Entity)] 
+        self.external_entities = rule.scp__context.get_relations("R55__uses_as_external_entity", return_obj=True)
         self.premises_rledgs = filter_relevant_rledgs(rule.scp__premises.get_inv_relations("R20"))
         self.assertions_rledgs = filter_relevant_rledgs(rule.scp__assertions.get_inv_relations("R20"))
+        self.literals = {}
 
         # a: {rule_sope_uri1: P_node_index1, ...}, b: {P_node_index1: rule_sope_uri1, ...}
         self.local_nodes = core.aux.OneToOneMapping()
 
-        self.G: nx.DiGraph = create_simple_graph()
+        self.G: nx.DiGraph = self.create_simple_graph()
 
         self.P: nx.DiGraph = self.create_prototype_subgraph_from_rule()
 
     def apply(self) -> List[core.RelationEdge]:
+        """
+        Application of a semantic rule either in a specified module context or in the currently active module.
+        
+        (A rule has to be applied in a module context because newly created entities must belong to some module)
+        """
 
         if self.mod_context_uri is None:
             assert core.get_active_mod_uri(strict=True)
@@ -86,6 +102,11 @@ class RuleApplicator:
         return res
 
     def _apply(self) -> List[core.RelationEdge]:
+        """
+        Perform the actual application of the rule:
+            - perform subgraph matching
+            - process the found subgraphs with the assertion
+        """
 
         result_map = self.match_subgraph_P()
 
@@ -95,7 +116,7 @@ class RuleApplicator:
 
         for res_dict in result_map:
             # res_dict represents one situation where the assertions should be applied
-            # it's a dict like
+            # it's a dict {<node-number>: <item>, ...} like
             # {
             #       0: <Item I2931["local ljapunov stability"]>,
             #       1: <Item I4900["local asymtotical stability"]>,
@@ -113,7 +134,6 @@ class RuleApplicator:
                 # TODO: add qualifiers
                 new_rledg = new_subj.set_relation(rel, new_obj)
                 new_rledg_list.append(new_rledg)
-
         return new_rledg_list
 
     def get_asserted_relation_templates(self) -> List[Tuple[int, core.Relation, int]]:
@@ -125,13 +145,24 @@ class RuleApplicator:
 
             # todo: handle literals here
             assert isinstance(obj, core.Entity)
+            
+            if not sub.uri in self.local_nodes.a:
+                msg = f"unknown subject {sub} of rule {self.rule} (uri not in local_nodes; maybe missing in setting)"
+                raise ValueError(msg)
+            
+            if not obj.uri in self.local_nodes.a:
+                msg = f"unknown object {obj} of rule {self.rule} (uri not in local_nodes; maybe missing in setting)"
+                raise ValueError(msg)
             res.append((self.local_nodes.a[sub.uri], pred, self.local_nodes.a[obj.uri]))
 
         return res
 
     def match_subgraph_P(self) -> List[dict]:
         assert self.P is not None
-        GM = nxiso.DiGraphMatcher(self.G, self.P, node_match=None, edge_match=edge_matcher)
+        
+        # restrictions for matching nodes: none
+        # ... for matching edges: relation-uri must match
+        GM = nxiso.DiGraphMatcher(self.G, self.P, node_match=self._node_matcher, edge_match=edge_matcher)
         res = list(GM.subgraph_isomorphisms_iter())
 
         # invert the dicts (todo: find out why switching G and P does not work)
@@ -139,7 +170,7 @@ class RuleApplicator:
 
         new_res = []
         for d in res:
-            new_res.append(dict((v, core.ds.get_entity_by_uri(k)) for k, v in d.items()))
+            new_res.append(dict((v, self._get_by_uri(k)) for k, v in d.items()))
 
         # new_res is a list of dicts like
         # [{
@@ -149,15 +180,71 @@ class RuleApplicator:
         #  }, ... ]
 
         return new_res
+    
+    def _get_by_uri(self, uri):
+        """
+        return literal or entity based on uri
+        """
+        if uri.startswith(LITERAL_BASE_URI):
+            return self.literals[uri]
+        else:
+            return core.ds.get_entity_by_uri(uri)
+        
+    def _node_matcher(self, n1d: dict, n2d: dict) -> bool:
+        """
+    
+        :param n1d:     attribute data of node from "main graph"
+                        e.g. {'itm': <Item I22["mathematical knowledge artifact"]>}
+        :param n2d:     attribute data of node from "prototype graph"
+                        e.g. {
+                            'itm': {'R3': None, 'R4': <Item I1["general item"]>},
+                            'entity': <Item Ia8139["P1"]>
+                          }
+    
+        :return:        boolean matching result
+    
+        a pair of nodes should match if
+            - n2 is an external entitiy for self and the uris match
+            - n2 is not an external entity (no further restrictions)
+    
+        see also: function edge_matcher
+        """
+        
+        if n1d["is_literal"]:
+            if n2d["is_literal"]:
+                return n1d["value"] == n2d["value"]
+            else:
+                return False
+
+        if n2d["is_literal"]:
+            # no chance for match anymore because n1 is no literal
+            return False
+            
+        
+        e1 = n1d["itm"]
+        e2 = n2d["entity"]
+        
+        # todo: this could be faster (list lookup is slow for long lists, however that list should be short)
+        if e2 in self.external_entities:
+            return e2 == e1
+        else: 
+            # for non-external entities, all nodes should match
+            # -> let the edges decide
+            
+            return True
+        
 
     def create_prototype_subgraph_from_rule(self) -> nx.DiGraph:
+        """
+        Create a prototype graph from the scopes 'setting' and 'premise'.
+        """
 
         P = nx.DiGraph()
 
         # counter for node-values
         i = 0
 
-        for var in self.vars:
+        for var in self.vars + self.external_entities:
 
             assert isinstance(var, core.Entity)
 
@@ -171,7 +258,7 @@ class RuleApplicator:
                 except (AttributeError, KeyError):
                     value = None
                 c[relname] = value
-            P.add_node(i, itm=c)
+            P.add_node(i, itm=c, entity=var, is_literal=False)
             self.local_nodes.add_pair(var.uri, i)
             i += 1
 
@@ -180,29 +267,152 @@ class RuleApplicator:
             subj, pred, obj = rledg.relation_tuple
             assert isinstance(subj, core.Entity)
             assert isinstance(pred, core.Relation)
-            assert isinstance(obj, core.Entity)
-
+            
             n1 = self.local_nodes.a[subj.uri]
-            n2 = self.local_nodes.a[obj.uri]
+            
+            if isinstance(obj, core.Entity):
+                n2 = self.local_nodes.a[obj.uri]
+            elif isinstance(obj, core.allowed_literal_types):
+                # create a wrapper node
+                P.add_node(i, value=obj, is_literal=True)
+                uri = self._make_literal(obj)
+                self.local_nodes.add_pair(uri, i)
+                n2 = i
+                i += 1
+                
+            else:
+                msg = f"While processing {self.rule}: unexpected type of obj: {type(obj)}"
+                raise TypeError(msg)
 
             P.add_edge(n1, n2, rel_uri=pred.uri)
 
-        components = list(nx.weakly_connected_components(P))
-        if len(components) != 1:
+        # components_container 
+        cc = self._get_weakly_connected_components(P)
+        
+        if len(cc.var_components) != 1:
             msg = (
                 f"unexpected number of components of prototype graph while applying rule {self.rule}."
-                f"Expected: 1, but got ({len(components)}). Possible reason: unuesed variables in the rules context."
+                f"Expected: 1, but got ({len(cc.var_components)}). Possible reason: unused variables in the rules context."
             )
             raise core.aux.SemanticRuleError(msg)
 
         return P
+    
+    def _get_weakly_connected_components(self, P) -> Container:
+        """
+        Get weakly connected components and sort them  (separate those which contain only external variables).
+        
+        Background: the external variables are allowed to be disconnected from the rest
+        """
+        components = list(nx.weakly_connected_components(P))
+        
+        # each component is a set like {0, 1, ...}
+        
+        var_uris = [v.uri for v in self.vars]
+        ee_uris = [v.uri for v in self.external_entities]
+        res = Container(var_components=[], ee_components=[])
+        
+        for component in components:
+            for node in component:
+                uri = self.local_nodes.b[node]
+                if uri in var_uris:
+                    res.var_components.append(component)
+                    break
+                else:
+                    assert uri in ee_uris
+                
+            else:
+                res.ee_components.append(component)
+                
+        return res
 
+    def create_simple_graph(self) -> nx.DiGraph:
+        """
+        Create graph without regarding qualifiers. Nodes: uris
+    
+        :return:
+        """
+        G = nx.DiGraph()
+    
+        for item_uri, item in core.ds.items.items():
+    
+            # prevent items created inside scopes
+            if is_node_for_simple_graph(item):
+                G.add_node(item_uri, itm=item, is_literal=False)
+    
+        all_rels = self.get_all_node_relations()
+        for uri_tup, rel_cont in all_rels.items():
+            uri1, uri2 = uri_tup
+            if uri1 in G.nodes and uri2 in G.nodes:
+                G.add_edge(
+                    *uri_tup, itm1=core.ds.get_entity_by_uri(uri1), itm2=core.ds.get_entity_by_uri(uri2), **rel_cont
+                )
+            elif uri1 in G.nodes and uri2.startswith(LITERAL_BASE_URI):
+                literal_value = self.literals[uri2]
+                G.add_node(uri2, is_literal=True, value=literal_value)
+                G.add_edge(*uri_tup, itm1=core.ds.get_entity_by_uri(uri1), itm2=literal_value, **rel_cont)
+    
+        return G
+    
+    def get_all_node_relations(self) -> dict:
+        """
+        returns a dict of all graph-relevant relations {(uri1, uri2): Container(rel_uri=uri3), ...}
+        """
 
+        res = {}
+        
+        # core.ds.relation_edges
+        # {'erk:/builtins#R1': {'erk:/builtins#R1': [RE(...), ...], ...}, ..., 'erk:/builtins#I1': {...}}
+        for subj_uri, rledg_dict in core.ds.relation_edges.items():
+            entity = core.ds.get_entity_by_uri(subj_uri, strict=False)
+            if not isinstance(entity, core.Item):
+                # this omits all relations
+                continue
+
+            for rel_uri, rledg_list in rledg_dict.items():
+                for rledg in rledg_list:
+                    assert isinstance(rledg, core.RelationEdge)
+                    assert len(rledg.relation_tuple) == 3
+                    if rledg.corresponding_entity is not None:
+                        # case 1: object is not a literal. must be an item (otherwise ignore)
+                        assert rledg.corresponding_literal is None
+                        if not isinstance(rledg.corresponding_entity, core.Item):
+                            # some relation edges point to an relation-type
+                            # (maybe this will change in the future)
+                            continue
+                        c = Container(rel_uri=rel_uri)
+                        res[(subj_uri, rledg.corresponding_entity.uri)] = c
+                        # TODO: support multiple relations in the graph (MultiDiGraph)
+                        break
+                    else:
+                        # case 2: object is a literal
+                        assert rledg.corresponding_literal is not None
+                        assert rledg.corresponding_entity is None
+                        c = Container(rel_uri=rel_uri)
+                        literal_uri = self._make_literal(rledg.corresponding_literal)
+                        
+                        res[(subj_uri, literal_uri)] = c
+                    
+        return res
+    
+    def _make_literal(self, value) -> str:
+        """
+        create and return an uri for an literal value
+        """
+        
+        i = len(self.literals)
+        uri = f"{LITERAL_BASE_URI}#{i}"
+        self.literals[uri] = value
+        
+        return uri
+
+    
+    
 def edge_matcher(e1d: dict, e2d: dict) -> bool:
     """
 
-    :param e1d:     attribute data of edge from "main graph" (see below)
-    :param e2d:     attribute data of edge from "prototype graph" (see below)
+    :param e1d:     attribute data of edge from "main graph" (see RuleApplicator)
+    :param e2d:     attribute data of edge from "prototype graph" (see RuleApplicator)
 
     :return:        boolean matching result
 
@@ -216,28 +426,6 @@ def edge_matcher(e1d: dict, e2d: dict) -> bool:
         return False
 
     return True
-
-
-def create_simple_graph() -> nx.DiGraph:
-    """
-    Create graph without regarding qualifiers. Nodes: uris
-
-    :return:
-    """
-    G = nx.DiGraph()
-
-    for item_uri, item in core.ds.items.items():
-
-        if is_node_for_simple_graph(item):
-            G.add_node(item_uri, itm=item)
-
-    all_rels = get_all_node_relations()
-    for uri_tup, rel_cont in all_rels.items():
-        uri1, uri2 = uri_tup
-        if uri1 in G.nodes and uri2 in G.nodes:
-            G.add_edge(*uri_tup, itm1=core.ds.get_entity_by_uri(uri1), itm2=core.ds.get_entity_by_uri(uri2), **rel_cont)
-
-    return G
 
 
 def is_node_for_simple_graph(item: core.Item) -> bool:
@@ -277,29 +465,4 @@ def get_simple_properties(item: core.Item) -> dict:
                 # TODO: support multiple relations in the graph (MultiDiGraph)
                 break
 
-    return res
-
-
-def get_all_node_relations() -> dict:
-
-    res = {}
-    for entity_uri, rledg_dict in core.ds.relation_edges.items():
-        entity = core.ds.get_entity_by_uri(entity_uri, strict=False)
-        if not isinstance(entity, core.Item):
-            continue
-
-        for rel_uri, rledg_list in rledg_dict.items():
-            for rledg in rledg_list:
-                assert isinstance(rledg, core.RelationEdge)
-                assert len(rledg.relation_tuple) == 3
-                if rledg.corresponding_entity is not None:
-                    assert rledg.corresponding_literal is None
-                    if not isinstance(rledg.corresponding_entity, core.Item):
-                        # some relation edges point to an relation-type
-                        # (maybe this will change in the future)
-                        continue
-                    c = Container(rel_uri=rel_uri)
-                    res[(entity_uri, rledg.corresponding_entity.uri)] = c
-                    # TODO: support multiple relations in the graph (MultiDiGraph)
-                    break
     return res

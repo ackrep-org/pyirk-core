@@ -69,6 +69,8 @@ if os.environ.get("IPYDEX_AIOE") == "true":
 
 """
 
+allowed_literal_types = (str, bool, float, int, complex)
+
 
 class Entity(abc.ABC):
     """
@@ -380,10 +382,10 @@ class Entity(abc.ABC):
                 # assume we got the short key of the relation
                 relation = ds.get_entity_by_key_str(relation)
 
-        allowed_types = (str, bool, float, int, complex)
+
         if isinstance(relation, Relation):
 
-            if isinstance(obj, (Entity, *allowed_types)) or obj in allowed_types:
+            if isinstance(obj, (Entity, *allowed_literal_types)) or obj in allowed_literal_types:
                 return self._set_relation(relation.uri, obj, scope=scope, qualifiers=qualifiers, proxyitem=proxyitem)
             # Todo: remove obsolete code:
             # elif isinstance(obj, Iterable):

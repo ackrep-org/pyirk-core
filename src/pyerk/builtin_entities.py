@@ -133,7 +133,7 @@ def instance_of(entity, r1: str = None, r2: str = None) -> Item:
 
     is_instance_of_metaclass = allows_instantiation(entity)
 
-    if (not has_super_class) and (not is_instance_of_metaclass):
+    if (not has_super_class) and (not is_instance_of_metaclass) and (entity is not I1["general item"]):
         msg = f"the entity '{entity}' is not a class, and thus could not be instantiated"
         raise TypeError(msg)
 
@@ -666,6 +666,32 @@ def _proposition__scope(self: Item, scope_name: str):
     namespace, scope = self._register_scope(scope_name)
 
     cm = _proposition__CM(itm=self, namespace=namespace, scope=scope)
+
+    return cm
+
+
+class _rule__CM (ScopingCM):
+    def uses_external_entities(self, *args):
+        """
+        Specifies that some external entities will be used inside the rule (to which this scope belongs)
+        """
+        for arg in args:
+            self.scope.set_relation(R55["uses as external entity"], arg)
+        
+
+
+def _rule__scope(self: Item, scope_name: str):
+    """
+    This function will be used as a method for semantic-rule-Items. It will return a __rule__CM instance.
+    (see above). For details see examples and tests.
+
+    :param self:
+    :param scope_name:
+    :return:
+    """
+    namespace, scope = self._register_scope(scope_name)
+
+    cm = _rule__CM(itm=self, namespace=namespace, scope=scope)
 
     return cm
 
@@ -1268,7 +1294,7 @@ I41 = create_builtin_item(
     R4__is_instance_of=I2["Metaclass"],
 )
 
-I41["semantic rule"].add_method(_proposition__scope, name="scope")
+I41["semantic rule"].add_method(_rule__scope, name="scope")
 
 R44 = create_builtin_relation(
     key_str="R44",
@@ -1424,6 +1450,65 @@ R50 = create_builtin_relation(
         "b) to express a nontrivial fact of inequality, e.g. that a person has two childs and not just one with "
         "two names."
     ),
+)
+
+
+R51 = create_builtin_relation(
+    key_str="R51",
+    R1__has_label="is one of",
+    R2__has_description=(
+        "specifies that every instance of the subject (class) is one of the elements of the object"
+    ),
+    R8__has_domain_of_argument_1=I2["Metaclass"],
+    R11__has_range_of_result=I33["tuple"]
+    # TODO: model that this is (probably) equivalent to "owl:oneOf"
+)
+
+R52 = create_builtin_relation(
+    key_str="R52",
+    R1__has_label="is none of",
+    R2__has_description=(
+        "specifies that every instance of the subject (class) is different from each of the elements of the object"
+    ),
+    R8__has_domain_of_argument_1=I2["Metaclass"],
+    R11__has_range_of_result=I33["tuple"]
+    # TODO: find out whether there is an owl equivalent for this relation
+)
+# http://www.w3.org/2002/07/owl#distinctMembers, http://www.w3.org/2002/07/owl#AllDifferent
+
+R53 = create_builtin_relation(
+    key_str="R53",
+    R1__has_label="is inverse functional",
+    R2__has_description=(
+        "specifies that the inverse relation of the subject is functional"
+    ),
+    # R8__has_domain_of_argument_1=I1["general item"],  # unsure here
+    R11__has_range_of_result=bool,
+    # TODO: model that this is (probably) equivalent to "owl:InverseFunctionalProperty"
+)
+
+R54 = create_builtin_relation(
+    key_str="R54",
+    R1__has_label="is matched by rule",
+    R2__has_description=(
+        "specifies that subject entitiy is matched by a semantic rule"
+    ),
+    # R8__has_domain_of_argument_1=I1["general item"],  # unsure here
+    R11__has_range_of_result=I41["semantic rule"],
+    R18__has_usage_hint="useful for debugging and testing semantic rules"
+    # TODO: model that this is (probably) equivalent to "owl:InverseFunctionalProperty"
+)
+
+R55 = create_builtin_relation(
+    key_str="R55",
+    R1__has_label="uses as external entity",
+    R2__has_description=(
+        "specifies that the subject (a setting-scope) uses the object entitiy as an external variable in its graph"
+    ),
+    R8__has_domain_of_argument_1=I16["scope"],  
+    R11__has_range_of_result=I1["general item"],
+    R18__has_usage_hint="useful for inside semantic rules"
+    # TODO: model that this is (probably) equivalent to "owl:InverseFunctionalProperty"
 )
 
 # testing

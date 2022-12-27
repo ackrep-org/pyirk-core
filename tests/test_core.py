@@ -39,6 +39,7 @@ TEST_DATA_REPO_PATH = pjoin(TEST_DATA_PARENT_PATH, "ocse")
 TEST_DATA_PATH2 = pjoin(TEST_DATA_REPO_PATH, "control_theory1.py")
 TEST_DATA_PATH_MA = pjoin(TEST_DATA_REPO_PATH, "math1.py")
 TEST_DATA_PATH3 = pjoin(TEST_DATA_REPO_PATH, "agents1.py")
+TEST_DATA_PATH_ZEBRA01 = pjoin(TEST_DATA_DIR1, "zebra01.py")
 TEST_MOD_NAME = "control_theory1"
 
 # useful to get the currently latest sha strings:
@@ -853,7 +854,8 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         self.assertEqual(res[p.R1.uri], itm1.R1)
         self.assertEqual(res[p.R2.uri], itm1.R2)
 
-        all_rels = p.ruleengine.get_all_node_relations()
+        ra = p.ruleengine.RuleApplicator(self.rule1)
+        all_rels = ra.get_all_node_relations()
         self.assertGreater(len(all_rels), 30)
         key = (p.I2.uri, p.I1.uri)
         value_container: p.ruleengine.Container = all_rels[key]
@@ -864,7 +866,8 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         self.assertGreater(len(all_rules), 0)
 
     def test_c03__ruleengine02(self):
-        G = p.ruleengine.create_simple_graph()
+        ra = p.ruleengine.RuleApplicator(self.rule1)
+        G = ra.create_simple_graph()
         self.assertGreater(G.number_of_nodes(), 30)
         self.assertGreater(G.number_of_edges(), 30)
 
@@ -915,6 +918,20 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         with p.uri_context(uri=TEST_BASE_URI):
             _ = p.ruleengine.apply_all_semantic_rules()
 
+    def test_c07__zebra_puzzle01(self):
+        ##!
+        zb = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA01, prefix="zb")
+        
+        
+        matching_rules = zb.unknown_beverage.get_relations("R54__is_matched_by_rule", return_obj=True)
+        
+        self.assertEqual(matching_rules, [])
+        new_stms = p.ruleengine.apply_all_semantic_rules(mod_context_uri=zb.__URI__)
+        self.assertEqual(len(new_stms), 1)
+        matching_rules = zb.unknown_beverage.get_relations("R54__is_matched_by_rule", return_obj=True)
+        self.assertEqual(matching_rules, [zb.I901])
+
+        
 
 class Test_Z_Core(HouskeeperMixin, unittest.TestCase):
     """

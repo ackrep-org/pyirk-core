@@ -85,6 +85,9 @@ class RuleApplicator:
         subjects = rule.scp__context.get_inv_relations("R20__has_defining_scope", return_subj=True)
         self.vars = [s for s in subjects if isinstance(s, core.Entity)] 
         self.external_entities = rule.scp__context.get_relations("R55__uses_as_external_entity", return_obj=True)
+        
+        # TODO: rename "context" -> "setting"
+        self.setting_rledgs = filter_relevant_rledgs(rule.scp__context.get_inv_relations("R20"))
         self.premises_rledgs = filter_relevant_rledgs(rule.scp__premises.get_inv_relations("R20"))
         self.assertions_rledgs = filter_relevant_rledgs(rule.scp__assertions.get_inv_relations("R20"))
         self.literals = {}
@@ -158,7 +161,10 @@ class RuleApplicator:
             assert isinstance(obj, core.Entity)
             
             if not sub.uri in self.local_nodes.a:
-                msg = f"unknown subject {sub} of rule {self.rule} (uri not in local_nodes; maybe missing in setting)"
+                msg = (
+                    f"unknown subject {sub} of rule {self.rule} (uri not in local_nodes; "
+                    "maybe missing (registration as external entity) in setting)"
+                )
                 raise ValueError(msg)
             
             if not obj.uri in self.local_nodes.a:
@@ -273,7 +279,7 @@ class RuleApplicator:
             self.local_nodes.add_pair(var.uri, i)
             i += 1
 
-        for rledg in self.premises_rledgs:
+        for rledg in self.setting_rledgs + self.premises_rledgs:
 
             subj, pred, obj = rledg.relation_tuple
             assert isinstance(subj, core.Entity)

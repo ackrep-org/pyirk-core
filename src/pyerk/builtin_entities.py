@@ -116,14 +116,15 @@ def get_taxonomy_tree(itm, add_self=True) -> list:
     return res
 
 
-def instance_of(entity, r1: str = None, r2: str = None) -> Item:
+def instance_of(entity, r1: str = None, r2: str = None, qualifiers: List[Item] = None) -> Item:
     """
     Create an instance (R4) of an item. Try to obtain the label by inspection of the calling context (if r1 is None).
 
-    :param entity:  the type of which an instance is created
-    :param r1:      the label; if None use inspection to fetch it from the left hand side of the assingnment
-    :param r2:
-
+    :param entity:      the type of which an instance is created
+    :param r1:          the label; if None use inspection to fetch it from the left hand side of the assingnment
+    :param r2:          the description (optional)
+    :param qualifiers:  list of RawQualifiers (optional); will be passed to the R4__is_instance_of relation
+    
     :return:        new item
     """
 
@@ -153,8 +154,9 @@ def instance_of(entity, r1: str = None, r2: str = None) -> Item:
         key_str=core.pop_uri_based_key(prefix="I", prefix2="a"),
         R1__has_label=r1,
         R2__has_description=r2,
-        R4__is_instance_of=entity,
     )
+    
+    new_item.set_relation(R4["is instance of"], entity, qualifiers=qualifiers)
 
     return new_item
 

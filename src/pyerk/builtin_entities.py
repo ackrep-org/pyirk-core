@@ -158,6 +158,10 @@ def instance_of(entity, r1: str = None, r2: str = None, qualifiers: List[Item] =
     
     new_item.set_relation(R4["is instance of"], entity, qualifiers=qualifiers)
 
+    # TODO: solve this more elegantly    
+    # this has to be run again after setting R4
+    new_item.__post_init__()
+
     return new_item
 
 

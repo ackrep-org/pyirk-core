@@ -1,23 +1,25 @@
 (sec_userdoc_overview)=
 # pyerk User Documentation Overview
 
-
+(sec_keys)=
 ## Keys in Pyerk
 
 In Pyerk there are the following kinds of keys:
-- a) short_key like `R1234`
-- b) name-labeled key like `R1234__my_relation` (consisting of a short_key, a delimiter (`__`) and a label)
-- c) prefixed short_key like `bi__R1234`
-- d) prefixed name-labeled key like `bi__R1234__my_relation`
-- e) index-labeld key like  `R1234["my relation"]`
+- a) short_key like `"R1234"`
+- b) name-labeled key like `"R1234__my_relation"` (consisting of a short_key, a delimiter (`__`) and a label)
+- c) prefixed short_key like `"bi__R1234"` (here the prefix `bi` referse to the module `builtin_entities`)
+- d) prefixed name-labeled key like `"bi__R1234__my_relation"`
+- e) index-labeld key like  `"R1234['my relation']"`
 
 Also, the leading character indicates the entity type (called `EType` in the code): `I` → item, `R` → relation.
 
-The usage of these variants notations depens on the context.
+The usage of these syntax variants depens on the context.
+
+For more information see See also {ref}`sec_modules`.
 
 % TODO: add example code.
 
-
+(sec_visualization)=
 ## Visualization
 
 Currently there is some basic visualization support via the command line. To visualize your a module (including its relations to the builtin_entities) you can use a command like
@@ -26,7 +28,7 @@ Currently there is some basic visualization support via the command line. To vis
 pyerk --load-mod demo-module.py demo -vis __all__
 ```
 
-
+(sec_cli_overview)=
 ## Command Line Interface
 
 For an overview of available command line options, see the [CLI page](cli) or the command:
@@ -126,3 +128,86 @@ Despite having similar phonetics (and spelling) quantifiers (logic operators) an
 ```
 
 
+(sec_patterns)=
+## Patterns for Knowledge Representation in pyerk
+
+In pyerk knowledge is represented via *entities* and *statements* (inspired by Wikidata). There are two types of entities: *items* (mostly associated with nouns) and *relations* (mostly associated with verbs). Statements consist of *subject-predicate-object*-triples.
+
+- subject: can be any entity (item or a relation),
+- predicate: is always a relation,
+- object: can be any entity or *literal*.
+
+Literals are "atomic" values like strings, numbers or boolean values.
+
+Every entity has short_key (`entity.short_key`, see also {ref}`sec_keys`.) and an uri (`entity.uri`). It is recommended but not requiered that every entity has a label (by means of relation `R1["has label"]`) and a description (by means of `R2["has description"]`).
+
+(sec_items)=
+### Items
+
+The `short_key` of any items starts with "`I`" and ends with a sequence of number characters (maximum sequence length not yet specified). Optionally the second character is "`a`" which indicates that this item was generated automatically (see [below](sec_auto_gen_items)).
+
+(Almost) All items are part of a taxonomy, i.e. a hierarchy of *"is-a"*-relations). This is expressed by the relations `R3["is_subclass_of"]` and `R4["is instance of"]`.
+
+
+```{note}
+Unlike in OWL (but like in Wikidata) an item can be an instance and a class at the same time. This allows to treat classes as "ordinary" items if necessary, e.g. use them directly in statements.
+```
+
+
+(sec_auto_gen_items)=
+#### Automatically Generated Items
+
+One consequence of expressing knowledge as a collection of triples is the necessity of auxiliary items. E.g. consider the equation {math}`y = \sin(x)` where `x, y, sin` can be assumed to be well defined items. Because the predicate must be a relation, it is not possible to relate these three items in one triple. The usual approach to deal with such situations is to introduce auxiliary items and more triples (see also [wikipedia on "reification"](https://en.wikipedia.org/wiki/Reification_(knowledge_representation))). One possible (fictional) triple representation of the above equation is
+
+```
+auxiliary_expr is_functioncall_of_type sin
+auxiliary_expr has_arg x
+y is_equal_to expr
+```
+
+One of the main goals of pyerk is to simplify the creation of triples which involves creating auxiliary items (such as evaluated expressions). This can be achieved by calling functions such as `pyerk.instance_of(...)`. A more sophisticated way is to overload the `__call__` method of entities.
+
+
+(sec___call__mechanism)=
+#### The `__call__` Method
+
+The class `pyerk.Entity` implements the `__call__` method which formally makes all items and relations callable Python objects. However, by default no method `_custom_call` is implemented which
+
+
+
+
+
+(sec_relations)=
+### Relations
+
+(sec_modules)=
+### pyerk Modules and Packages
+
+pyerk entities and statements are organized in pyerk *modules* (python files). Each module has to specify its own URI via the variable `__URI__`. The uri of an entity from that module is formed by `<module URI>#<entity short_key>`. Modules can be bundled together to form pyer *packages*. A pyerk package consits of a directory containing a file `erkpackage.toml` and at least one pyerk module.
+
+Modules can depend on other modules. A usual pattern is the following:
+
+```python
+# in module control_theory1.py
+
+import pyerk as p
+mod = p.erkloader.load_mod_from_path("./math1.py", prefix="ma")
+```
+
+Here the variable `mod` is the module object (like from ordinary python import) and allows to access to the complete namespace of that module:
+```python
+# ...
+
+A = p.instance_of(mod.I9904["matrix"])
+```
+
+The prefix `"ma"` can also be used to refer to that module like here
+```python
+# ...
+
+res = A.ma__R8736__depends_polyonomially_on
+```
+
+Rationale: The attribute name `ma__R8736__depends_polyonomially_on` is handled as a string by Python (in the method `__getattr__`). While `mod.R8736` is the relation object we cannot use this syntax as attribute name.
+
+See also {ref}`sec_keys`.

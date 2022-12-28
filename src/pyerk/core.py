@@ -1561,7 +1561,9 @@ def create_relation(key_str: str = "", **kwargs) -> Relation:
         new_kwargs[processed_key.short_key] = value
 
     rel = Relation(mod_uri, rel_key, **new_kwargs)
-    assert rel.uri not in ds.relations
+    if rel.uri in ds.relations:
+        msg = f"URI '{rel.uri}' has already been used."
+        raise aux.InvalidURIError(msg)
     ds.relations[rel.uri] = rel
     ds.entities_created_in_mod[mod_uri].append(rel.uri)
     return rel

@@ -62,7 +62,8 @@ all_beverage_list = p.new_tuple(I7509, I6756, I9779, I4850, I6014)
 I6990["beverage"].set_relation("R51__is_one_of", all_beverage_list)
 
 
-some_beverage_list = p.new_tuple(I6756, I9779, I4850, I6014)
+some_beverage_list1 = p.new_tuple(I6756, I9779, I4850, I6014)  # water missing
+some_beverage_list2 = p.new_tuple(I7509, I9779, I4850, I6014)  # tea missing
 
 
 R8216 = p.create_relation(
@@ -88,13 +89,17 @@ I4037 = p.create_item(
 )
 
 
-unknown_beverage = p.instance_of(I6990["beverage"])
-unknown_beverage.set_relation("R52__is_none_of", some_beverage_list)
-unknown_beverage.set_relation("R8314__is_placeholder", True)
+unknown_beverage1 = p.instance_of(I6990["beverage"])
+unknown_beverage1.set_relation("R52__is_none_of", some_beverage_list1)
+unknown_beverage1.set_relation("R8314__is_placeholder", True)
+
+unknown_beverage2 = p.instance_of(I6990["beverage"])
+unknown_beverage2.set_relation("R52__is_none_of", some_beverage_list2)
+unknown_beverage2.set_relation("R8314__is_placeholder", True)
 
 
 
-I4037["Englishman"].set_relation("R8216__drinks", unknown_beverage)
+I4037["Englishman"].set_relation("R8216__drinks", unknown_beverage1)
 
 
 # now it should be possible to reason that the Englishman drinks water (this is purely invented)

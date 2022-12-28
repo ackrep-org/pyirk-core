@@ -157,7 +157,7 @@ with I902.scope("assertions") as cm:
 I903 = p.create_item(
     R1__has_label="zebra puzzle reasoning rule3",
     R2__has_description=(
-        "second step in identification of beverage by principle of exclusion"
+        "principle of exclusion: create difference tuple"
     ),
     R4__is_instance_of=p.I41["semantic rule"],
 )
@@ -203,6 +203,33 @@ with I903.scope("assertions") as cm:
     cm.new_rel(cm.P1, p.R56["is one of"], cm.T_diff)
     
 # ###############################################################################
+
+
+I904 = p.create_item(
+    R1__has_label="zebra puzzle reasoning rule4",
+    R2__has_description=(
+        "principle of exclusion: evaluate R56__is_one_of tuple of length 1 to R47__is_same_as"
+    ),
+    R4__is_instance_of=p.I41["semantic rule"],
+)
+
+# ###############################################################################
+
+with I904.scope("context") as cm:
+    cm.new_var(i1=p.instance_of(p.I1["general item"]))
+    cm.new_var(elt0=p.instance_of(p.I1["general item"]))
+    cm.new_var(T1=p.instance_of(p.I33["tuple"]))
+    cm.uses_external_entities(I904)
+    
+with I904.scope("premises") as cm:
+    cm.new_rel(cm.i1, p.R56["is one of"], cm.T1)
+    cm.new_rel(cm.T1, p.R38["has length"], 1)
+    cm.new_rel(cm.T1, p.R39["has element"], cm.elt0)
+    
+with I904.scope("assertions") as cm:
+    cm.new_rel(cm.i1, p.R54["is matched by rule"], I904)
+    
+    cm.new_rel(cm.i1, p.R47["is same as"], cm.elt0)
 
 
 p.end_mod()

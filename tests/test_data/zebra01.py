@@ -250,7 +250,7 @@ with I905.scope("premises") as cm:
     
 # TODO: move this to builtin_entities
 def placeholder_replacer(self, old_item, new_item):
-    pass
+    p.replace_and_unlink_entity(old_item, new_item)
     
     # this function intentially does not return a new item; only called for its side-effects
     return None

@@ -728,7 +728,7 @@ class DataStore:
         # thus we need to do the case distinction manually
         inner_obj = self.relation_edges[subj_uri].get(rel_uri, None)
 
-        if inner_obj is None:
+        if inner_obj is None or len(inner_obj) == 0:
             self.relation_edges[subj_uri][rel_uri] = [re_object]
 
         elif isinstance(inner_obj, list):
@@ -1831,7 +1831,7 @@ def unload_mod(mod_uri: str, strict=True) -> None:
     ds.released_keys.clear()
 
 
-def _unlink_entity(uri: str) -> None:
+def _unlink_entity(uri: str, remove_from_mod=False) -> None:
     """
     Remove the occurrence of this the respective entitiy from all relevant data structures
 
@@ -1840,12 +1840,16 @@ def _unlink_entity(uri: str) -> None:
     """
     aux.ensure_valid_uri(uri)
     entity: Entity = ds.get_entity_by_uri(uri)
+    
+    if remove_from_mod:
+        mod_uri = uri.split("#")[0]
+        mod_entities = ds.entities_created_in_mod[mod_uri]
+        
+        # TODO: this could be speed up by using a dict instead of a list for mod_entities
+        mod_entities.remove(uri)
+    
     res1 = ds.items.pop(uri, None)
     res2 = ds.relations.pop(uri, None)
-
-    if uri == "Ia9108":
-        pass
-        # set_trace()
 
     if res1 is None and res2 is None:
         msg = f"No entity with key {uri} could be found. This is unexpected."
@@ -1874,9 +1878,9 @@ def _unlink_entity(uri: str) -> None:
         re_list.extend(tmp)
 
     # now iterate over all RelationEdge instances
-    for re in re_list:
-        re: RelationEdge
-        re.unlink(uri)
+    for stm in re_list:
+        stm: RelationEdge
+        stm.unlink(uri)
 
     # during unlinking of the RelationEdges the default dicts might have been recreating some keys -> pop again
     # TODO: obsolete because we clean up the defaultdicts anyway
@@ -1884,8 +1888,25 @@ def _unlink_entity(uri: str) -> None:
     ds.inv_relation_edges.pop(entity.uri, None)
 
     ds.released_keys.append(uri)
-
-
+    
+def replace_and_unlink_entity(old_entity: Entity, new_entity: Entity):
+    """
+    Replace all statements where `old_entity` is object with new relations where `new_entity`  is object.
+    Then unlink `old_entity`.
+    """
+    
+    stm_dict = old_entity.get_inv_relations()
+    
+    for relation_uri, stm_list in stm_dict.items():
+        for stm in stm_list:
+            stm: RelationEdge 
+            subject, predicate, obj = stm.relation_tuple
+            qlf = stm.qualifiers
+            assert obj == old_entity
+            _unlink_entity(old_entity.uri, remove_from_mod=True)
+            subject: Item
+            subject.set_relation(predicate, new_entity, qualifiers=qlf)
+        
 def register_mod(uri: str, keymanager: KeyManager, check_uri=True):
     frame = get_caller_frame(upcount=1)
     path = os.path.abspath(frame.f_globals["__file__"])

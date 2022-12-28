@@ -804,6 +804,32 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         
         self.assertTrue(d.ma__R8736__depends_polyonomially_on, s)
 
+    def test_d03__replace_entity(self):
+        
+        ma = p.erkloader.load_mod_from_path(TEST_DATA_PATH_MA, prefix="ma")
+        
+        with p.uri_context(uri=TEST_BASE_URI, prefix="ut"):
+            A = p.instance_of(ma.I9906["square matrix"])
+            n1 = p.instance_of(p.I38["non-negative integer"])
+            n2 = p.instance_of(p.I38["non-negative integer"])
+            
+            # set functional relation
+            A.set_relation(ma.R5938["has row number"], n1)
+        self.assertEqual(A.ma__R5938__has_row_number, n1)
+        self.assertNotEqual(A.ma__R5938__has_row_number, n2)
+        
+        tmp = p.ds.get_entity_by_uri(n1.uri)
+        self.assertEqual(n1, tmp)
+        
+        with p.uri_context(uri=TEST_BASE_URI, prefix="ut"):
+            p.replace_and_unlink_entity(n1, n2)
+        
+        self.assertEqual(A.ma__R5938__has_row_number, n2)
+        self.assertNotEqual(A.ma__R5938__has_row_number, n1)
+
+        with self.assertRaises(p.aux.UnknownURIError):
+            tmp = p.ds.get_entity_by_uri(n1.uri)
+        
 
 class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
 
@@ -981,8 +1007,15 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         self.assertEqual(c.zb.unknown_beverage1.R47__is_same_as[0], c.zb.I7509["water"])
         self.assertEqual(c.zb.unknown_beverage2.R47__is_same_as[0], c.zb.I6756["tea"])
 
-        # apply next rule: replacing placeholder instances
-        new_stms = p.ruleengine.apply_semantic_rule(c.zb.I905, mod_context_uri=c.zb.__URI__)
+    def test_d01__zebra_puzzle_all(self):
+        """
+        apply all zebra puzzle rules and assess the correctness of the result
+        """
+        zb = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA01, prefix="zb")
+
+        self.assertNotEqual(zb.I4037["Englishman"].zb__R8216__drinks, zb.I7509["water"])
+        _ = p.ruleengine.apply_all_semantic_rules(mod_context_uri=zb.__URI__)
+        self.assertEqual(zb.I4037["Englishman"].zb__R8216__drinks, zb.I7509["water"])
         
 
 class Test_Z_Core(HouskeeperMixin, unittest.TestCase):

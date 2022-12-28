@@ -10,6 +10,7 @@ from ipydex import IPS, activate_ips_on_exception, set_trace  # noqa
 import pyerk as p
 import pyerk.visualization as visualization
 import git
+from addict import Addict as Container
 import pyerk.reportgenerator as rgen
 
 """
@@ -936,18 +937,23 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         
         self._apply_and__t_e_s_t__matching_rule("zb__I901")
         
-    def _apply_and__t_e_s_t__matching_rule(self, rule_key):
+    def _apply_and__t_e_s_t__matching_rule(self, rule_key, nbr_of_new_stms=1):
         
-        zb = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA01, prefix="zb")
+        # store relevant data in Container to evaluate further
+        c = Container()
+        zb = c.zb = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA01, prefix="zb")
         
-        rule = p.ds.get_entity_by_key_str(rule_key)
+        c.rule = p.ds.get_entity_by_key_str(rule_key)
         
         matching_rules = zb.unknown_beverage.get_relations("R54__is_matched_by_rule", return_obj=True)
         self.assertEqual(matching_rules, [])
-        new_stms = p.ruleengine.apply_semantic_rule(rule, mod_context_uri=zb.__URI__)
-        self.assertEqual(len(new_stms), 1)
-        matching_rules = zb.unknown_beverage.get_relations("R54__is_matched_by_rule", return_obj=True)
-        self.assertEqual(matching_rules, [rule])
+        c.new_stms = p.ruleengine.apply_semantic_rule(c.rule, mod_context_uri=zb.__URI__)
+        self.assertEqual(len(c.new_stms), nbr_of_new_stms)
+        c.matching_rules = zb.unknown_beverage.get_relations("R54__is_matched_by_rule", return_obj=True)
+        self.assertEqual(c.matching_rules, [c.rule])
+        
+        return c
+        
 
     def test_c08__zebra_puzzle02(self):
         """
@@ -961,9 +967,9 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         Test one special rule I903 with new features from builin_entities
         """
         
-        self._apply_and__t_e_s_t__matching_rule("zb__I903")
+        c = self._apply_and__t_e_s_t__matching_rule("zb__I903", nbr_of_new_stms=2)
         
-
+        self.assertEqual(c.zb.unknown_beverage.R51__is_one_of[0], c.new_stms[1].object)
         
 
 class Test_Z_Core(HouskeeperMixin, unittest.TestCase):

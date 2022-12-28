@@ -86,6 +86,10 @@ class RuleApplicator:
         self.vars = [s for s in subjects if isinstance(s, core.Entity)] 
         self.external_entities = rule.scp__context.get_relations("R55__uses_as_external_entity", return_obj=True)
         
+        # this are the variables created in the assertion scope
+        subjects = rule.scp__assertions.get_inv_relations("R20__has_defining_scope", return_subj=True)
+        self.fiat_prototype_vars = [s for s in subjects if isinstance(s, core.Entity)]
+        
         # TODO: rename "context" -> "setting"
         self.setting_rledgs = filter_relevant_rledgs(rule.scp__context.get_inv_relations("R20"))
         self.premises_rledgs = filter_relevant_rledgs(rule.scp__premises.get_inv_relations("R20"))
@@ -94,10 +98,18 @@ class RuleApplicator:
 
         # a: {rule_sope_uri1: P_node_index1, ...}, b: {P_node_index1: rule_sope_uri1, ...}
         self.local_nodes = core.aux.OneToOneMapping()
+        
+        # this structure holds the nodes corresponding to the fiat_prototypes
+        self.asserted_nodes = core.aux.OneToOneMapping()
+
+        # will be set when needed (holds the union of both previous structures)
+        self.extended_local_nodes = None
 
         self.G: nx.DiGraph = self.create_simple_graph()
 
         self.P: nx.DiGraph = self.create_prototype_subgraph_from_rule()
+        
+        self.create_prototypes_for_fiat_entities()
 
     def apply(self) -> List[core.RelationEdge]:
         """
@@ -124,6 +136,7 @@ class RuleApplicator:
 
         result_map = self.match_subgraph_P()
 
+        asserted_new_item_factories, ani_node_names = self.get_asserted_new_item_factories()
         asserted_relation_templates = self.get_asserted_relation_templates()
 
         new_rledg_list = []
@@ -136,11 +149,16 @@ class RuleApplicator:
             #       1: <Item I4900["local asymtotical stability"]>,
             #       2: <Item I9642["local exponential stability"]>
             #  }
+            
+            asserted_new_items = [f() for f in asserted_new_item_factories]
+            
+            # augment the dict with entries like {"fiat0": <Item Ia6733["some item"]>}
+            search_dict = {**res_dict, **dict(zip(ani_node_names, asserted_new_items))}
 
             for n1, rel, n2 in asserted_relation_templates:
 
-                new_subj = res_dict[n1]
-                new_obj = res_dict[n2]
+                new_subj = search_dict[n1]
+                new_obj = search_dict[n2]
 
                 assert isinstance(rel, core.Relation)
                 assert isinstance(new_subj, core.Entity)
@@ -150,7 +168,30 @@ class RuleApplicator:
                 new_rledg_list.append(new_rledg)
         return new_rledg_list
 
+    def get_asserted_new_item_factories(self) -> (List[callable], List[str]):
+        """
+        Return a list of functions; each creates a new item as a consequence of a rule
+        """
+        factory_list = []
+        node_names = []
+        
+        for var in self.fiat_prototype_vars:
+            cls = var.R4__is_instance_of
+            r1 = f"{var.R1} (copy)"
+            assert cls is not None
+            def factory():
+                return bi.instance_of(cls, r1=r1)
+            factory_list.append(factory)
+            node_names.append(self.asserted_nodes.a[var.uri])
+        return factory_list, node_names
+        
     def get_asserted_relation_templates(self) -> List[Tuple[int, core.Relation, int]]:
+        
+        # join local_nodes and asserted_nodes:
+        assert self.extended_local_nodes is None
+        self.extended_local_nodes = core.aux.OneToOneMapping(**self.local_nodes.a)
+        for k, v in self.asserted_nodes.a.items():
+            self.extended_local_nodes.add_pair(k, v)
 
         res = []
         for rledg in self.assertions_rledgs:
@@ -160,17 +201,20 @@ class RuleApplicator:
             # todo: handle literals here
             assert isinstance(obj, core.Entity)
             
-            if not sub.uri in self.local_nodes.a:
+            if not sub.uri in self.extended_local_nodes.a:
                 msg = (
-                    f"unknown subject {sub} of rule {self.rule} (uri not in local_nodes; "
+                    f"unknown subject {sub} of rule {self.rule} (uri not in extended_local_nodes; "
                     "maybe missing (registration as external entity) in setting)"
                 )
                 raise ValueError(msg)
             
-            if not obj.uri in self.local_nodes.a:
-                msg = f"unknown object {obj} of rule {self.rule} (uri not in local_nodes; maybe missing in setting)"
+            if not obj.uri in self.extended_local_nodes.a:
+                msg = (
+                    f"unknown object {obj} of rule {self.rule} (uri not in extended_local_nodes; "
+                    "maybe (registration as external entity) in setting)"
+                )
                 raise ValueError(msg)
-            res.append((self.local_nodes.a[sub.uri], pred, self.local_nodes.a[obj.uri]))
+            res.append((self.extended_local_nodes.a[sub.uri], pred, self.extended_local_nodes.a[obj.uri]))
 
         return res
 
@@ -251,6 +295,12 @@ class RuleApplicator:
             return True
         
 
+    def create_prototypes_for_fiat_entities(self) -> nx.DiGraph:
+        
+        for i, var in enumerate(self.fiat_prototype_vars):
+            node_name = f"fiat{i}"
+            self.asserted_nodes.add_pair(var.uri, node_name)
+        
     def create_prototype_subgraph_from_rule(self) -> nx.DiGraph:
         """
         Create a prototype graph from the scopes 'setting' and 'premise'.

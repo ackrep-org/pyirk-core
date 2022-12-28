@@ -1466,10 +1466,9 @@ R50 = create_builtin_relation(
     ),
 )
 
-
 R51 = create_builtin_relation(
     key_str="R51",
-    R1__has_label="is one of",
+    R1__has_label="instances are from",
     R2__has_description=(
         "specifies that every instance of the subject (class) is one of the elements of the object"
     ),
@@ -1523,6 +1522,20 @@ R55 = create_builtin_relation(
     R11__has_range_of_result=I1["general item"],
     R18__has_usage_hint="useful for inside semantic rules"
     # TODO: model that this is (probably) equivalent to "owl:InverseFunctionalProperty"
+)
+
+
+
+R56 = create_builtin_relation(
+    key_str="R56",
+    R1__has_label="is one of",
+    R2__has_description=(
+        "specifies that the subject is equivalent to one of the elements of the object"
+    ),
+    R8__has_domain_of_argument_1=I2["Metaclass"],
+    R11__has_range_of_result=I33["tuple"]
+    # TODO: model that this is (probably) NOT equivalent to "owl:oneOf" (see R51 above)
+    # TODO: decide whether this is the inverse of R52__is_none_of
 )
 
 # testing

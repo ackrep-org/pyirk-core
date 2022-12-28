@@ -59,7 +59,7 @@ I6014 = p.create_item(
 
 all_beverage_list = p.new_tuple(I7509, I6756, I9779, I4850, I6014)
 
-I6990["beverage"].set_relation("R51__is_one_of", all_beverage_list)
+I6990["beverage"].set_relation("R51__instances_are_from", all_beverage_list)
 
 
 some_beverage_list1 = p.new_tuple(I6756, I9779, I4850, I6014)  # water missing
@@ -144,7 +144,7 @@ with I902.scope("context") as cm:
     cm.uses_external_entities(I902)
     
 with I902.scope("premises") as cm:
-    cm.new_rel(cm.C1, p.R51["is one of"], cm.T1)
+    cm.new_rel(cm.C1, p.R51["instances are from"], cm.T1)
     cm.new_rel(cm.P1, p.R52["is none of"], cm.T2)
     
 with I902.scope("assertions") as cm:
@@ -173,7 +173,7 @@ with I903.scope("context") as cm:
     
     
 with I903.scope("premises") as cm:
-    cm.new_rel(cm.C1, p.R51["is one of"], cm.T1)
+    cm.new_rel(cm.C1, p.R51["instances are from"], cm.T1)
     cm.new_rel(cm.P1, p.R52["is none of"], cm.T2)
     
 
@@ -200,7 +200,7 @@ with I903.scope("assertions") as cm:
     cm.new_rel(cm.T_diff, p.R29["has argument"], cm.T2)
     
     cm.new_rel(cm.P1, p.R54["is matched by rule"], I903)
-    cm.new_rel(cm.P1, p.R51["is one of"], cm.T_diff)
+    cm.new_rel(cm.P1, p.R56["is one of"], cm.T_diff)
     
 # ###############################################################################
 

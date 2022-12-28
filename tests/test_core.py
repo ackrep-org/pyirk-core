@@ -971,8 +971,8 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         """
         
         c = self._apply_and__t_e_s_t__matching_rule("zb__I903", nbr_of_new_stms=2)
-        self.assertEqual(c.zb.unknown_beverage1.R51__is_one_of[0].R39__has_element[0], c.zb.I7509["water"])
-        self.assertEqual(c.zb.unknown_beverage2.R51__is_one_of[0].R39__has_element[0], c.zb.I6756["tea"])
+        self.assertEqual(c.zb.unknown_beverage1.R56__is_one_of[0].R39__has_element[0], c.zb.I7509["water"])
+        self.assertEqual(c.zb.unknown_beverage2.R56__is_one_of[0].R39__has_element[0], c.zb.I6756["tea"])
         
 
 class Test_Z_Core(HouskeeperMixin, unittest.TestCase):

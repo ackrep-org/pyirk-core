@@ -183,9 +183,6 @@ class RuleApplicator:
         node_names = []
         
         for var in self.fiat_prototype_vars:
-            cls = var.R4__is_instance_of
-            r1 = f"{var.R1} (copy)"
-            assert cls is not None
             
             call_args = var.get_relations("R29", return_obj=True)
             fiat_factory = getattr(var, "fiat_factory", None)

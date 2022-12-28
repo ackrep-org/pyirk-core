@@ -136,7 +136,7 @@ class RuleApplicator:
 
         result_map = self.match_subgraph_P()
 
-        asserted_new_item_factories, ani_node_names = self.get_asserted_new_item_factories()
+        asserted_new_item_factories, ani_arg_nodes, ani_node_names = self.get_asserted_new_item_factories()
         asserted_relation_templates = self.get_asserted_relation_templates()
 
         new_rledg_list = []
@@ -150,7 +150,13 @@ class RuleApplicator:
             #       2: <Item I9642["local exponential stability"]>
             #  }
             
-            asserted_new_items = [f() for f in asserted_new_item_factories]
+            
+            
+            call_args_list = []
+            for node_tuple in ani_arg_nodes:
+                call_args_list.append((res_dict[node] for node in node_tuple))
+            asserted_new_items = \
+                [func(*call_args) for func, call_args in zip(asserted_new_item_factories, call_args_list)]
             
             # augment the dict with entries like {"fiat0": <Item Ia6733["some item"]>}
             search_dict = {**res_dict, **dict(zip(ani_node_names, asserted_new_items))}
@@ -173,17 +179,31 @@ class RuleApplicator:
         Return a list of functions; each creates a new item as a consequence of a rule
         """
         factory_list = []
+        args_node_list = []
         node_names = []
         
         for var in self.fiat_prototype_vars:
             cls = var.R4__is_instance_of
             r1 = f"{var.R1} (copy)"
             assert cls is not None
-            def factory():
-                return bi.instance_of(cls, r1=r1)
-            factory_list.append(factory)
+            
+            call_args = var.get_relations("R29", return_obj=True)
+            fiat_factory = getattr(var, "fiat_factory", None)
+            
+            # TODO: doc
+            if not fiat_factory:
+                msg = f"The asserted new item {var} unexpectedly has no method `fiat_factory`."
+                raise core.aux.SemanticRuleError(msg)
+            factory_list.append(fiat_factory)
+            
+            # now pepare the arguments
+            arg_nodes = []
+            for arg in call_args:
+                node = self.local_nodes.a[arg.uri]
+                arg_nodes.append(node)
+            args_node_list.append(tuple(arg_nodes))
             node_names.append(self.asserted_nodes.a[var.uri])
-        return factory_list, node_names
+        return factory_list, args_node_list, node_names
         
     def get_asserted_relation_templates(self) -> List[Tuple[int, core.Relation, int]]:
         

@@ -171,8 +171,29 @@ with I903.scope("premises") as cm:
     cm.new_rel(cm.C1, p.R51["is one of"], cm.T1)
     cm.new_rel(cm.P1, p.R52["is none of"], cm.T2)
     
+
+def tuple_difference_factory(self, tuple_item1, tuple_item2):
+    """
+    Create a new tuple item which contains the elements which are in tuple1 but not in tuple2
+    """
+    assert tuple_item1.R4__is_instance_of == p.I33["tuple"]
+    assert tuple_item2.R4__is_instance_of == p.I33["tuple"]
+    elements1 = tuple_item1.get_relations("R39__has_element", return_obj=True)
+    elements2 = tuple_item2.get_relations("R39__has_element", return_obj=True)
+    
+    # TODO: this could be speed up by using dicts:
+    new_elts = (e for e in elements1 if e not in elements2)
+    res = p.new_tuple(*new_elts)
+    
+    return res
+    
+    
 with I903.scope("assertions") as cm:
     cm.new_var(T_diff=p.instance_of(p.I33["tuple"]))  # remaining items
+    cm.T_diff.add_method(tuple_difference_factory, "fiat_factory")
+    cm.new_rel(cm.T_diff, p.R29["has argument"], cm.T1)
+    cm.new_rel(cm.T_diff, p.R29["has argument"], cm.T2)
+    
     cm.new_rel(cm.P1, p.R54["is matched by rule"], I903)
     cm.new_rel(cm.P1, p.R51["is one of"], cm.T_diff)
     

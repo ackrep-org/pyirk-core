@@ -967,9 +967,8 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         Test one special rule I903 with new features from builin_entities
         """
         
-        c = self._apply_and__t_e_s_t__matching_rule("zb__I903", nbr_of_new_stms=2)
-        
-        self.assertEqual(c.zb.unknown_beverage.R51__is_one_of[0], c.new_stms[1].object)
+        c = self._apply_and__t_e_s_t__matching_rule("zb__I903", nbr_of_new_stms=4)
+        self.assertEqual(c.zb.unknown_beverage.R51__is_one_of[0].R39__has_element[0], c.zb.I7509["water"])
         
 
 class Test_Z_Core(HouskeeperMixin, unittest.TestCase):

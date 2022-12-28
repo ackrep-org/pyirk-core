@@ -150,13 +150,14 @@ class RuleApplicator:
             #       2: <Item I9642["local exponential stability"]>
             #  }
             
-            
-            
             call_args_list = []
             for node_tuple in ani_arg_nodes:
                 call_args_list.append((res_dict[node] for node in node_tuple))
             asserted_new_items = \
                 [func(*call_args) for func, call_args in zip(asserted_new_item_factories, call_args_list)]
+                
+            # some of the functions might have returned None (called becaus of their side effects)
+            # these pairs are sorted out below (via continue)
             
             # augment the dict with entries like {"fiat0": <Item Ia6733["some item"]>}
             search_dict = {**res_dict, **dict(zip(ani_node_names, asserted_new_items))}
@@ -164,6 +165,11 @@ class RuleApplicator:
             for n1, rel, n2 in asserted_relation_templates:
 
                 new_subj = search_dict[n1]
+                
+                if new_subj is None:
+                    # this was a result of a pure-side-effect-function -> do nothing
+                    continue
+                
                 new_obj = search_dict[n2]
 
                 assert isinstance(rel, core.Relation)

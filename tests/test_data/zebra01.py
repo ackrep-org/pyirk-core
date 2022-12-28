@@ -213,8 +213,6 @@ I904 = p.create_item(
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
-# ###############################################################################
-
 with I904.scope("context") as cm:
     cm.new_var(i1=p.instance_of(p.I1["general item"]))
     cm.new_var(elt0=p.instance_of(p.I1["general item"]))
@@ -230,6 +228,41 @@ with I904.scope("assertions") as cm:
     cm.new_rel(cm.i1, p.R54["is matched by rule"], I904)
     
     cm.new_rel(cm.i1, p.R47["is same as"], cm.elt0)
+
+# ###############################################################################
+
+
+I905 = p.create_item(
+    R1__has_label="zebra puzzle reasoning rule5",
+    R2__has_description=(
+        "replace placeholder items which have one R47__is_same_as statement"
+    ),
+    R4__is_instance_of=p.I41["semantic rule"],
+)
+
+with I905.scope("context") as cm:
+    cm.new_var(placeholder=p.instance_of(p.I1["general item"]))  
+    cm.new_var(real_item=p.instance_of(p.I1["general item"]))
+    
+with I905.scope("premises") as cm:
+    cm.new_rel(cm.placeholder, R8314["is placeholder"], True)
+    cm.new_rel(cm.placeholder, p.R47["is same as"], cm.real_item)
+    
+# TODO: move this to builtin_entities
+def placeholder_replacer(self, old_item, new_item):
+    pass
+    
+    # this function intentially does not return a new item; only called for its side-effects
+    return None
+    
+with I905.scope("assertions") as cm:
+    # create an item for attaching the factory
+    cm.new_var(factory_anchor=p.instance_of(p.I1["general item"]))  # remaining items
+    cm.factory_anchor.add_method(placeholder_replacer, "fiat_factory")
+    cm.new_rel(cm.factory_anchor, p.R29["has argument"], cm.placeholder)
+    cm.new_rel(cm.factory_anchor, p.R29["has argument"], cm.real_item)
+
+# ###############################################################################
 
 
 p.end_mod()

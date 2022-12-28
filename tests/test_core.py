@@ -974,12 +974,15 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         self.assertEqual(c.zb.unknown_beverage1.R56__is_one_of[0].R39__has_element[0], c.zb.I7509["water"])
         self.assertEqual(c.zb.unknown_beverage2.R56__is_one_of[0].R39__has_element[0], c.zb.I6756["tea"])
         
-        # apply next rule
+        # apply next rule: establishing R47__is_same_as relationship
         new_stms = p.ruleengine.apply_semantic_rule(c.zb.I904, mod_context_uri=c.zb.__URI__)
         self.assertGreaterEqual(len(new_stms), 2)
         
         self.assertEqual(c.zb.unknown_beverage1.R47__is_same_as[0], c.zb.I7509["water"])
         self.assertEqual(c.zb.unknown_beverage2.R47__is_same_as[0], c.zb.I6756["tea"])
+
+        # apply next rule: replacing placeholder instances
+        new_stms = p.ruleengine.apply_semantic_rule(c.zb.I905, mod_context_uri=c.zb.__URI__)
         
 
 class Test_Z_Core(HouskeeperMixin, unittest.TestCase):

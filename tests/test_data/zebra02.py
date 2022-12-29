@@ -221,27 +221,27 @@ I8139 = p.create_item(
 )
 
 I8768 = p.create_item(
-    R1__has_label="Fox",
+    R1__has_label="fox",
     R4__is_instance_of=I8139["pet"],
 )
 
 I6020 = p.create_item(
-    R1__has_label="Horse",
+    R1__has_label="horse",
     R4__is_instance_of=I8139["pet"],
 )
 
 I2693 = p.create_item(
-    R1__has_label="Snails",
+    R1__has_label="snails",
     R4__is_instance_of=I8139["pet"],
 )
 
 I2183 = p.create_item(
-    R1__has_label="Dog",
+    R1__has_label="dog",
     R4__is_instance_of=I8139["pet"],
 )
 
 I1437 = p.create_item(
-    R1__has_label="Zebra",
+    R1__has_label="zebra",
     R4__is_instance_of=I8139["pet"],
 )
 
@@ -302,8 +302,8 @@ R8592 = p.create_relation(
 # ###############################################################################
 
 """
-
-Hints:
+All Hints (from https://en.wikipedia.org/wiki/Zebra_Puzzle):
+    
 1. There are five houses.
 2. The Englishman lives in the red house.
 3. The Spaniard owns the dog.
@@ -320,7 +320,23 @@ Hints:
 14. The Japanese smokes Parliaments.
 15. The Norwegian lives next to the blue house.
 
+"""
 
+# ###############################################################################
+
+# model hint by hint
+
+# 1. There are five houses. ✓
+# 2. The Englishman lives in the red house.
+
+I4037["Englishman"].set_relation("R8098__has_house_color", I5209["red"])
+
+# 3. The Spaniard owns the dog.
+
+I2552["Spaniard"].set_relation("R5611__owns", I2183["dog"])
+
+
+"""
 
 I3606
 I9412
@@ -328,139 +344,6 @@ I8499
 I6258
 """
 
-
-
-
-some_beverage_tuple1 = p.new_tuple(I6756, I9779, I4850, I6014)  # water missing
-some_beverage_tuple2 = p.new_tuple(I7509, I9779, I4850, I6014)  # tea missing
-
-
-unknown_beverage1 = p.instance_of(I6990["beverage"])
-unknown_beverage1.set_relation("R52__is_none_of", some_beverage_tuple1)
-unknown_beverage1.set_relation("R57__is_placeholder", True)
-
-unknown_beverage2 = p.instance_of(I6990["beverage"])
-unknown_beverage2.set_relation("R52__is_none_of", some_beverage_tuple2)
-unknown_beverage2.set_relation("R57__is_placeholder", True)
-
-
-
-I4037["Englishman"].set_relation("R8216__drinks", unknown_beverage1)
-
-
-# now it should be possible to reason that the Englishman drinks water (this is purely invented)
-
-
-# Rules I901 and I902 where only for testing.
-
-
-I903 = p.create_item(
-    R1__has_label="zebra puzzle reasoning rule3",
-    R2__has_description=(
-        "principle of exclusion: create difference tuple"
-    ),
-    R4__is_instance_of=p.I41["semantic rule"],
-)
-
-# TODO: prevent a scope from being called again
-with I903.scope("context") as cm:
-    cm.new_var(C1=p.instance_of(p.I2["Metaclass"]))  # this is the class
-    cm.new_var(P1=p.instance_of(cm.C1))  # this is the instance (this will be the beverage)
-    
-    cm.new_var(T1=p.instance_of(p.I33["tuple"]))  # a priori possible items
-    cm.new_var(T2=p.instance_of(p.I33["tuple"]))  # excluded items
-    cm.uses_external_entities(I903)
-    
-    
-with I903.scope("premises") as cm:
-    cm.new_rel(cm.C1, p.R51["instances are from"], cm.T1)
-    cm.new_rel(cm.P1, p.R52["is none of"], cm.T2)
-    
-
-def tuple_difference_factory(self, tuple_item1, tuple_item2):
-    """
-    Create a new tuple item which contains the elements which are in tuple1 but not in tuple2
-    """
-    assert tuple_item1.R4__is_instance_of == p.I33["tuple"]
-    assert tuple_item2.R4__is_instance_of == p.I33["tuple"]
-    elements1 = tuple_item1.get_relations("R39__has_element", return_obj=True)
-    elements2 = tuple_item2.get_relations("R39__has_element", return_obj=True)
-    
-    # TODO: this could be speed up by using dicts:
-    new_elts = (e for e in elements1 if e not in elements2)
-    res = p.new_tuple(*new_elts)
-    
-    return res
-    
-    
-with I903.scope("assertions") as cm:
-    cm.new_var(T_diff=p.instance_of(p.I33["tuple"]))  # remaining items
-    cm.T_diff.add_method(tuple_difference_factory, "fiat_factory")
-    cm.new_rel(cm.T_diff, p.R29["has argument"], cm.T1)
-    cm.new_rel(cm.T_diff, p.R29["has argument"], cm.T2)
-    
-    cm.new_rel(cm.P1, p.R54["is matched by rule"], I903)
-    cm.new_rel(cm.P1, p.R56["is one of"], cm.T_diff)
-    
-# ###############################################################################
-
-
-I904 = p.create_item(
-    R1__has_label="zebra puzzle reasoning rule4",
-    R2__has_description=(
-        "principle of exclusion: evaluate R56__is_one_of tuple of length 1 to R47__is_same_as"
-    ),
-    R4__is_instance_of=p.I41["semantic rule"],
-)
-
-with I904.scope("context") as cm:
-    cm.new_var(i1=p.instance_of(p.I1["general item"]))
-    cm.new_var(elt0=p.instance_of(p.I1["general item"]))
-    cm.new_var(T1=p.instance_of(p.I33["tuple"]))
-    cm.uses_external_entities(I904)
-    
-with I904.scope("premises") as cm:
-    cm.new_rel(cm.i1, p.R56["is one of"], cm.T1)
-    cm.new_rel(cm.T1, p.R38["has length"], 1)
-    cm.new_rel(cm.T1, p.R39["has element"], cm.elt0)
-    
-with I904.scope("assertions") as cm:
-    cm.new_rel(cm.i1, p.R54["is matched by rule"], I904)
-    
-    cm.new_rel(cm.i1, p.R47["is same as"], cm.elt0)
-
-# ###############################################################################
-
-
-I905 = p.create_item(
-    R1__has_label="zebra puzzle reasoning rule5",
-    R2__has_description=(
-        "replace placeholder items which have one R47__is_same_as statement"
-    ),
-    R4__is_instance_of=p.I41["semantic rule"],
-)
-
-with I905.scope("context") as cm:
-    cm.new_var(placeholder=p.instance_of(p.I1["general item"]))  
-    cm.new_var(real_item=p.instance_of(p.I1["general item"]))
-    
-with I905.scope("premises") as cm:
-    cm.new_rel(cm.placeholder, p.R57["is placeholder"], True)
-    cm.new_rel(cm.placeholder, p.R47["is same as"], cm.real_item)
-    
-# TODO: move this to builtin_entities
-def placeholder_replacer(self, old_item, new_item):
-    p.replace_and_unlink_entity(old_item, new_item)
-    
-    # this function intentially does not return a new item; only called for its side-effects
-    return None
-    
-with I905.scope("assertions") as cm:
-    # create an item for attaching the factory
-    cm.new_var(factory_anchor=p.instance_of(p.I1["general item"]))  # remaining items
-    cm.factory_anchor.add_method(placeholder_replacer, "fiat_factory")
-    cm.new_rel(cm.factory_anchor, p.R29["has argument"], cm.placeholder)
-    cm.new_rel(cm.factory_anchor, p.R29["has argument"], cm.real_item)
 
 # ###############################################################################
 

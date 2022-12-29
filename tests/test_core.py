@@ -1025,9 +1025,7 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         
         zb = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA02, prefix="zb")
 
-        self.assertNotEqual(zb.I4037["Englishman"].zb__R8216__drinks, zb.I7509["water"])
-        _ = p.ruleengine.apply_all_semantic_rules(mod_context_uri=zb.__URI__)
-        self.assertEqual(zb.I4037["Englishman"].zb__R8216__drinks, zb.I7509["water"])
+        self.assertEqual(zb.I4037["Englishman"].zb__R8098__has_house_color.R1, "red")
         
 
 class Test_Z_Core(HouskeeperMixin, unittest.TestCase):

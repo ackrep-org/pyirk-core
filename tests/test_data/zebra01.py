@@ -2,14 +2,16 @@
 created: 2022-12-25 18:35:54
 original author Carsten Knoll <firstname.lastname@tu-dresden.de>
 
-This module aims to model part of the logical "zebra puzzle" by A. Einstein
+This module aims to model information with a similar structure to that of the logical "zebra puzzle" by A. Einstein.
+It serves to explore the solution of the full puzzle.
+See https://en.wikipedia.org/wiki/Zebra_Puzzle
 """
 
 
 import pyerk as p
 
 
-__URI__ = "erk:/ocse/0.2/zebra"
+__URI__ = "erk:/ocse/0.2/zebra01"
 
 keymanager = p.KeyManager(keyseed=1835)
 p.register_mod(__URI__, keymanager)
@@ -57,13 +59,11 @@ I6014 = p.create_item(
 )
 
 
-all_beverage_list = p.new_tuple(I7509, I6756, I9779, I4850, I6014)
+# R51__instances_are_from
+all_beverage_tuple = p.close_class_with_R51(I6990["beverage"])
 
-I6990["beverage"].set_relation("R51__instances_are_from", all_beverage_list)
-
-
-some_beverage_list1 = p.new_tuple(I6756, I9779, I4850, I6014)  # water missing
-some_beverage_list2 = p.new_tuple(I7509, I9779, I4850, I6014)  # tea missing
+some_beverage_tuple1 = p.new_tuple(I6756, I9779, I4850, I6014)  # water missing
+some_beverage_tuple2 = p.new_tuple(I7509, I9779, I4850, I6014)  # tea missing
 
 
 R8216 = p.create_relation(
@@ -90,20 +90,20 @@ I4037 = p.create_item(
 
 
 unknown_beverage1 = p.instance_of(I6990["beverage"])
-unknown_beverage1.set_relation("R52__is_none_of", some_beverage_list1)
+unknown_beverage1.set_relation("R52__is_none_of", some_beverage_tuple1)
 unknown_beverage1.set_relation("R8314__is_placeholder", True)
 
 unknown_beverage2 = p.instance_of(I6990["beverage"])
-unknown_beverage2.set_relation("R52__is_none_of", some_beverage_list2)
+unknown_beverage2.set_relation("R52__is_none_of", some_beverage_tuple2)
 unknown_beverage2.set_relation("R8314__is_placeholder", True)
-
 
 
 I4037["Englishman"].set_relation("R8216__drinks", unknown_beverage1)
 
 
-# now it should be possible to reason that the Englishman drinks water (this is purely invented)
+# now, it should be possible to reason that the Englishman drinks water (this is purely invented)
 # however, some basic rules have to be tested first
+# Note: in the real zebra puzzle the Englishman drinks milk.
 
 
 I901 = p.create_item(

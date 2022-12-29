@@ -1477,6 +1477,27 @@ R51 = create_builtin_relation(
     # TODO: model that this is (probably) equivalent to "owl:oneOf"
 )
 
+
+def close_class_with_R51(cls_item: Item):
+    """
+    Set R51__instances_are_from for all current instances of a class.
+    
+    Note: this does not prevent the creation of further instances (because they can be related via R47__is_same_as to
+    the exising instances).
+    
+    :returns:   tuple-item containing all instances
+    """
+        
+    assert allows_instantiation(cls_item)
+    
+    instances = cls_item.get_inv_relations("R4__is_instance_of", return_subj=True)
+    tpl = new_tuple(*instances)
+    
+    cls_item.set_relation("R51__instances_are_from", tpl)
+    
+    return tpl
+
+
 R52 = create_builtin_relation(
     key_str="R52",
     R1__has_label="is none of",

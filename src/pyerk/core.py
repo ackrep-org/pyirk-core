@@ -1777,9 +1777,10 @@ def unload_mod(mod_uri: str, strict=True) -> None:
     # TODO: This might to check dependencies in the future
 
     entity_uris: List[str] = ds.entities_created_in_mod.pop(mod_uri, [])
+    rledg_dict = ds.rledgs_created_in_mod.pop(mod_uri, {})
 
-    if not entity_uris and strict:
-        msg = f"Seems like no entities from {mod_uri} have been loaded. This is unexpected."
+    if strict and (not entity_uris and not rledg_dict):
+        msg = f"Seems like neither entities nor statements from {mod_uri} have been loaded. This is unexpected."
         raise KeyError(msg)
 
     for uri in entity_uris:
@@ -1791,7 +1792,6 @@ def unload_mod(mod_uri: str, strict=True) -> None:
     msg = "Unexpectedly some of the entity keys are still present"
     assert len(intersection_set) == 0, msg
 
-    rledg_dict = ds.rledgs_created_in_mod.pop(mod_uri, {})
     for uri, rledg in rledg_dict.items():
         assert isinstance(rledg, RelationEdge)
         rledg.unlink()

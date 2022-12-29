@@ -115,7 +115,23 @@ def load_mod_from_path(modpath: str, prefix: str, modname=None, allow_reload=Tru
         raise pyerk.PyERKError(msg)
 
     pyerk.aux.ensure_valid_baseuri(mod_uri)
+    
+    if mod_uri in pyerk.ds.uri_prefix_mapping.a:
+        
+        if mod_uri in pyerk.ds.mod_path_mapping.a:
+            pyerk.ds.mod_path_mapping.remove_pair(key_a=mod_uri)
+        msg = f"While loading {modpath}: URI '{mod_uri}' was already registered."
+        raise pyerk.aux.InvalidURIError(msg)
+    
+    if prefix in pyerk.ds.uri_prefix_mapping.b:
+        
+        if mod_uri in pyerk.ds.mod_path_mapping.a:
+            pyerk.ds.mod_path_mapping.remove_pair(key_a=mod_uri)
+        msg = f"While loading {modpath}: prefix '{prefix}' was already registered."
+        raise pyerk.aux.InvalidPrefixError(msg)
+    
     pyerk.ds.uri_prefix_mapping.add_pair(mod_uri, prefix)
+        
 
     pyerk.ds.uri_mod_dict[mod_uri] = mod
 

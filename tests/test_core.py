@@ -831,6 +831,12 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         with self.assertRaises(p.aux.UnknownURIError):
             tmp = p.ds.get_entity_by_uri(n1.uri)
         
+    def test_d04__invalid_prefix(self):
+        
+        with self.assertRaises(p.aux.InvalidPrefixError):
+            _ = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA02, prefix="zb")
+        
+        
 
 class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
 

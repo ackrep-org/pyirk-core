@@ -1914,6 +1914,11 @@ def register_mod(uri: str, keymanager: KeyManager, check_uri=True):
         assert frame.f_globals.get("__URI__", None) == uri
     if uri != settings.BUILTINS_URI:
         # the builtin module is an exception because it should not be unloaded
+        
+        if uri in ds.mod_path_mapping.a:
+            msg = f"URI '{uri}' was already registered by {ds.mod_path_mapping.a[uri]}."
+            raise aux.InvalidURIError(msg)
+        
         ds.mod_path_mapping.add_pair(key_a=uri, key_b=path)
 
     # all modules should have their own key manager

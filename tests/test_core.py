@@ -45,6 +45,7 @@ TEST_DATA_PATH2 = pjoin(TEST_DATA_REPO_PATH, "control_theory1.py")
 TEST_DATA_PATH_MA = pjoin(TEST_DATA_REPO_PATH, "math1.py")
 TEST_DATA_PATH3 = pjoin(TEST_DATA_REPO_PATH, "agents1.py")
 TEST_DATA_PATH_ZEBRA01 = pjoin(TEST_DATA_DIR1, "zebra01.py")
+TEST_DATA_PATH_ZEBRA02 = pjoin(TEST_DATA_DIR1, "zebra02.py")
 TEST_MOD_NAME = "control_theory1"
 
 # useful to get the currently latest sha strings:
@@ -1007,11 +1008,22 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         self.assertEqual(c.zb.unknown_beverage1.R47__is_same_as[0], c.zb.I7509["water"])
         self.assertEqual(c.zb.unknown_beverage2.R47__is_same_as[0], c.zb.I6756["tea"])
 
-    def test_d01__zebra_puzzle_all(self):
+    def test_c10__zebra_puzzle_all_of_stage01(self):
         """
-        apply all zebra puzzle rules and assess the correctness of the result
+        apply all rules of stage 01 of the zebra puzzle and assess the correctness of the result
         """
         zb = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA01, prefix="zb")
+
+        self.assertNotEqual(zb.I4037["Englishman"].zb__R8216__drinks, zb.I7509["water"])
+        _ = p.ruleengine.apply_all_semantic_rules(mod_context_uri=zb.__URI__)
+        self.assertEqual(zb.I4037["Englishman"].zb__R8216__drinks, zb.I7509["water"])
+        
+    def test_d01__zebra_puzzle_stage02(self):
+        """
+        apply rules and assess correctness of the result
+        """
+        
+        zb = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA02, prefix="zb")
 
         self.assertNotEqual(zb.I4037["Englishman"].zb__R8216__drinks, zb.I7509["water"])
         _ = p.ruleengine.apply_all_semantic_rules(mod_context_uri=zb.__URI__)

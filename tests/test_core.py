@@ -1029,9 +1029,9 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         apply rules and assess correctness of the result
         """
         
-        zb = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA02, prefix="zb")
+        zp = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA02, prefix="zp")
 
-        self.assertEqual(zb.I4037["Englishman"].zb__R8098__has_house_color.R1, "red")
+        self.assertEqual(zp.zb.I4037["Englishman"].zb__R8098__has_house_color.R1, "red")
         
 
 class Test_Z_Core(HouskeeperMixin, unittest.TestCase):

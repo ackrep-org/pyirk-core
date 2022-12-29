@@ -1546,7 +1546,6 @@ R55 = create_builtin_relation(
 )
 
 
-
 R56 = create_builtin_relation(
     key_str="R56",
     R1__has_label="is one of",
@@ -1558,6 +1557,17 @@ R56 = create_builtin_relation(
     # TODO: model that this is (probably) NOT equivalent to "owl:oneOf" (see R51 above)
     # TODO: decide whether this is the inverse of R52__is_none_of
 )
+
+R57 = create_builtin_relation(
+    key_str="R57",
+    R1__has_label="is placeholder",
+    R2__has_description="specifies that the subject is a placeholder and might be replaced by other itmes",
+    # TODO: 
+    # R8__has_domain_of_argument_1=<any ordinary instance>,
+    R11__has_range_of_result=bool,
+    R22__is_functional=True,
+)
+
 
 # testing
 

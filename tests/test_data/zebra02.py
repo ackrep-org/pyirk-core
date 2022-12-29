@@ -266,23 +266,14 @@ R8216 = p.create_relation(
     R53__is_inverse_functional=True,
 )
 
-R8314 = p.create_relation(
-    R1__has_label="is placeholder",
-    R2__has_description="specifies that the subject is a placeholder and might be replaced by other itmes",
-    # R8__has_domain_of_argument_1=<any ordinary instance>,
-    R11__has_range_of_result=bool,
-    R22__is_functional=True,
-)
-
-
 
 unknown_beverage1 = p.instance_of(I6990["beverage"])
 unknown_beverage1.set_relation("R52__is_none_of", some_beverage_tuple1)
-unknown_beverage1.set_relation("R8314__is_placeholder", True)
+unknown_beverage1.set_relation("R57__is_placeholder", True)
 
 unknown_beverage2 = p.instance_of(I6990["beverage"])
 unknown_beverage2.set_relation("R52__is_none_of", some_beverage_tuple2)
-unknown_beverage2.set_relation("R8314__is_placeholder", True)
+unknown_beverage2.set_relation("R57__is_placeholder", True)
 
 
 
@@ -386,7 +377,7 @@ with I905.scope("context") as cm:
     cm.new_var(real_item=p.instance_of(p.I1["general item"]))
     
 with I905.scope("premises") as cm:
-    cm.new_rel(cm.placeholder, R8314["is placeholder"], True)
+    cm.new_rel(cm.placeholder, p.R57["is placeholder"], True)
     cm.new_rel(cm.placeholder, p.R47["is same as"], cm.real_item)
     
 # TODO: move this to builtin_entities

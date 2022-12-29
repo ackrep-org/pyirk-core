@@ -174,6 +174,46 @@ all_cigerette_brands_tuple = p.close_class_with_R51(I9803["cigarette brand"])
 # ###############################################################################
 
 
+I8809 = p.create_item(
+    R1__has_label="house number",
+    R2__has_description="base class for numbered houses",
+    R4__is_instance_of=p.I2["Metaclass"],
+)
+
+I6448 = p.create_item(
+    R1__has_label="house 1",
+    R4__is_instance_of=I8809["house number"],
+    R40__has_index=1,
+)
+
+I7582 = p.create_item(
+    R1__has_label="house 2",
+    R4__is_instance_of=I8809["house number"],
+    R40__has_index=2,
+)
+
+I4735 = p.create_item(
+    R1__has_label="house 3",
+    R4__is_instance_of=I8809["house number"],
+    R40__has_index=3,
+)
+
+I4785 = p.create_item(
+    R1__has_label="house 4",
+    R4__is_instance_of=I8809["house number"],
+    R40__has_index=4,
+)
+
+I1383 = p.create_item(
+    R1__has_label="house 5",
+    R4__is_instance_of=I8809["house number"],
+    R40__has_index=5,
+)
+
+
+# ###############################################################################
+
+
 I8139 = p.create_item(
     R1__has_label="pet",
     R2__has_description="base class for selected pets",
@@ -211,6 +251,56 @@ all_pets_tuple = p.close_class_with_R51(I8139["pet"])
 
 # ###############################################################################
 
+# Relations
+
+R8216 = p.create_relation(
+    R1__has_label="drinks",
+    R2__has_description="specifies which beverage a person drinks",
+    R8__has_domain_of_argument_1=I7435["human"],
+    R11__has_range_of_result=I6990["beverage"],
+    R22__is_functional=True,
+    R53__is_inverse_functional=True,
+)
+
+R9040 = p.create_relation(
+    R1__has_label="lives in numbered house",
+    R2__has_description="specifies in which house a person lives",
+    R8__has_domain_of_argument_1=I7435["human"],
+    R11__has_range_of_result=I6990["beverage"],
+    R22__is_functional=True,
+    R53__is_inverse_functional=True,
+)
+
+R5611 = p.create_relation(
+    R1__has_label="owns",
+    R2__has_description="specifies which pet a person owns",
+    R8__has_domain_of_argument_1=I7435["human"],
+    R11__has_range_of_result=I8139["pet"],
+    R22__is_functional=True,
+    R53__is_inverse_functional=True,
+)
+
+R8098 = p.create_relation(
+    R1__has_label="has house color",
+    R2__has_description="specifies which color a persons house has",
+    R8__has_domain_of_argument_1=I7435["human"],
+    R11__has_range_of_result=I3896["house color"],
+    R22__is_functional=True,
+    R53__is_inverse_functional=True,
+)
+
+R8592 = p.create_relation(
+    R1__has_label="somkes",
+    R2__has_description="specifies which cigarette brand a person smokes (prefers)",
+    R8__has_domain_of_argument_1=I7435["human"],
+    R11__has_range_of_result=I9803["cigarette brand"],
+    R22__is_functional=True,
+    R53__is_inverse_functional=True,
+)
+
+
+# ###############################################################################
+
 """
 
 Hints:
@@ -232,18 +322,6 @@ Hints:
 
 
 
-I8809
-I6448
-I7582
-I4735
-I4785
-I1383
-I9040
-I8098
-I8592
-I5611
-I2353
-I2850
 I3606
 I9412
 I8499
@@ -255,16 +333,6 @@ I6258
 
 some_beverage_tuple1 = p.new_tuple(I6756, I9779, I4850, I6014)  # water missing
 some_beverage_tuple2 = p.new_tuple(I7509, I9779, I4850, I6014)  # tea missing
-
-
-R8216 = p.create_relation(
-    R1__has_label="drinks",
-    R2__has_description="specifies which beverage a person drinks",
-    R8__has_domain_of_argument_1=I7435["human"],
-    R11__has_range_of_result=I6990["beverage"],
-    R22__is_functional=True,
-    R53__is_inverse_functional=True,
-)
 
 
 unknown_beverage1 = p.instance_of(I6990["beverage"])
@@ -403,6 +471,10 @@ p.end_mod()
 """
 key reservoir created with: `pyerk -l zebra01.py ag -nk 100`
 supposed keys:
+    
+R2353
+R2850
+    
 I9803
 I2835
 I9122
@@ -420,17 +492,6 @@ I6448
 I7582
 I4735
 I4785
-I1383
-I9040
-I8098
-I8592
-I5611
-I2353
-I2850
-I3606
-I9412
-I8499
-I6258
 I7258
 I1933
 I4892

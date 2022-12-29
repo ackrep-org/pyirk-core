@@ -118,15 +118,14 @@ def load_mod_from_path(modpath: str, prefix: str, modname=None, allow_reload=Tru
     
     if mod_uri in pyerk.ds.uri_prefix_mapping.a:
         
-        if mod_uri in pyerk.ds.mod_path_mapping.a:
-            pyerk.ds.mod_path_mapping.remove_pair(key_a=mod_uri)
+        _cleanup(mod_uri, modname)
         msg = f"While loading {modpath}: URI '{mod_uri}' was already registered."
         raise pyerk.aux.InvalidURIError(msg)
     
     if prefix in pyerk.ds.uri_prefix_mapping.b:
         
-        if mod_uri in pyerk.ds.mod_path_mapping.a:
-            pyerk.ds.mod_path_mapping.remove_pair(key_a=mod_uri)
+        _cleanup(mod_uri, modname)
+
         msg = f"While loading {modpath}: prefix '{prefix}' was already registered."
         raise pyerk.aux.InvalidPrefixError(msg)
     
@@ -140,3 +139,13 @@ def load_mod_from_path(modpath: str, prefix: str, modname=None, allow_reload=Tru
 
     mod.__fresh_load__ = True
     return mod
+
+def _cleanup(mod_uri, modname):
+    """
+    Clean up some data structures if something went wrong during module load. This helps to keep the tests independent.
+    """
+    
+    if mod_uri in pyerk.ds.mod_path_mapping.a:
+        pyerk.ds.mod_path_mapping.remove_pair(key_a=mod_uri)
+        
+    sys.modules.pop(modname, None)

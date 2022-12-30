@@ -833,9 +833,23 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         
     def test_d04__invalid_prefix(self):
         
+        n1a = len(p.ds.mod_path_mapping.a)
+        n2a = len(p.ds.entities_created_in_mod)
+        n3a = len(p.ds.rledgs_created_in_mod)
+        n4a = len(sys.modules)
+        
         with self.assertRaises(p.aux.InvalidPrefixError):
             _ = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA02, prefix="zb")
         
+        n1b = len(p.ds.mod_path_mapping.a)
+        n2b = len(p.ds.entities_created_in_mod)
+        n3b = len(p.ds.rledgs_created_in_mod)
+        n4b = len(sys.modules)
+        
+        self.assertEqual(n1a, n1b)
+        self.assertEqual(n2a, n2b)
+        self.assertEqual(n3a, n3b)
+        self.assertEqual(n4a, n4b)
         
 
 class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
@@ -1031,7 +1045,11 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         
         zp = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA02, prefix="zp")
 
+        # test base data
         self.assertEqual(zp.zb.I4037["Englishman"].zb__R8098__has_house_color.R1, "red")
+
+        # test hints
+        self.assertEqual(zp.zb.I9848["Norwegian"].zb__R3606__lives_next_to[0], zp.person12)
         
 
 class Test_Z_Core(HouskeeperMixin, unittest.TestCase):

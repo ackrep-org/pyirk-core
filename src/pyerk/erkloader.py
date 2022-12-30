@@ -5,6 +5,7 @@ import inspect
 import pyerk
 import pathlib
 import functools
+import addict
 
 
 ModuleType = type(sys)
@@ -37,6 +38,12 @@ def load_mod_from_path(modpath: str, prefix: str, modname=None, allow_reload=Tru
                             (not w.r.t. current working path)
     :return:
     """
+    
+    # save some data structures in order to reenable them if something goes wrong
+    
+    original_loaded_mod_uris = list(pyerk.ds.mod_path_mapping.a.keys())
+    
+    
     if smart_relative is not None:
         msg = "Using 'smart_relative' paths is deprecated since pyerk version 0.6.0. Please use real paths now."
         raise DeprecationWarning(msg)
@@ -118,13 +125,13 @@ def load_mod_from_path(modpath: str, prefix: str, modname=None, allow_reload=Tru
     
     if mod_uri in pyerk.ds.uri_prefix_mapping.a:
         
-        _cleanup(mod_uri, modname)
+        _cleanup(mod_uri, modname, original_loaded_mod_uris)
         msg = f"While loading {modpath}: URI '{mod_uri}' was already registered."
         raise pyerk.aux.InvalidURIError(msg)
     
     if prefix in pyerk.ds.uri_prefix_mapping.b:
         
-        _cleanup(mod_uri, modname)
+        _cleanup(mod_uri, modname, original_loaded_mod_uris)
 
         msg = f"While loading {modpath}: prefix '{prefix}' was already registered."
         raise pyerk.aux.InvalidPrefixError(msg)
@@ -140,12 +147,19 @@ def load_mod_from_path(modpath: str, prefix: str, modname=None, allow_reload=Tru
     mod.__fresh_load__ = True
     return mod
 
-def _cleanup(mod_uri, modname):
+def _cleanup(mod_uri, modname, original_loaded_mod_uris):
     """
     Clean up some data structures if something went wrong during module load. This helps to keep the tests independent.
     """
     
-    if mod_uri in pyerk.ds.mod_path_mapping.a:
-        pyerk.ds.mod_path_mapping.remove_pair(key_a=mod_uri)
-        
+    pyerk.unload_mod(mod_uri, strict=False)
     sys.modules.pop(modname, None)
+        
+    # due to dependencies there might have been other modules loaded -> unload them
+    modules_to_unload = [uri for uri in pyerk.ds.mod_path_mapping.a if uri not in original_loaded_mod_uris]
+    
+    
+    
+    for uri in modules_to_unload:
+        pyerk.unload_mod(uri)
+        

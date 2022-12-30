@@ -90,7 +90,7 @@ I4850 = p.create_item(
 )
 
 I6014 = p.create_item(
-    R1__has_label="juice",
+    R1__has_label="orange juice",
     R4__is_instance_of=I6990["beverage"],
 )
 
@@ -122,7 +122,7 @@ I1497  = p.create_item(
 )
 
 I7612 = p.create_item(
-    R1__has_label="white",
+    R1__has_label="ivory",
     R4__is_instance_of=I3896["house color"],
 )
 
@@ -166,7 +166,7 @@ I5109 = p.create_item(
 )
 
 I4872 = p.create_item(
-    R1__has_label="Parliament",
+    R1__has_label="Parliaments",
     R4__is_instance_of=I9803["cigarette brand"],
 )
 
@@ -293,12 +293,27 @@ R8098 = p.create_relation(
 )
 
 R8592 = p.create_relation(
-    R1__has_label="somkes",
+    R1__has_label="smokes",
     R2__has_description="specifies which cigarette brand a person smokes (prefers)",
     R8__has_domain_of_argument_1=I7435["human"],
     R11__has_range_of_result=I9803["cigarette brand"],
     R22__is_functional=True,
     R53__is_inverse_functional=True,
+)
+
+R3606 = p.create_relation(
+    R1__has_label="lives next to",
+    R2__has_description="specifies that the difference in the house index between two persons is 1",
+    R8__has_domain_of_argument_1=I7435["human"],
+    R11__has_range_of_result=I7435["human"],
+    R42__is_symmetrical=True,
+)
+
+R2353 = p.create_relation(
+    R1__has_label="lives immediatly right of",
+    R2__has_description="specifies that the house index of the subject equals the house index of the object plus one",
+    R8__has_domain_of_argument_1=I7435["human"],
+    R11__has_range_of_result=I7435["human"],
 )
 
 

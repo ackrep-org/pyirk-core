@@ -138,8 +138,10 @@ def instance_of(cls_entity, r1: str = None, r2: str = None, qualifiers: List[Ite
     # we have to determine if `cls_entity` is an instnace of I2_metaclass or a subclass of it
 
     is_instance_of_metaclass = allows_instantiation(cls_entity)
+    
+    cls_exceptions = (I1["general item"], I40["general relation"]) 
 
-    if (not has_super_class) and (not is_instance_of_metaclass) and (cls_entity is not I1["general item"]):
+    if (not has_super_class) and (not is_instance_of_metaclass) and (cls_entity not in cls_exceptions):
         msg = f"the entity '{cls_entity}' is not a class, and thus could not be instantiated"
         raise TypeError(msg)
 
@@ -560,6 +562,10 @@ class ScopingCM:
         assert len(kwargs) == 1
 
         variable_name, variable_object = list(kwargs.items())[0]
+        
+        return self._new_var(variable_name, variable_object)
+        
+    def _new_var(self, variable_name: str, variable_object: Entity) -> Entity:
         variable_object: Entity
 
         add_scope_to_defining_relation_edge(variable_object, self.scope)
@@ -691,7 +697,33 @@ class _rule__CM (ScopingCM):
         """
         for arg in args:
             self.scope.set_relation(R55["uses as external entity"], arg)
+            
+    def new_rel_var(self, name):
+        """
+        Create an instance of I40["general relation"] to represent a relation inside a rule.
+        Because this item takes a special role it is marked with a qualifier.
+        """
         
+        variable_object = instance_of(I40["general relation"], qualifiers=[qff_ignore_in_rule_ptg(True)])
+        
+        self._new_var(name, variable_object)
+        
+    def new_rel(self, sub: Entity, pred: Entity, obj: Entity, qualifiers=None) -> RelationEdge:
+        
+        if qualifiers is None:
+            qualifiers = []
+        
+        if isinstance(pred, Item):
+            
+            if not pred.R4__is_instance_of == I40["general relation"]:
+                msg = f"Expected relation but got {pred}"
+                raise TypeError(msg)
+            
+            # this mechanism allows to match relations in rules (see unittests for zebra02.py)
+            qualifiers.append(proxy_item(pred))
+            pred = R58["wildcard relation"]
+        
+        return super().new_rel(sub, pred, obj, qualifiers)
 
 
 def _rule__scope(self: Item, scope_name: str):
@@ -1001,6 +1033,7 @@ R31 = create_builtin_relation(
     R2__has_description=(
         'specifies that the subject is related to the object via an instance of I25["mathematical relation"].'
     ),
+    # TODO: update or delete:
     R18__has_usage_hint=(
         "The actual type of the relation can be tretrieved by the .proxyitem attribute of the "
         "corresponding RelationEdge."
@@ -1039,7 +1072,6 @@ def new_mathematical_relation(lhs: Item, rsgn: str, rhs: Item, doc=None, scope: 
     mr.set_relation(R26["has lhs"], lhs)
     mr.set_relation(R27["has rhs"], rhs)
 
-    # TODO: proxyitem should be specified by a qualifier
     re = lhs.set_relation(R31["is in mathematical relation with"], rhs, scope=scope, qualifiers=[proxy_item(mr)])
 
     return mr
@@ -1077,7 +1109,6 @@ R34 = create_builtin_relation(
     ),
 )
 
-# TODO: obsolete?
 proxy_item = QualifierFactory(R34["has proxy item"])
 
 
@@ -1567,6 +1598,26 @@ R57 = create_builtin_relation(
     R11__has_range_of_result=bool,
     R22__is_functional=True,
 )
+
+R58 = create_builtin_relation(
+    key_str="R58",
+    R1__has_label="wildcard relation",
+    R2__has_description="specifies that the subject related to the object by any relation (used in rules)",
+    R8__has_domain_of_argument_1=I1["general item"],
+    R11__has_range_of_result=I1["general item"],
+)
+
+R59 = create_builtin_relation(
+    key_str="R59",
+    R1__has_label="ignore in rule prototype graph",
+    R2__has_description=(
+        "specifies that the subject should be ignored when constructing the prototype graph of an I41__semantic_rule",
+    ),
+    R8__has_domain_of_argument_1=I1["general item"],
+    R11__has_range_of_result=bool,
+)
+
+qff_ignore_in_rule_ptg = QualifierFactory(R59["ignore in rule prototype graph"])
 
 
 # testing

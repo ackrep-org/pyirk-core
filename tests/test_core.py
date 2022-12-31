@@ -1040,7 +1040,7 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         
     def test_d01__zebra_puzzle_stage02(self):
         """
-        apply rules and assess correctness of the result
+        assess correctness of full data
         """
         
         zp = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA02, prefix="zp")
@@ -1050,6 +1050,16 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
 
         # test hints
         self.assertEqual(zp.zb.I9848["Norwegian"].zb__R3606__lives_next_to[0], zp.person12)
+        
+    def test_d02__zebra_puzzle_stage02(self):
+        """
+        apply rules and assess correctness of the result
+        """
+        
+        zp = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA02, prefix="zp")
+        new_stms = p.ruleengine.apply_semantic_rule(zp.zr.I701, mod_context_uri=zp.__URI__)
+        
+        IPS()
         
 
 class Test_Z_Core(HouskeeperMixin, unittest.TestCase):

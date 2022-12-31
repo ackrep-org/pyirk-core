@@ -11,6 +11,7 @@ See https://en.wikipedia.org/wiki/Zebra_Puzzle
 import pyerk as p
 
 zb = p.erkloader.load_mod_from_path("./zebra_base_data.py", prefix="zb")
+zr = p.erkloader.load_mod_from_path("./zebra_puzzle_rules.py", prefix="zr")
 
 
 __URI__ = "erk:/ocse/0.2/zebra02"

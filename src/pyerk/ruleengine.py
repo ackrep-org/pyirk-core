@@ -263,6 +263,7 @@ class RuleApplicator:
         #   2: <Item I9642["local exponential stability"]>
         #  }, ... ]
 
+        IPS()
         return new_res
     
     def _get_by_uri(self, uri):
@@ -338,8 +339,15 @@ class RuleApplicator:
 
             assert isinstance(var, core.Entity)
 
+            # omit vars which are already registered
             if var.uri in self.local_nodes.a:
                 continue
+            
+            # This mechanism allows to ignore some nodes (because they have other roles)
+            if var.R4 == bi.I40:
+                q = var.get_relations("R4")[0].qualifiers
+                if q and q[0].predicate == bi.R59["ignore in rule prototype graph"] and q[0].object:
+                    continue
 
             c = Container()
             for relname in ["R3", "R4"]:
@@ -497,7 +505,7 @@ class RuleApplicator:
         return uri
 
     
-    
+wildcard_relation_uri = bi.R58["wildcard relation"].uri
 def edge_matcher(e1d: dict, e2d: dict) -> bool:
     """
 
@@ -511,6 +519,10 @@ def edge_matcher(e1d: dict, e2d: dict) -> bool:
 
 
     """
+    
+    if e2d["rel_uri"] == wildcard_relation_uri:
+        # this matches any relation
+        return True
 
     if e1d["rel_uri"] != e2d["rel_uri"]:
         return False

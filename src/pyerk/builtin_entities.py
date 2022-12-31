@@ -704,7 +704,9 @@ class _rule__CM (ScopingCM):
         Because this item takes a special role it is marked with a qualifier.
         """
         
-        variable_object = instance_of(I40["general relation"], qualifiers=[qff_ignore_in_rule_ptg(True)])
+        variable_object = instance_of(
+            I40["general relation"], r1='instance of I40["general relation"]', qualifiers=[qff_ignore_in_rule_ptg(True)]
+        )
         
         self._new_var(name, variable_object)
         
@@ -1110,6 +1112,32 @@ R34 = create_builtin_relation(
 )
 
 proxy_item = QualifierFactory(R34["has proxy item"])
+
+def get_proxy_item(stm: RelationEdge, strict=True) -> Item:
+    assert isinstance(stm, RelationEdge)
+    
+    if not stm.qualifiers:
+        if strict:
+            msg = f"No qualifiers found while searching for proxy-item-qualifier for {stm}."
+            raise core.aux.MissingQualifierError(msg)
+        else:
+            return None
+    
+    relevant_qualifiers = [q for q in stm.qualifiers if q.predicate == R34["has proxy item"]]
+    
+    if not relevant_qualifiers:
+        if strict:
+            msg = f"No R34__has_proxy_item-qualifier found while searching for proxy-item-qualifier for {stm}."
+            raise core.aux.MissingQualifierError(msg)
+        else:
+            return None
+    if len(relevant_qualifiers) > 1:
+        msg = f"Multiple R34__has_proxy_item-qualifiers not (yet) supported (while processing {stm})."
+        raise core.aux.AmbiguousQualifierError(msg)
+        
+    res: RelationEdge = relevant_qualifiers[0]
+    
+    return res.object
 
 
 R35 = create_builtin_relation(
@@ -1619,6 +1647,46 @@ R59 = create_builtin_relation(
 
 qff_ignore_in_rule_ptg = QualifierFactory(R59["ignore in rule prototype graph"])
 
+R60 = create_builtin_relation(
+    key_str="R60",
+    R1__has_label="is transitive",
+    R2__has_description=(
+        "specifies that the subject ('rel') is a transitive relation, i.e. that the statements `A rel B` and "
+        "`B rel C` also implies the statement `A rel C`"
+    ),
+    R8__has_domain_of_argument_1=I40["general relation"],
+    R9__has_domain_of_argument_2=bool,
+    R22__is_functional=True,
+)
+
+
+relation_properties = (
+    R22["is functional"],
+    R32["is functional for each language"],
+    R53["is inverse functional"],
+    R42["is symmetrical"],
+    R60["is transitive"],
+)
+
+relation_properties_uris = tuple(rel.uri for rel in relation_properties)
+
+# TODO: this could be speed up by caching
+def get_relation_properties(rel_entity: Entity) -> List[str]:
+    """
+    return a sorted list of URIs, corrosponding to the relation properties corresponding to `rel_entity`.
+    """
+    
+    assert isinstance(rel_entity, Relation) or rel_entity.R4__is_instance_of == I40["general relation"]
+
+    rel_props = []
+    for rp_uri in relation_properties_uris:
+        res = rel_entity.get_relations(rp_uri, return_obj=True)
+        assert len(res) <= 1, "unexpectedly got multiple relation properties"
+        if res == [True]:
+            rel_props.append(rp_uri)
+    rel_props.sort()
+    
+    return rel_props
 
 # testing
 

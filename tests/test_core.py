@@ -851,6 +851,34 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         self.assertEqual(n3a, n3b)
         self.assertEqual(n4a, n4b)
         
+    def test_d05__get_proxy_item(self):
+        
+        with p.uri_context(uri=TEST_BASE_URI, prefix="ut"):
+            A = p.instance_of(p.I1["general item"])
+            B = p.instance_of(p.I1["general item"], qualifiers=[p.proxy_item(A)])
+        
+        res = p.get_proxy_item(B.get_relations(p.R4.uri)[0])
+        self.assertEqual(res, A)
+        
+    def test_d06__get_rel_props(self):
+        
+        with p.uri_context(uri=TEST_BASE_URI, prefix="ut"):
+            
+            R1000 = p.create_relation(
+                R1__has_label="test relation",
+                R22__is_functional=True,
+                R53__is_inverse_functional=True,
+            )
+            
+            R1001 = p.create_relation(
+                R1__has_label="test relation2",
+            )
+            
+        res = p.get_relation_properties(R1000)
+        self.assertEqual(res, [p.R22.uri, p.R53.uri])
+        
+        res = p.get_relation_properties(R1001)
+        self.assertEqual(res, [])
 
 class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
 

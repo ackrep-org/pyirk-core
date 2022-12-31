@@ -874,11 +874,17 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
                 R1__has_label="test relation2",
             )
             
+            I2000 = p.instance_of(p.I40["general relation"])
+            I2000.set_relation(p.R22["is functional"], True)
+            
         res = p.get_relation_properties(R1000)
         self.assertEqual(res, [p.R22.uri, p.R53.uri])
         
         res = p.get_relation_properties(R1001)
         self.assertEqual(res, [])
+        
+        res = p.get_relation_properties(I2000)
+        self.assertEqual(res, [p.R22.uri])
 
 class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
 

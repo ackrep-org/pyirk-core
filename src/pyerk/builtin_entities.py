@@ -231,6 +231,8 @@ R16 = create_builtin_relation(
     # R8__has_domain_of_argument_1=I4235("mathematical object"),
     # R10__has_range_of_result=...
 )
+
+# The short key R61 was choosen for historical and/or pragmatic reasons
 R61 = create_builtin_relation(
     key_str="R61",
     R1="does not have property",
@@ -1659,17 +1661,37 @@ R60 = create_builtin_relation(
     R22__is_functional=True,
 )
 
+# R61["does not have property"] already defined above
 
-relation_properties = (
-    R22["is functional"],
-    R32["is functional for each language"],
-    R53["is inverse functional"],
-    R42["is symmetrical"],
-    R60["is transitive"],
+R62 = create_builtin_relation(
+    key_str="R62",
+    R1__has_label="is relation property",
+    R2__has_description="specifies that a relation is a rule property and thus threated specially in by edge matching",
+    R8__has_domain_of_argument_1=I40["general relation"],
+    R11__has_range_of_result=bool,
+    R22__is_functional=True,
 )
 
-relation_properties_uris = tuple(rel.uri for rel in relation_properties)
+R22["is functional"].set_relation(R62["is relation property"], True)
+R32["is functional for each language"].set_relation(R62["is relation property"], True)
+R53["is inverse functional"].set_relation(R62["is relation property"], True)
+R42["is symmetrical"].set_relation(R62["is relation property"], True)
+R60["is transitive"].set_relation(R62["is relation property"], True)
+R62["is relation property"].set_relation(R62["is relation property"], True)
 
+
+def get_relation_properties_uris():
+    
+    stms: List[RelationEdge] = ds.relation_relation_edges[R62.uri]
+    uris = []
+    for stm in stms:
+        # stm is like: RE3064(<Relation R22["is functional"]>, <Relation R62["is relation property"]>, True)
+        if stm.object == True:
+            uris.append(stm.subject.uri)
+
+    return uris
+    
+    
 # TODO: this could be speed up by caching
 def get_relation_properties(rel_entity: Entity) -> List[str]:
     """
@@ -1678,6 +1700,7 @@ def get_relation_properties(rel_entity: Entity) -> List[str]:
     
     assert isinstance(rel_entity, Relation) or rel_entity.R4__is_instance_of == I40["general relation"]
 
+    relation_properties_uris = get_relation_properties_uris()
     rel_props = []
     for rp_uri in relation_properties_uris:
         res = rel_entity.get_relations(rp_uri, return_obj=True)

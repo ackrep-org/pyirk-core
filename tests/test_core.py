@@ -1113,23 +1113,34 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         """
         
         zp = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA02, prefix="zp")
-        new_stms = p.ruleengine.apply_semantic_rule(zp.zr.I701, mod_context_uri=zp.__URI__)
         
-        with p.uri_context(uri=TEST_BASE_URI):
-            pass
-            # this does not yet work as intended
-            p.replace_and_unlink_entity(zp.person2, zp.person1)
-
-
+        neighbour = zp.person1.zb__R2353__lives_immediatly_right_of
+        self.assertIsNone(neighbour)
+        
+        new_stms = p.ruleengine.apply_semantic_rule(zp.zr.I701, mod_context_uri=zp.__URI__)
+    
+        # assert that both statemens have been created:
+        # S(person1,  p.R47["is same as"], person2)
+        # S(person2,  p.R47["is same as"], person1)
+        counter = 0
         for stm in new_stms:
             stm: p.Statement 
             if stm.subject == zp.person1:
                 self.assertEqual(stm.predicate, p.R47["is same as"])
                 self.assertEqual(stm.object, zp.person2)
-                break
-        else:
-            # this is only called if no break occurred
-            self.assertFalse(True)
+                counter += 1
+            elif stm.subject == zp.person2:
+                self.assertEqual(stm.predicate, p.R47["is same as"])
+                self.assertEqual(stm.object, zp.person1)
+                counter += 1
+        
+        self.assertEqual(counter, 2)
+        
+        with p.uri_context(uri=TEST_BASE_URI):
+            p.replace_and_unlink_entity(zp.person2, zp.person1)
+            
+        neighbour = zp.person1.zb__R2353__lives_immediatly_right_of
+        self.assertEqual(neighbour, zp.person3)
 
 
 class Test_Z_Core(HouskeeperMixin, unittest.TestCase):

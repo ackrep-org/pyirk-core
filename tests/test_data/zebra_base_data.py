@@ -329,6 +329,7 @@ R2353 = p.create_relation(
     R2__has_description="specifies that the house index of the subject equals the house index of the object plus one",
     R8__has_domain_of_argument_1=I7435["human"],
     R11__has_range_of_result=I7435["human"],
+    R22__is_functional=True,
     R2850__is_functional_activity=True,
 )
 

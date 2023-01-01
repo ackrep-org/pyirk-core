@@ -830,6 +830,28 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
 
         with self.assertRaises(p.aux.UnknownURIError):
             tmp = p.ds.get_entity_by_uri(n1.uri)
+            
+    def test_d03b__replace_entity(self):
+        
+        ma = p.erkloader.load_mod_from_path(TEST_DATA_PATH_MA, prefix="ma")
+        
+        
+        
+        with p.uri_context(uri=TEST_BASE_URI, prefix="ut"):
+            A = p.instance_of(ma.I9906["square matrix"])
+            n1 = p.instance_of(p.I38["non-negative integer"])
+            n2 = p.instance_of(p.I38["non-negative integer"])
+            n3 = p.instance_of(p.I38["non-negative integer"])
+            
+            # set relations
+            A.set_relation(ma.R5938["has row number"], n1)  # n1 is object
+            n1.set_relation(p.R31["is in mathematical relation with"], n3)  # n1 is subject
+            
+        self.assertEqual(n3.get_inv_relations("R31", return_subj=True)[0], n1)
+        with p.uri_context(uri=TEST_BASE_URI, prefix="ut"):
+            p.replace_and_unlink_entity(n1, n2)
+
+        self.assertEqual(n3.get_inv_relations("R31", return_subj=True)[0], n2)
         
     def test_d04__invalid_prefix(self):
         

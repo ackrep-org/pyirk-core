@@ -28,7 +28,7 @@ class OneToOneMapping(object):
     def add_pair(self, key_a, key_b):
         
         if key_a in self.a:
-            msg = "key_a '{key_a}' does already exist."
+            msg = f"key_a '{key_a}' does already exist."
             raise KeyError(msg)
         
         if key_b in self.b:

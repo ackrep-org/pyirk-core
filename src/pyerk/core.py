@@ -1891,22 +1891,31 @@ def _unlink_entity(uri: str, remove_from_mod=False) -> None:
     
 def replace_and_unlink_entity(old_entity: Entity, new_entity: Entity):
     """
-    Replace all statements where `old_entity` is object with new relations where `new_entity`  is object.
+    Replace all statements where `old_entity` is subject or object with new relations where `new_entity` is sub or obj.
+    For the "subject-case" only process those statements for which `new_entity` does not yet have any relations.
+    Thus do not replace e.g. the R4__is_instance_of statement of `new_entity`.
+    
     Then unlink `old_entity`.
     """
     
-    stm_dict = old_entity.get_inv_relations()
+    stm_dict1 = old_entity.get_inv_relations()  # where it is obj
+    stm_dict2 = old_entity.get_relations()  # where it is subj
     
-    for relation_uri, stm_list in stm_dict.items():
+    _unlink_entity(old_entity.uri, remove_from_mod=True)
+    
+    for relation_uri, stm_list in list(stm_dict1.items()) + list(stm_dict2.items()):
         for stm in stm_list:
             stm: RelationEdge 
             subject, predicate, obj = stm.relation_tuple
-            qlf = stm.qualifiers
-            assert obj == old_entity
-            _unlink_entity(old_entity.uri, remove_from_mod=True)
             subject: Item
-            subject.set_relation(predicate, new_entity, qualifiers=qlf)
-        
+            qlf = stm.qualifiers
+            if obj == old_entity:
+                subject.set_relation(predicate, new_entity, qualifiers=qlf)
+            else:
+                assert subject == old_entity
+                if not new_entity.get_relations(predicate.uri):
+                    new_entity.set_relation(predicate, obj, qualifiers=qlf)
+            
 def register_mod(uri: str, keymanager: KeyManager, check_uri=True):
     frame = get_caller_frame(upcount=1)
     path = os.path.abspath(frame.f_globals["__file__"])

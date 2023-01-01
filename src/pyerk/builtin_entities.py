@@ -463,9 +463,9 @@ def get_scopes(entity: Entity) -> List[Item]:
     """
     assert isinstance(entity, Entity)
     # R21__is_scope_of
-    scope_relation_edges = core.ds.inv_relation_edges[entity.short_key]["R21"]
+    scope_statements = core.ds.inv_statements[entity.short_key]["R21"]
     re: Statement
-    res = [re.relation_tuple[0] for re in scope_relation_edges]
+    res = [re.relation_tuple[0] for re in scope_statements]
     return res
 
 
@@ -473,13 +473,13 @@ def get_items_defined_in_scope(scope: Item) -> List[Entity]:
 
     assert scope.R4__is_instance_of == I16["scope"]
     # R20__has_defining_scope
-    re_list = core.ds.inv_relation_edges[scope.short_key]["R20"]
+    re_list = core.ds.inv_statements[scope.short_key]["R20"]
     re: Statement
     entities = [re.relation_tuple[0] for re in re_list]
     return entities
 
 
-def add_scope_to_defining_relation_edge(ent: Entity, scope: Item) -> None:
+def add_scope_to_defining_statement(ent: Entity, scope: Item) -> None:
     """
 
     :param ent:
@@ -570,7 +570,7 @@ class ScopingCM:
     def _new_var(self, variable_name: str, variable_object: Entity) -> Entity:
         variable_object: Entity
 
-        add_scope_to_defining_relation_edge(variable_object, self.scope)
+        add_scope_to_defining_statement(variable_object, self.scope)
 
         # this reflects a dessign assumption which might be generalized later
         assert isinstance(variable_object, Entity)
@@ -1716,7 +1716,7 @@ R62["is relation property"].set_relation(R62["is relation property"], True)
 
 def get_relation_properties_uris():
     
-    stms: List[Statement] = ds.relation_relation_edges[R62.uri]
+    stms: List[Statement] = ds.relation_statements[R62.uri]
     uris = []
     for stm in stms:
         # stm is like: RE3064(<Relation R22["is functional"]>, <Relation R62["is relation property"]>, True)

@@ -25,7 +25,7 @@ def create_rdf_triples() -> Graph:
     # based on https://rdflib.readthedocs.io/en/stable/gettingstarted.html
     g = Graph()
 
-    for re_uri, re in pyerk.ds.relation_edge_uri_map.items():
+    for re_uri, re in pyerk.ds.statement_uri_map.items():
         row = []
         for entity in re.relation_tuple:
             if isinstance(entity, pyerk.Entity):
@@ -130,7 +130,7 @@ def check_all_relation_types():
 
 
 """
-    for rel_key, re_list in pyerk.ds.relation_relation_edges.items():
+    for rel_key, re_list in pyerk.ds.relation_statements.items():
         for re in re_list:
             re: pyerk.Statement
             subj, pred, obj = re.relation_tuple

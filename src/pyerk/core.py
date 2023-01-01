@@ -228,11 +228,11 @@ class Entity(abc.ABC):
 
         aux.ensure_valid_uri(rel_uri)
 
-        relation_edges: List[Statement] = ds.get_relation_edges(self.uri, rel_uri)
+        statements: List[Statement] = ds.get_statements(self.uri, rel_uri)
 
         # for each of the relation edges get a list of the result-objects
         # (this assumes the relation tuple to be a triple (sub, rel, obj))
-        res = [re.relation_tuple[2] for re in relation_edges if re.role is RelationRole.SUBJECT]
+        res = [re.relation_tuple[2] for re in statements if re.role is RelationRole.SUBJECT]
 
         # the following logic decides whether to e.g. return a list of length 1 or the contained entity itself
         # this depends on whether self is a functional relation (->  R22__is_functional)
@@ -435,7 +435,7 @@ class Entity(abc.ABC):
             qff_has_defining_scope: QualifierFactory = ds.qff_dict["qff_has_defining_scope"]
             qualifiers.append(qff_has_defining_scope(scope))
 
-        rledg = Statement(
+        stm = Statement(
             relation=rel,
             relation_tuple=(self, rel, rel_content),
             role=RelationRole.SUBJECT,
@@ -446,15 +446,15 @@ class Entity(abc.ABC):
             proxyitem=proxyitem,
         )
 
-        ds.set_relation_edge(rledg)
+        ds.set_statement(stm)
 
         if scope is not None:
-            ds.scope_relation_edges[scope.uri].append(rledg)
+            ds.scope_statements[scope.uri].append(stm)
 
         # if the object is not a literal then also store the inverse relation
         if isinstance(rel_content, Entity):
 
-            inv_rledg = Statement(
+            inv_stm = Statement(
                 relation=rel,
                 relation_tuple=(self, rel, rel_content),
                 role=RelationRole.OBJECT,
@@ -465,15 +465,15 @@ class Entity(abc.ABC):
             )
 
             # interconnect the primal Statement with the inverse one:
-            rledg.dual_relation_edge = inv_rledg
-            inv_rledg.dual_relation_edge = rledg
+            stm.dual_statement = inv_stm
+            inv_stm.dual_statement = stm
 
-            # ds.set_relation_edge(rel_content.short_key, rel.short_key, inv_rledg)
-            tmp_list = ds.inv_relation_edges[rel_content.uri][rel.uri]
+            # ds.set_statement(rel_content.short_key, rel.short_key, inv_stm)
+            tmp_list = ds.inv_statements[rel_content.uri][rel.uri]
 
             # TODO: maybe check length here for inverse functional
-            tmp_list.append(inv_rledg)
-        return rledg
+            tmp_list.append(inv_stm)
+        return stm
 
     def get_relations(
         self, key_str_or_uri: Optional[str] = None, return_subj: bool = False, return_obj: bool = False
@@ -493,7 +493,7 @@ class Entity(abc.ABC):
             msg = f"unexpected type for key_str_or_uri: {type(key_str_or_uri)}. Expected a str or None."
             raise TypeError(msg)
 
-        rel_dict = ds.relation_edges[self.uri]
+        rel_dict = ds.statements[self.uri]
         return self._return_relations(rel_dict, key_str_or_uri, return_subj, return_obj)
 
     def get_inv_relations(
@@ -512,7 +512,7 @@ class Entity(abc.ABC):
         :return:            either the whole dict or just one value (of type list)
         """
 
-        inv_rel_dict = ds.inv_relation_edges[self.uri]
+        inv_rel_dict = ds.inv_statements[self.uri]
 
         return self._return_relations(inv_rel_dict, key_str_or_uri, return_subj, return_obj)
 
@@ -525,7 +525,7 @@ class Entity(abc.ABC):
     ) -> Union[Dict[str, list], list]:
         """
 
-        :param base_dict:           either ds.relation_edges or ds.inv_relation_edges
+        :param base_dict:           either ds.statements or ds.inv_statements
         :param key_str_or_uri:      optional; either a verbose key_str (of a builtin entity) or a full uri;
                                     if passed only return the result for this key
         :param return_subj:         default False; if True only return the subject(s) of the relation edge(s),
@@ -546,26 +546,26 @@ class Entity(abc.ABC):
             pr_key = process_key_str(key_str)
             uri = pr_key.uri
 
-        rledg_res: Union[Statement, List[Statement]] = base_dict.get(uri, [])
+        stm_res: Union[Statement, List[Statement]] = base_dict.get(uri, [])
         if return_subj:
             # do not return the Statement instance(s) but only the subject(s)
-            if isinstance(rledg_res, list):
-                rledg_res: List[Statement]
-                res = [re.subject for re in rledg_res]
+            if isinstance(stm_res, list):
+                stm_res: List[Statement]
+                res = [re.subject for re in stm_res]
             else:
-                assert isinstance(rledg_res, Statement)
-                res = rledg_res.subject
+                assert isinstance(stm_res, Statement)
+                res = stm_res.subject
         elif return_obj:
             # do not return the Statement instance(s) but only the object(s)
-            if isinstance(rledg_res, list):
-                rledg_res: List[Statement]
-                res = [re.object for re in rledg_res]
+            if isinstance(stm_res, list):
+                stm_res: List[Statement]
+                res = [re.object for re in stm_res]
             else:
-                assert isinstance(rledg_res, Statement)
-                res = rledg_res.object
+                assert isinstance(stm_res, Statement)
+                res = stm_res.object
 
         else:
-            res = rledg_res
+            res = stm_res
         return res
     
 
@@ -591,25 +591,25 @@ class DataStore:
         # dict of lists store keys of the entities (not the entities itself, to simplify deletion)
         self.entities_created_in_mod = defaultdict(list)
 
-        self.rledgs_created_in_mod = defaultdict(dict)
+        self.stms_created_in_mod = defaultdict(dict)
 
         # mappings like .a = {"my/mod/uri": "/path/to/mod.py"} and .b = {"/path/to/mod.py": "my/mod/uri"}
         self.mod_path_mapping = aux.OneToOneMapping()
 
         # for every entity uri store a dict that maps relation uris to lists of corresponding relation-edges
-        self.relation_edges = defaultdict(dict)
+        self.statements = defaultdict(dict)
 
         # also do this for the inverse relations (for easy querying)
-        self.inv_relation_edges = defaultdict(lambda: defaultdict(list))
+        self.inv_statements = defaultdict(lambda: defaultdict(list))
 
         # for every scope-item key store the relevant relation-edges
-        self.scope_relation_edges = defaultdict(list)
+        self.scope_statements = defaultdict(list)
 
         # for every relation key store the relevant relation-edges
-        self.relation_relation_edges = defaultdict(list)
+        self.relation_statements = defaultdict(list)
 
         # store a map {uri: Statement-instance} of all relation edges
-        self.relation_edge_uri_map = {}
+        self.statement_uri_map = {}
 
         # this will be set on demand
         self.rdfgraph = None
@@ -687,9 +687,9 @@ class DataStore:
 
         return res
 
-    def get_relation_edges(self, entity_uri: str, rel_uri: str) -> List["Statement"]:
+    def get_statements(self, entity_uri: str, rel_uri: str) -> List["Statement"]:
         """
-        self.relation_edges maps an entity_key to an inner_dict.
+        self.statements maps an entity_key to an inner_dict.
         The inner_dict maps an relation_key to a Statement or List[Statement].
 
         :param entity_uri:
@@ -701,9 +701,9 @@ class DataStore:
 
         # We return an empty list if the entity has no such relation.
         # TODO: model this as defaultdict?
-        return self.relation_edges[entity_uri].get(rel_uri, list())
+        return self.statements[entity_uri].get(rel_uri, list())
 
-    def set_relation_edge(self, re_object: "Statement") -> None:
+    def set_statement(self, re_object: "Statement") -> None:
         """
         Insert a Statement into the relevant data structures of the DataStorage (self)
 
@@ -718,18 +718,18 @@ class DataStore:
         aux.ensure_valid_uri(subj_uri)
         aux.ensure_valid_uri(rel_uri)
 
-        self.relation_relation_edges[rel_uri].append(re_object)
-        self.relation_edge_uri_map[re_object.uri] = re_object
+        self.relation_statements[rel_uri].append(re_object)
+        self.statement_uri_map[re_object.uri] = re_object
 
         relation = self.relations[rel_uri]
 
-        # inner_obj will be either a list of relation_edges or None
+        # inner_obj will be either a list of statements or None
         # for some R22-related reason (see below) we cannot use a default dict here,
         # thus we need to do the case distinction manually
-        inner_obj = self.relation_edges[subj_uri].get(rel_uri, None)
+        inner_obj = self.statements[subj_uri].get(rel_uri, None)
 
         if inner_obj is None or len(inner_obj) == 0:
-            self.relation_edges[subj_uri][rel_uri] = [re_object]
+            self.statements[subj_uri][rel_uri] = [re_object]
 
         elif isinstance(inner_obj, list):
             # R22__is_functional, this means there can only be one value for this relation and this item
@@ -1370,13 +1370,13 @@ class Statement:
         self.corresponding_literal = corresponding_literal
         self.qualifiers = []
         self._process_qualifiers(qualifiers)
-        self.dual_relation_edge = None
+        self.dual_statement = None
         self.unlinked = None
 
-        ds.rledgs_created_in_mod[mod_uri][self.uri] = self
+        ds.stms_created_in_mod[mod_uri][self.uri] = self
 
-        assert self.uri not in ds.relation_edge_uri_map
-        ds.relation_edge_uri_map[self.uri] = self
+        assert self.uri not in ds.statement_uri_map
+        ds.statement_uri_map[self.uri] = self
 
         # TODO: replace this by qualifier
         self.proxyitem = proxyitem
@@ -1406,7 +1406,7 @@ class Statement:
                 corresponding_entity = None
                 corresponding_literal = repr(qf.obj)
 
-            qf_rledg = Statement(
+            qf_stm = Statement(
                 relation=qf.rel,
                 relation_tuple=(self, qf.rel, qf.obj),
                 role=RelationRole.SUBJECT,
@@ -1416,18 +1416,18 @@ class Statement:
                 qualifiers=None,
                 proxyitem=None,
             )
-            self.qualifiers.append(qf_rledg)
+            self.qualifiers.append(qf_stm)
 
             # save the qualifyer-relation edge (and its inverse) in the appropriate data structures
 
             # this is the Statement from the original Statement instance to the object (thus role=SUBJECT)
-            ds.set_relation_edge(re_object=qf_rledg)
+            ds.set_statement(re_object=qf_stm)
 
             # we might also need dual edge
             if isinstance(qf.obj, Entity):
                 # add inverse relation
-                dual_rledg = qf_rledg.create_dual()
-                ds.inv_relation_edges[qf.obj.uri][qf.rel.uri].append(dual_rledg)
+                dual_stm = qf_stm.create_dual()
+                ds.inv_statements[qf.obj.uri][qf.rel.uri].append(dual_stm)
 
     def create_dual(self):
         if self.role == RelationRole.SUBJECT:
@@ -1441,7 +1441,7 @@ class Statement:
             )
             raise ValueError(msg)
 
-        dual_rledg = Statement(
+        dual_stm = Statement(
             relation=self.relation,
             relation_tuple=self.relation_tuple,
             role=new_role,
@@ -1452,10 +1452,10 @@ class Statement:
         )
 
         # establish interconnection
-        dual_rledg.dual_relation_edge = self
-        self.dual_relation_edge = dual_rledg
+        dual_stm.dual_statement = self
+        self.dual_statement = dual_stm
 
-        return dual_rledg
+        return dual_stm
 
     def is_qualifier(self):
         return isinstance(self.subject, Statement)
@@ -1476,21 +1476,21 @@ class Statement:
 
         if self.is_qualifier():
             # _xx !! -> uri
-            _ = ds.relation_edges.pop(subj.uri, [])
+            _ = ds.statements.pop(subj.uri, [])
 
         if self.role == RelationRole.SUBJECT:
 
-            subj_rel_edges: Dict[str : List[Statement]] = ds.relation_edges[subj.uri]
+            subj_rel_edges: Dict[str : List[Statement]] = ds.statements[subj.uri]
             tolerant_removal(subj_rel_edges.get(pred.uri, []), self)
 
-            # ds.relation_relation_edges: for every relation key stores a list of relevant relation-edges
+            # ds.relation_statements: for every relation key stores a list of relevant relation-edges
             # (check before accessing the *defaultdict* to avoid to create a key just by looking)
-            if pred.uri in ds.relation_relation_edges:
-                tolerant_removal(ds.relation_relation_edges.get(pred.uri, []), self)
+            if pred.uri in ds.relation_statements:
+                tolerant_removal(ds.relation_statements.get(pred.uri, []), self)
 
         elif self.role == RelationRole.OBJECT:
             assert isinstance(obj, Entity)
-            obj_rel_edges: Dict[str : List[Statement]] = ds.inv_relation_edges[obj.uri]
+            obj_rel_edges: Dict[str : List[Statement]] = ds.inv_statements[obj.uri]
             # (check before accessing, see above)
             if pred.uri in obj_rel_edges:
                 tolerant_removal(obj_rel_edges[pred.uri], self)
@@ -1500,14 +1500,14 @@ class Statement:
 
         # this prevents from infinite recursion
         self.unlinked = True
-        if self.dual_relation_edge is not None:
-            self.dual_relation_edge.unlink()
+        if self.dual_statement is not None:
+            self.dual_statement.unlink()
 
         for qf in self.qualifiers:
             qf: Statement
             qf.unlink()
 
-        ds.relation_edge_uri_map.pop(self.uri)
+        ds.statement_uri_map.pop(self.uri)
 
         # TODO: remove obsolete key-recycling
         ds.released_keys.append(self.short_key)
@@ -1778,24 +1778,24 @@ def unload_mod(mod_uri: str, strict=True) -> None:
     # TODO: This might to check dependencies in the future
 
     entity_uris: List[str] = ds.entities_created_in_mod.pop(mod_uri, [])
-    rledg_dict = ds.rledgs_created_in_mod.pop(mod_uri, {})
+    stm_dict = ds.stms_created_in_mod.pop(mod_uri, {})
 
-    if strict and (not entity_uris and not rledg_dict):
+    if strict and (not entity_uris and not stm_dict):
         msg = f"Seems like neither entities nor statements from {mod_uri} have been loaded. This is unexpected."
         raise KeyError(msg)
 
     for uri in entity_uris:
         _unlink_entity(uri)
-        assert uri not in ds.relation_relation_edges.keys()
+        assert uri not in ds.relation_statements.keys()
 
-    intersection_set = set(entity_uris).intersection(ds.relation_relation_edges.keys())
+    intersection_set = set(entity_uris).intersection(ds.relation_statements.keys())
 
     msg = "Unexpectedly some of the entity keys are still present"
     assert len(intersection_set) == 0, msg
 
-    for uri, rledg in rledg_dict.items():
-        assert isinstance(rledg, Statement)
-        rledg.unlink()
+    for uri, stm in stm_dict.items():
+        assert isinstance(stm, Statement)
+        stm.unlink()
 
     try:
         ds.mod_path_mapping.remove_pair(key_a=mod_uri)
@@ -1805,8 +1805,8 @@ def unload_mod(mod_uri: str, strict=True) -> None:
         else:
             pass
 
-    aux.clean_dict(ds.relation_edges)
-    aux.clean_dict(ds.inv_relation_edges)
+    aux.clean_dict(ds.statements)
+    aux.clean_dict(ds.inv_statements)
 
     # TODO: obsolete
     res = list(ds.released_keys)
@@ -1857,11 +1857,11 @@ def _unlink_entity(uri: str, remove_from_mod=False) -> None:
         raise KeyError(msg)
 
     # now delete the relation edges from the data structures
-    re_dict = ds.relation_edges.pop(entity.uri, {})
-    inv_re_dict = ds.inv_relation_edges.pop(entity.uri, {})
+    re_dict = ds.statements.pop(entity.uri, {})
+    inv_re_dict = ds.inv_statements.pop(entity.uri, {})
 
     # in case res1 is a scope-item we delete all corressponding relation edges, otherwise nothing happens
-    scope_rels = ds.scope_relation_edges.pop(uri, [])
+    scope_rels = ds.scope_statements.pop(uri, [])
 
     re_list = list(scope_rels)
 
@@ -1875,7 +1875,7 @@ def _unlink_entity(uri: str, remove_from_mod=False) -> None:
 
     if isinstance(entity, Relation):
 
-        tmp = ds.relation_relation_edges.pop(uri, [])
+        tmp = ds.relation_statements.pop(uri, [])
         re_list.extend(tmp)
 
     # now iterate over all Statement instances
@@ -1885,8 +1885,8 @@ def _unlink_entity(uri: str, remove_from_mod=False) -> None:
 
     # during unlinking of the Statements the default dicts might have been recreating some keys -> pop again
     # TODO: obsolete because we clean up the defaultdicts anyway
-    ds.relation_edges.pop(entity.uri, None)
-    ds.inv_relation_edges.pop(entity.uri, None)
+    ds.statements.pop(entity.uri, None)
+    ds.inv_statements.pop(entity.uri, None)
 
     ds.released_keys.append(uri)
     

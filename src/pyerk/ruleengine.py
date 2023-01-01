@@ -30,12 +30,12 @@ def apply_all_semantic_rules(mod_context_uri=None) -> List[core.Statement]:
     :returns:  list of newly created statements
     """
     rule_instances = get_all_rules()
-    new_rledg_list = []
+    new_stm_list = []
     for rule in rule_instances:
         res = apply_semantic_rule(rule, mod_context_uri)
-        new_rledg_list.extend(res)
+        new_stm_list.extend(res)
         
-    return new_rledg_list
+    return new_stm_list
 
 def apply_semantic_rule(rule: core.Item, mod_context_uri: str = None) -> List[core.Statement]:
     """
@@ -55,7 +55,7 @@ def get_all_rules():
     return rule_instances
 
 
-def filter_relevant_rledgs(re_list: List[core.Statement]) -> List[core.Statement]:
+def filter_relevant_stms(re_list: List[core.Statement]) -> List[core.Statement]:
     """
     From a list of Statement instances select only those which are qualifiers and whose subject is an
     RE with .role == SUBJECT.
@@ -66,10 +66,10 @@ def filter_relevant_rledgs(re_list: List[core.Statement]) -> List[core.Statement
     """
 
     res = []
-    for rledg in re_list:
-        assert isinstance(rledg, core.Statement)
-        if isinstance(rledg.subject, core.Statement) and rledg.subject.role == core.RelationRole.SUBJECT:
-            res.append(rledg.subject)
+    for stm in re_list:
+        assert isinstance(stm, core.Statement)
+        if isinstance(stm.subject, core.Statement) and stm.subject.role == core.RelationRole.SUBJECT:
+            res.append(stm.subject)
     return res
 
 
@@ -91,9 +91,9 @@ class RuleApplicator:
         self.fiat_prototype_vars = [s for s in subjects if isinstance(s, core.Entity)]
         
         # TODO: rename "context" -> "setting"
-        self.setting_rledgs = filter_relevant_rledgs(rule.scp__context.get_inv_relations("R20"))
-        self.premises_rledgs = filter_relevant_rledgs(rule.scp__premises.get_inv_relations("R20"))
-        self.assertions_rledgs = filter_relevant_rledgs(rule.scp__assertions.get_inv_relations("R20"))
+        self.setting_stms = filter_relevant_stms(rule.scp__context.get_inv_relations("R20"))
+        self.premises_stms = filter_relevant_stms(rule.scp__premises.get_inv_relations("R20"))
+        self.assertions_stms = filter_relevant_stms(rule.scp__assertions.get_inv_relations("R20"))
         self.literals = {}
 
         # a: {rule_sope_uri1: P_node_index1, ...}, b: {P_node_index1: rule_sope_uri1, ...}
@@ -139,7 +139,7 @@ class RuleApplicator:
         asserted_new_item_factories, ani_arg_nodes, ani_node_names = self.get_asserted_new_item_factories()
         asserted_relation_templates = self.get_asserted_relation_templates()
 
-        new_rledg_list = []
+        new_stm_list = []
 
         for res_dict in result_map:
             # res_dict represents one situation where the assertions should be applied
@@ -176,9 +176,9 @@ class RuleApplicator:
                 assert isinstance(new_subj, core.Entity)
 
                 # TODO: add qualifiers
-                new_rledg = new_subj.set_relation(rel, new_obj)
-                new_rledg_list.append(new_rledg)
-        return new_rledg_list
+                new_stm = new_subj.set_relation(rel, new_obj)
+                new_stm_list.append(new_stm)
+        return new_stm_list
 
     def get_asserted_new_item_factories(self) -> (List[callable], List[str]):
         """
@@ -217,8 +217,8 @@ class RuleApplicator:
             self.extended_local_nodes.add_pair(k, v)
 
         res = []
-        for rledg in self.assertions_rledgs:
-            sub, pred, obj = rledg.relation_tuple
+        for stm in self.assertions_stms:
+            sub, pred, obj = stm.relation_tuple
             assert isinstance(pred, core.Relation)
 
             # todo: handle literals here
@@ -366,9 +366,9 @@ class RuleApplicator:
             self.local_nodes.add_pair(var.uri, i)
             i += 1
 
-        for rledg in self.setting_rledgs + self.premises_rledgs:
+        for stm in self.setting_stms + self.premises_stms:
 
-            subj, pred, obj = rledg.relation_tuple
+            subj, pred, obj = stm.relation_tuple
             
             if self._ignore_item(subj):
                 continue
@@ -380,7 +380,7 @@ class RuleApplicator:
                 # for wildcard relations we have to determine the relevant relation properties
                 # like R22__is_functional etc.
                 # see also function edge_matcher
-                proxy_item = bi.get_proxy_item(rledg)
+                proxy_item = bi.get_proxy_item(stm)
                 
                 rel_props = bi.get_relation_properties(proxy_item)
             else:
@@ -479,38 +479,38 @@ class RuleApplicator:
 
         res = {}
         
-        # core.ds.relation_edges
+        # core.ds.statements
         # {'erk:/builtins#R1': {'erk:/builtins#R1': [RE(...), ...], ...}, ..., 'erk:/builtins#I1': {...}}
-        for subj_uri, rledg_dict in core.ds.relation_edges.items():
+        for subj_uri, stm_dict in core.ds.statements.items():
             entity = core.ds.get_entity_by_uri(subj_uri, strict=False)
             if not isinstance(entity, core.Item):
                 # this omits all relations
                 continue
 
-            for rel_uri, rledg_list in rledg_dict.items():
-                for rledg in rledg_list:
-                    assert isinstance(rledg, core.Statement)
-                    assert len(rledg.relation_tuple) == 3
+            for rel_uri, stm_list in stm_dict.items():
+                for stm in stm_list:
+                    assert isinstance(stm, core.Statement)
+                    assert len(stm.relation_tuple) == 3
                     
-                    rel_props = bi.get_relation_properties(rledg.predicate)
+                    rel_props = bi.get_relation_properties(stm.predicate)
                     
-                    if rledg.corresponding_entity is not None:
+                    if stm.corresponding_entity is not None:
                         # case 1: object is not a literal. must be an item (otherwise ignore)
-                        assert rledg.corresponding_literal is None
-                        if not isinstance(rledg.corresponding_entity, core.Item):
+                        assert stm.corresponding_literal is None
+                        if not isinstance(stm.corresponding_entity, core.Item):
                             # some relation edges point to an relation-type
                             # (maybe this will change in the future)
                             continue
                         c = Container(rel_uri=rel_uri, rel_props=rel_props)
-                        res[(subj_uri, rledg.corresponding_entity.uri)] = c
+                        res[(subj_uri, stm.corresponding_entity.uri)] = c
                         # TODO: support multiple relations in the graph (MultiDiGraph)
                         break
                     else:
                         # case 2: object is a literal
-                        assert rledg.corresponding_literal is not None
-                        assert rledg.corresponding_entity is None
+                        assert stm.corresponding_literal is not None
+                        assert stm.corresponding_entity is None
                         c = Container(rel_uri=rel_uri, rel_props=rel_props)
-                        literal_uri = self._make_literal(rledg.corresponding_literal)
+                        literal_uri = self._make_literal(stm.corresponding_literal)
                         
                         res[(subj_uri, literal_uri)] = c
                     
@@ -578,16 +578,16 @@ def is_node_for_simple_graph(item: core.Item) -> bool:
 
 def get_simple_properties(item: core.Item) -> dict:
 
-    rledg_dict = item.get_relations()
+    stm_dict = item.get_relations()
     res = {}
-    for rel_uri, rledg_list in rledg_dict.items():
+    for rel_uri, stm_list in stm_dict.items():
 
-        for rledg in rledg_list:
-            assert isinstance(rledg, core.Statement)
-            assert len(rledg.relation_tuple) == 3
-            if rledg.corresponding_entity is None:
-                assert rledg.corresponding_literal is not None
-                res[rel_uri] = rledg.corresponding_literal
+        for stm in stm_list:
+            assert isinstance(stm, core.Statement)
+            assert len(stm.relation_tuple) == 3
+            if stm.corresponding_entity is None:
+                assert stm.corresponding_literal is not None
+                res[rel_uri] = stm.corresponding_literal
                 # TODO: support multiple relations in the graph (MultiDiGraph)
                 break
 

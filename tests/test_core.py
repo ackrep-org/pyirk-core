@@ -183,7 +183,7 @@ class Test_00_Core(HouskeeperMixin, unittest.TestCase):
         self.assertEqual(len(p.ds.entities_created_in_mod), 1)
         L1 = len(p.ds.items)
         L2 = len(p.ds.relations)
-        L3 = len(p.ds.relation_edge_uri_map)
+        L3 = len(p.ds.statement_uri_map)
         try:
             _ = p.erkloader.load_mod_from_path(pjoin(TEST_DATA_DIR1, "tmod0_with_errors.py"), prefix="tm0")
         except ValueError:
@@ -192,7 +192,7 @@ class Test_00_Core(HouskeeperMixin, unittest.TestCase):
         self.assertEqual(len(p.ds.entities_created_in_mod), 1)
         self.assertEqual(L1, len(p.ds.items))
         self.assertEqual(L2, len(p.ds.relations))
-        self.assertEqual(L3, len(p.ds.relation_edge_uri_map))
+        self.assertEqual(L3, len(p.ds.statement_uri_map))
         self.assertEqual(len(p.core._uri_stack), 0)
 
     def test_key_manager(self):
@@ -255,17 +255,17 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         self.assertEqual(len(i32_instance_rels), 0)
 
         builtin_entity_uris = set(p.ds.entities_created_in_mod[p.BUILTINS_URI])
-        builtin_rledg_uris = set(p.ds.rledgs_created_in_mod[p.BUILTINS_URI])
+        builtin_stm_uris = set(p.ds.stms_created_in_mod[p.BUILTINS_URI])
         available_item_keys = set(p.ds.items.keys())
         available_relation_keys = set(p.ds.relations.keys())
-        available_relation_edge_keys = set(p.ds.relation_edge_uri_map.keys())
-        available_relation_relation_edge_keys = set(p.ds.relation_relation_edges.keys())
+        available_statement_keys = set(p.ds.statement_uri_map.keys())
+        available_relation_statement_keys = set(p.ds.relation_statements.keys())
 
         diff1 = available_item_keys.difference(builtin_entity_uris)
         diff2 = available_relation_keys.difference(builtin_entity_uris)
 
-        diff3 = available_relation_edge_keys.difference(builtin_rledg_uris)
-        diff4 = available_relation_relation_edge_keys.difference(builtin_entity_uris)
+        diff3 = available_statement_keys.difference(builtin_stm_uris)
+        diff4 = available_relation_statement_keys.difference(builtin_entity_uris)
 
         self.assertEqual(len(diff1), 0)
         self.assertEqual(len(diff2), 0)
@@ -282,11 +282,11 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         # ensure that builtins are loaded
         self.assertGreater(len(p.ds.items), 40)
         self.assertGreater(len(p.ds.relations), 40)
-        self.assertGreater(len(p.ds.relation_edge_uri_map), 300)
+        self.assertGreater(len(p.ds.statement_uri_map), 300)
 
         # ensure that no residuals are left from last test
-        non_builtin_rledges = [k for k in p.ds.relation_edge_uri_map.keys() if not k.startswith(p.BUILTINS_URI)]
-        self.assertEqual(len(non_builtin_rledges), 0)
+        non_builtin_stms = [k for k in p.ds.statement_uri_map.keys() if not k.startswith(p.BUILTINS_URI)]
+        self.assertEqual(len(non_builtin_stms), 0)
 
         non_builtin_entities = [k for k in p.ds.items.keys() if not k.startswith(p.BUILTINS_URI)]
         non_builtin_entities += [k for k in p.ds.relations.keys() if not k.startswith(p.BUILTINS_URI)]
@@ -480,7 +480,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
 
     def test_c04__evaluated_mapping(self):
 
-        res = p.ds.relation_edges.get("RE6229")
+        res = p.ds.statements.get("S6229")
         self.assertIsNone(res)
 
         mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
@@ -857,7 +857,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         
         n1a = len(p.ds.mod_path_mapping.a)
         n2a = len(p.ds.entities_created_in_mod)
-        n3a = len(p.ds.rledgs_created_in_mod)
+        n3a = len(p.ds.stms_created_in_mod)
         n4a = len(sys.modules)
         
         with self.assertRaises(p.aux.InvalidPrefixError):
@@ -865,7 +865,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         
         n1b = len(p.ds.mod_path_mapping.a)
         n2b = len(p.ds.entities_created_in_mod)
-        n3b = len(p.ds.rledgs_created_in_mod)
+        n3b = len(p.ds.stms_created_in_mod)
         n4b = len(sys.modules)
         
         self.assertEqual(n1a, n1b)
@@ -1022,11 +1022,11 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
             print(r)
 
     def test_c06__ruleengine05(self):
-        premises_rledgs = p.ruleengine.filter_relevant_rledgs(
+        premises_stms = p.ruleengine.filter_relevant_stms(
             self.rule1.scp__premises.get_inv_relations("R20__has_defining_scope")
         )
 
-        self.assertEqual(len(premises_rledgs), 2)
+        self.assertEqual(len(premises_stms), 2)
         with self.assertRaises(p.aux.EmptyURIStackError):
             p.ruleengine.apply_all_semantic_rules()
 

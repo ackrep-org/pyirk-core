@@ -375,10 +375,10 @@ def get_color_for_item(item: p.Item) -> str:
     return "black"
 
 
-def get_color_for_rledg(rledg: p.Statement) -> str:
+def get_color_for_stm(stm: p.Statement) -> str:
     cmap = {"R3": mpl_colors[0], "R4": mpl_colors[1]}
 
-    return cmap.get(rledg.rsk, "black")
+    return cmap.get(stm.rsk, "black")
 
 
 def create_complete_graph(
@@ -392,12 +392,12 @@ def create_complete_graph(
     """
 
     added_items_nodes = {}
-    added_relation_edges = {}
+    added_statements = {}
     G = nx.DiGraph()
 
     i = 0
     relation_dict: dict
-    for item_uri, relation_dict in p.ds.relation_edges.items():
+    for item_uri, relation_dict in p.ds.statements.items():
         item = p.ds.get_entity_by_uri(item_uri)
         if not isinstance(item, p.Item) or item.short_key in ["I000"]:
             continue
@@ -414,15 +414,15 @@ def create_complete_graph(
         added_items_nodes[item_uri] = node
 
         # iterate over relation edges
-        for relation_uri, rledg_list in relation_dict.items():
-            rledg: p.Statement
-            for rledg in rledg_list:
-                if rledg.role != p.RelationRole.SUBJECT:
+        for relation_uri, stm_list in relation_dict.items():
+            stm: p.Statement
+            for stm in stm_list:
+                if stm.role != p.RelationRole.SUBJECT:
                     continue
-                if rledg.relation_tuple[1].uri in REL_BLACKLIST:
+                if stm.relation_tuple[1].uri in REL_BLACKLIST:
                     continue
 
-                obj = rledg.relation_tuple[-1]
+                obj = stm.relation_tuple[-1]
                 if isinstance(obj, p.Item):
                     if other_node := added_items_nodes.get(obj.uri):
                         pass
@@ -434,12 +434,12 @@ def create_complete_graph(
                     # obj is a literal, we omit that for now
                     continue
 
-                # edge_label = f"{rledg.relation_tuple[1].short_key}"
-                edge_label = f"{rledg.relation_tuple[1].short_key}"
-                G.add_edge(node, other_node, label=edge_label, color=get_color_for_rledg(rledg))
+                # edge_label = f"{stm.relation_tuple[1].short_key}"
+                edge_label = f"{stm.relation_tuple[1].short_key}"
+                G.add_edge(node, other_node, label=edge_label, color=get_color_for_stm(stm))
 
-                assert rledg.uri not in added_relation_edges
-                added_relation_edges[rledg.uri] = 1
+                assert stm.uri not in added_statements
+                added_statements[stm.uri] = 1
 
     return G
 

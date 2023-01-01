@@ -256,6 +256,15 @@ all_pets_tuple = p.close_class_with_R51(I8139["pet"])
 
 # Relations
 
+R2850 = p.create_relation(
+    R1__has_label="is functional activity",
+    R2__has_description="specifies that a relation is functional in the context of the zebra puzzle",
+    R8__has_domain_of_argument_1=p.I40["general relation"],
+    R11__has_range_of_result=bool,
+    R22__is_functional=True,
+    R62__is_relation_property=True,
+)
+
 R8216 = p.create_relation(
     R1__has_label="drinks",
     R2__has_description="specifies which beverage a person drinks",
@@ -263,7 +272,9 @@ R8216 = p.create_relation(
     R11__has_range_of_result=I6990["beverage"],
     R22__is_functional=True,
     R53__is_inverse_functional=True,
+    R2850__is_functional_activity=True,
 )
+
 
 R9040 = p.create_relation(
     R1__has_label="lives in numbered house",
@@ -272,6 +283,7 @@ R9040 = p.create_relation(
     R11__has_range_of_result=I6990["beverage"],
     R22__is_functional=True,
     R53__is_inverse_functional=True,
+    R2850__is_functional_activity=True,
 )
 
 R5611 = p.create_relation(
@@ -281,6 +293,7 @@ R5611 = p.create_relation(
     R11__has_range_of_result=I8139["pet"],
     R22__is_functional=True,
     R53__is_inverse_functional=True,
+    R2850__is_functional_activity=True,
 )
 
 R8098 = p.create_relation(
@@ -290,6 +303,7 @@ R8098 = p.create_relation(
     R11__has_range_of_result=I3896["house color"],
     R22__is_functional=True,
     R53__is_inverse_functional=True,
+    R2850__is_functional_activity=True,
 )
 
 R8592 = p.create_relation(
@@ -299,6 +313,7 @@ R8592 = p.create_relation(
     R11__has_range_of_result=I9803["cigarette brand"],
     R22__is_functional=True,
     R53__is_inverse_functional=True,
+    R2850__is_functional_activity=True,
 )
 
 R3606 = p.create_relation(
@@ -314,6 +329,7 @@ R2353 = p.create_relation(
     R2__has_description="specifies that the house index of the subject equals the house index of the object plus one",
     R8__has_domain_of_argument_1=I7435["human"],
     R11__has_range_of_result=I7435["human"],
+    R2850__is_functional_activity=True,
 )
 
 

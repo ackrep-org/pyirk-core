@@ -1093,7 +1093,20 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         zp = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA02, prefix="zp")
         new_stms = p.ruleengine.apply_semantic_rule(zp.zr.I701, mod_context_uri=zp.__URI__)
         
-        IPS()
+        with p.uri_context(uri=TEST_BASE_URI):
+            pass
+            # this does not yet work as intended
+            # p.replace_and_unlink_entity(zp.person2, zp.person1)
+            
+        for stm in new_stms:
+            stm: p.RelationEdge 
+            if stm.subject == zp.person1:
+                self.assertEqual(stm.predicate, p.R47["is same as"])
+                self.assertEqual(stm.object, zp.person2)
+                break
+        else:
+            # this is only called if no break occurred
+            self.assertFalse(True)
         
 
 class Test_Z_Core(HouskeeperMixin, unittest.TestCase):

@@ -143,6 +143,14 @@ class SemanticRuleError(PyERKError):
     pass
 
 
+class MissingQualifierError(PyERKError):
+    pass
+
+
+class AmbiguousQualifierError(PyERKError):
+    pass
+
+
 
 def ensure_valid_short_key(txt: str, strict: bool = True) -> bool:
     conds = [isinstance(txt, str)]

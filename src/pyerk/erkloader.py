@@ -27,7 +27,9 @@ def preserve_cwd(function):
 
 # noinspection PyProtectedMember
 @preserve_cwd
-def load_mod_from_path(modpath: str, prefix: str, modname=None, allow_reload=True, smart_relative=None) -> ModuleType:
+def load_mod_from_path(
+        modpath: str, prefix: str, modname=None, allow_reload=True, smart_relative=None, reuse_loaded=False, 
+) -> ModuleType:
     """
 
     :param modpath:         file system path for the module to be loaded
@@ -36,6 +38,7 @@ def load_mod_from_path(modpath: str, prefix: str, modname=None, allow_reload=Tru
     :param allow_reload:    flag; if False, an error is raised if the module was already loades
     :param smart_relative:  flag; if True, relative paths are interpreted w.r.t. the calling module
                             (not w.r.t. current working path)
+    :param reuse_loaded:    flag; if True and the module was already loaded before, then just use this
     :return:
     """
     
@@ -69,6 +72,11 @@ def load_mod_from_path(modpath: str, prefix: str, modname=None, allow_reload=Tru
     old_mod_uri = pyerk.ds.mod_path_mapping.b.get(modpath)
 
     if old_mod_uri:
+        
+        if reuse_loaded:
+            assert modname in sys.modules
+            return sys.modules[modname]
+        
         if allow_reload:
             pyerk.unload_mod(old_mod_uri)
         else:

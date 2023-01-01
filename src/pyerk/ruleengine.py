@@ -262,8 +262,7 @@ class RuleApplicator:
         #   1: <Item I4900["local asymtotical stability"]>,
         #   2: <Item I9642["local exponential stability"]>
         #  }, ... ]
-
-        IPS()
+        
         return new_res
     
     def _get_by_uri(self, uri):
@@ -324,6 +323,16 @@ class RuleApplicator:
         for i, var in enumerate(self.fiat_prototype_vars):
             node_name = f"fiat{i}"
             self.asserted_nodes.add_pair(var.uri, node_name)
+            
+    @staticmethod
+    def _ignore_item(itm: bi.Item) -> bool:
+        # This mechanism allows to ignore some nodes (because they have other roles, e.g. serving as proxy-item for
+        # relations)
+        if itm.R4 == bi.I40["general relation"]:
+            q = itm.get_relations("R4")[0].qualifiers
+            if q and q[0].predicate == bi.R59["ignore in rule prototype graph"] and q[0].object:
+                return True
+        return False
         
     def create_prototype_subgraph_from_rule(self) -> nx.DiGraph:
         """
@@ -343,10 +352,7 @@ class RuleApplicator:
             if var.uri in self.local_nodes.a:
                 continue
             
-            # This mechanism allows to ignore some nodes (because they have other roles)
-            if var.R4 == bi.I40:
-                q = var.get_relations("R4")[0].qualifiers
-                if q and q[0].predicate == bi.R59["ignore in rule prototype graph"] and q[0].object:
+            if self._ignore_item(var):
                     continue
 
             c = Container()
@@ -363,8 +369,22 @@ class RuleApplicator:
         for rledg in self.setting_rledgs + self.premises_rledgs:
 
             subj, pred, obj = rledg.relation_tuple
+            
+            if self._ignore_item(subj):
+                continue
+            
             assert isinstance(subj, core.Entity)
             assert isinstance(pred, core.Relation)
+            
+            if pred == bi.R58["wildcard relation"]:
+                # for wildcard relations we have to determine the relevant relation properties
+                # like R22__is_functional etc.
+                # see also function edge_matcher
+                proxy_item = bi.get_proxy_item(rledg)
+                
+                rel_props = bi.get_relation_properties(proxy_item)
+            else:
+                rel_props = []
             
             n1 = self.local_nodes.a[subj.uri]
             
@@ -382,7 +402,7 @@ class RuleApplicator:
                 msg = f"While processing {self.rule}: unexpected type of obj: {type(obj)}"
                 raise TypeError(msg)
 
-            P.add_edge(n1, n2, rel_uri=pred.uri)
+            P.add_edge(n1, n2, rel_uri=pred.uri, rel_props=rel_props)
 
         # components_container 
         cc = self._get_weakly_connected_components(P)
@@ -471,6 +491,9 @@ class RuleApplicator:
                 for rledg in rledg_list:
                     assert isinstance(rledg, core.RelationEdge)
                     assert len(rledg.relation_tuple) == 3
+                    
+                    rel_props = bi.get_relation_properties(rledg.predicate)
+                    
                     if rledg.corresponding_entity is not None:
                         # case 1: object is not a literal. must be an item (otherwise ignore)
                         assert rledg.corresponding_literal is None
@@ -478,7 +501,7 @@ class RuleApplicator:
                             # some relation edges point to an relation-type
                             # (maybe this will change in the future)
                             continue
-                        c = Container(rel_uri=rel_uri)
+                        c = Container(rel_uri=rel_uri, rel_props=rel_props)
                         res[(subj_uri, rledg.corresponding_entity.uri)] = c
                         # TODO: support multiple relations in the graph (MultiDiGraph)
                         break
@@ -486,13 +509,13 @@ class RuleApplicator:
                         # case 2: object is a literal
                         assert rledg.corresponding_literal is not None
                         assert rledg.corresponding_entity is None
-                        c = Container(rel_uri=rel_uri)
+                        c = Container(rel_uri=rel_uri, rel_props=rel_props)
                         literal_uri = self._make_literal(rledg.corresponding_literal)
                         
                         res[(subj_uri, literal_uri)] = c
                     
         return res
-    
+        
     def _make_literal(self, value) -> str:
         """
         create and return an uri for an literal value
@@ -520,9 +543,10 @@ def edge_matcher(e1d: dict, e2d: dict) -> bool:
 
     """
     
-    if e2d["rel_uri"] == wildcard_relation_uri:
-        # this matches any relation
-        return True
+    if (e2d["rel_uri"] == wildcard_relation_uri):
+        # wildcard relations matches any relation which has the required relation properties
+        if set(e2d["rel_props"]).issubset(e1d["rel_props"]):
+            return True
 
     if e1d["rel_uri"] != e2d["rel_uri"]:
         return False

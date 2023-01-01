@@ -639,6 +639,16 @@ class DataStore:
         # this list serves to keep track of nested scopes
         self.scope_stack = []
 
+    def get_item_by_label(self, label) -> Entity:
+        """
+        Search over all item and return the first item which has the provided label.
+        Useful during interactive debugging. Not useful for production!
+        """
+        for uri, itm in self.items.items():
+            if itm.R1 == label:
+                return itm
+        
+        
     def get_entity_by_key_str(self, key_str, mod_uri=None) -> Entity:
         """
         :param key_str:     str like I1234 or I1234__some_label

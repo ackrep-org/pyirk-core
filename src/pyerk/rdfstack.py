@@ -132,7 +132,7 @@ def check_all_relation_types():
 """
     for rel_key, re_list in pyerk.ds.relation_relation_edges.items():
         for re in re_list:
-            re: pyerk.RelationEdge
+            re: pyerk.Statement
             subj, pred, obj = re.relation_tuple
             pred: pyerk.Relation
 

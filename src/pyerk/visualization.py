@@ -148,7 +148,7 @@ class EntityNode(AbstractGraphObject):
             self.shape = "circle"
         elif isinstance(entity, p.Relation):
             self.shape = "hexagon"
-        elif isinstance(entity, p.RelationEdge):
+        elif isinstance(entity, p.Statement):
             self.shape = "cds"
         else:
             msg = f"Unexpected entity type: {type(entity)} during creation of EntityNode in visualization."
@@ -349,7 +349,7 @@ def create_nx_graph_from_entity(uri, url_template="") -> nx.DiGraph:
         if rel_key in REL_BLACKLIST:
             continue
 
-        re_list: List[p.RelationEdge]
+        re_list: List[p.Statement]
         for re in re_list:
             assert len(re.relation_tuple) == 3
             subj, pred, obj = re.relation_tuple
@@ -375,7 +375,7 @@ def get_color_for_item(item: p.Item) -> str:
     return "black"
 
 
-def get_color_for_rledg(rledg: p.RelationEdge) -> str:
+def get_color_for_rledg(rledg: p.Statement) -> str:
     cmap = {"R3": mpl_colors[0], "R4": mpl_colors[1]}
 
     return cmap.get(rledg.rsk, "black")
@@ -415,7 +415,7 @@ def create_complete_graph(
 
         # iterate over relation edges
         for relation_uri, rledg_list in relation_dict.items():
-            rledg: p.RelationEdge
+            rledg: p.Statement
             for rledg in rledg_list:
                 if rledg.role != p.RelationRole.SUBJECT:
                     continue

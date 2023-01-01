@@ -228,7 +228,7 @@ class Entity(abc.ABC):
 
         aux.ensure_valid_uri(rel_uri)
 
-        relation_edges: List[RelationEdge] = ds.get_relation_edges(self.uri, rel_uri)
+        relation_edges: List[Statement] = ds.get_relation_edges(self.uri, rel_uri)
 
         # for each of the relation edges get a list of the result-objects
         # (this assumes the relation tuple to be a triple (sub, rel, obj))
@@ -346,9 +346,9 @@ class Entity(abc.ABC):
 
     def set_mutliple_relations(
             self, relation: Union["Relation", str], obj_seq: Union[tuple, list], *args, **kwargs
-    ) -> List["RelationEdge"]:
+    ) -> List["Statement"]:
         """
-        Convenience function to create multiple RelationEdges at once
+        Convenience function to create multiple Statements at once
         """
         res_list = []
         for obj in obj_seq:
@@ -363,14 +363,14 @@ class Entity(abc.ABC):
         scope: "Entity" = None,
         proxyitem: Optional["Item"] = None,
         qualifiers: Optional[List["RawQualifier"]] = None,
-    ) -> "RelationEdge":
+    ) -> "Statement":
         """
         Allows to add a relation after the item was created.
 
         :param relation:    Relation-Entity (or its short_key)
         :param obj:         target (object) of the relation (where self is the subject)
         :param scope:       Entity for the scope in which the relation is defined
-        :param proxyitem:   optional item to which the RelationEdge is associated (e.g. an equation-instance)
+        :param proxyitem:   optional item to which the Statement is associated (e.g. an equation-instance)
         :param qualifiers:  optional list of RawQualifiers (see docstring of this class)
         :return:
         """
@@ -408,7 +408,7 @@ class Entity(abc.ABC):
         scope: Optional["Entity"] = None,
         qualifiers: Optional[list] = None,
         proxyitem: Optional["Item"] = None,
-    ) -> "RelationEdge":
+    ) -> "Statement":
 
         aux.ensure_valid_uri(rel_uri)
         rel = ds.relations[rel_uri]
@@ -435,7 +435,7 @@ class Entity(abc.ABC):
             qff_has_defining_scope: QualifierFactory = ds.qff_dict["qff_has_defining_scope"]
             qualifiers.append(qff_has_defining_scope(scope))
 
-        rledg = RelationEdge(
+        rledg = Statement(
             relation=rel,
             relation_tuple=(self, rel, rel_content),
             role=RelationRole.SUBJECT,
@@ -454,7 +454,7 @@ class Entity(abc.ABC):
         # if the object is not a literal then also store the inverse relation
         if isinstance(rel_content, Entity):
 
-            inv_rledg = RelationEdge(
+            inv_rledg = Statement(
                 relation=rel,
                 relation_tuple=(self, rel, rel_content),
                 role=RelationRole.OBJECT,
@@ -464,7 +464,7 @@ class Entity(abc.ABC):
                 proxyitem=proxyitem,
             )
 
-            # interconnect the primal RE with the inverse one:
+            # interconnect the primal Statement with the inverse one:
             rledg.dual_relation_edge = inv_rledg
             inv_rledg.dual_relation_edge = rledg
 
@@ -479,12 +479,12 @@ class Entity(abc.ABC):
         self, key_str_or_uri: Optional[str] = None, return_subj: bool = False, return_obj: bool = False
     ) -> Union[Dict[str, list], list]:
         """
-        Return all RelationEdge instance where this item is subject
+        Return all Statement instance where this item is subject
 
         :param key_str_or_uri:      optional; either a verbose key_str (of a builtin entity) or a full uri;
                                     if passed only return the result for this key
         :param return_subj:         default False; if True only return the subject(s) of the relation edges,
-                                    not the whole RE
+                                    not the whole statement
 
         :return:            either the whole dict or just one value (of type list)
         """
@@ -500,14 +500,14 @@ class Entity(abc.ABC):
         self, key_str_or_uri: Optional[str] = None, return_subj: bool = False, return_obj: bool = False
     ) -> Union[Dict[str, list], list]:
         """
-        Return all RelationEdge instance where this item is object
+        Return all Statement instance where this item is object
 
         :param key_str_or_uri:      optional; either a verbose key_str (of a builtin entity) or a full uri;
                                     if passed only return the result for this key
         :param return_subj:         default False; if True only return the subject(s) of the relation edge(s),
-                                    not the whole RE
+                                    not the whole statement
         :param return_obj:          default False; if True only return the object(s) of the relation edge(s),
-                                    not the whole RE
+                                    not the whole statement
 
         :return:            either the whole dict or just one value (of type list)
         """
@@ -529,9 +529,9 @@ class Entity(abc.ABC):
         :param key_str_or_uri:      optional; either a verbose key_str (of a builtin entity) or a full uri;
                                     if passed only return the result for this key
         :param return_subj:         default False; if True only return the subject(s) of the relation edge(s),
-                                    not the whole RE
+                                    not the whole statement
         :param return_obj:          default False; if True only return the object(s) of the relation edge(s),
-                                    not the whole RE
+                                    not the whole statement
         :return:
         """
         if key_str_or_uri is None:
@@ -546,22 +546,22 @@ class Entity(abc.ABC):
             pr_key = process_key_str(key_str)
             uri = pr_key.uri
 
-        rledg_res: Union[RelationEdge, List[RelationEdge]] = base_dict.get(uri, [])
+        rledg_res: Union[Statement, List[Statement]] = base_dict.get(uri, [])
         if return_subj:
-            # do not return the RelationEdge instance(s) but only the subject(s)
+            # do not return the Statement instance(s) but only the subject(s)
             if isinstance(rledg_res, list):
-                rledg_res: List[RelationEdge]
+                rledg_res: List[Statement]
                 res = [re.subject for re in rledg_res]
             else:
-                assert isinstance(rledg_res, RelationEdge)
+                assert isinstance(rledg_res, Statement)
                 res = rledg_res.subject
         elif return_obj:
-            # do not return the RelationEdge instance(s) but only the object(s)
+            # do not return the Statement instance(s) but only the object(s)
             if isinstance(rledg_res, list):
-                rledg_res: List[RelationEdge]
+                rledg_res: List[Statement]
                 res = [re.object for re in rledg_res]
             else:
-                assert isinstance(rledg_res, RelationEdge)
+                assert isinstance(rledg_res, Statement)
                 res = rledg_res.object
 
         else:
@@ -608,7 +608,7 @@ class DataStore:
         # for every relation key store the relevant relation-edges
         self.relation_relation_edges = defaultdict(list)
 
-        # store a map {uri: RE-instance} of all relation edges
+        # store a map {uri: Statement-instance} of all relation edges
         self.relation_edge_uri_map = {}
 
         # this will be set on demand
@@ -687,10 +687,10 @@ class DataStore:
 
         return res
 
-    def get_relation_edges(self, entity_uri: str, rel_uri: str) -> List["RelationEdge"]:
+    def get_relation_edges(self, entity_uri: str, rel_uri: str) -> List["Statement"]:
         """
         self.relation_edges maps an entity_key to an inner_dict.
-        The inner_dict maps an relation_key to a RelationEdge or List[RelationEdge].
+        The inner_dict maps an relation_key to a Statement or List[Statement].
 
         :param entity_uri:
         :param rel_uri:
@@ -703,13 +703,13 @@ class DataStore:
         # TODO: model this as defaultdict?
         return self.relation_edges[entity_uri].get(rel_uri, list())
 
-    def set_relation_edge(self, re_object: "RelationEdge") -> None:
+    def set_relation_edge(self, re_object: "Statement") -> None:
         """
-        Insert a RelationEdge into the relevant data structures of the DataStorage (self)
+        Insert a Statement into the relevant data structures of the DataStorage (self)
 
         This method does not handle the dual realtion. It must be created and stored separately.
 
-        :param re_object:   RelationEdge instance
+        :param re_object:   Statement instance
         :return:
         """
 
@@ -735,7 +735,7 @@ class DataStore:
             # R22__is_functional, this means there can only be one value for this relation and this item
             if relation.R22:
                 msg = (
-                    f"for entity/relation-edge {subj_uri} there already exists a RelationEdge for "
+                    f"for entity/relation-edge {subj_uri} there already exists a Statement for "
                     f"functional relation with key {rel_uri}. Another one is not allowed."
                 )
                 raise ValueError(msg)
@@ -890,8 +890,8 @@ def unpack_l1d(l1d: Dict[str, object]):
 
 
 # define regular expressions outside of the function (they have to be compiled only once)
-# use https://pythex.org/ with fixture e. g `some_prefix__RE000['test label']` to understand these
-re_prefix_shortkey_suffix = re.compile(r"^((.+?)__)?((Ia?)|(Ra?)|(RE))(\d+)(.*)$")
+# use https://pythex.org/ with fixture e. g `some_prefix__S000['test label']` to understand these
+re_prefix_shortkey_suffix = re.compile(r"^((.+?)__)?((Ia?)|(Ra?)|(S))(\d+)(.*)$")
 re_suffix_underscore = re.compile(r"^__([\w\-]+)$")  # \w means alphanumeric (including `_`);
 re_suffix_square_brackets = re.compile(r"""^\[["'](.+)["']\]""")
 
@@ -1275,8 +1275,8 @@ def repl_spc_by_udsc(txt: str) -> str:
 
 class RawQualifier:
     """
-    Precursor to a real Qualifier (which is a RelationEdge) where the subject is yet unspecified
-    (will be the qualified RelationEdge). Instances of this class are produced by QualifierFactory
+    Precursor to a real Qualifier (which is a Statement) where the subject is yet unspecified
+    (will be the qualified Statement). Instances of this class are produced by QualifierFactory
     """
 
     def __init__(self, rel: Relation, obj: Union[Literal, Entity]):
@@ -1323,7 +1323,7 @@ class QualifierFactory:
         return RawQualifier(self.relation, obj)
 
 
-class RelationEdge:
+class Statement:
     """
     Models a conrete (instantiated/applied) relation between entities. This is basically a dict.
     """
@@ -1353,7 +1353,8 @@ class RelationEdge:
         :param proxyitem:               associated item; e.g. a equation-item
         """
 
-        self.short_key = f"RE{pop_uri_based_key()}"
+        # S means "statement" (successor of earlier RE for "relation edge")
+        self.short_key = f"S{pop_uri_based_key()}"
         mod_uri = get_active_mod_uri()
         self.base_uri = mod_uri
         self.uri = f"{aux.make_uri(self.base_uri, self.short_key)}"
@@ -1382,7 +1383,7 @@ class RelationEdge:
 
     @property
     def key_str(self):
-        # TODO: the "attribute" `.key_str` for RelationEdge is deprecated; use `.short_key` instead
+        # TODO: the "attribute" `.key_str` for Statement is deprecated; use `.short_key` instead
         return self.short_key
 
     def __repr__(self):
@@ -1405,7 +1406,7 @@ class RelationEdge:
                 corresponding_entity = None
                 corresponding_literal = repr(qf.obj)
 
-            qf_rledg = RelationEdge(
+            qf_rledg = Statement(
                 relation=qf.rel,
                 relation_tuple=(self, qf.rel, qf.obj),
                 role=RelationRole.SUBJECT,
@@ -1419,7 +1420,7 @@ class RelationEdge:
 
             # save the qualifyer-relation edge (and its inverse) in the appropriate data structures
 
-            # this is the RelationEdge from the original RE instance to the object (thus role=SUBJECT)
+            # this is the Statement from the original Statement instance to the object (thus role=SUBJECT)
             ds.set_relation_edge(re_object=qf_rledg)
 
             # we might also need dual edge
@@ -1440,7 +1441,7 @@ class RelationEdge:
             )
             raise ValueError(msg)
 
-        dual_rledg = RelationEdge(
+        dual_rledg = Statement(
             relation=self.relation,
             relation_tuple=self.relation_tuple,
             role=new_role,
@@ -1457,11 +1458,11 @@ class RelationEdge:
         return dual_rledg
 
     def is_qualifier(self):
-        return isinstance(self.subject, RelationEdge)
+        return isinstance(self.subject, Statement)
 
     def unlink(self, *args) -> None:
         """
-        Remove this RelationEdge instance from all data structures in the global data storage
+        Remove this Statement instance from all data structures in the global data storage
         :return:
         """
 
@@ -1479,7 +1480,7 @@ class RelationEdge:
 
         if self.role == RelationRole.SUBJECT:
 
-            subj_rel_edges: Dict[str : List[RelationEdge]] = ds.relation_edges[subj.uri]
+            subj_rel_edges: Dict[str : List[Statement]] = ds.relation_edges[subj.uri]
             tolerant_removal(subj_rel_edges.get(pred.uri, []), self)
 
             # ds.relation_relation_edges: for every relation key stores a list of relevant relation-edges
@@ -1489,7 +1490,7 @@ class RelationEdge:
 
         elif self.role == RelationRole.OBJECT:
             assert isinstance(obj, Entity)
-            obj_rel_edges: Dict[str : List[RelationEdge]] = ds.inv_relation_edges[obj.uri]
+            obj_rel_edges: Dict[str : List[Statement]] = ds.inv_relation_edges[obj.uri]
             # (check before accessing, see above)
             if pred.uri in obj_rel_edges:
                 tolerant_removal(obj_rel_edges[pred.uri], self)
@@ -1503,7 +1504,7 @@ class RelationEdge:
             self.dual_relation_edge.unlink()
 
         for qf in self.qualifiers:
-            qf: RelationEdge
+            qf: Statement
             qf.unlink()
 
         ds.relation_edge_uri_map.pop(self.uri)
@@ -1793,7 +1794,7 @@ def unload_mod(mod_uri: str, strict=True) -> None:
     assert len(intersection_set) == 0, msg
 
     for uri, rledg in rledg_dict.items():
-        assert isinstance(rledg, RelationEdge)
+        assert isinstance(rledg, Statement)
         rledg.unlink()
 
     try:
@@ -1864,12 +1865,12 @@ def _unlink_entity(uri: str, remove_from_mod=False) -> None:
 
     re_list = list(scope_rels)
 
-    # create a item-list of all RelationEdges instances where `ek` is involved either as subject or object
+    # create a item-list of all Statements instances where `ek` is involved either as subject or object
     re_item_list = list(re_dict.items()) + list(inv_re_dict.items())
 
     for rel_uri, local_re_list in re_item_list:
         # rel_uri: uri of the relation (like "pyerk/foo#R1234")
-        # re_list: list of RelationEdge instances
+        # re_list: list of Statement instances
         re_list.extend(local_re_list)
 
     if isinstance(entity, Relation):
@@ -1877,12 +1878,12 @@ def _unlink_entity(uri: str, remove_from_mod=False) -> None:
         tmp = ds.relation_relation_edges.pop(uri, [])
         re_list.extend(tmp)
 
-    # now iterate over all RelationEdge instances
+    # now iterate over all Statement instances
     for stm in re_list:
-        stm: RelationEdge
+        stm: Statement
         stm.unlink(uri)
 
-    # during unlinking of the RelationEdges the default dicts might have been recreating some keys -> pop again
+    # during unlinking of the Statements the default dicts might have been recreating some keys -> pop again
     # TODO: obsolete because we clean up the defaultdicts anyway
     ds.relation_edges.pop(entity.uri, None)
     ds.inv_relation_edges.pop(entity.uri, None)
@@ -1905,7 +1906,7 @@ def replace_and_unlink_entity(old_entity: Entity, new_entity: Entity):
     
     for relation_uri, stm_list in list(stm_dict1.items()) + list(stm_dict2.items()):
         for stm in stm_list:
-            stm: RelationEdge 
+            stm: Statement 
             subject, predicate, obj = stm.relation_tuple
             subject: Item
             qlf = stm.qualifiers

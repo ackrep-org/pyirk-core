@@ -607,7 +607,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         Z: p.Item = itm1.scope("context").namespace["Z"]
 
         r31_list = Z.get_inv_relations("R31__is_in_mathematical_relation_with")
-        re: p.RelationEdge = r31_list[0]
+        re: p.Statement = r31_list[0]
         self.assertEqual(len(r31_list), 1)
 
         # test the expected qualifier
@@ -1118,10 +1118,11 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         with p.uri_context(uri=TEST_BASE_URI):
             pass
             # this does not yet work as intended
-            # p.replace_and_unlink_entity(zp.person2, zp.person1)
-            
+            p.replace_and_unlink_entity(zp.person2, zp.person1)
+
+
         for stm in new_stms:
-            stm: p.RelationEdge 
+            stm: p.Statement 
             if stm.subject == zp.person1:
                 self.assertEqual(stm.predicate, p.R47["is same as"])
                 self.assertEqual(stm.object, zp.person2)
@@ -1129,7 +1130,7 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         else:
             # this is only called if no break occurred
             self.assertFalse(True)
-        
+
 
 class Test_Z_Core(HouskeeperMixin, unittest.TestCase):
     """

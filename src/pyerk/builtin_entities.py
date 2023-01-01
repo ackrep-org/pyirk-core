@@ -8,7 +8,7 @@ from .core import (
     Entity,
     Relation,
     Item,
-    RelationEdge,
+    Statement,
     de,
     en,
     QualifierFactory,
@@ -197,7 +197,7 @@ R2 = create_builtin_relation("R2", R1="has description", R32=True)
 R2.set_relation(R2, "specifies a natural language description")
 R1.set_relation(R2, "specifies a short natural language label")
 R32.set_relation(
-    R2, "specifies that for each subject there is at most one 'R30-RelationEdge' for a given language tag (e.g. en)"
+    R2, "specifies that for each subject there is at most one 'R30-Statement' for a given language tag (e.g. en)"
 )
 
 R22 = create_builtin_relation(
@@ -379,7 +379,7 @@ I15 = create_builtin_item(
 I16 = create_builtin_item(
     key_str="I16",
     R1__has_label="scope",
-    R2__has_description="auxiliary class; an instance defines the scope of statements (RelationEdge-objects)",
+    R2__has_description="auxiliary class; an instance defines the scope of statements (Statement-objects)",
     R4__is_instance_of=I2["Metaclass"],
 )
 
@@ -464,7 +464,7 @@ def get_scopes(entity: Entity) -> List[Item]:
     assert isinstance(entity, Entity)
     # R21__is_scope_of
     scope_relation_edges = core.ds.inv_relation_edges[entity.short_key]["R21"]
-    re: RelationEdge
+    re: Statement
     res = [re.relation_tuple[0] for re in scope_relation_edges]
     return res
 
@@ -474,7 +474,7 @@ def get_items_defined_in_scope(scope: Item) -> List[Entity]:
     assert scope.R4__is_instance_of == I16["scope"]
     # R20__has_defining_scope
     re_list = core.ds.inv_relation_edges[scope.short_key]["R20"]
-    re: RelationEdge
+    re: Statement
     entities = [re.relation_tuple[0] for re in re_list]
     return entities
 
@@ -507,7 +507,7 @@ def add_scope_to_defining_relation_edge(ent: Entity, scope: Item) -> None:
     assert len(r4_list) == 1
 
     re = r4_list[0]
-    assert isinstance(re, RelationEdge)
+    assert isinstance(re, Statement)
     re.scope = scope
 
 
@@ -592,7 +592,7 @@ class ScopingCM:
 
         return variable_object
 
-    def new_rel(self, sub: Entity, pred: Relation, obj: Entity, qualifiers=None) -> RelationEdge:
+    def new_rel(self, sub: Entity, pred: Relation, obj: Entity, qualifiers=None) -> Statement:
         """
         Create a new statement ("relation edge") in the current scope
 
@@ -601,7 +601,7 @@ class ScopingCM:
         :param obj:         object
         :param qualifiers:  List of RawQualifiers
 
-        :return: statement (relation edge)
+        :return: the newly created Statement
 
         """
 
@@ -644,7 +644,7 @@ class _proposition__CM (ScopingCM):
 
     def new_equation(self, lhs: Item, rhs: Item) -> Item:
         """
-        convenience method to create a equation-related RelationEdge
+        convenience method to create a equation-related Statement
 
         :param lhs:
         :param rhs:
@@ -660,7 +660,7 @@ class _proposition__CM (ScopingCM):
     # TODO: this makes  self.new_equation obsolete, doesnt it?
     def new_math_relation(self, lhs: Item, rsgn: str, rhs: Item) -> Item:
         """
-        convenience method to create a math_relation-related StatementObject (aka "RelationEdge")
+        convenience method to create a math_relation-related StatementObject (aka "Statement")
 
         :param lhs:   left hand side
         :param rsgn:  relation sign
@@ -718,7 +718,7 @@ class _rule__CM (ScopingCM):
         
         self._new_var(name, variable_object)
         
-    def new_rel(self, sub: Entity, pred: Entity, obj: Entity, qualifiers=None) -> RelationEdge:
+    def new_rel(self, sub: Entity, pred: Entity, obj: Entity, qualifiers=None) -> Statement:
         
         if qualifiers is None:
             qualifiers = []
@@ -1023,7 +1023,7 @@ def create_evaluated_mapping(mapping: Item, *args) -> Item:
     # thus we iterate over all instances of I32["evaluated mapping"]
 
     for i32_inst_rel in i32_instance_rels:
-        assert isinstance(i32_inst_rel, RelationEdge)
+        assert isinstance(i32_inst_rel, Statement)
         i32_instance = i32_inst_rel.relation_tuple[0]
 
         if i32_instance.R35__is_applied_mapping_of == mapping:
@@ -1074,7 +1074,7 @@ R31 = create_builtin_relation(
     # TODO: update or delete:
     R18__has_usage_hint=(
         "The actual type of the relation can be tretrieved by the .proxyitem attribute of the "
-        "corresponding RelationEdge."
+        "corresponding Statement."
     ),
 )
 
@@ -1140,7 +1140,7 @@ R33 = create_builtin_relation(
 R34 = create_builtin_relation(
     key_str="R34",
     R1__has_label="has proxy item",
-    R2__has_description="specifies an item which represents an RelationEdge",
+    R2__has_description="specifies an item which represents an Statement",
     R18__has_usage_hint=(
         "This relation is intended to be used as qualifier, e.g. on R31__is_in_mathematical_relation_with, "
         "where the proxy item is an instance of I23__equation."
@@ -1149,8 +1149,8 @@ R34 = create_builtin_relation(
 
 proxy_item = QualifierFactory(R34["has proxy item"])
 
-def get_proxy_item(stm: RelationEdge, strict=True) -> Item:
-    assert isinstance(stm, RelationEdge)
+def get_proxy_item(stm: Statement, strict=True) -> Item:
+    assert isinstance(stm, Statement)
     
     if not stm.qualifiers:
         if strict:
@@ -1171,7 +1171,7 @@ def get_proxy_item(stm: RelationEdge, strict=True) -> Item:
         msg = f"Multiple R34__has_proxy_item-qualifiers not (yet) supported (while processing {stm})."
         raise core.aux.AmbiguousQualifierError(msg)
         
-    res: RelationEdge = relevant_qualifiers[0]
+    res: Statement = relevant_qualifiers[0]
     
     return res.object
 
@@ -1716,7 +1716,7 @@ R62["is relation property"].set_relation(R62["is relation property"], True)
 
 def get_relation_properties_uris():
     
-    stms: List[RelationEdge] = ds.relation_relation_edges[R62.uri]
+    stms: List[Statement] = ds.relation_relation_edges[R62.uri]
     uris = []
     for stm in stms:
         # stm is like: RE3064(<Relation R22["is functional"]>, <Relation R62["is relation property"]>, True)

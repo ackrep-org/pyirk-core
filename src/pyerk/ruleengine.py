@@ -23,7 +23,7 @@ from . import builtin_entities as b
 LITERAL_BASE_URI = "erk:/tmp/literals"
 
 
-def apply_all_semantic_rules(mod_context_uri=None) -> List[core.RelationEdge]:
+def apply_all_semantic_rules(mod_context_uri=None) -> List[core.Statement]:
     """
     Extract all semantic rules and apply them.
     
@@ -37,7 +37,7 @@ def apply_all_semantic_rules(mod_context_uri=None) -> List[core.RelationEdge]:
         
     return new_rledg_list
 
-def apply_semantic_rule(rule: core.Item, mod_context_uri: str = None) -> List[core.RelationEdge]:
+def apply_semantic_rule(rule: core.Item, mod_context_uri: str = None) -> List[core.Statement]:
     """
     Create a RuleApplicator instance for the rules, execute its apply-method, return the result (list of new statements)
     """
@@ -55,9 +55,9 @@ def get_all_rules():
     return rule_instances
 
 
-def filter_relevant_rledgs(re_list: List[core.RelationEdge]) -> List[core.RelationEdge]:
+def filter_relevant_rledgs(re_list: List[core.Statement]) -> List[core.Statement]:
     """
-    From a list of RelationEdge instances select only those which are qualifiers and whose subject is an
+    From a list of Statement instances select only those which are qualifiers and whose subject is an
     RE with .role == SUBJECT.
     In other words: omit those instances which are created as dual relation edges
 
@@ -67,8 +67,8 @@ def filter_relevant_rledgs(re_list: List[core.RelationEdge]) -> List[core.Relati
 
     res = []
     for rledg in re_list:
-        assert isinstance(rledg, core.RelationEdge)
-        if isinstance(rledg.subject, core.RelationEdge) and rledg.subject.role == core.RelationRole.SUBJECT:
+        assert isinstance(rledg, core.Statement)
+        if isinstance(rledg.subject, core.Statement) and rledg.subject.role == core.RelationRole.SUBJECT:
             res.append(rledg.subject)
     return res
 
@@ -111,7 +111,7 @@ class RuleApplicator:
         
         self.create_prototypes_for_fiat_entities()
 
-    def apply(self) -> List[core.RelationEdge]:
+    def apply(self) -> List[core.Statement]:
         """
         Application of a semantic rule either in a specified module context or in the currently active module.
         
@@ -127,7 +127,7 @@ class RuleApplicator:
                 res = self._apply()
         return res
 
-    def _apply(self) -> List[core.RelationEdge]:
+    def _apply(self) -> List[core.Statement]:
         """
         Perform the actual application of the rule:
             - perform subgraph matching
@@ -489,7 +489,7 @@ class RuleApplicator:
 
             for rel_uri, rledg_list in rledg_dict.items():
                 for rledg in rledg_list:
-                    assert isinstance(rledg, core.RelationEdge)
+                    assert isinstance(rledg, core.Statement)
                     assert len(rledg.relation_tuple) == 3
                     
                     rel_props = bi.get_relation_properties(rledg.predicate)
@@ -583,7 +583,7 @@ def get_simple_properties(item: core.Item) -> dict:
     for rel_uri, rledg_list in rledg_dict.items():
 
         for rledg in rledg_list:
-            assert isinstance(rledg, core.RelationEdge)
+            assert isinstance(rledg, core.Statement)
             assert len(rledg.relation_tuple) == 3
             if rledg.corresponding_entity is None:
                 assert rledg.corresponding_literal is not None

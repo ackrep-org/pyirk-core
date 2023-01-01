@@ -81,10 +81,10 @@ I2746["Rudolf Kalman"].set_relation(R1833["has employer"], I9942["Stanford Unive
 #.
 ```
 
-This results in the triple: `(I2746, R1833, I9942)`. In pyerk such triples are modeled as instances of class `RelationEdge`; each such instance represents an edge in the knowledge graph, where the subject and object are the corresponding nodes and each such edge has a lable (the relation type) and optionally other information attachend to it.
+This results in the triple: `(I2746, R1833, I9942)`. In pyerk such triples are modeled as instances of class `Statement`; each such instance represents an edge in the knowledge graph, where the subject and object are the corresponding nodes and each such edge has a lable (the relation type) and optionally other information attachend to it.
 
 
-However, in many cases more complexity is needed. To express that Kalman worked at Stanford between 1964 and 1971, we can exploit that `RelationEdge`-instances can themselves be use as subject of other triples, by means of so called qualifiers:
+However, in many cases more complexity is needed. To express that Kalman worked at Stanford between 1964 and 1971, we can exploit that `Statement`-instances can themselves be use as subject of other triples, by means of so called qualifiers:
 ```python
 start_time = p.QualifierFactory(R4156["has start time"])
 end_time = p.QualifierFactory(R4698["has end time"])
@@ -95,14 +95,14 @@ I2746["Rudolf Kalman"].set_relation(
 #.
 ```
 
-Here `start_time` and `end_time` are instances of the class `QualifierFactory`. If such an instance is called, it returns an instance of class `RawQualifier` which is basically a yet incomplete triple where only the predicate and the object is fixed. The subject of this triple will be formed by the main statement itself (modeled by an instance of `RelationEdge`).
+Here `start_time` and `end_time` are instances of the class `QualifierFactory`. If such an instance is called, it returns an instance of class `RawQualifier` which is basically a yet incomplete triple where only the predicate and the object is fixed. The subject of this triple will be formed by the main statement itself (modeled by an instance of `Statement`).
 
-Thus the above code creates three `RelationEdge` instances here simplified:
+Thus the above code creates three `Statement` instances here simplified:
 
 ```
-RE(2746, R1833, I9942) # the main statement, now referenced as rel_edge1
-RE(rel_edge1, R4156, "1964")
-RE(rel_edge1, R4698, "1971")
+S(2746, R1833, I9942) # the main statement, now referenced as stm1
+S(stm1, R4156, "1964")
+S(stm1, R4698, "1971")
 #.
 ```
 

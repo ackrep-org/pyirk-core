@@ -240,17 +240,10 @@ with I905.scope("premises") as cm:
     cm.new_rel(cm.placeholder, p.R57["is placeholder"], True)
     cm.new_rel(cm.placeholder, p.R47["is same as"], cm.real_item)
     
-# TODO: move this to builtin_entities
-def placeholder_replacer(self, old_item, new_item):
-    p.replace_and_unlink_entity(old_item, new_item)
-    
-    # this function intentially does not return a new item; only called for its side-effects
-    return None
-    
 with I905.scope("assertions") as cm:
     # create an item for attaching the factory
     cm.new_var(factory_anchor=p.instance_of(p.I1["general item"]))  # remaining items
-    cm.factory_anchor.add_method(placeholder_replacer, "fiat_factory")
+    cm.factory_anchor.add_method(p.replacer_method, "fiat_factory")
     cm.new_rel(cm.factory_anchor, p.R29["has argument"], cm.placeholder)
     cm.new_rel(cm.factory_anchor, p.R29["has argument"], cm.real_item)
 

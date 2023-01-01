@@ -1711,6 +1711,14 @@ def get_relation_properties(rel_entity: Entity) -> List[str]:
     
     return rel_props
 
+# this function is intended to be attached to an item in the assertions-scope of a semantic rule
+# ("pseudo fiat function")
+def replacer_method(self, old_item, new_item):
+    core.replace_and_unlink_entity(old_item, new_item)
+    
+    # this function intentially does not return a new item; only called for its side-effects
+    return None
+
 # testing
 
 

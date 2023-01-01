@@ -188,8 +188,8 @@ def tuple_difference_factory(self, tuple_item1, tuple_item2):
 with I903.scope("assertions") as cm:
     cm.new_var(T_diff=p.instance_of(p.I33["tuple"]))  # remaining items
     cm.T_diff.add_method(tuple_difference_factory, "fiat_factory")
-    cm.new_rel(cm.T_diff, p.R29["has argument"], cm.T1)
-    cm.new_rel(cm.T_diff, p.R29["has argument"], cm.T2)
+    
+    cm.new_consequent_func(tuple_difference_factory, cm.T1, cm.T2, anchor_item=cm.T_diff)
     
     cm.new_rel(cm.P1, p.R54["is matched by rule"], I903)
     cm.new_rel(cm.P1, p.R56["is one of"], cm.T_diff)
@@ -241,12 +241,8 @@ with I905.scope("premises") as cm:
     cm.new_rel(cm.placeholder, p.R47["is same as"], cm.real_item)
     
 with I905.scope("assertions") as cm:
-    # create an item for attaching the factory
-    cm.new_var(factory_anchor=p.instance_of(p.I1["general item"]))  # remaining items
-    cm.factory_anchor.add_method(p.replacer_method, "fiat_factory")
-    cm.new_rel(cm.factory_anchor, p.R29["has argument"], cm.placeholder)
-    cm.new_rel(cm.factory_anchor, p.R29["has argument"], cm.real_item)
-
+    cm.new_consequent_func(p.replacer_method, cm.placeholder, cm.real_item)
+    
 # ###############################################################################
 
 

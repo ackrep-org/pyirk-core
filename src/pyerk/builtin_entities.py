@@ -693,6 +693,12 @@ def _proposition__scope(self: Item, scope_name: str):
 
 
 class _rule__CM (ScopingCM):
+    
+    def __init__(self, *args, **kwargs):
+        
+        self.fiat_factory_counter = 0
+        super().__init__(*args, **kwargs)
+    
     def uses_external_entities(self, *args):
         """
         Specifies that some external entities will be used inside the rule (to which this scope belongs)
@@ -728,6 +734,34 @@ class _rule__CM (ScopingCM):
             pred = R58["wildcard relation"]
         
         return super().new_rel(sub, pred, obj, qualifiers)
+    
+    def _get_new_fiat_fatory_anchor_item(self):
+        
+        name = f"fiat_fatory_item{self.fiat_factory_counter}"
+        self.fiat_factory_counter += 1
+        
+        itm = instance_of(I1["general item"], r1=name)
+        self.new_var(**{name: itm})
+        return itm
+    
+    def new_consequent_func(self, func: callable, *args, anchor_item=None):
+        """
+        Add an existing function that should be called in the assertion-part of a semantic rule
+        """
+        
+        if anchor_item is None:
+            factory_anchor = self._get_new_fiat_fatory_anchor_item()
+        else:
+            assert isinstance(anchor_item, Item)
+            factory_anchor = anchor_item
+        
+        # this method (identified by its name) will be called by the RuleApplicator during .apply()
+        factory_anchor.add_method(func, "fiat_factory")
+        
+        for arg in args:
+            # args are supposed to be variables created in the "setting"-scope
+            self.new_rel(factory_anchor, R29["has argument"], arg)
+
 
 
 def _rule__scope(self: Item, scope_name: str):

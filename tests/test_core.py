@@ -919,7 +919,26 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         with p.uri_context(uri=TEST_BASE_URI, prefix="ut"):
             itm.overwrite_statement("R4__is_instance_of", p.I2["Metaclass"])
         self.assertEqual(itm.R4__is_instance_of, p.I2["Metaclass"])
+
+    def test_d08__overwrite_stm_inside_scope(self):
         
+        with p.uri_context(uri=TEST_BASE_URI, prefix="ut"):
+        
+            I702 = p.create_item(
+                R1__has_label="test rule",
+                R4__is_instance_of=p.I41["semantic rule"],
+            )
+
+            with I702.scope("context") as cm:
+                cm.new_var(x=p.instance_of(p.I1["general item"]))  
+                
+                
+            self.assertEqual(cm.x.R4, p.I1["general item"])
+
+            with I702.scope("premises") as cm:
+                cm.new_rel(cm.x, p.R4["is instance of"], p.I2["Metaclass"], overwrite=True)
+                    
+            self.assertEqual(cm.x.R4, p.I2["Metaclass"])
 
 class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
 

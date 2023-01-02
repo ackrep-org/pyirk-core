@@ -592,7 +592,8 @@ class ScopingCM:
 
         return variable_object
 
-    def new_rel(self, sub: Entity, pred: Relation, obj: Entity, qualifiers=None) -> Statement:
+    # TODO: this should be renamed to new_statement
+    def new_rel(self, sub: Entity, pred: Relation, obj: Entity, qualifiers=None, overwrite=False) -> Statement:
         """
         Create a new statement ("relation edge") in the current scope
 
@@ -600,6 +601,7 @@ class ScopingCM:
         :param pred:        predicate (Relation-Instance)
         :param obj:         object
         :param qualifiers:  List of RawQualifiers
+        :param overwrite:   boolean flag that the new statement should replace the old one
 
         :return: the newly created Statement
 
@@ -610,8 +612,11 @@ class ScopingCM:
         if isinstance(qualifiers, RawQualifier):
             qualifiers = [qualifiers]
         assert isinstance(qualifiers, (type(None), list))
-
-        return sub.set_relation(pred, obj, scope=self.scope, qualifiers=qualifiers)
+        
+        if overwrite:
+            return sub.overwrite_statement(pred.uri, obj, qualifiers=qualifiers)
+        else:
+            return sub.set_relation(pred, obj, scope=self.scope, qualifiers=qualifiers)
 
     @classmethod
     def create_scopingcm_factory(cls):
@@ -718,7 +723,7 @@ class _rule__CM (ScopingCM):
         
         self._new_var(name, variable_object)
         
-    def new_rel(self, sub: Entity, pred: Entity, obj: Entity, qualifiers=None) -> Statement:
+    def new_rel(self, sub: Entity, pred: Entity, obj: Entity, qualifiers=None, overwrite=False) -> Statement:
         
         if qualifiers is None:
             qualifiers = []
@@ -733,7 +738,7 @@ class _rule__CM (ScopingCM):
             qualifiers.append(proxy_item(pred))
             pred = R58["wildcard relation"]
         
-        return super().new_rel(sub, pred, obj, qualifiers)
+        return super().new_rel(sub, pred, obj, qualifiers, overwrite)
     
     def _get_new_fiat_fatory_anchor_item(self):
         

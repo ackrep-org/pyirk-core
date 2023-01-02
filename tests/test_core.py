@@ -1158,6 +1158,56 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         neighbour = zp.person1.zb__R2353__lives_immediatly_right_of
         self.assertEqual(neighbour, zp.person3)
 
+    def test_d03__zebra_puzzle_stage02(self):
+        """
+        Test the outcome of a specific rule
+        """
+
+        with p.uri_context(uri=TEST_BASE_URI):
+
+            itm1 = p.instance_of(p.I36["rational number"])
+            itm2 = p.instance_of(p.I36["rational number"])
+            itm3 = p.instance_of(p.I36["rational number"])
+            itm4 = p.instance_of(p.I34["complex number"])
+
+            I702 = p.create_item(
+                R1__has_label="test rule",
+                R2__has_description=(
+                    "test to match every instance of a class"
+                ),
+                R4__is_instance_of=p.I41["semantic rule"],
+            )
+
+            with I702.scope("context") as cm:
+                cm.new_var(x=p.instance_of(p.I1["general item"]))
+                cm.uses_external_entities(I702)
+                cm.uses_external_entities(p.I36["rational number"])
+
+            with I702.scope("premises") as cm:
+                cm.new_rel(cm.x, p.R4["is instance of"], p.I36["rational number"], overwrite=True)
+
+            with I702.scope("assertions") as cm:
+                cm.new_rel(cm.x, p.R54["is matched by rule"], I702)
+
+            self.assertEqual(itm1.R54__is_matched_by_rule, [])
+            self.assertEqual(itm2.R54__is_matched_by_rule, [])
+            self.assertEqual(itm3.R54__is_matched_by_rule, [])
+
+            new_stms1 = p.ruleengine.apply_semantic_rule(I702)
+
+        self.assertEqual(len(new_stms1), 3)
+        self.assertEqual(itm1.R54__is_matched_by_rule, [I702])
+        self.assertEqual(itm2.R54__is_matched_by_rule, [I702])
+        self.assertEqual(itm3.R54__is_matched_by_rule, [I702])
+
+        # use the uris because the Items itself are not hashable -> no conversion into a set
+        self.assertEqual(
+            set(itm.uri for itm in I702.get_inv_relations("R54", return_subj=True)),
+            set((I702.x.uri, itm1.uri, itm2.uri, itm3.uri))
+        )
+
+        self.assertEqual(itm4.R54__is_matched_by_rule, [])
+
     def test_d04__overwrite_stm_inside_rule_scope(self):
        
        with p.uri_context(uri=TEST_BASE_URI, prefix="ut"):

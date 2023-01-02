@@ -920,31 +920,10 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
             itm.overwrite_statement("R4__is_instance_of", p.I2["Metaclass"])
         self.assertEqual(itm.R4__is_instance_of, p.I2["Metaclass"])
 
-    def test_d08__overwrite_stm_inside_scope(self):
-        
-        with p.uri_context(uri=TEST_BASE_URI, prefix="ut"):
-        
-            I702 = p.create_item(
-                R1__has_label="test rule",
-                R4__is_instance_of=p.I41["semantic rule"],
-            )
-
-            with I702.scope("context") as cm:
-                cm.new_var(x=p.instance_of(p.I1["general item"]))  
-                
-                
-            self.assertEqual(cm.x.R4, p.I1["general item"])
-
-            with I702.scope("premises") as cm:
-                cm.new_rel(cm.x, p.R4["is instance of"], p.I2["Metaclass"], overwrite=True)
-                    
-            self.assertEqual(cm.x.R4, p.I2["Metaclass"])
-
 class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
 
     def setUp(self):
         super().setUp()
-        self.setup_data1()
 
     def tearDown(self) -> None:
         super().tearDown()
@@ -976,10 +955,9 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
             with self.rule1["subproperty rule 1"].scope("assertions") as cm:
                 cm.new_rel(cm.P3, p.R17["is subproperty of"], cm.P1)
 
-    def setup_data2(self):
-        pass
-
     def test_a01__basics(self):
+        
+        self.setup_data1()
 
         self.assertIn(TEST_BASE_URI, p.ds.entities_created_in_mod)
         self.assertEqual(len(p.ds.entities_created_in_mod), 2)
@@ -995,6 +973,8 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         self.assertEqual(len(p.ds.entities_created_in_mod), 2)
 
     def test_c02__ruleengine01(self):
+        
+        self.setup_data1()
         itm1 = p.I12["mathematical object"]
         res = p.ruleengine.get_simple_properties(itm1)
         self.assertEqual(len(res), 2)
@@ -1013,12 +993,14 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         self.assertGreater(len(all_rules), 0)
 
     def test_c03__ruleengine02(self):
+        self.setup_data1()
         ra = p.ruleengine.RuleApplicator(self.rule1)
         G = ra.create_simple_graph()
         self.assertGreater(G.number_of_nodes(), 30)
         self.assertGreater(G.number_of_edges(), 30)
 
     def test_c04__ruleengine03(self):
+        self.setup_data1()
 
         ra = p.ruleengine.RuleApplicator(self.rule1)
 
@@ -1042,6 +1024,7 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         self.assertGreater(len(res_graph), 5)
 
     def test_c05__ruleengine04(self):
+        self.setup_data1()
 
         mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct", modname=TEST_MOD_NAME)
         self.assertEqual(len(mod1.I9642["local exponential stability"].get_relations("R17__is_subproperty_of")), 1)
@@ -1054,6 +1037,7 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
             print(r)
 
     def test_c06__ruleengine05(self):
+        self.setup_data1()
         premises_stms = p.ruleengine.filter_relevant_stms(
             self.rule1.scp__premises.get_inv_relations("R20__has_defining_scope")
         )
@@ -1174,6 +1158,32 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         neighbour = zp.person1.zb__R2353__lives_immediatly_right_of
         self.assertEqual(neighbour, zp.person3)
 
+    def test_d04__overwrite_stm_inside_rule_scope(self):
+       
+       with p.uri_context(uri=TEST_BASE_URI, prefix="ut"):
+       
+           I702 = p.create_item(
+               R1__has_label="test rule",
+               R4__is_instance_of=p.I41["semantic rule"],
+           )
+
+           with I702.scope("context") as cm:
+               cm.new_var(x=p.instance_of(p.I1["general item"]))  
+               
+           self.assertEqual(cm.x.R4, p.I1["general item"])
+
+           with I702.scope("premises") as cm:
+               cm.new_rel(cm.x, p.R4["is instance of"], p.I2["Metaclass"], overwrite=True)
+               
+               # arbitrary ordinary relation
+               cm.new_rel(cm.x, p.R38["has length"], 5)
+                   
+           self.assertEqual(cm.x.R4, p.I2["Metaclass"])
+           
+       premise_stms = I702.scp__premises.get_inv_relations("R20")
+       
+       # note that the R4 relation creates two premisie statements: primal and dual (inverse)
+       self.assertEqual(len(premise_stms), 3)
 
 class Test_Z_Core(HouskeeperMixin, unittest.TestCase):
     """

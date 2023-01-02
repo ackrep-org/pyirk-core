@@ -568,7 +568,7 @@ class Entity(abc.ABC):
             res = stm_res
         return res
     
-    def overwrite_statement(self, rel_key_str_or_uri: str, new_obj: "Entity") -> "Statement":
+    def overwrite_statement(self, rel_key_str_or_uri: str, new_obj: "Entity", qualifiers=None) -> "Statement":
         # the caller wants only results for this key (e.g. "R4")
         
         assert isinstance(rel_key_str_or_uri, str)
@@ -597,10 +597,10 @@ class Entity(abc.ABC):
         assert isinstance(stm, Statement)
         
         if stm.qualifiers:
-            raise NotImplementedError("Processing qualifiers is not yet implemented while overwriting statements")
+            raise NotImplementedError("Processing old qualifiers is not yet implemented while overwriting statements")
         
         stm.unlink()
-        return self.set_relation(rel, new_obj)
+        return self.set_relation(rel, new_obj, qualifiers=qualifiers)
     
 
 def wrap_function_with_uri_context(func, uri):

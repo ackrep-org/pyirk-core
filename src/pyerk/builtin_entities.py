@@ -606,17 +606,23 @@ class ScopingCM:
         :return: the newly created Statement
 
         """
-
         assert isinstance(sub, Entity)
         assert isinstance(pred, Relation)
         if isinstance(qualifiers, RawQualifier):
             qualifiers = [qualifiers]
-        assert isinstance(qualifiers, (type(None), list))
+        elif qualifiers is None:
+            qualifiers = []
         
         if overwrite:
+            
+            qff_has_defining_scope: QualifierFactory = ds.qff_dict["qff_has_defining_scope"]
+            qualifiers.append(qff_has_defining_scope(self.scope))
             return sub.overwrite_statement(pred.uri, obj, qualifiers=qualifiers)
         else:
-            return sub.set_relation(pred, obj, scope=self.scope, qualifiers=qualifiers)
+            # Note: As qualifiers is a list, it will be changed by the next call (the R20-scope qlf is appended).
+            res = sub.set_relation(pred, obj, scope=self.scope, qualifiers=qualifiers)
+            
+            return res
 
     @classmethod
     def create_scopingcm_factory(cls):

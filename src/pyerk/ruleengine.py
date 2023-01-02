@@ -135,6 +135,10 @@ class RuleApplicator:
         """
 
         result_map = self.match_subgraph_P()
+        
+        # TODO: for debugging this the following things might be helpful:
+        # - a mapping like self.local_nodes.a but with labels instead of uris
+        # - a visualization of the prototype graph self.P
 
         asserted_new_item_factories, ani_arg_nodes, ani_node_names = self.get_asserted_new_item_factories()
         asserted_relation_templates = self.get_asserted_relation_templates()

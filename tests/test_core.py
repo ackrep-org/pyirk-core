@@ -99,12 +99,12 @@ class HouskeeperMixin:
             cls = self.__class__
             method_repr = f"{cls.__module__}:{cls.__qualname__}.{self._testMethodName}"
             method_repr = f"{method_repr:<85}"
-            
+
             if self._outcome.errors:
                 print(method_repr, p.aux.bred("failed"))
             else:
                 print(method_repr, p.aux.bgreen("passed"))
-            
+
 
 class Test_00_Core(HouskeeperMixin, unittest.TestCase):
     def test_a0__ensure_expected_test_data(self):
@@ -507,7 +507,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
             x = p.instance_of(mod1.I1168["point in state space"])
 
             Lderiv = mod1.I1347["Lie derivative of scalar field"]
-            
+
             # this creates a new item (and thus must be executed with a non-empty uri stack, i.e. within this context)
             h2 = Lderiv(h, f, x)
 
@@ -759,15 +759,15 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         self.assertIn(s1, res)
         self.assertIn(s2, res)
         self.assertIn(s3, res)
-        
+
     def test_d01__wrap_function_with_uri_context(self):
         ma = p.erkloader.load_mod_from_path(TEST_DATA_PATH_MA, prefix="ma")
-        
+
         with p.uri_context(uri=TEST_BASE_URI, prefix="ut"):
             A = p.instance_of(ma.I9906["square matrix"])
             A.set_relation("ma__R5939__has_column_number", 7)
-        
-        
+
+
         def test_func():
             """
             docstring
@@ -775,147 +775,147 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
             # this fails outside uri-context of math
             n = A.R5939__has_column_number
             return n
-        
+
         with self.assertRaises(AttributeError):
             test_func()
-        
+
         wrapped_func = p.wrap_function_with_uri_context(test_func, ma.__URI__)
-        
+
         self.assertEqual(wrapped_func.__doc__, test_func.__doc__)
-        
+
         # now this call works as expected
         res = wrapped_func()
         self.assertEqual(res, 7)
 
     def test_d02__custom_call_post_process1(self):
-        
+
         ma = p.erkloader.load_mod_from_path(TEST_DATA_PATH_MA, prefix="ma")
-        
-        
+
+
         with p.uri_context(uri=TEST_BASE_URI, prefix="ut"):
             A = p.instance_of(ma.I9906["square matrix"])
             s = p.instance_of(ma.I5030["variable"])
-            
+
             # construct sI - A
             M = ma.I6324["canonical first order monic polynomial matrix"](A, s)
             d = ma.I5359["determinant"](M)
-        
+
         self.assertTrue(M.R4__is_instance_of, ma.I1935["polynomial matrix"])
         self.assertTrue(M.ma__R8736__depends_polyonomially_on, s)
-        
+
         self.assertTrue(d.ma__R8736__depends_polyonomially_on, s)
 
     def test_d03__replace_entity(self):
-        
+
         ma = p.erkloader.load_mod_from_path(TEST_DATA_PATH_MA, prefix="ma")
-        
+
         with p.uri_context(uri=TEST_BASE_URI, prefix="ut"):
             A = p.instance_of(ma.I9906["square matrix"])
             n1 = p.instance_of(p.I38["non-negative integer"])
             n2 = p.instance_of(p.I38["non-negative integer"])
-            
+
             # set functional relation
             A.set_relation(ma.R5938["has row number"], n1)
         self.assertEqual(A.ma__R5938__has_row_number, n1)
         self.assertNotEqual(A.ma__R5938__has_row_number, n2)
-        
+
         tmp = p.ds.get_entity_by_uri(n1.uri)
         self.assertEqual(n1, tmp)
-        
+
         with p.uri_context(uri=TEST_BASE_URI, prefix="ut"):
             p.replace_and_unlink_entity(n1, n2)
-        
+
         self.assertEqual(A.ma__R5938__has_row_number, n2)
         self.assertNotEqual(A.ma__R5938__has_row_number, n1)
 
         with self.assertRaises(p.aux.UnknownURIError):
             tmp = p.ds.get_entity_by_uri(n1.uri)
-            
+
     def test_d03b__replace_entity(self):
-        
+
         ma = p.erkloader.load_mod_from_path(TEST_DATA_PATH_MA, prefix="ma")
-        
-        
-        
+
+
+
         with p.uri_context(uri=TEST_BASE_URI, prefix="ut"):
             A = p.instance_of(ma.I9906["square matrix"])
             n1 = p.instance_of(p.I38["non-negative integer"])
             n2 = p.instance_of(p.I38["non-negative integer"])
             n3 = p.instance_of(p.I38["non-negative integer"])
-            
+
             # set relations
             A.set_relation(ma.R5938["has row number"], n1)  # n1 is object
             n1.set_relation(p.R31["is in mathematical relation with"], n3)  # n1 is subject
-            
+
         self.assertEqual(n3.get_inv_relations("R31", return_subj=True)[0], n1)
         with p.uri_context(uri=TEST_BASE_URI, prefix="ut"):
             p.replace_and_unlink_entity(n1, n2)
 
         self.assertEqual(n3.get_inv_relations("R31", return_subj=True)[0], n2)
-        
+
     def test_d04__invalid_prefix(self):
-        
+
         n1a = len(p.ds.mod_path_mapping.a)
         n2a = len(p.ds.entities_created_in_mod)
         n3a = len(p.ds.stms_created_in_mod)
         n4a = len(sys.modules)
-        
+
         with self.assertRaises(p.aux.InvalidPrefixError):
             _ = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA02, prefix="zb")
-        
+
         n1b = len(p.ds.mod_path_mapping.a)
         n2b = len(p.ds.entities_created_in_mod)
         n3b = len(p.ds.stms_created_in_mod)
         n4b = len(sys.modules)
-        
+
         self.assertEqual(n1a, n1b)
         self.assertEqual(n2a, n2b)
         self.assertEqual(n3a, n3b)
         self.assertEqual(n4a, n4b)
-        
+
     def test_d05__get_proxy_item(self):
-        
+
         with p.uri_context(uri=TEST_BASE_URI, prefix="ut"):
             A = p.instance_of(p.I1["general item"])
             B = p.instance_of(p.I1["general item"], qualifiers=[p.proxy_item(A)])
-        
+
         res = p.get_proxy_item(B.get_relations(p.R4.uri)[0])
         self.assertEqual(res, A)
-        
+
     def test_d06__get_rel_props(self):
-        
+
         with p.uri_context(uri=TEST_BASE_URI, prefix="ut"):
-            
+
             R1000 = p.create_relation(
                 R1__has_label="test relation",
                 R22__is_functional=True,
                 R53__is_inverse_functional=True,
             )
-            
+
             R1001 = p.create_relation(
                 R1__has_label="test relation2",
             )
-            
+
             I2000 = p.instance_of(p.I40["general relation"])
             I2000.set_relation(p.R22["is functional"], True)
-            
+
         res = p.get_relation_properties(R1000)
         self.assertEqual(res, [p.R22.uri, p.R53.uri])
-        
+
         res = p.get_relation_properties(R1001)
         self.assertEqual(res, [])
-        
+
         res = p.get_relation_properties(I2000)
         self.assertEqual(res, [p.R22.uri])
 
     def test_d07__replace_statement(self):
-        
+
         with p.uri_context(uri=TEST_BASE_URI, prefix="ut"):
-            
+
             itm = p.instance_of(p.I1["general item"])
-            
+
         self.assertEqual(itm.R4__is_instance_of, p.I1["general item"])
-        
+
         with p.uri_context(uri=TEST_BASE_URI, prefix="ut"):
             itm.overwrite_statement("R4__is_instance_of", p.I2["Metaclass"])
         self.assertEqual(itm.R4__is_instance_of, p.I2["Metaclass"])
@@ -956,7 +956,7 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
                 cm.new_rel(cm.P3, p.R17["is subproperty of"], cm.P1)
 
     def test_a01__basics(self):
-        
+
         self.setup_data1()
 
         self.assertIn(TEST_BASE_URI, p.ds.entities_created_in_mod)
@@ -973,7 +973,7 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         self.assertEqual(len(p.ds.entities_created_in_mod), 2)
 
     def test_c02__ruleengine01(self):
-        
+
         self.setup_data1()
         itm1 = p.I12["mathematical object"]
         res = p.ruleengine.get_simple_properties(itm1)
@@ -1053,50 +1053,50 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         """
         Test one special rule I901, with new features from builin_entities
         """
-        
+
         self._apply_and__t_e_s_t__matching_rule("zb__I901")
-        
+
     def _apply_and__t_e_s_t__matching_rule(self, rule_key, nbr_of_new_stms=1):
-        
+
         # store relevant data in Container to evaluate further
         c = Container()
         zb = c.zb = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA01, prefix="zb")
-        
+
         c.rule = p.ds.get_entity_by_key_str(rule_key)
-        
+
         matching_rules = zb.unknown_beverage1.get_relations("R54__is_matched_by_rule", return_obj=True)
         self.assertEqual(matching_rules, [])
         c.new_stms = p.ruleengine.apply_semantic_rule(c.rule, mod_context_uri=zb.__URI__)
-        
+
         relevant_statements = [stm for stm in c.new_stms if stm.subject == zb.unknown_beverage1]
-        
+
         self.assertEqual(len(relevant_statements), nbr_of_new_stms)
         c.matching_rules = zb.unknown_beverage1.get_relations("R54__is_matched_by_rule", return_obj=True)
         self.assertEqual(c.matching_rules, [c.rule])
-        
+
         return c
-        
+
 
     def test_c08__zebra_puzzle02(self):
         """
         Test one special rule I902, with new features from builin_entities
         """
-        
+
         self._apply_and__t_e_s_t__matching_rule("zb__I902")
 
     def test_c09__zebra_puzzle03(self):
         """
         Test one special rule I903 with new features from builin_entities
         """
-        
+
         c = self._apply_and__t_e_s_t__matching_rule("zb__I903", nbr_of_new_stms=2)
         self.assertEqual(c.zb.unknown_beverage1.R56__is_one_of[0].R39__has_element[0], c.zb.I7509["water"])
         self.assertEqual(c.zb.unknown_beverage2.R56__is_one_of[0].R39__has_element[0], c.zb.I6756["tea"])
-        
+
         # apply next rule: establishing R47__is_same_as relationship
         new_stms = p.ruleengine.apply_semantic_rule(c.zb.I904, mod_context_uri=c.zb.__URI__)
         self.assertGreaterEqual(len(new_stms), 2)
-        
+
         self.assertEqual(c.zb.unknown_beverage1.R47__is_same_as[0], c.zb.I7509["water"])
         self.assertEqual(c.zb.unknown_beverage2.R47__is_same_as[0], c.zb.I6756["tea"])
 
@@ -1109,12 +1109,12 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         self.assertNotEqual(zb.I4037["Englishman"].zb__R8216__drinks, zb.I7509["water"])
         _ = p.ruleengine.apply_all_semantic_rules(mod_context_uri=zb.__URI__)
         self.assertEqual(zb.I4037["Englishman"].zb__R8216__drinks, zb.I7509["water"])
-        
+
     def test_d01__zebra_puzzle_stage02(self):
         """
         assess correctness of full data
         """
-        
+
         zp = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA02, prefix="zp")
 
         # test base data
@@ -1122,25 +1122,25 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
 
         # test hints
         self.assertEqual(zp.zb.I9848["Norwegian"].zb__R3606__lives_next_to[0], zp.person12)
-        
+
     def test_d02__zebra_puzzle_stage02(self):
         """
         apply rules and assess correctness of the result
         """
-        
+
         zp = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA02, prefix="zp")
-        
+
         neighbour = zp.person1.zb__R2353__lives_immediatly_right_of
         self.assertIsNone(neighbour)
-        
+
         new_stms = p.ruleengine.apply_semantic_rule(zp.zr.I701, mod_context_uri=zp.__URI__)
-    
+
         # assert that both statemens have been created:
         # S(person1,  p.R47["is same as"], person2)
         # S(person2,  p.R47["is same as"], person1)
         counter = 0
         for stm in new_stms:
-            stm: p.Statement 
+            stm: p.Statement
             if stm.subject == zp.person1:
                 self.assertEqual(stm.predicate, p.R47["is same as"])
                 self.assertEqual(stm.object, zp.person2)
@@ -1149,12 +1149,12 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
                 self.assertEqual(stm.predicate, p.R47["is same as"])
                 self.assertEqual(stm.object, zp.person1)
                 counter += 1
-        
+
         self.assertEqual(counter, 2)
-        
+
         with p.uri_context(uri=TEST_BASE_URI):
             p.replace_and_unlink_entity(zp.person2, zp.person1)
-            
+
         neighbour = zp.person1.zb__R2353__lives_immediatly_right_of
         self.assertEqual(neighbour, zp.person3)
 
@@ -1209,31 +1209,32 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         self.assertEqual(itm4.R54__is_matched_by_rule, [])
 
     def test_d04__overwrite_stm_inside_rule_scope(self):
-       
+
        with p.uri_context(uri=TEST_BASE_URI, prefix="ut"):
-       
+
            I702 = p.create_item(
                R1__has_label="test rule",
                R4__is_instance_of=p.I41["semantic rule"],
            )
 
            with I702.scope("context") as cm:
-               cm.new_var(x=p.instance_of(p.I1["general item"]))  
-               
+               cm.new_var(x=p.instance_of(p.I1["general item"]))
+
            self.assertEqual(cm.x.R4, p.I1["general item"])
 
            with I702.scope("premises") as cm:
                cm.new_rel(cm.x, p.R4["is instance of"], p.I2["Metaclass"], overwrite=True)
-               
+
                # arbitrary ordinary relation
                cm.new_rel(cm.x, p.R38["has length"], 5)
-                   
+
            self.assertEqual(cm.x.R4, p.I2["Metaclass"])
-           
+
        premise_stms = I702.scp__premises.get_inv_relations("R20")
-       
+
        # note that the R4 relation creates two premisie statements: primal and dual (inverse)
        self.assertEqual(len(premise_stms), 3)
+
 
 class Test_Z_Core(HouskeeperMixin, unittest.TestCase):
     """

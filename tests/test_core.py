@@ -1160,7 +1160,7 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
 
     def test_d03__zebra_puzzle_stage02(self):
         """
-        Test the outcome of a specific rule
+        Test the outcome of some specific rules
         """
 
         with p.uri_context(uri=TEST_BASE_URI):
@@ -1173,7 +1173,7 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
             I702 = p.create_item(
                 R1__has_label="test rule",
                 R2__has_description=(
-                    "test to match every instance of a class"
+                    "test to match every instance of I36['rational number']"
                 ),
                 R4__is_instance_of=p.I41["semantic rule"],
             )
@@ -1193,9 +1193,9 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
             self.assertEqual(itm2.R54__is_matched_by_rule, [])
             self.assertEqual(itm3.R54__is_matched_by_rule, [])
 
-            new_stms1 = p.ruleengine.apply_semantic_rule(I702)
+            new_stms = p.ruleengine.apply_semantic_rule(I702)
 
-        self.assertEqual(len(new_stms1), 3)
+        self.assertEqual(len(new_stms), 3)
         self.assertEqual(itm1.R54__is_matched_by_rule, [I702])
         self.assertEqual(itm2.R54__is_matched_by_rule, [I702])
         self.assertEqual(itm3.R54__is_matched_by_rule, [I702])
@@ -1207,6 +1207,75 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         )
 
         self.assertEqual(itm4.R54__is_matched_by_rule, [])
+
+        # next rule:
+
+        with p.uri_context(uri=TEST_BASE_URI):
+
+            itm1.set_relation(p.R57["is placeholder"], True)
+
+            I703 = p.create_item(
+                R1__has_label="test rule",
+                R2__has_description=(
+                    "test to match every instance of I36['rational number'] which is also a placeholder"
+                ),
+                R4__is_instance_of=p.I41["semantic rule"],
+            )
+
+            with I703.scope("context") as cm:
+                cm.new_var(x=p.instance_of(p.I1["general item"]))
+                cm.uses_external_entities(I703)
+                cm.uses_external_entities(p.I36["rational number"])
+
+            with I703.scope("premises") as cm:
+                cm.new_rel(cm.x, p.R4["is instance of"], p.I36["rational number"], overwrite=True)
+                cm.new_rel(cm.x, p.R57["is placeholder"], True)
+
+            with I703.scope("assertions") as cm:
+                cm.new_rel(cm.x, p.R54["is matched by rule"], I703)
+
+            new_stms = p.ruleengine.apply_semantic_rule(I703)
+
+        self.assertEqual(len(new_stms), 1)
+
+        # next rule:
+
+        with p.uri_context(uri=TEST_BASE_URI):
+
+            itm1.set_relation(p.R31["is in mathematical relation with"], itm3)  # itm3 will be replaced by the rule
+
+            self.assertEqual(itm1.R31__is_in_mathematical_relation_with, [itm3])
+
+            itm2.set_relation(p.R47["is same as"], itm3)
+
+            I704 = p.create_item(
+                R1__has_label="test rule",
+                R2__has_description=(
+                    "test to match all instances of I36['rational number'] which are in a R47__is_same_as relation"
+                ),
+                R4__is_instance_of=p.I41["semantic rule"],
+            )
+
+            with I704.scope("context") as cm:
+                cm.new_var(x=p.instance_of(p.I1["general item"]))
+                cm.new_var(y=p.instance_of(p.I1["general item"]))
+                cm.uses_external_entities(I704)
+                # cm.uses_external_entities(p.I36["rational number"])
+
+            with I704.scope("premises") as cm:
+                # cm.new_rel(cm.x, p.R4["is instance of"], p.I36["rational number"], overwrite=True)
+                cm.new_rel(cm.x, p.R47["is same as"], cm.y)
+
+            with I704.scope("assertions") as cm:
+                cm.new_rel(cm.x, p.R54["is matched by rule"], I704)
+                cm.new_consequent_func(p.replacer_method, cm.y, cm.x)
+
+            new_stms = p.ruleengine.apply_semantic_rule(I704)
+
+        self.assertEqual(len(new_stms), 1)
+
+        # confirm the replacement
+        self.assertEqual(itm1.R31__is_in_mathematical_relation_with, [itm2])
 
     def test_d04__overwrite_stm_inside_rule_scope(self):
 

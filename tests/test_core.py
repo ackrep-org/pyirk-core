@@ -908,6 +908,19 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         res = p.get_relation_properties(I2000)
         self.assertEqual(res, [p.R22.uri])
 
+    def test_d07__replace_statement(self):
+        
+        with p.uri_context(uri=TEST_BASE_URI, prefix="ut"):
+            
+            itm = p.instance_of(p.I1["general item"])
+            
+        self.assertEqual(itm.R4__is_instance_of, p.I1["general item"])
+        
+        with p.uri_context(uri=TEST_BASE_URI, prefix="ut"):
+            itm.overwrite_statement("R4__is_instance_of", p.I2["Metaclass"])
+        self.assertEqual(itm.R4__is_instance_of, p.I2["Metaclass"])
+        
+
 class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
 
     def setUp(self):

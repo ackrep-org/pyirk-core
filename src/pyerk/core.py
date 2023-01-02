@@ -568,6 +568,40 @@ class Entity(abc.ABC):
             res = stm_res
         return res
     
+    def overwrite_statement(self, rel_key_str_or_uri: str, new_obj: "Entity") -> "Statement":
+        # the caller wants only results for this key (e.g. "R4")
+        
+        assert isinstance(rel_key_str_or_uri, str)
+        
+        if aux.ensure_valid_uri(rel_key_str_or_uri, strict=False):
+            rel_uri = rel_key_str_or_uri
+        else:
+            # we try to resolve a prefix and use the active module and finally builtins as fallback
+            key_str = rel_key_str_or_uri
+            pr_key = process_key_str(key_str)
+            rel_uri = pr_key.uri
+        
+        rel = ds.get_entity_by_uri(rel_uri)
+        
+        stm = self.get_relations(rel_uri)
+        
+        if isinstance(stm, list):
+            if len(stm) == 0:
+                msg = f"Unexpectedly found empty statement list for entity {self} and relation {rel}"
+                raise aux.PyERKError(msg)
+            if len(stm) > 1:
+                msg = f"Unexpectedly found length-{len(stm)} statement list for entity {self} and relation {rel}"
+                raise aux.PyERKError(msg)
+            stm = stm[0]
+            
+        assert isinstance(stm, Statement)
+        
+        if stm.qualifiers:
+            raise NotImplementedError("Processing qualifiers is not yet implemented while overwriting statements")
+        
+        stm.unlink()
+        return self.set_relation(rel, new_obj)
+    
 
 def wrap_function_with_uri_context(func, uri):
     
@@ -1804,6 +1838,7 @@ def unload_mod(mod_uri: str, strict=True) -> None:
     assert len(intersection_set) == 0, msg
 
     for uri, stm in stm_dict.items():
+        stm: Statement
         assert isinstance(stm, Statement)
         stm.unlink()
 

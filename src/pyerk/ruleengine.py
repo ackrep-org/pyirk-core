@@ -251,7 +251,12 @@ class RuleApplicator:
         # restrictions for matching nodes: none
         # ... for matching edges: relation-uri must match
         GM = nxiso.DiGraphMatcher(self.G, self.P, node_match=self._node_matcher, edge_match=edge_matcher)
-        res = list(GM.subgraph_isomorphisms_iter())
+
+        # for the difference between subgraph monomorphisms and isomorphisms see:
+        # https://networkx.org/documentation/stable/reference/algorithms/isomorphism.vf2.html#subgraph-isomorphism
+        # jupyter notebook subgraph-matching-problem
+        res = list(GM.subgraph_monomorphisms_iter())
+        # res = list(GM.subgraph_isomorphisms_iter())
 
         # invert the dicts (todo: find out why switching G and P does not work)
         # and introduce items for uris

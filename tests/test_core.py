@@ -1260,10 +1260,8 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
                 cm.new_var(x=p.instance_of(p.I1["general item"]))
                 cm.new_var(y=p.instance_of(p.I1["general item"]))
                 cm.uses_external_entities(I704)
-                # cm.uses_external_entities(p.I36["rational number"])
 
             with I704.scope("premises") as cm:
-                # cm.new_rel(cm.x, p.R4["is instance of"], p.I36["rational number"], overwrite=True)
                 cm.new_rel(cm.x, p.R47["is same as"], cm.y)
 
             with I704.scope("assertions") as cm:
@@ -1303,6 +1301,27 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
 
        # note that the R4 relation creates two premisie statements: primal and dual (inverse)
        self.assertEqual(len(premise_stms), 3)
+
+    def test_d05__zebra_puzzle_stage02(self):
+        """
+        apply rules and assess correctness of the result
+        """
+
+        zp = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA02, prefix="zp")
+
+        new_stms1 = p.ruleengine.apply_semantic_rule(
+        zp.zr.I701["rule: identify same items via zb__R2850__is_functional_activity"], mod_context_uri=zp.__URI__
+        )
+
+        new_stms2 = p.ruleengine.apply_semantic_rule(
+            zp.zr.I702["rule: replace (some) same_as-items"], mod_context_uri=zp.__URI__
+        )
+
+        subjects = [s.subject for s in new_stms2]
+        self.assertIn(zp.person1, subjects)
+        self.assertIn(zp.person2, subjects)
+        self.assertIn(zp.person5, subjects)
+        self.assertIn(zp.person9, subjects)
 
 
 class Test_Z_Core(HouskeeperMixin, unittest.TestCase):

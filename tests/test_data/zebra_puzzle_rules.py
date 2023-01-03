@@ -23,7 +23,7 @@ p.start_mod(__URI__)
 
 
 I701 = p.create_item(
-    R1__has_label="zebra puzzle reasoning rule1",
+    R1__has_label="rule: identify same items via zb__R2850__is_functional_activity",
     R2__has_description=(
         "match two placeholders which are relate by a functional activity (R2850) with the same other items"
     ),
@@ -35,20 +35,50 @@ with I701.scope("context") as cm:
     cm.new_var(ph2=p.instance_of(p.I1["general item"]))
     cm.new_var(some_itm=p.instance_of(p.I1["general item"]))
     cm.new_rel_var("rel1") # -> p.instance_of(p.I40["general relation"]))
-    cm.uses_external_entities(I701)
-#
+
 with I701.scope("premises") as cm:
     cm.new_rel(cm.ph1, p.R57["is placeholder"], True)
     cm.new_rel(cm.ph2, p.R57["is placeholder"], True)
-    
+
     # both placeholders are related to the same item via the same relation
     cm.new_rel(cm.ph1,cm.rel1, cm.some_itm) # -> p.R58["wildcard relation"]
     cm.new_rel(cm.ph2,cm.rel1, cm.some_itm) # -> p.R58["wildcard relation"]
-    
+
     cm.new_rel(cm.rel1, zb.R2850["is functional activity"], True)
 
 with I701.scope("assertions") as cm:
     cm.new_rel(cm.ph1, p.R47["is same as"], cm.ph2)
+
+# ###############################################################################
+
+
+I702 = p.create_item(
+    R1__has_label="rule: replace (some) same_as-items",
+    R2__has_description=(
+        "replace placeholder items which have one R47__is_same_as statement"
+    ),
+    R4__is_instance_of=p.I41["semantic rule"],
+)
+
+with I702.scope("context") as cm:
+    cm.new_var(ph=p.instance_of(p.I1["general item"]))
+    cm.new_var(itm2=p.instance_of(p.I1["general item"]))
+    # cm.new_var(real_item=p.instance_of(p.I1["general item"]))
+    cm.uses_external_entities(I702)
+    # cm.uses_external_entities(zb.I7435["human"])
+
+with I702.scope("premises") as cm:
+    # cm.new_rel(cm.placeholder, p.R4["is instance of"], zb.I7435["human"], overwrite=True)
+    # cm.new_rel(cm.ph, p.R57["is placeholder"], True)
+    cm.new_rel(cm.ph, p.R47["is same as"], cm.itm2)
+    # cm.new_rel(cm.itm2, p.R47["is same as"], cm.ph)
+    # cm.new_rel(cm.placeholder2, p.R57["is placeholder"], True)
+    # cm.new_rel(cm.placeholder, p.R47["is same as"], cm.placeholder2)
+
+with I702.scope("assertions") as cm:
+    # cm.new_rel(cm.placeholder, p.R54["is matched by rule"], cm.placeholder2)
+    cm.new_rel(cm.ph, p.R54["is matched by rule"], I702)
+    # cm.new_consequent_func(p.replacer_method, cm.placeholder, cm.real_item)
 
 # ###############################################################################
 p.end_mod()

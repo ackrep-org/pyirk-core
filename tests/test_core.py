@@ -589,9 +589,17 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         _ = p.erkloader.load_mod_from_path(TEST_DATA_PATH3, prefix="ag")
 
         itm1: p.Item = p.ds.get_entity_by_key_str("ag__I2746__Rudolf_Kalman")
-        rel1, rel2 = itm1.get_relations("ag__R1833__has_employer")[:2]
-        self.assertEqual(len(rel1.qualifiers), 2)
-        self.assertEqual(len(rel2.qualifiers), 2)
+        stm1, stm2 = itm1.get_relations("ag__R1833__has_employer")[:2]
+        self.assertEqual(len(stm1.qualifiers), 2)
+        self.assertEqual(len(stm2.qualifiers), 2)
+
+        self.assertEqual(len(stm2.dual_statement.qualifiers), 2)
+
+        qf1, qf2 = stm2.qualifiers
+
+        qf1.unlink()
+        self.assertEqual(len(stm2.qualifiers), 1)
+        self.assertEqual(len(stm2.dual_statement.qualifiers), 1)
 
     def test_c11__equation(self):
         mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
@@ -1292,8 +1300,8 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
 
         premise_stms = I702.scp__premises.get_inv_relations("R20")
 
-        # note that the R4 relation creates two premisie statements: primal and dual (inverse)
-        self.assertEqual(len(premise_stms), 3)
+        # there are two premisie statements: 1.: R4, 2. R38
+        self.assertEqual(len(premise_stms), 2)
 
     def test_d04b__zebra_puzzle_stage02(self):
         """

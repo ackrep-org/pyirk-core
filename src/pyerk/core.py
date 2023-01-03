@@ -459,7 +459,7 @@ class Entity(abc.ABC):
                 role=RelationRole.OBJECT,
                 corresponding_entity=self,
                 scope=scope,
-                qualifiers=qualifiers,
+                qualifiers=stm.qualifiers,
                 proxyitem=proxyitem,
             )
 
@@ -1380,7 +1380,7 @@ class Statement:
         corresponding_entity: Entity = None,
         corresponding_literal=None,
         scope=None,
-        qualifiers: Optional[List[RawQualifier]] = None,
+        qualifiers: Optional[Union[List[RawQualifier], List["QualifierStatement"]]] = None,
         proxyitem: Optional[Item] = None,
     ) -> None:
         """
@@ -1412,10 +1412,10 @@ class Statement:
         self.scope = scope
         self.corresponding_entity = corresponding_entity
         self.corresponding_literal = corresponding_literal
-        self.qualifiers = []
-        self._process_qualifiers(qualifiers)
         self.dual_statement = None
         self.unlinked = None
+        self.qualifiers = []
+        self._process_qualifiers(qualifiers)
 
         ds.stms_created_in_mod[mod_uri][self.uri] = self
 
@@ -1435,13 +1435,21 @@ class Statement:
         res = f"{self.short_key}{self.relation_tuple}"
         return res
 
-    def _process_qualifiers(self, qlist: List[RawQualifier], scope: Optional["Entity"] = None) -> None:
+    def _process_qualifiers(
+            self, qlist: Union[List[RawQualifier], List["QualifierStatement"]], scope: Optional["Entity"] = None
+        ) -> None:
 
-        if qlist is None:
+        if not qlist:
             # nothing to do
             return
 
+        if isinstance(qlist[0], QualifierStatement):
+            # this is the case when an inverse statement is created
+            self.qualifiers = [*qlist]
+            return
+
         for qf in qlist:
+
 
             if isinstance(qf.obj, Entity):
                 corresponding_entity = qf.obj
@@ -1450,7 +1458,7 @@ class Statement:
                 corresponding_entity = None
                 corresponding_literal = repr(qf.obj)
 
-            qf_stm = Statement(
+            qf_stm = QualifierStatement(
                 relation=qf.rel,
                 relation_tuple=(self, qf.rel, qf.obj),
                 role=RelationRole.SUBJECT,
@@ -1462,46 +1470,20 @@ class Statement:
             )
             self.qualifiers.append(qf_stm)
 
-            # save the qualifyer-relation edge (and its inverse) in the appropriate data structures
+            # save the qualifier statement (and its inverse) in the appropriate data structures
 
             # this is the Statement from the original Statement instance to the object (thus role=SUBJECT)
             ds.set_statement(re_object=qf_stm)
 
-            # we might also need dual edge
+            # TODO: Why is this neccessary?
+            # also create the dual statement
             if isinstance(qf.obj, Entity):
                 # add inverse relation
-                dual_stm = qf_stm.create_dual()
-                ds.inv_statements[qf.obj.uri][qf.rel.uri].append(dual_stm)
-
-    def create_dual(self):
-        if self.role == RelationRole.SUBJECT:
-            new_role = RelationRole.OBJECT
-        elif self.role == RelationRole.OBJECT:
-            new_role = RelationRole.SUBJECT
-        else:
-            msg = (
-                f"Unexpected value for `self.role`: {self.role}. Expected either `RelationRole.SUBJECT` or "
-                "`RelationRole.OBJECT`"
-            )
-            raise ValueError(msg)
-
-        dual_stm = Statement(
-            relation=self.relation,
-            relation_tuple=self.relation_tuple,
-            role=new_role,
-            corresponding_entity=self.corresponding_entity,
-            scope=self.scope,
-            qualifiers=self.qualifiers,
-            proxyitem=self.proxyitem,
-        )
-
-        # establish interconnection
-        dual_stm.dual_statement = self
-        self.dual_statement = dual_stm
-
-        return dual_stm
+                dual_qf_stm = qf_stm.create_dual()
+                ds.inv_statements[qf.obj.uri][qf.rel.uri].append(dual_qf_stm)
 
     def is_qualifier(self):
+        # TODO: replace this by isinstance(stm, QualifierStatement)
         return isinstance(self.subject, Statement)
 
     def unlink(self, *args) -> None:
@@ -1519,8 +1501,21 @@ class Statement:
         subj, pred, obj = self.relation_tuple
 
         if self.is_qualifier():
-            # _xx !! -> uri
-            _ = ds.statements.pop(subj.uri, [])
+            ds.statements.pop(subj.uri, None)
+
+            assert isinstance(subj, Statement)
+
+            # seems like during unloading of modules the qualifiers might already have been removed
+            # -> do nothing
+            try:
+                subj.qualifiers.remove(self)
+            except ValueError:
+                pass
+            try:
+                subj.dual_statement.qualifiers.remove(self)
+            except (ValueError, AttributeError):
+                # AttributeError means that dual_statement was None
+                pass
 
         if self.role == RelationRole.SUBJECT:
 
@@ -1555,6 +1550,42 @@ class Statement:
 
         # TODO: remove obsolete key-recycling
         ds.released_keys.append(self.short_key)
+
+
+class QualifierStatement(Statement):
+    def __init__(self, *args, **kwargs):
+        # self.dual_qualifier = None
+        super().__init__(*args, **kwargs)
+        self.short_key = f"Q{self.short_key}"
+
+    def create_dual(self):
+        if self.role == RelationRole.SUBJECT:
+            new_role = RelationRole.OBJECT
+        elif self.role == RelationRole.OBJECT:
+            new_role = RelationRole.SUBJECT
+        else:
+            msg = (
+                f"Unexpected value for `self.role`: {self.role}. Expected either `RelationRole.SUBJECT` or "
+                "`RelationRole.OBJECT`"
+            )
+            raise ValueError(msg)
+
+        cls = type(self)
+        dual_stm = cls(
+            relation=self.relation,
+            relation_tuple=self.relation_tuple,
+            role=new_role,
+            corresponding_entity=self.corresponding_entity,
+            scope=self.scope,
+            qualifiers=self.qualifiers,
+            proxyitem=self.proxyitem,
+        )
+
+        # establish interconnection
+        dual_stm.dual_statement = self
+        self.dual_statement = dual_stm
+
+        return dual_stm
 
 
 def tolerant_removal(sequence, element):

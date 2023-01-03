@@ -279,7 +279,7 @@ R9040 = p.create_relation(
     R1__has_label="lives in numbered house",
     R2__has_description="specifies in which house a person lives",
     R8__has_domain_of_argument_1=I7435["human"],
-    R11__has_range_of_result=I6990["beverage"],
+    R11__has_range_of_result=I8809["house number"],
     R22__is_functional=True,
     R53__is_inverse_functional=True,
     R2850__is_functional_activity=True,
@@ -329,7 +329,55 @@ R2353 = p.create_relation(
     R8__has_domain_of_argument_1=I7435["human"],
     R11__has_range_of_result=I7435["human"],
     R22__is_functional=True,
+    R17__is_subproperty_of=R3606["lives next to"],
     R2850__is_functional_activity=True,
+)
+
+
+# negative relations
+
+
+R9803 = p.create_relation(
+    R1__has_label="drinks not",
+    R8__has_domain_of_argument_1=I7435["human"],
+    R11__has_range_of_result=I6990["beverage"],
+    R43__is_opposite_of=R8216["drinks"]
+)
+
+
+R2835 = p.create_relation(
+    R1__has_label="lives not in numbered house",
+    R8__has_domain_of_argument_1=I7435["human"],
+    R11__has_range_of_result=I8809["house number"],
+    R43__is_opposite_of=R9040["lives in numbered house"]
+)
+
+R9122 = p.create_relation(
+    R1__has_label="owns not",
+    R8__has_domain_of_argument_1=I7435["human"],
+    R11__has_range_of_result=I8139["pet"],
+    R43__is_opposite_of=R5611["owns"]
+)
+
+R1055 = p.create_relation(
+    R1__has_label="has not house color",
+    R8__has_domain_of_argument_1=I7435["human"],
+    R11__has_range_of_result=I3896["house color"],
+    R43__is_opposite_of=R8098["has house color"]
+)
+
+R5109 = p.create_relation(
+    R1__has_label="smokes not",
+    R8__has_domain_of_argument_1=I7435["human"],
+    R11__has_range_of_result=I9803["cigarette brand"],
+    R43__is_opposite_of=R8592["smokes"]
+)
+
+R4872 = p.create_relation(
+    R1__has_label="lives not next to",
+    R8__has_domain_of_argument_1=I7435["human"],
+    R11__has_range_of_result=I7435["human"],
+    R43__is_opposite_of=R3606["lives next to"]
 )
 
 
@@ -337,7 +385,7 @@ R2353 = p.create_relation(
 
 """
 All Hints (from https://en.wikipedia.org/wiki/Zebra_Puzzle):
-    
+
 1. There are five houses.
 2. The Englishman lives in the red house.
 3. The Spaniard owns the dog.

@@ -26,7 +26,7 @@ p.start_mod(__URI__)
 
 """
 All Hints (from https://en.wikipedia.org/wiki/Zebra_Puzzle):
-    
+
 1. There are five houses.
 2. The Englishman lives in the red house.
 3. The Spaniard owns the dog.
@@ -167,14 +167,8 @@ p.end_mod()
 """
 key reservoir created with: `pyerk -l zebra01.py ag -nk 100`
 supposed keys:
-    
 
-I9803
-I2835
-I9122
-I1055
-I5109
-I4872
+
 I8139
 I8768
 I6020

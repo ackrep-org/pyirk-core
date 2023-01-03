@@ -65,8 +65,12 @@ with I702.scope("premises") as cm:
     cm.new_rel(cm.itm1, p.R57["is placeholder"], True)
     cm.new_rel(cm.itm1, p.R47["is same as"], cm.itm2)
 
+    # ensure that item with the alphabetically bigger label will be replaced by the item with the lower label
+    # e.g. person2 will be replaced by person1 etc.# the `self` is necessary because this function will become a method
+    cm.new_condition_func(p.label_compare_method, cm.itm1, cm.itm2)
+
 with I702.scope("assertions") as cm:
-    cm.new_consequent_func(p.replacer_method, cm.itm1, cm.itm2)
+    cm.new_consequent_func(p.replacer_method, cm.itm2, cm.itm1)
 
 # ###############################################################################
 p.end_mod()

@@ -705,7 +705,7 @@ def _proposition__scope(self: Item, scope_name: str):
 class _rule__CM(ScopingCM):
     def __init__(self, *args, **kwargs):
 
-        self.fiat_factory_counter = 0
+        self.anchor_item_counter = 0
         super().__init__(*args, **kwargs)
 
     def uses_external_entities(self, *args):
@@ -744,14 +744,31 @@ class _rule__CM(ScopingCM):
 
         return super().new_rel(sub, pred, obj, qualifiers, overwrite)
 
-    def _get_new_fiat_fatory_anchor_item(self):
+    def _get_new_anchor_item(self, name):
 
-        name = f"fiat_fatory_item{self.fiat_factory_counter}"
-        self.fiat_factory_counter += 1
+        name = f"{name}{self.anchor_item_counter}"
+        self.anchor_item_counter += 1
 
-        itm = instance_of(I1["general item"], r1=name)
+        itm = instance_of(I43["anchor item"], r1=name)
         self.new_var(**{name: itm})
         return itm
+
+    def new_condition_func(self, func: callable, *args, anchor_item=None):
+        """
+        Add an existing function that will be called to a graph-match. Only if it evaluates True, the premise is
+        considered to be fulfilled. This helps to model conditions on literals
+        """
+
+        if anchor_item is None:
+            anchor_item = self._get_new_anchor_item(name="condition_anchor_item")
+        else:
+            assert isinstance(anchor_item, Item)
+
+        anchor_item.add_method(func, "condition_func")
+
+        for arg in args:
+            # args are supposed to be variables created in the "setting"-scope
+            self.new_rel(anchor_item, R29["has argument"], arg)
 
     def new_consequent_func(self, func: callable, *args, anchor_item=None):
         """
@@ -759,7 +776,7 @@ class _rule__CM(ScopingCM):
         """
 
         if anchor_item is None:
-            factory_anchor = self._get_new_fiat_fatory_anchor_item()
+            factory_anchor = self._get_new_anchor_item(name="fiat_factory_item")
         else:
             assert isinstance(anchor_item, Item)
             factory_anchor = anchor_item
@@ -1414,6 +1431,16 @@ I41 = create_builtin_item(
 
 I41["semantic rule"].add_method(_rule__scope, name="scope")
 
+# I42 is already used above
+
+I43 = create_builtin_item(
+    key_str="I43",
+    R1__has_label="anchor item",
+    R2__has_description="base class for items whose with the main purpose to host some functions as item-methods",
+    R4__is_instance_of=I2["Metaclass"],
+    R18__has_usage_hint="used in the class _rule__CM",
+)
+
 R44 = create_builtin_relation(
     key_str="R44",
     R1__has_label="is universally quantified",
@@ -1752,12 +1779,25 @@ def replacer_method(self, old_item, new_item):
         core.replace_and_unlink_entity(old_item, new_item)
     except core.aux.UnknownURIError:
         # if one of the two does not exist -> do nothing
-        print(f"canceled: {old} -> {new}")
         pass
     else:
-        print(f"done: {old} -> {new}")
+        pass
+
     # this function intentially does not return a new item; only called for its side-effects
     return None
+
+
+# this function is intended to be attached to an item in the premise-scope of a semantic rule as condition function
+def label_compare_method(self, item1, item2):
+
+    if item2.R1 is None:
+        # item2 is (probably) undefined
+        return True
+
+    if item1.R1 is None:
+        return False
+
+    return item1.R1 < item2.R1
 
 
 # testing

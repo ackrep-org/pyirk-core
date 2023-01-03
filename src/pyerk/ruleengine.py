@@ -92,6 +92,10 @@ class RuleApplicator:
         subjects = rule.scp__assertions.get_inv_relations("R20__has_defining_scope", return_subj=True)
         self.fiat_prototype_vars = [s for s in subjects if isinstance(s, core.Entity)]
 
+        # this are the variables created in the premise scope
+        subjects = rule.scp__premises.get_inv_relations("R20__has_defining_scope", return_subj=True)
+        self.condition_func_anchor_items = [s for s in subjects if isinstance(s, core.Item)]
+
         # TODO: rename "context" -> "setting"
         self.setting_stms = filter_relevant_stms(rule.scp__context.get_inv_relations("R20"))
         self.premises_stms = filter_relevant_stms(rule.scp__premises.get_inv_relations("R20"))
@@ -142,6 +146,8 @@ class RuleApplicator:
         # - a mapping like self.local_nodes.a but with labels instead of uris
         # - a visualization of the prototype graph self.P
 
+        condition_functions, cond_func_arg_nodes = self.get_condition_funcs_and_args()
+
         asserted_new_item_factories, ani_arg_nodes, ani_node_names = self.get_asserted_new_item_factories()
         asserted_relation_templates = self.get_asserted_relation_templates()
 
@@ -155,6 +161,20 @@ class RuleApplicator:
             #       1: <Item I4900["local asymtotical stability"]>,
             #       2: <Item I9642["local exponential stability"]>
             #  }
+
+            # see also builtin_items.py -> _rule__CM.new_condition_func()
+            continue_flag = False
+            for cond_func, node_tuple in zip(condition_functions, cond_func_arg_nodes):
+                args = [res_dict[node] for node in node_tuple]
+                if not cond_func(*args):
+                    # if the condition function does not return True, we want to continue with the next res_dict
+                    continue_flag = True
+                    break
+
+            if continue_flag:
+                # at least one of the condition function returned false -> the premises are not completely met
+                # despite we have a subgraph-monomorphism match
+                continue
 
             call_args_list = []
             for node_tuple in ani_arg_nodes:
@@ -188,7 +208,31 @@ class RuleApplicator:
 
         return new_stm_list
 
-    def get_asserted_new_item_factories(self) -> (List[callable], List[str]):
+    def get_condition_funcs_and_args(self) -> (List[callable], List[Tuple[int]]):
+        """
+        """
+        func_list = []
+        args_node_list = []
+
+        for anchor_item in self.condition_func_anchor_items:
+            condition_func = getattr(anchor_item, "condition_func", None)
+
+            # TODO: doc
+            if not condition_func:
+                msg = f"The anchor item {anchor_item} unexpectedly has no method `condition_func`."
+                raise core.aux.SemanticRuleError(msg)
+            func_list.append(condition_func)
+
+            arg_nodes = []
+            call_args = anchor_item.get_relations("R29__has_argument", return_obj=True)
+            for arg in call_args:
+                node = self.local_nodes.a[arg.uri]
+                arg_nodes.append(node)
+            args_node_list.append(tuple(arg_nodes))
+
+        return func_list, args_node_list
+
+    def get_asserted_new_item_factories(self) -> (List[callable], List[Tuple[int]], List[str]):
         """
         Return a list of functions; each creates a new item as a consequence of a rule
         """
@@ -346,6 +390,9 @@ class RuleApplicator:
             q = itm.get_relations("R4")[0].qualifiers
             if q and q[0].predicate == bi.R59["ignore in rule prototype graph"] and q[0].object:
                 return True
+        # TODO: this is likely too simple (it makes reasoning over anchor-items hard, )cannot be used in the rule))
+        if itm.R4 == bi.I43["anchor item"]:
+            return True
         return False
 
     def create_prototype_subgraph_from_rule(self) -> nx.DiGraph:

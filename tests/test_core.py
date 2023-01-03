@@ -1295,6 +1295,46 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         # note that the R4 relation creates two premisie statements: primal and dual (inverse)
         self.assertEqual(len(premise_stms), 3)
 
+    def test_d04b__zebra_puzzle_stage02(self):
+        """
+        test the condition function mechanism
+        """
+
+        with p.uri_context(uri=TEST_BASE_URI):
+
+            itm1 = p.instance_of(p.I36["rational number"])
+            itm2 = p.instance_of(p.I36["rational number"])
+
+            itm1.set_relation(p.R47["is same as"], itm2)
+            itm2.set_relation(p.R47["is same as"], itm1)
+
+            I704 = p.create_item(
+                R1__has_label="test rule",
+                R2__has_description=(
+                    "test to match only pairs of R47__is_same_as related items where the label_compare_method is True"
+                ),
+                R4__is_instance_of=p.I41["semantic rule"],
+            )
+
+            with I704.scope("context") as cm:
+                cm.new_var(x=p.instance_of(p.I1["general item"]))
+                cm.new_var(y=p.instance_of(p.I1["general item"]))
+                cm.uses_external_entities(I704)
+
+            with I704.scope("premises") as cm:
+                cm.new_rel(cm.x, p.R47["is same as"], cm.y)
+                cm.new_condition_func(p.label_compare_method, cm.x, cm.y)
+
+            with I704.scope("assertions") as cm:
+                cm.new_rel(cm.x, p.R54["is matched by rule"], I704)
+
+            new_stms = p.ruleengine.apply_semantic_rule(I704)
+
+        self.assertEqual(itm1.R54__is_matched_by_rule, [I704])
+
+        # without the condition func this would be also matched
+        self.assertEqual(itm2.R54__is_matched_by_rule, [])
+
     def test_d05__zebra_puzzle_stage02(self):
         """
         apply rules and assess correctness of the result

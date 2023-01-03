@@ -124,22 +124,22 @@ def instance_of(cls_entity, r1: str = None, r2: str = None, qualifiers: List[Ite
     :param r1:          the label; if None use inspection to fetch it from the left hand side of the assingnment
     :param r2:          the description (optional)
     :param qualifiers:  list of RawQualifiers (optional); will be passed to the R4__is_instance_of relation
-            
+
     if `cls_entity` has a defining scope and `qualifiers` is None, then an appropriate R20__has_defining_scope-
-    qualifier will be added to the R4__is_instance_of-relation of the new item.            
-    
+    qualifier will be added to the R4__is_instance_of-relation of the new item.
+
     :return:        new item
     """
 
     has_super_class = cls_entity.R3 is not None
-    
+
     class_scope = cls_entity.R20__has_defining_scope
 
     # we have to determine if `cls_entity` is an instnace of I2_metaclass or a subclass of it
 
     is_instance_of_metaclass = allows_instantiation(cls_entity)
-    
-    cls_exceptions = (I1["general item"], I40["general relation"]) 
+
+    cls_exceptions = (I1["general item"], I40["general relation"])
 
     if (not has_super_class) and (not is_instance_of_metaclass) and (cls_entity not in cls_exceptions):
         msg = f"the entity '{cls_entity}' is not a class, and thus could not be instantiated"
@@ -162,12 +162,12 @@ def instance_of(cls_entity, r1: str = None, r2: str = None, qualifiers: List[Ite
         R1__has_label=r1,
         R2__has_description=r2,
     )
-    
+
     if not qualifiers and class_scope is not None:
         qualifiers = [qff_has_defining_scope(class_scope)]
     new_item.set_relation(R4["is instance of"], cls_entity, qualifiers=qualifiers)
 
-    # TODO: solve this more elegantly    
+    # TODO: solve this more elegantly
     # this has to be run again after setting R4
     new_item.__post_init__()
 
@@ -564,9 +564,9 @@ class ScopingCM:
         assert len(kwargs) == 1
 
         variable_name, variable_object = list(kwargs.items())[0]
-        
+
         return self._new_var(variable_name, variable_object)
-        
+
     def _new_var(self, variable_name: str, variable_object: Entity) -> Entity:
         variable_object: Entity
 
@@ -612,16 +612,16 @@ class ScopingCM:
             qualifiers = [qualifiers]
         elif qualifiers is None:
             qualifiers = []
-        
+
         if overwrite:
-            
+
             qff_has_defining_scope: QualifierFactory = ds.qff_dict["qff_has_defining_scope"]
             qualifiers.append(qff_has_defining_scope(self.scope))
             return sub.overwrite_statement(pred.uri, obj, qualifiers=qualifiers)
         else:
             # Note: As qualifiers is a list, it will be changed by the next call (the R20-scope qlf is appended).
             res = sub.set_relation(pred, obj, scope=self.scope, qualifiers=qualifiers)
-            
+
             return res
 
     @classmethod
@@ -704,71 +704,71 @@ def _proposition__scope(self: Item, scope_name: str):
 
 
 class _rule__CM (ScopingCM):
-    
+
     def __init__(self, *args, **kwargs):
-        
+
         self.fiat_factory_counter = 0
         super().__init__(*args, **kwargs)
-    
+
     def uses_external_entities(self, *args):
         """
         Specifies that some external entities will be used inside the rule (to which this scope belongs)
         """
         for arg in args:
             self.scope.set_relation(R55["uses as external entity"], arg)
-            
+
     def new_rel_var(self, name):
         """
         Create an instance of I40["general relation"] to represent a relation inside a rule.
         Because this item takes a special role it is marked with a qualifier.
         """
-        
+
         variable_object = instance_of(
             I40["general relation"], r1='instance of I40["general relation"]', qualifiers=[qff_ignore_in_rule_ptg(True)]
         )
-        
+
         self._new_var(name, variable_object)
-        
+
     def new_rel(self, sub: Entity, pred: Entity, obj: Entity, qualifiers=None, overwrite=False) -> Statement:
-        
+
         if qualifiers is None:
             qualifiers = []
-        
+
         if isinstance(pred, Item):
-            
+
             if not pred.R4__is_instance_of == I40["general relation"]:
                 msg = f"Expected relation but got {pred}"
                 raise TypeError(msg)
-            
+
             # this mechanism allows to match relations in rules (see unittests for zebra02.py)
             qualifiers.append(proxy_item(pred))
             pred = R58["wildcard relation"]
-        
+
         return super().new_rel(sub, pred, obj, qualifiers, overwrite)
-    
+
     def _get_new_fiat_fatory_anchor_item(self):
-        
+
         name = f"fiat_fatory_item{self.fiat_factory_counter}"
         self.fiat_factory_counter += 1
-        
+
         itm = instance_of(I1["general item"], r1=name)
         self.new_var(**{name: itm})
         return itm
-    
+
     def new_consequent_func(self, func: callable, *args, anchor_item=None):
         """
         Add an existing function that should be called in the assertion-part of a semantic rule
         """
-        
+
         if anchor_item is None:
             factory_anchor = self._get_new_fiat_fatory_anchor_item()
         else:
             assert isinstance(anchor_item, Item)
             factory_anchor = anchor_item
-        
+
         # this method (identified by its name) will be called by the RuleApplicator during .apply()
         factory_anchor.add_method(func, "fiat_factory")
-        
+
         for arg in args:
             # args are supposed to be variables created in the "setting"-scope
             self.new_rel(factory_anchor, R29["has argument"], arg)
@@ -1043,14 +1043,14 @@ def create_evaluated_mapping(mapping: Item, *args) -> Item:
                 return i32_instance
 
     target_class = mapping.R11__has_range_of_result
-    
+
     # TODO: this should be ensured by consistency check: for operatators R11 should be functional
     if target_class:
         assert len(target_class) == 1
         target_class = target_class[0]
     else:
         target_class = I32["evaluated mapping"]
-    
+
     r1 = f"{target_class.R1}: {mapping.R1}({args_repr})"
     # for loop finished regularly -> the application `mapping(arg)` has not been created before -> create new item
     ev_mapping = instance_of(target_class, r1=r1)
@@ -1162,16 +1162,16 @@ proxy_item = QualifierFactory(R34["has proxy item"])
 
 def get_proxy_item(stm: Statement, strict=True) -> Item:
     assert isinstance(stm, Statement)
-    
+
     if not stm.qualifiers:
         if strict:
             msg = f"No qualifiers found while searching for proxy-item-qualifier for {stm}."
             raise core.aux.MissingQualifierError(msg)
         else:
             return None
-    
+
     relevant_qualifiers = [q for q in stm.qualifiers if q.predicate == R34["has proxy item"]]
-    
+
     if not relevant_qualifiers:
         if strict:
             msg = f"No R34__has_proxy_item-qualifier found while searching for proxy-item-qualifier for {stm}."
@@ -1181,9 +1181,9 @@ def get_proxy_item(stm: Statement, strict=True) -> Item:
     if len(relevant_qualifiers) > 1:
         msg = f"Multiple R34__has_proxy_item-qualifiers not (yet) supported (while processing {stm})."
         raise core.aux.AmbiguousQualifierError(msg)
-        
+
     res: Statement = relevant_qualifiers[0]
-    
+
     return res.object
 
 
@@ -1587,20 +1587,20 @@ R51 = create_builtin_relation(
 def close_class_with_R51(cls_item: Item):
     """
     Set R51__instances_are_from for all current instances of a class.
-    
+
     Note: this does not prevent the creation of further instances (because they can be related via R47__is_same_as to
     the exising instances).
-    
+
     :returns:   tuple-item containing all instances
     """
-        
+
     assert allows_instantiation(cls_item)
-    
+
     instances = cls_item.get_inv_relations("R4__is_instance_of", return_subj=True)
     tpl = new_tuple(*instances)
-    
+
     cls_item.set_relation("R51__instances_are_from", tpl)
-    
+
     return tpl
 
 
@@ -1645,7 +1645,7 @@ R55 = create_builtin_relation(
     R2__has_description=(
         "specifies that the subject (a setting-scope) uses the object entitiy as an external variable in its graph"
     ),
-    R8__has_domain_of_argument_1=I16["scope"],  
+    R8__has_domain_of_argument_1=I16["scope"],
     R11__has_range_of_result=I1["general item"],
     R18__has_usage_hint="useful for inside semantic rules"
     # TODO: model that this is (probably) equivalent to "owl:InverseFunctionalProperty"
@@ -1668,7 +1668,7 @@ R57 = create_builtin_relation(
     key_str="R57",
     R1__has_label="is placeholder",
     R2__has_description="specifies that the subject is a placeholder and might be replaced by other itmes",
-    # TODO: 
+    # TODO:
     # R8__has_domain_of_argument_1=<any ordinary instance>,
     R11__has_range_of_result=bool,
     R22__is_functional=True,
@@ -1726,7 +1726,7 @@ R62["is relation property"].set_relation(R62["is relation property"], True)
 
 
 def get_relation_properties_uris():
-    
+
     stms: List[Statement] = ds.relation_statements[R62.uri]
     uris = []
     for stm in stms:
@@ -1735,14 +1735,14 @@ def get_relation_properties_uris():
             uris.append(stm.subject.uri)
 
     return uris
-    
-    
+
+
 # TODO: this could be speed up by caching
 def get_relation_properties(rel_entity: Entity) -> List[str]:
     """
     return a sorted list of URIs, corrosponding to the relation properties corresponding to `rel_entity`.
     """
-    
+
     assert isinstance(rel_entity, Relation) or rel_entity.R4__is_instance_of == I40["general relation"]
 
     relation_properties_uris = get_relation_properties_uris()
@@ -1753,14 +1753,14 @@ def get_relation_properties(rel_entity: Entity) -> List[str]:
         if res == [True]:
             rel_props.append(rp_uri)
     rel_props.sort()
-    
+
     return rel_props
 
 # this function is intended to be attached to an item in the assertions-scope of a semantic rule
 # ("pseudo fiat function")
 def replacer_method(self, old_item, new_item):
     core.replace_and_unlink_entity(old_item, new_item)
-    
+
     # this function intentially does not return a new item; only called for its side-effects
     return None
 

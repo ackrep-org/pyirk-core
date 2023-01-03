@@ -77,7 +77,9 @@ class HouskeeperMixin:
         self.register_this_module()
 
     def tearDown(self) -> None:
-        self.unload_all_mods()
+        if not self._outcome.errors:
+            # keep the mods loaded for easier interactive debugging
+            self.unload_all_mods()
         self.print_methodnames()
 
     @staticmethod

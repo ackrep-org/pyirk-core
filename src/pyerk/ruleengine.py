@@ -38,6 +38,14 @@ def apply_all_semantic_rules(mod_context_uri=None) -> List[core.Statement]:
 
     return new_stm_list
 
+def apply_semantic_rules(*rules: List, mod_context_uri: str = None) -> List[core.Statement]:
+
+    total_res = []
+    for rule in rules:
+        res = apply_semantic_rule(rule, mod_context_uri)
+        total_res.extend(res)
+
+    return total_res
 
 def apply_semantic_rule(rule: core.Item, mod_context_uri: str = None) -> List[core.Statement]:
     """

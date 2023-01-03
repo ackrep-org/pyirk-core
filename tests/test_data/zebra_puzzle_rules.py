@@ -20,7 +20,7 @@ p.register_mod(__URI__, keymanager)
 p.start_mod(__URI__)
 
 
-I701 = p.create_item(
+I710 = p.create_item(
     R1__has_label="rule: identify same items via zb__R2850__is_functional_activity",
     R2__has_description=(
         "match two placeholders which are relate by a functional activity (R2850) with the same other items"
@@ -28,13 +28,13 @@ I701 = p.create_item(
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
-with I701.scope("context") as cm:
+with I710.scope("context") as cm:
     cm.new_var(ph1=p.instance_of(p.I1["general item"]))
     cm.new_var(ph2=p.instance_of(p.I1["general item"]))
     cm.new_var(some_itm=p.instance_of(p.I1["general item"]))
     cm.new_rel_var("rel1")  # -> p.instance_of(p.I40["general relation"]))
 
-with I701.scope("premises") as cm:
+with I710.scope("premises") as cm:
     cm.new_rel(cm.ph1, p.R57["is placeholder"], True)
     cm.new_rel(cm.ph2, p.R57["is placeholder"], True)
 
@@ -44,24 +44,23 @@ with I701.scope("premises") as cm:
 
     cm.new_rel(cm.rel1, zb.R2850["is functional activity"], True)
 
-with I701.scope("assertions") as cm:
+with I710.scope("assertions") as cm:
     cm.new_rel(cm.ph1, p.R47["is same as"], cm.ph2)
 
 # ###############################################################################
 
 
-I702 = p.create_item(
+I720 = p.create_item(
     R1__has_label="rule: replace (some) same_as-items",
     R2__has_description=("replace placeholder items which have one R47__is_same_as statement"),
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
-with I702.scope("context") as cm:
+with I720.scope("context") as cm:
     cm.new_var(itm1=p.instance_of(p.I1["general item"]))
     cm.new_var(itm2=p.instance_of(p.I1["general item"]))
-    cm.uses_external_entities(I702)
 
-with I702.scope("premises") as cm:
+with I720.scope("premises") as cm:
     cm.new_rel(cm.itm1, p.R57["is placeholder"], True)
     cm.new_rel(cm.itm1, p.R47["is same as"], cm.itm2)
 
@@ -69,7 +68,7 @@ with I702.scope("premises") as cm:
     # e.g. person2 will be replaced by person1 etc.# the `self` is necessary because this function will become a method
     cm.new_condition_func(p.label_compare_method, cm.itm1, cm.itm2)
 
-with I702.scope("assertions") as cm:
+with I720.scope("assertions") as cm:
     cm.new_consequent_func(p.replacer_method, cm.itm2, cm.itm1)
 
 # ###############################################################################

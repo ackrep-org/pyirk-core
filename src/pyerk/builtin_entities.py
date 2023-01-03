@@ -1416,8 +1416,8 @@ R43 = create_builtin_relation(
     R1__has_label="is opposite of",
     R2__has_description="specifies that the subject is the oposite of the object.",
     R42__is_symmetrical=True,
-    R8__has_domain_of_argument_1=I1["general item"],
-    R9__has_domain_of_argument_2=I1["general item"],
+    R8__has_domain_of_argument_1=I40["general relation"],
+    R9__has_domain_of_argument_2=I40["general relation"],
 )
 
 R20["has defining scope"].set_relation("R43__is_opposite_of", R21["is scope of"])

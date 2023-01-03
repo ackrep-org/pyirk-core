@@ -1128,7 +1128,7 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         neighbour = zp.person1.zb__R2353__lives_immediatly_right_of
         self.assertIsNone(neighbour)
 
-        new_stms = p.ruleengine.apply_semantic_rule(zp.zr.I701, mod_context_uri=zp.__URI__)
+        new_stms = p.ruleengine.apply_semantic_rule(zp.zr.I710, mod_context_uri=zp.__URI__)
 
         # assert that both statemens have been created:
         # S(person1,  p.R47["is same as"], person2)
@@ -1346,12 +1346,12 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         self.assertEqual(neighbour_before, None)
 
         new_stms1 = p.ruleengine.apply_semantic_rule(
-            zp.zr.I701["rule: identify same items via zb__R2850__is_functional_activity"], mod_context_uri=zp.__URI__
+            zp.zr.I710["rule: identify same items via zb__R2850__is_functional_activity"], mod_context_uri=zp.__URI__
         )
         self.assertEqual(zp.person1.R47__is_same_as, [zp.person2])
 
         new_stms2 = p.ruleengine.apply_semantic_rule(
-            zp.zr.I702["rule: replace (some) same_as-items"], mod_context_uri=zp.__URI__
+            zp.zr.I720["rule: replace (some) same_as-items"], mod_context_uri=zp.__URI__
         )
 
         # this tests fails sometimes because the order of the match-dicts from the DiGraph-Matcher varies and

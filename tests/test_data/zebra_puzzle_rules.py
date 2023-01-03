@@ -57,24 +57,16 @@ I702 = p.create_item(
 )
 
 with I702.scope("context") as cm:
-    cm.new_var(ph=p.instance_of(p.I1["general item"]))
+    cm.new_var(itm1=p.instance_of(p.I1["general item"]))
     cm.new_var(itm2=p.instance_of(p.I1["general item"]))
-    # cm.new_var(real_item=p.instance_of(p.I1["general item"]))
     cm.uses_external_entities(I702)
-    # cm.uses_external_entities(zb.I7435["human"])
 
 with I702.scope("premises") as cm:
-    # cm.new_rel(cm.placeholder, p.R4["is instance of"], zb.I7435["human"], overwrite=True)
-    # cm.new_rel(cm.ph, p.R57["is placeholder"], True)
-    cm.new_rel(cm.ph, p.R47["is same as"], cm.itm2)
-    # cm.new_rel(cm.itm2, p.R47["is same as"], cm.ph)
-    # cm.new_rel(cm.placeholder2, p.R57["is placeholder"], True)
-    # cm.new_rel(cm.placeholder, p.R47["is same as"], cm.placeholder2)
+    cm.new_rel(cm.itm1, p.R57["is placeholder"], True)
+    cm.new_rel(cm.itm1, p.R47["is same as"], cm.itm2)
 
 with I702.scope("assertions") as cm:
-    # cm.new_rel(cm.placeholder, p.R54["is matched by rule"], cm.placeholder2)
-    cm.new_rel(cm.ph, p.R54["is matched by rule"], I702)
-    # cm.new_consequent_func(p.replacer_method, cm.placeholder, cm.real_item)
+    cm.new_consequent_func(p.replacer_method, cm.itm1, cm.itm2)
 
 # ###############################################################################
 p.end_mod()

@@ -1300,19 +1300,23 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
 
         zp = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA02, prefix="zp")
 
+        neighbour_before = zp.person1.zb__R2353__lives_immediatly_right_of
+        self.assertEqual(neighbour_before, None)
+
         new_stms1 = p.ruleengine.apply_semantic_rule(
             zp.zr.I701["rule: identify same items via zb__R2850__is_functional_activity"], mod_context_uri=zp.__URI__
         )
+        self.assertEqual(zp.person1.R47__is_same_as, [zp.person2])
 
         new_stms2 = p.ruleengine.apply_semantic_rule(
             zp.zr.I702["rule: replace (some) same_as-items"], mod_context_uri=zp.__URI__
         )
 
-        subjects = [s.subject for s in new_stms2]
-        self.assertIn(zp.person1, subjects)
-        self.assertIn(zp.person2, subjects)
-        self.assertIn(zp.person5, subjects)
-        self.assertIn(zp.person9, subjects)
+        # this tests fails sometimes because the order of the match-dicts from the DiGraph-Matcher varies and
+        # thus sometimes person2 is replaced with person1 and sometimes vice versa
+
+        neighbour_after = zp.person1.zb__R2353__lives_immediatly_right_of
+        self.assertEqual(neighbour_after, zp.person3)
 
 
 class Test_Z_Core(HouskeeperMixin, unittest.TestCase):

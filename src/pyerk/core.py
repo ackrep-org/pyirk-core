@@ -1945,6 +1945,10 @@ def replace_and_unlink_entity(old_entity: Entity, new_entity: Entity):
     Then unlink `old_entity`.
     """
 
+    # ensure both entities exist (raise UnknownURIError otherwise):
+    ds.get_entity_by_uri(old_entity.uri)
+    ds.get_entity_by_uri(new_entity.uri)
+
     stm_dict1 = old_entity.get_inv_relations()  # where it is obj
     stm_dict2 = old_entity.get_relations()  # where it is subj
 

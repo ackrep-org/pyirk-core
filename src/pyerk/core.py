@@ -1500,7 +1500,7 @@ class Statement:
 
         subj, pred, obj = self.relation_tuple
 
-        if self.is_qualifier():
+        if isinstance(self, QualifierStatement):
             ds.statements.pop(subj.uri, None)
 
             assert isinstance(subj, Statement)

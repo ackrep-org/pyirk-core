@@ -615,16 +615,16 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         Z: p.Item = itm1.scope("context").namespace["Z"]
 
         r31_list = Z.get_inv_relations("R31__is_in_mathematical_relation_with")
-        re: p.Statement = r31_list[0]
+        stm: p.Statement = r31_list[0].dual_statement  # taking the dual because we got it via the inverse relation
         self.assertEqual(len(r31_list), 1)
 
         # test the expected qualifier
-        q = re.qualifiers[0]
-        self.assertEqual(q.relation_tuple[0], re)
-        self.assertEqual(q.relation_tuple[1], p.R34["has proxy item"])
+        q = stm.qualifiers[0]
+        self.assertEqual(q.subject, stm)  # here it is relevant that we used the dual_relation above
+        self.assertEqual(q.predicate, p.R34["has proxy item"])
 
         # this is the proxy item
-        eq = q.relation_tuple[2]
+        eq = q.object
         rhs = eq.R27__has_rhs
         self.assertEqual(rhs, Z)
 

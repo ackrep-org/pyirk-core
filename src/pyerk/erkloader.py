@@ -15,6 +15,7 @@ def preserve_cwd(function):
     """
     This is a decorator that ensures that the current working directory is unchanged during the function call.
     """
+
     @functools.wraps(function)
     def decorator(*args, **kwargs):
         cwd = os.getcwd()
@@ -22,13 +23,19 @@ def preserve_cwd(function):
             return function(*args, **kwargs)
         finally:
             os.chdir(cwd)
+
     return decorator
 
 
 # noinspection PyProtectedMember
 @preserve_cwd
 def load_mod_from_path(
-        modpath: str, prefix: str, modname=None, allow_reload=True, smart_relative=None, reuse_loaded=False, 
+    modpath: str,
+    prefix: str,
+    modname=None,
+    allow_reload=True,
+    smart_relative=None,
+    reuse_loaded=False,
 ) -> ModuleType:
     """
 
@@ -41,12 +48,11 @@ def load_mod_from_path(
     :param reuse_loaded:    flag; if True and the module was already loaded before, then just use this
     :return:
     """
-    
+
     # save some data structures in order to reenable them if something goes wrong
-    
+
     original_loaded_mod_uris = list(pyerk.ds.mod_path_mapping.a.keys())
-    
-    
+
     if smart_relative is not None:
         msg = "Using 'smart_relative' paths is deprecated since pyerk version 0.6.0. Please use real paths now."
         raise DeprecationWarning(msg)
@@ -72,11 +78,11 @@ def load_mod_from_path(
     old_mod_uri = pyerk.ds.mod_path_mapping.b.get(modpath)
 
     if old_mod_uri:
-        
+
         if reuse_loaded:
             assert modname in sys.modules
             return sys.modules[modname]
-        
+
         if allow_reload:
             pyerk.unload_mod(old_mod_uri)
         else:
@@ -130,22 +136,21 @@ def load_mod_from_path(
         raise pyerk.PyERKError(msg)
 
     pyerk.aux.ensure_valid_baseuri(mod_uri)
-    
+
     if mod_uri in pyerk.ds.uri_prefix_mapping.a:
-        
+
         _cleanup(mod_uri, modname, original_loaded_mod_uris)
         msg = f"While loading {modpath}: URI '{mod_uri}' was already registered."
         raise pyerk.aux.InvalidURIError(msg)
-    
+
     if prefix in pyerk.ds.uri_prefix_mapping.b:
-        
+
         _cleanup(mod_uri, modname, original_loaded_mod_uris)
 
         msg = f"While loading {modpath}: prefix '{prefix}' was already registered."
         raise pyerk.aux.InvalidPrefixError(msg)
-    
+
     pyerk.ds.uri_prefix_mapping.add_pair(mod_uri, prefix)
-        
 
     pyerk.ds.uri_mod_dict[mod_uri] = mod
 
@@ -155,19 +160,17 @@ def load_mod_from_path(
     mod.__fresh_load__ = True
     return mod
 
+
 def _cleanup(mod_uri, modname, original_loaded_mod_uris):
     """
     Clean up some data structures if something went wrong during module load. This helps to keep the tests independent.
     """
-    
+
     pyerk.unload_mod(mod_uri, strict=False)
     sys.modules.pop(modname, None)
-        
+
     # due to dependencies there might have been other modules loaded -> unload them
     modules_to_unload = [uri for uri in pyerk.ds.mod_path_mapping.a if uri not in original_loaded_mod_uris]
-    
-    
-    
+
     for uri in modules_to_unload:
         pyerk.unload_mod(uri)
-        

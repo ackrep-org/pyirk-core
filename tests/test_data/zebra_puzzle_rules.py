@@ -20,8 +20,6 @@ p.register_mod(__URI__, keymanager)
 p.start_mod(__URI__)
 
 
-
-
 I701 = p.create_item(
     R1__has_label="rule: identify same items via zb__R2850__is_functional_activity",
     R2__has_description=(
@@ -34,15 +32,15 @@ with I701.scope("context") as cm:
     cm.new_var(ph1=p.instance_of(p.I1["general item"]))
     cm.new_var(ph2=p.instance_of(p.I1["general item"]))
     cm.new_var(some_itm=p.instance_of(p.I1["general item"]))
-    cm.new_rel_var("rel1") # -> p.instance_of(p.I40["general relation"]))
+    cm.new_rel_var("rel1")  # -> p.instance_of(p.I40["general relation"]))
 
 with I701.scope("premises") as cm:
     cm.new_rel(cm.ph1, p.R57["is placeholder"], True)
     cm.new_rel(cm.ph2, p.R57["is placeholder"], True)
 
     # both placeholders are related to the same item via the same relation
-    cm.new_rel(cm.ph1,cm.rel1, cm.some_itm) # -> p.R58["wildcard relation"]
-    cm.new_rel(cm.ph2,cm.rel1, cm.some_itm) # -> p.R58["wildcard relation"]
+    cm.new_rel(cm.ph1, cm.rel1, cm.some_itm)  # -> p.R58["wildcard relation"]
+    cm.new_rel(cm.ph2, cm.rel1, cm.some_itm)  # -> p.R58["wildcard relation"]
 
     cm.new_rel(cm.rel1, zb.R2850["is functional activity"], True)
 
@@ -54,9 +52,7 @@ with I701.scope("assertions") as cm:
 
 I702 = p.create_item(
     R1__has_label="rule: replace (some) same_as-items",
-    R2__has_description=(
-        "replace placeholder items which have one R47__is_same_as statement"
-    ),
+    R2__has_description=("replace placeholder items which have one R47__is_same_as statement"),
     R4__is_instance_of=p.I41["semantic rule"],
 )
 

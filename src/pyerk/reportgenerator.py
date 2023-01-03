@@ -19,8 +19,6 @@ from pyerk.erkloader import preserve_cwd
 from . import settings
 
 
-
-
 def generate_report(reportconf_path: str):
 
     rg = ReportGenerator(reportconf_path)
@@ -45,9 +43,7 @@ class ReportGenerator:
 
     @staticmethod
     def load_report_conf(reportconf_path: str) -> dict:
-        """
-
-        """
+        """ """
 
         os.chdir(p.aux.startup_workdir)
         try:
@@ -82,7 +78,7 @@ class ReportGenerator:
 
     def generate_report(self):
         jin_env = Environment(loader=FileSystemLoader(settings.TEMPLATE_PATH))
-        template_doc = jin_env.get_template('report-template.tex')
+        template_doc = jin_env.get_template("report-template.tex")
 
         # WIP!
         affiliations = []

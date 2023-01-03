@@ -383,12 +383,11 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         with p.uri_context(uri=TEST_BASE_URI):
             itm = p.create_item(
                 key_str=p.pop_uri_based_key("I"),
-
                 # multiple values to R1 can be passed using a list
                 R1__has_label=[
-                    "test-label in english"@p.en,  # `@p.en` is recommended, if you use multiple languages
-                    "test-label auf deutsch"@p.de
-                    ],
+                    "test-label in english" @ p.en,  # `@p.en` is recommended, if you use multiple languages
+                    "test-label auf deutsch" @ p.de,
+                ],
                 R2__has_description="test-description in english",
             )
 
@@ -406,7 +405,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         # add another language later
 
         with p.uri_context(uri=TEST_BASE_URI):
-            itm.set_relation(p.R2, "test-beschreibung auf deutsch"@p.de)
+            itm.set_relation(p.R2, "test-beschreibung auf deutsch" @ p.de)
 
         desc1, desc2 = itm.get_relations("R2", return_obj=True)
 
@@ -425,20 +424,20 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         self.assertTrue(tmp2 is itm)
 
         # second: with explicitly specifying the language
-        tmp3 = itm["test-label in english"@p.en]
+        tmp3 = itm["test-label in english" @ p.en]
         self.assertTrue(tmp3 is itm)
 
-        tmp4 = itm["test-label auf deutsch"@p.de]
+        tmp4 = itm["test-label auf deutsch" @ p.de]
         self.assertTrue(tmp4 is itm)
 
         with self.assertRaises(ValueError):
             tmp5 = itm["wrong label"]
 
         with self.assertRaises(ValueError):
-            tmp5 = itm["wrong label"@p.de]
+            tmp5 = itm["wrong label" @ p.de]
 
         with self.assertRaises(ValueError):
-            tmp5 = itm["wrong label"@p.en]  # noqa
+            tmp5 = itm["wrong label" @ p.en]  # noqa
 
         # change the default language
 
@@ -449,21 +448,20 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         self.assertEqual(new_default_label.language, "de")
 
         new_default_description = itm.R2
-        self.assertEqual(new_default_description, "test-beschreibung auf deutsch"@p.de)
+        self.assertEqual(new_default_description, "test-beschreibung auf deutsch" @ p.de)
 
         with p.uri_context(uri=TEST_BASE_URI):
             itm2 = p.create_item(
                 key_str=p.pop_uri_based_key("I"),
-
                 # multiple values to R1 can be passed using a list
-                R1__has_label=["test-label2", "test-label2-de"@p.de],
+                R1__has_label=["test-label2", "test-label2-de" @ p.de],
                 R2__has_description="test-description2 in english",
             )
 
         # in case of ordinary strings they should be used if no value is available for current language
 
         self.assertEqual(p.settings.DEFAULT_DATA_LANGUAGE, "de")
-        self.assertEqual(itm2.R1, "test-label2-de"@p.de)
+        self.assertEqual(itm2.R1, "test-label2-de" @ p.de)
         self.assertEqual(itm2.R2, "test-description2 in english")
 
         p.settings.DEFAULT_DATA_LANGUAGE = "en"
@@ -767,7 +765,6 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
             A = p.instance_of(ma.I9906["square matrix"])
             A.set_relation("ma__R5939__has_column_number", 7)
 
-
         def test_func():
             """
             docstring
@@ -790,7 +787,6 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
     def test_d02__custom_call_post_process1(self):
 
         ma = p.erkloader.load_mod_from_path(TEST_DATA_PATH_MA, prefix="ma")
-
 
         with p.uri_context(uri=TEST_BASE_URI, prefix="ut"):
             A = p.instance_of(ma.I9906["square matrix"])
@@ -834,8 +830,6 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
     def test_d03b__replace_entity(self):
 
         ma = p.erkloader.load_mod_from_path(TEST_DATA_PATH_MA, prefix="ma")
-
-
 
         with p.uri_context(uri=TEST_BASE_URI, prefix="ut"):
             A = p.instance_of(ma.I9906["square matrix"])
@@ -920,8 +914,8 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
             itm.overwrite_statement("R4__is_instance_of", p.I2["Metaclass"])
         self.assertEqual(itm.R4__is_instance_of, p.I2["Metaclass"])
 
-class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
 
+class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
     def setUp(self):
         super().setUp()
 
@@ -1076,7 +1070,6 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
 
         return c
 
-
     def test_c08__zebra_puzzle02(self):
         """
         Test one special rule I902, with new features from builin_entities
@@ -1172,9 +1165,7 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
 
             I702 = p.create_item(
                 R1__has_label="test rule",
-                R2__has_description=(
-                    "test to match every instance of I36['rational number']"
-                ),
+                R2__has_description=("test to match every instance of I36['rational number']"),
                 R4__is_instance_of=p.I41["semantic rule"],
             )
 
@@ -1203,7 +1194,7 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         # use the uris because the Items itself are not hashable -> no conversion into a set
         self.assertEqual(
             set(itm.uri for itm in I702.get_inv_relations("R54", return_subj=True)),
-            set((I702.x.uri, itm1.uri, itm2.uri, itm3.uri))
+            set((I702.x.uri, itm1.uri, itm2.uri, itm3.uri)),
         )
 
         self.assertEqual(itm4.R54__is_matched_by_rule, [])
@@ -1277,30 +1268,30 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
 
     def test_d04__overwrite_stm_inside_rule_scope(self):
 
-       with p.uri_context(uri=TEST_BASE_URI, prefix="ut"):
+        with p.uri_context(uri=TEST_BASE_URI, prefix="ut"):
 
-           I702 = p.create_item(
-               R1__has_label="test rule",
-               R4__is_instance_of=p.I41["semantic rule"],
-           )
+            I702 = p.create_item(
+                R1__has_label="test rule",
+                R4__is_instance_of=p.I41["semantic rule"],
+            )
 
-           with I702.scope("context") as cm:
-               cm.new_var(x=p.instance_of(p.I1["general item"]))
+            with I702.scope("context") as cm:
+                cm.new_var(x=p.instance_of(p.I1["general item"]))
 
-           self.assertEqual(cm.x.R4, p.I1["general item"])
+            self.assertEqual(cm.x.R4, p.I1["general item"])
 
-           with I702.scope("premises") as cm:
-               cm.new_rel(cm.x, p.R4["is instance of"], p.I2["Metaclass"], overwrite=True)
+            with I702.scope("premises") as cm:
+                cm.new_rel(cm.x, p.R4["is instance of"], p.I2["Metaclass"], overwrite=True)
 
-               # arbitrary ordinary relation
-               cm.new_rel(cm.x, p.R38["has length"], 5)
+                # arbitrary ordinary relation
+                cm.new_rel(cm.x, p.R38["has length"], 5)
 
-           self.assertEqual(cm.x.R4, p.I2["Metaclass"])
+            self.assertEqual(cm.x.R4, p.I2["Metaclass"])
 
-       premise_stms = I702.scp__premises.get_inv_relations("R20")
+        premise_stms = I702.scp__premises.get_inv_relations("R20")
 
-       # note that the R4 relation creates two premisie statements: primal and dual (inverse)
-       self.assertEqual(len(premise_stms), 3)
+        # note that the R4 relation creates two premisie statements: primal and dual (inverse)
+        self.assertEqual(len(premise_stms), 3)
 
     def test_d05__zebra_puzzle_stage02(self):
         """
@@ -1310,7 +1301,7 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         zp = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA02, prefix="zp")
 
         new_stms1 = p.ruleengine.apply_semantic_rule(
-        zp.zr.I701["rule: identify same items via zb__R2850__is_functional_activity"], mod_context_uri=zp.__URI__
+            zp.zr.I701["rule: identify same items via zb__R2850__is_functional_activity"], mod_context_uri=zp.__URI__
         )
 
         new_stms2 = p.ruleengine.apply_semantic_rule(
@@ -1440,7 +1431,6 @@ class Test_05_Script1(HouskeeperMixin, unittest.TestCase):
 
 
 class Test_06_reportgenerator(HouskeeperMixin, unittest.TestCase):
-
     @p.erkloader.preserve_cwd
     def tearDown(self) -> None:
         super().tearDown()

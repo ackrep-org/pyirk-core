@@ -100,9 +100,7 @@ I4037["Englishman"].set_relation("R8216__drinks", unknown_beverage1)
 
 I901 = p.create_item(
     R1__has_label="zebra puzzle reasoning rule1",
-    R2__has_description=(
-        "simple testing rule"
-    ),
+    R2__has_description=("simple testing rule"),
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
@@ -121,36 +119,31 @@ with I901.scope("assertions") as cm:
 
 I902 = p.create_item(
     R1__has_label="zebra puzzle reasoning rule2",
-    R2__has_description=(
-        "a step towards identification of beverage by principle of exclusion"
-    ),
+    R2__has_description=("a step towards identification of beverage by principle of exclusion"),
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
 with I902.scope("context") as cm:
     cm.new_var(C1=p.instance_of(p.I2["Metaclass"]))  # this is the class
     cm.new_var(P1=p.instance_of(cm.C1))  # this is the instance (this will be the beverage)
-    
+
     cm.new_var(T1=p.instance_of(p.I33["tuple"]))
     cm.new_var(T2=p.instance_of(p.I33["tuple"]))
     cm.uses_external_entities(I902)
-    
+
 with I902.scope("premises") as cm:
     cm.new_rel(cm.C1, p.R51["instances are from"], cm.T1)
     cm.new_rel(cm.P1, p.R52["is none of"], cm.T2)
-    
+
 with I902.scope("assertions") as cm:
     cm.new_rel(cm.P1, p.R54["is matched by rule"], I902)
-    
-# ###############################################################################
 
+# ###############################################################################
 
 
 I903 = p.create_item(
     R1__has_label="zebra puzzle reasoning rule3",
-    R2__has_description=(
-        "principle of exclusion: create difference tuple"
-    ),
+    R2__has_description=("principle of exclusion: create difference tuple"),
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
@@ -158,16 +151,16 @@ I903 = p.create_item(
 with I903.scope("context") as cm:
     cm.new_var(C1=p.instance_of(p.I2["Metaclass"]))  # this is the class
     cm.new_var(P1=p.instance_of(cm.C1))  # this is the instance (this will be the beverage)
-    
+
     cm.new_var(T1=p.instance_of(p.I33["tuple"]))  # a priori possible items
     cm.new_var(T2=p.instance_of(p.I33["tuple"]))  # excluded items
     cm.uses_external_entities(I903)
-    
-    
+
+
 with I903.scope("premises") as cm:
     cm.new_rel(cm.C1, p.R51["instances are from"], cm.T1)
     cm.new_rel(cm.P1, p.R52["is none of"], cm.T2)
-    
+
 
 def tuple_difference_factory(self, tuple_item1, tuple_item2):
     """
@@ -177,31 +170,29 @@ def tuple_difference_factory(self, tuple_item1, tuple_item2):
     assert tuple_item2.R4__is_instance_of == p.I33["tuple"]
     elements1 = tuple_item1.get_relations("R39__has_element", return_obj=True)
     elements2 = tuple_item2.get_relations("R39__has_element", return_obj=True)
-    
+
     # TODO: this could be speed up by using dicts:
     new_elts = (e for e in elements1 if e not in elements2)
     res = p.new_tuple(*new_elts)
-    
+
     return res
-    
-    
+
+
 with I903.scope("assertions") as cm:
     cm.new_var(T_diff=p.instance_of(p.I33["tuple"]))  # remaining items
     cm.T_diff.add_method(tuple_difference_factory, "fiat_factory")
-    
+
     cm.new_consequent_func(tuple_difference_factory, cm.T1, cm.T2, anchor_item=cm.T_diff)
-    
+
     cm.new_rel(cm.P1, p.R54["is matched by rule"], I903)
     cm.new_rel(cm.P1, p.R56["is one of"], cm.T_diff)
-    
+
 # ###############################################################################
 
 
 I904 = p.create_item(
     R1__has_label="zebra puzzle reasoning rule4",
-    R2__has_description=(
-        "principle of exclusion: evaluate R56__is_one_of tuple of length 1 to R47__is_same_as"
-    ),
+    R2__has_description=("principle of exclusion: evaluate R56__is_one_of tuple of length 1 to R47__is_same_as"),
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
@@ -210,15 +201,15 @@ with I904.scope("context") as cm:
     cm.new_var(elt0=p.instance_of(p.I1["general item"]))
     cm.new_var(T1=p.instance_of(p.I33["tuple"]))
     cm.uses_external_entities(I904)
-    
+
 with I904.scope("premises") as cm:
     cm.new_rel(cm.i1, p.R56["is one of"], cm.T1)
     cm.new_rel(cm.T1, p.R38["has length"], 1)
     cm.new_rel(cm.T1, p.R39["has element"], cm.elt0)
-    
+
 with I904.scope("assertions") as cm:
     cm.new_rel(cm.i1, p.R54["is matched by rule"], I904)
-    
+
     cm.new_rel(cm.i1, p.R47["is same as"], cm.elt0)
 
 # ###############################################################################
@@ -226,23 +217,21 @@ with I904.scope("assertions") as cm:
 
 I905 = p.create_item(
     R1__has_label="zebra puzzle reasoning rule5",
-    R2__has_description=(
-        "replace placeholder items which have one R47__is_same_as statement"
-    ),
+    R2__has_description=("replace placeholder items which have one R47__is_same_as statement"),
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
 with I905.scope("context") as cm:
-    cm.new_var(placeholder=p.instance_of(p.I1["general item"]))  
+    cm.new_var(placeholder=p.instance_of(p.I1["general item"]))
     cm.new_var(real_item=p.instance_of(p.I1["general item"]))
-    
+
 with I905.scope("premises") as cm:
     cm.new_rel(cm.placeholder, p.R57["is placeholder"], True)
     cm.new_rel(cm.placeholder, p.R47["is same as"], cm.real_item)
-    
+
 with I905.scope("assertions") as cm:
     cm.new_consequent_func(p.replacer_method, cm.placeholder, cm.real_item)
-    
+
 # ###############################################################################
 
 

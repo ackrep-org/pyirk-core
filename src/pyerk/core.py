@@ -19,7 +19,7 @@ import re
 
 from pyerk import auxiliary as aux
 from pyerk import settings
-from  pyerk.auxiliary import (
+from pyerk.auxiliary import (
     InvalidURIError,
     InvalidPrefixError,
     PyERKError,
@@ -92,19 +92,19 @@ class Entity(abc.ABC):
         self.uri = None  # will be set in __post_init__
 
     def __call__(self, *args, **kwargs):
-        
+
         custom_call_method = getattr(self, "_custom_call", None)
         if custom_call_method is None:
             msg = f"entity {self} has not defined a _custom_call-method and thus cannot be called"
             raise TypeError(msg)
         else:
             assert callable(custom_call_method)
-            
+
             res = custom_call_method(*args, **kwargs)
-            
+
             if custom_call_post_process := getattr(self, "_custom_call_post_process", None):
                 res = custom_call_post_process(res, *args, **kwargs)
-            
+
             return res
 
     def idoc(self, adhoc_label: str):
@@ -315,12 +315,12 @@ class Entity(abc.ABC):
         """
         if name is None:
             name = getattr(func, "given_name", func.__name__)
-            
+
         caller_frame = get_caller_frame(1)
-        
+
         if mod_uri := caller_frame.f_locals.get("__URI__"):
             func = wrap_function_with_uri_context(func, mod_uri)
-        
+
         # ensure that the func object has a `.given_name` attribute
         func.given_name = name
 
@@ -345,7 +345,7 @@ class Entity(abc.ABC):
                 self.set_relation(key, value)
 
     def set_mutliple_relations(
-            self, relation: Union["Relation", str], obj_seq: Union[tuple, list], *args, **kwargs
+        self, relation: Union["Relation", str], obj_seq: Union[tuple, list], *args, **kwargs
     ) -> List["Statement"]:
         """
         Convenience function to create multiple Statements at once
@@ -381,7 +381,6 @@ class Entity(abc.ABC):
             else:
                 # assume we got the short key of the relation
                 relation = ds.get_entity_by_key_str(relation)
-
 
         if isinstance(relation, Relation):
 
@@ -488,7 +487,7 @@ class Entity(abc.ABC):
 
         :return:            either the whole dict or just one value (of type list)
         """
-        
+
         if key_str_or_uri is not None and not isinstance(key_str_or_uri, (str)):
             msg = f"unexpected type for key_str_or_uri: {type(key_str_or_uri)}. Expected a str or None."
             raise TypeError(msg)
@@ -567,12 +566,12 @@ class Entity(abc.ABC):
         else:
             res = stm_res
         return res
-    
+
     def overwrite_statement(self, rel_key_str_or_uri: str, new_obj: "Entity", qualifiers=None) -> "Statement":
         # the caller wants only results for this key (e.g. "R4")
-        
+
         assert isinstance(rel_key_str_or_uri, str)
-        
+
         if aux.ensure_valid_uri(rel_key_str_or_uri, strict=False):
             rel_uri = rel_key_str_or_uri
         else:
@@ -580,11 +579,11 @@ class Entity(abc.ABC):
             key_str = rel_key_str_or_uri
             pr_key = process_key_str(key_str)
             rel_uri = pr_key.uri
-        
+
         rel = ds.get_entity_by_uri(rel_uri)
-        
+
         stm = self.get_relations(rel_uri)
-        
+
         if isinstance(stm, list):
             if len(stm) == 0:
                 msg = f"Unexpectedly found empty statement list for entity {self} and relation {rel}"
@@ -593,23 +592,22 @@ class Entity(abc.ABC):
                 msg = f"Unexpectedly found length-{len(stm)} statement list for entity {self} and relation {rel}"
                 raise aux.PyERKError(msg)
             stm = stm[0]
-            
+
         assert isinstance(stm, Statement)
-        
+
         if stm.qualifiers:
             raise NotImplementedError("Processing old qualifiers is not yet implemented while overwriting statements")
-        
+
         stm.unlink()
         return self.set_relation(rel, new_obj, qualifiers=qualifiers)
-    
+
 
 def wrap_function_with_uri_context(func, uri):
-    
     @functools.wraps(func)
     def wrapped_func(*args, **kwargs):
         with uri_context(uri=uri):
             return func(*args, **kwargs)
-    
+
     return wrapped_func
 
 
@@ -681,8 +679,7 @@ class DataStore:
         for uri, itm in self.items.items():
             if itm.R1 == label:
                 return itm
-        
-        
+
     def get_entity_by_key_str(self, key_str, mod_uri=None) -> Entity:
         """
         :param key_str:     str like I1234 or I1234__some_label
@@ -941,7 +938,10 @@ re_suffix_square_brackets = re.compile(r"""^\[["'](.+)["']\]""")
 
 
 def process_key_str(
-        key_str: str, check: bool = True, resolve_prefix: bool = True, mod_uri: str = None,
+    key_str: str,
+    check: bool = True,
+    resolve_prefix: bool = True,
+    mod_uri: str = None,
 ) -> ProcessedStmtKey:
     """
     In ERK there are the following kinds of keys:
@@ -954,7 +954,7 @@ def process_key_str(
         - f) prefixed index-labeld key like  `bi__R1234["my relation"]`
 
     See also: userdoc/overview.html#keys-in-pyerk
-    
+
     Also, the leading character indicates the entity type (EType).
 
     This function expects any of these cases.
@@ -1108,9 +1108,9 @@ def check_processed_key_label(pkey: ProcessedStmtKey) -> None:
 
     if pkey.label.lower() not in (label_compare_str1.lower(), label_compare_str2.lower()):
         msg = (
-            f'check of label consistency failed for key {pkey.original_key_str}. Expected:  one of '
+            f"check of label consistency failed for key {pkey.original_key_str}. Expected:  one of "
             f'("{label_compare_str1}", "{label_compare_str2}") but got  "{pkey.label}". '
-            'Note: this test is *not* case-sensitive.'
+            "Note: this test is *not* case-sensitive."
         )
         raise ValueError(msg)
 
@@ -1886,14 +1886,14 @@ def _unlink_entity(uri: str, remove_from_mod=False) -> None:
     """
     aux.ensure_valid_uri(uri)
     entity: Entity = ds.get_entity_by_uri(uri)
-    
+
     if remove_from_mod:
         mod_uri = uri.split("#")[0]
         mod_entities = ds.entities_created_in_mod[mod_uri]
-        
+
         # TODO: this could be speed up by using a dict instead of a list for mod_entities
         mod_entities.remove(uri)
-    
+
     res1 = ds.items.pop(uri, None)
     res2 = ds.relations.pop(uri, None)
 
@@ -1934,24 +1934,25 @@ def _unlink_entity(uri: str, remove_from_mod=False) -> None:
     ds.inv_statements.pop(entity.uri, None)
 
     ds.released_keys.append(uri)
-    
+
+
 def replace_and_unlink_entity(old_entity: Entity, new_entity: Entity):
     """
     Replace all statements where `old_entity` is subject or object with new relations where `new_entity` is sub or obj.
     For the "subject-case" only process those statements for which `new_entity` does not yet have any relations.
     Thus do not replace e.g. the R4__is_instance_of statement of `new_entity`.
-    
+
     Then unlink `old_entity`.
     """
-    
+
     stm_dict1 = old_entity.get_inv_relations()  # where it is obj
     stm_dict2 = old_entity.get_relations()  # where it is subj
-    
+
     _unlink_entity(old_entity.uri, remove_from_mod=True)
-    
+
     for relation_uri, stm_list in list(stm_dict1.items()) + list(stm_dict2.items()):
         for stm in stm_list:
-            stm: Statement 
+            stm: Statement
             subject, predicate, obj = stm.relation_tuple
             subject: Item
             qlf = stm.qualifiers
@@ -1961,7 +1962,8 @@ def replace_and_unlink_entity(old_entity: Entity, new_entity: Entity):
                 assert subject == old_entity
                 if not new_entity.get_relations(predicate.uri):
                     new_entity.set_relation(predicate, obj, qualifiers=qlf)
-            
+
+
 def register_mod(uri: str, keymanager: KeyManager, check_uri=True):
     frame = get_caller_frame(upcount=1)
     path = os.path.abspath(frame.f_globals["__file__"])
@@ -1969,11 +1971,11 @@ def register_mod(uri: str, keymanager: KeyManager, check_uri=True):
         assert frame.f_globals.get("__URI__", None) == uri
     if uri != settings.BUILTINS_URI:
         # the builtin module is an exception because it should not be unloaded
-        
+
         if uri in ds.mod_path_mapping.a:
             msg = f"URI '{uri}' was already registered by {ds.mod_path_mapping.a[uri]}."
             raise aux.InvalidURIError(msg)
-        
+
         ds.mod_path_mapping.add_pair(key_a=uri, key_b=path)
 
     # all modules should have their own key manager

@@ -626,7 +626,6 @@ class ScopingCM:
 
     @classmethod
     def create_scopingcm_factory(cls):
-
         def scopingcm_factory(self: Item, scope_name: str) -> ScopingCM:
             """
             This function will be used as a method for Items which can create a scoping context manager.
@@ -648,7 +647,7 @@ class ScopingCM:
         return scopingcm_factory
 
 
-class _proposition__CM (ScopingCM):
+class _proposition__CM(ScopingCM):
     """
     Context manager taylored for mathematical theorems and definitions
     """
@@ -703,8 +702,7 @@ def _proposition__scope(self: Item, scope_name: str):
     return cm
 
 
-class _rule__CM (ScopingCM):
-
+class _rule__CM(ScopingCM):
     def __init__(self, *args, **kwargs):
 
         self.fiat_factory_counter = 0
@@ -772,7 +770,6 @@ class _rule__CM (ScopingCM):
         for arg in args:
             # args are supposed to be variables created in the "setting"-scope
             self.new_rel(factory_anchor, R29["has argument"], arg)
-
 
 
 def _rule__scope(self: Item, scope_name: str):
@@ -1160,6 +1157,7 @@ R34 = create_builtin_relation(
 
 proxy_item = QualifierFactory(R34["has proxy item"])
 
+
 def get_proxy_item(stm: Statement, strict=True) -> Item:
     assert isinstance(stm, Statement)
 
@@ -1317,7 +1315,7 @@ R36 = create_builtin_relation(
     R18__has_usage_hint=(
         "Example: if subj = P(A) then we have: subj.R4__is_instance_of -> I32__evaluated_mapping; ",
         "subj.R35__is_applied_mapping_of -> P; ",
-        "subj.R36__has_argument_tuple -> A"
+        "subj.R36__has_argument_tuple -> A",
     ),
     R22__is_functional=True,
 )
@@ -1465,9 +1463,7 @@ def uq_instance_of(type_entity: Item, r1: str = None, r2: str = None) -> Item:
 R45 = create_builtin_relation(
     key_str="R45",
     R1__has_label="is subscope of",
-    R2__has_description=(
-        "..."
-    ),
+    R2__has_description=("..."),
     R8__has_domain_of_argument_1=I16["scope"],
     R11__has_range_of_result=I16["scope"],
     R18__has_usage_hint="used to specify that the subject (a scope instance is a subscope of another scope instance",
@@ -1535,9 +1531,7 @@ class ImplicationStatement:
 R47 = create_builtin_relation(
     key_str="R47",
     R1__has_label="is same as",
-    R2__has_description=(
-        "specifies that subject and object are identical"
-    ),
+    R2__has_description=("specifies that subject and object are identical"),
     # TODO: model that this is (probably)  equivalent to "owl:sameAs"
 )
 
@@ -1561,9 +1555,7 @@ R49 = create_builtin_relation(
 R50 = create_builtin_relation(
     key_str="R50",
     R1__has_label="is different from",
-    R2__has_description=(
-        "specifies that subject and object are different"
-    ),
+    R2__has_description=("specifies that subject and object are different"),
     R42__is_symmetrical=True,
     R18__has_usage_hint=(
         "this might be used in two situations: a) to prevent accidental confusion during modeling; "
@@ -1575,9 +1567,7 @@ R50 = create_builtin_relation(
 R51 = create_builtin_relation(
     key_str="R51",
     R1__has_label="instances are from",
-    R2__has_description=(
-        "specifies that every instance of the subject (class) is one of the elements of the object"
-    ),
+    R2__has_description=("specifies that every instance of the subject (class) is one of the elements of the object"),
     R8__has_domain_of_argument_1=I2["Metaclass"],
     R11__has_range_of_result=I33["tuple"]
     # TODO: model that this is (probably) equivalent to "owl:oneOf"
@@ -1619,9 +1609,7 @@ R52 = create_builtin_relation(
 R53 = create_builtin_relation(
     key_str="R53",
     R1__has_label="is inverse functional",
-    R2__has_description=(
-        "specifies that the inverse relation of the subject is functional"
-    ),
+    R2__has_description=("specifies that the inverse relation of the subject is functional"),
     # R8__has_domain_of_argument_1=I1["general item"],  # unsure here
     R11__has_range_of_result=bool,
     # TODO: model that this is (probably) equivalent to "owl:InverseFunctionalProperty"
@@ -1630,9 +1618,7 @@ R53 = create_builtin_relation(
 R54 = create_builtin_relation(
     key_str="R54",
     R1__has_label="is matched by rule",
-    R2__has_description=(
-        "specifies that subject entitiy is matched by a semantic rule"
-    ),
+    R2__has_description=("specifies that subject entitiy is matched by a semantic rule"),
     # R8__has_domain_of_argument_1=I1["general item"],  # unsure here
     R11__has_range_of_result=I41["semantic rule"],
     R18__has_usage_hint="useful for debugging and testing semantic rules"
@@ -1655,9 +1641,7 @@ R55 = create_builtin_relation(
 R56 = create_builtin_relation(
     key_str="R56",
     R1__has_label="is one of",
-    R2__has_description=(
-        "specifies that the subject is equivalent to one of the elements of the object"
-    ),
+    R2__has_description=("specifies that the subject is equivalent to one of the elements of the object"),
     R8__has_domain_of_argument_1=I2["Metaclass"],
     R11__has_range_of_result=I33["tuple"]
     # TODO: model that this is (probably) NOT equivalent to "owl:oneOf" (see R51 above)
@@ -1756,6 +1740,7 @@ def get_relation_properties(rel_entity: Entity) -> List[str]:
 
     return rel_props
 
+
 # this function is intended to be attached to an item in the assertions-scope of a semantic rule
 # ("pseudo fiat function")
 def replacer_method(self, old_item, new_item):
@@ -1763,6 +1748,7 @@ def replacer_method(self, old_item, new_item):
 
     # this function intentially does not return a new item; only called for its side-effects
     return None
+
 
 # testing
 

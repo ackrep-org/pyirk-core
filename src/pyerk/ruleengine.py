@@ -10,6 +10,7 @@ from typing import List, Tuple, Optional
 
 import networkx as nx
 from networkx.algorithms import isomorphism as nxiso
+
 # noinspection PyUnresolvedReferences
 from addict import Addict as Container
 
@@ -37,6 +38,7 @@ def apply_all_semantic_rules(mod_context_uri=None) -> List[core.Statement]:
 
     return new_stm_list
 
+
 def apply_semantic_rule(rule: core.Item, mod_context_uri: str = None) -> List[core.Statement]:
     """
     Create a RuleApplicator instance for the rules, execute its apply-method, return the result (list of new statements)
@@ -45,7 +47,6 @@ def apply_semantic_rule(rule: core.Item, mod_context_uri: str = None) -> List[co
     ra = RuleApplicator(rule, mod_context_uri=mod_context_uri)
     res = ra.apply()
     return res
-
 
 
 def get_all_rules():
@@ -77,6 +78,7 @@ class RuleApplicator:
     """
     Class to handle the application of a single semantic rule.
     """
+
     def __init__(self, rule: core.Entity, mod_context_uri: Optional[str] = None):
         self.rule = rule
         self.mod_context_uri = mod_context_uri
@@ -157,8 +159,9 @@ class RuleApplicator:
             call_args_list = []
             for node_tuple in ani_arg_nodes:
                 call_args_list.append((res_dict[node] for node in node_tuple))
-            asserted_new_items = \
-                [func(*call_args) for func, call_args in zip(asserted_new_item_factories, call_args_list)]
+            asserted_new_items = [
+                func(*call_args) for func, call_args in zip(asserted_new_item_factories, call_args_list)
+            ]
 
             # some of the functions might have returned None (called becaus of their side effects)
             # these pairs are sorted out below (via continue)
@@ -317,7 +320,6 @@ class RuleApplicator:
             # no chance for match anymore because n1 is no literal
             return False
 
-
         e1 = n1d["itm"]
         e2 = n2d["entity"]
 
@@ -329,7 +331,6 @@ class RuleApplicator:
             # -> let the edges decide
 
             return True
-
 
     def create_prototypes_for_fiat_entities(self) -> nx.DiGraph:
 
@@ -366,7 +367,7 @@ class RuleApplicator:
                 continue
 
             if self._ignore_item(var):
-                    continue
+                continue
 
             c = Container()
             for relname in ["R3", "R4"]:
@@ -542,6 +543,8 @@ class RuleApplicator:
 
 
 wildcard_relation_uri = bi.R58["wildcard relation"].uri
+
+
 def edge_matcher(e1d: dict, e2d: dict) -> bool:
     """
 
@@ -556,7 +559,7 @@ def edge_matcher(e1d: dict, e2d: dict) -> bool:
 
     """
 
-    if (e2d["rel_uri"] == wildcard_relation_uri):
+    if e2d["rel_uri"] == wildcard_relation_uri:
         # wildcard relations matches any relation which has the required relation properties
         if set(e2d["rel_props"]).issubset(e1d["rel_props"]):
             return True

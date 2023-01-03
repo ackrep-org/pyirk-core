@@ -26,15 +26,15 @@ class OneToOneMapping(object):
         assert len(self.a) == len(self.b)
 
     def add_pair(self, key_a, key_b):
-        
+
         if key_a in self.a:
             msg = f"key_a '{key_a}' does already exist."
             raise KeyError(msg)
-        
+
         if key_b in self.b:
             msg = f"key_b '{key_b}' does already exist."
             raise KeyError(msg)
-        
+
         self.a[key_a] = key_b
         self.b[key_b] = key_a
 
@@ -149,7 +149,6 @@ class MissingQualifierError(PyERKError):
 
 class AmbiguousQualifierError(PyERKError):
     pass
-
 
 
 def ensure_valid_short_key(txt: str, strict: bool = True) -> bool:

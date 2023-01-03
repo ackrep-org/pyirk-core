@@ -565,7 +565,7 @@ def visualize_all_entities(url_template="", write_tmp_files: bool = False) -> st
             "style": "filled",
             "fixedsize": True,
             "color": d.get("color", "black"),
-            "width": .3,
+            "width": 0.3,
             "fontsize": 2,
             "label": d.get("label", "undefined label"),
             "fillcolor": "#45454533",

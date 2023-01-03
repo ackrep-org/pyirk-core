@@ -104,12 +104,10 @@ def create_parser():
         action="store_true",
     )
 
-    parser.add_argument(
-        "--dbg", help="start debug routine", default=None, action="store_true"
-    )
-    
+    parser.add_argument("--dbg", help="start debug routine", default=None, action="store_true")
+
     return parser
-    
+
 
 def main():
 
@@ -160,9 +158,7 @@ def main():
         try:
             import pyerkdjango.core
         except ImportError:
-            print(
-                aux.bred("Error:"), "the module pyerkdjango seems not to be installed."
-            )
+            print(aux.bred("Error:"), "the module pyerkdjango seems not to be installed.")
             # exit(10)
             raise
         pyerkdjango.core.start_django()
@@ -170,9 +166,7 @@ def main():
         try:
             import pyerkdjango.core
         except ImportError:
-            print(
-                aux.bred("Error:"), "the module pyerkdjango seems not to be installed."
-            )
+            print(aux.bred("Error:"), "the module pyerkdjango seems not to be installed.")
             # exit(10)
             raise
         pyerkdjango.core.start_django_shell()
@@ -180,18 +174,14 @@ def main():
         print("nothing to do, see option `--help` for more info")
 
 
-def process_mod(
-    path: str, prefix: str, relative_to_workdir: bool = False
-) -> erkloader.ModuleType:
+def process_mod(path: str, prefix: str, relative_to_workdir: bool = False) -> erkloader.ModuleType:
 
     if not relative_to_workdir:
         msg = "using mod paths which are not relative to workdir is deprecated since pyerk version 0.6.0"
         raise DeprecationWarning(msg)
 
     smart_relative = None
-    mod1 = erkloader.load_mod_from_path(
-        path, prefix=prefix, smart_relative=smart_relative
-    )
+    mod1 = erkloader.load_mod_from_path(path, prefix=prefix, smart_relative=smart_relative)
 
     # perform sanity check
     # rdfstack.check_all_relation_types()
@@ -205,9 +195,7 @@ def debug():
     """
 
     ERK_ROOT_DIR = aux.get_erk_root_dir()
-    TEST_DATA_PATH = os.path.join(
-        ERK_ROOT_DIR, "erk-data", "ocse", "control_theory1.py"
-    )
+    TEST_DATA_PATH = os.path.join(ERK_ROOT_DIR, "erk-data", "ocse", "control_theory1.py")
     mod1 = erkloader.load_mod_from_path(TEST_DATA_PATH, prefix="ct")  # noqa
     ds = core.ds
     ds.rdfgraph = rdfstack.create_rdf_triples()

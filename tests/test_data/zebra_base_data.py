@@ -20,7 +20,6 @@ keymanager = p.KeyManager(keyseed=1835)
 p.register_mod(__URI__, keymanager)
 
 
-
 p.start_mod(__URI__)
 
 
@@ -111,12 +110,12 @@ I4118 = p.create_item(
     R4__is_instance_of=I3896["house color"],
 )
 
-I5209  = p.create_item(
+I5209 = p.create_item(
     R1__has_label="red",
     R4__is_instance_of=I3896["house color"],
 )
 
-I1497  = p.create_item(
+I1497 = p.create_item(
     R1__has_label="blue",
     R4__is_instance_of=I3896["house color"],
 )
@@ -126,7 +125,7 @@ I7612 = p.create_item(
     R4__is_instance_of=I3896["house color"],
 )
 
-I8065  = p.create_item(
+I8065 = p.create_item(
     R1__has_label="green",
     R4__is_instance_of=I3896["house color"],
 )
@@ -361,4 +360,3 @@ All Hints (from https://en.wikipedia.org/wiki/Zebra_Puzzle):
 
 
 p.end_mod()
-

@@ -40,8 +40,8 @@ extensions = [
     "sphinx.ext.doctest",
     "sphinx.ext.autodoc",
     "sphinx.ext.autosummary",
-    'sphinx_rtd_theme',
-    'sphinxarg.ext',
+    "sphinx_rtd_theme",
+    "sphinxarg.ext",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -60,11 +60,11 @@ exclude_patterns = []
 #
 html_theme = "sphinx_rtd_theme"
 html_theme_options = {
-    'collapse_navigation': True,
-    'sticky_navigation': True,
-    'navigation_depth': 4,
-    'includehidden': True,
-    'titles_only': False
+    "collapse_navigation": True,
+    "sticky_navigation": True,
+    "navigation_depth": 4,
+    "includehidden": True,
+    "titles_only": False,
 }
 
 # Add any paths that contain custom static files (such as style sheets) here,
@@ -75,7 +75,7 @@ html_static_path = ["_static"]
 primary_domain = "py"
 
 
-source_suffix = ['.rst', '.md']
-source_parsers = {'.md': 'recommonmark.parser.CommonMarkParser'}
+source_suffix = [".rst", ".md"]
+source_parsers = {".md": "recommonmark.parser.CommonMarkParser"}
 
 # master_doc = 'index'

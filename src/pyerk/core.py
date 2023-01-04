@@ -91,6 +91,10 @@ class Entity(abc.ABC):
         self.base_uri = base_uri
         self.uri = None  # will be set in __post_init__
 
+        # simplifies debugging, will be set by _unlink_entity()
+        self._label_after_unlink = None
+        self._unlinked = False
+
     def __call__(self, *args, **kwargs):
 
         custom_call_method = getattr(self, "_custom_call", None)
@@ -1144,11 +1148,14 @@ class Item(Entity):
         self.__post_init__()
 
     def __repr__(self):
-        try:
-            R1 = getattr(self, "R1", "no label")
-        except ValueError:
-            R1 = "<<ValueError while retrieving R1>>"
-        return f'<Item {self.short_key}["{R1}"]>'
+        if not self._unlinked:
+            try:
+                r1 = getattr(self, "R1", "no label")
+            except ValueError:
+                r1 = "<<ValueError while retrieving R1>>"
+        else:
+            r1 = getattr(self, "_label_after_unlink", "no label")
+        return f'<Item {self.short_key}["{r1}"]>'
 
 
 def get_active_mod_uri(strict: bool = True) -> Union[str, None]:
@@ -1221,8 +1228,11 @@ class Relation(Entity):
         self.__post_init__()
 
     def __repr__(self):
-        R1 = getattr(self, "R1", "no label")
-        return f'<Relation {self.short_key}["{R1}"]>'
+        if not self._unlinked:
+            r1 = getattr(self, "R1", "no label")
+        else:
+            r1 = getattr(self, "_label_after_unlink", "no label")
+        return f'<Relation {self.short_key}["{r1}"]>'
 
 
 @unique
@@ -1915,8 +1925,11 @@ def _unlink_entity(uri: str, remove_from_mod=False) -> None:
     :param uri:     entity uri
     :return:        None
     """
+    assert isinstance(uri, str)
     aux.ensure_valid_uri(uri)
     entity: Entity = ds.get_entity_by_uri(uri)
+    entity._label_after_unlink = f"!!unlinked: {entity.R1}"
+    entity._unlinked = True
 
     if remove_from_mod:
         mod_uri = uri.split("#")[0]

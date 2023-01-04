@@ -927,6 +927,20 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
             itm.overwrite_statement("R4__is_instance_of", p.I2["Metaclass"])
         self.assertEqual(itm.R4__is_instance_of, p.I2["Metaclass"])
 
+    def test_d08__unlink_enities(self):
+
+        with p.uri_context(uri=TEST_BASE_URI, prefix="ut"):
+
+            itm1 = p.instance_of(p.I1["general item"])
+
+            rep_str1 = repr(itm1)
+            self.assertTrue(rep_str1.endswith('["itm1"]>'))
+
+            p.core._unlink_entity(itm1.uri, remove_from_mod=True)
+
+            rep_str2 = repr(itm1)
+            self.assertTrue(rep_str2.endswith('["!!unlinked: itm1"]>'))
+
 
 class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
     def setUp(self):

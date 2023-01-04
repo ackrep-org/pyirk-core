@@ -1430,7 +1430,7 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
 
     def test_d07__zebra_puzzle_stage02(self):
         """
-        test subproperty rule
+        test subrelation rule
         """
 
         with p.uri_context(uri=TEST_BASE_URI):
@@ -1444,9 +1444,9 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
 
 
             I701 = p.create_item(
-                R1__has_label="rule: add argument tuples for matched properties",
+                R1__has_label="rule: imply parent relation of a subrelation ",
                 R2__has_description=(
-                    "..."
+                    "items which are related by a subrelation should also be related by the parent relation"
                 ),
                 R4__is_instance_of=p.I41["semantic rule"],
             )
@@ -1461,11 +1461,12 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
             with I701.scope("assertions") as cm:
                 cm.new_consequent_func(p.copy_statements, cm.rel1, cm.rel2)
 
-            rule_res = p.ruleengine.apply_semantic_rule(I701)
-            # self.assertEqual(len(rule_res.new_statements), 1)
+            self.assertEqual(itm1.R301__parent_relation, [])
+            res = p.ruleengine.apply_semantic_rule(I701)
 
-            # this is not yet the desired result
-            # IPS()
+            self.assertEqual(len(res.new_statements), 1)
+            self.assertEqual(itm1.R301__parent_relation, [itm2])
+
 
 class Test_Z_Core(HouskeeperMixin, unittest.TestCase):
     """

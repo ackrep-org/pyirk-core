@@ -1427,6 +1427,44 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
             self.assertEqual(len(new_stms), 1)
 
 
+    def test_d07__zebra_puzzle_stage02(self):
+        """
+        test subproperty rule
+        """
+
+        with p.uri_context(uri=TEST_BASE_URI):
+            R301 = p.create_relation(R1="parent relation")
+            R302 = p.create_relation(R1="subrelation", R17__is_subproperty_of=R301)
+
+            itm1 = p.instance_of(p.I1["general item"])
+            itm2 = p.instance_of(p.I1["general item"])
+
+            itm1.set_relation(R302["subrelation"], itm2)
+
+
+            I701 = p.create_item(
+                R1__has_label="rule: add argument tuples for matched properties",
+                R2__has_description=(
+                    "..."
+                ),
+                R4__is_instance_of=p.I41["semantic rule"],
+            )
+
+            with I701.scope("context") as cm:
+                cm.new_var(rel1=p.instance_of(p.I40["general relation"]))
+                cm.new_var(rel2=p.instance_of(p.I40["general relation"]))
+
+            with I701.scope("premises") as cm:
+                cm.new_rel(cm.rel1, p.R17["is subproperty of"], cm.rel2)
+
+            with I701.scope("assertions") as cm:
+                cm.new_consequent_func(p.copy_statements, cm.rel1, cm.rel2)
+
+            new_stms = p.ruleengine.apply_semantic_rule(I701)
+
+            # this is not yet the dedired result
+            # IPS()
+
 class Test_Z_Core(HouskeeperMixin, unittest.TestCase):
     """
     Collection of test that should be executed last (because they seem to influence othter tests).

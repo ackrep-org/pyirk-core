@@ -748,50 +748,57 @@ class DataStore:
         # TODO: model this as defaultdict?
         return self.statements[entity_uri].get(rel_uri, list())
 
-    def set_statement(self, re_object: "Statement") -> None:
+    def set_statement(self, stm: "Statement") -> None:
         """
         Insert a Statement into the relevant data structures of the DataStorage (self)
 
         This method does not handle the dual realtion. It must be created and stored separately.
 
-        :param re_object:   Statement instance
+        :param stm:   Statement instance
         :return:
         """
 
-        subj_uri = re_object.relation_tuple[0].uri
-        rel_uri = re_object.relation_tuple[1].uri
+        subj_uri = stm.relation_tuple[0].uri
+        rel_uri = stm.relation_tuple[1].uri
         aux.ensure_valid_uri(subj_uri)
         aux.ensure_valid_uri(rel_uri)
 
-        self.relation_statements[rel_uri].append(re_object)
-        self.statement_uri_map[re_object.uri] = re_object
+        self.relation_statements[rel_uri].append(stm)
+        self.statement_uri_map[stm.uri] = stm
 
         relation = self.relations[rel_uri]
 
-        # inner_obj will be either a list of statements or None
+        # stm_list will be either a list of statements or None
         # for some R22-related reason (see below) we cannot use a default dict here,
         # thus we need to do the case distinction manually
-        inner_obj = self.statements[subj_uri].get(rel_uri, None)
+        stm_list = self.statements[subj_uri].get(rel_uri, None)
 
-        if inner_obj is None or len(inner_obj) == 0:
-            self.statements[subj_uri][rel_uri] = [re_object]
+        if stm_list is None or len(stm_list) == 0:
+            self.statements[subj_uri][rel_uri] = [stm]
 
-        elif isinstance(inner_obj, list):
+        elif isinstance(stm_list, list):
             # R22__is_functional, this means there can only be one value for this relation and this item
             if relation.R22:
                 msg = (
-                    f"for entity/relation-edge {subj_uri} there already exists a Statement for "
-                    f"functional relation with key {rel_uri}. Another one is not allowed."
+                    f"for subject {subj_uri} there already exists a statement for relation {stm.predicate}. "
+                    f"This relation is functional (R22), thus another statement is not allowed."
                 )
-                raise ValueError(msg)
+                raise aux.FunctionalRelationError(msg)
             elif relation.R32:
-                # TODO: handle multiple laguages here !!qa
-                pass
-            inner_obj.append(re_object)
+                lang_list = [get_language_of_str_literal(s.object) for s in stm_list]
+                new_lang = get_language_of_str_literal(stm.object)
+                if new_lang in lang_list:
+                    msg = (
+                        f"for subject {subj_uri} there already exists statements for relation {stm.predicate} with "
+                        f"the object languages {lang_list}. This relation is functional for each language (R32). "
+                        f"Thus another statemen with language `{new_lang}` is not allowed."
+                    )
+                    raise aux.FunctionalRelationError(msg)
+            stm_list.append(stm)
 
         else:
             msg = (
-                f"unexpected type ({type(inner_obj)}) of dict content for entity {subj_uri} and "
+                f"unexpected type ({type(stm_list)}) of dict content for entity {subj_uri} and "
                 f"relation {rel_uri}. Expected list or None"
             )
             raise TypeError(msg)
@@ -1483,7 +1490,7 @@ class Statement:
             # save the qualifier statement (and its inverse) in the appropriate data structures
 
             # this is the Statement from the original Statement instance to the object (thus role=SUBJECT)
-            ds.set_statement(re_object=qf_stm)
+            ds.set_statement(stm=qf_stm)
 
             # TODO: Why is this neccessary?
             # also create the dual statement
@@ -2055,6 +2062,13 @@ def start_mod(uri):
 def end_mod():
     _uri_stack.pop()
     assert len(_uri_stack) == 0
+
+
+def get_language_of_str_literal(obj: Union[str, Literal]):
+    if isinstance(obj, Literal):
+        return obj.language
+
+    return None
 
 
 class LangaguageCode:

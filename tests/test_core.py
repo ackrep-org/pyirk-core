@@ -479,6 +479,17 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
 
         p.settings.DEFAULT_DATA_LANGUAGE = "en"
 
+        # test for correct error message
+        with p.uri_context(uri=TEST_BASE_URI, prefix="ut"):
+
+            itm1 = p.instance_of(p.I1["general item"])
+
+            # this should cause no error (because of differnt language)
+            itm1.set_relation(p.R1["has label"], "neues Label"@p.de)
+
+            with self.assertRaises(p.aux.FunctionalRelationError):
+                itm1.set_relation(p.R1["has label"], "new label")
+
     def test_c03__nontrivial_metaclasses(self):
         with p.uri_context(uri=TEST_BASE_URI):
             i1 = p.instance_of(p.I34["complex number"])
@@ -1439,7 +1450,7 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
                 cm.uses_external_entities(I702)
 
             with I702.scope("premises") as cm:
-                cm.new_rel(cm.rel1, p.R1["has label"], "another relation")
+                cm.new_rel(cm.rel1, p.R1["has label"], "another relation", overwrite=True)
 
             with I702.scope("assertions") as cm:
                 cm.new_rel(cm.rel1, p.R54["is matched by rule"], I702)

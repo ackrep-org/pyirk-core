@@ -1368,6 +1368,71 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         neighbour_after = zp.person1.zb__R2353__lives_immediatly_right_of
         self.assertEqual(neighbour_after, zp.person3)
 
+    def test_d06__zebra_puzzle_stage02(self):
+        """
+        test subproperty matching rule
+        """
+        with p.uri_context(uri=TEST_BASE_URI):
+
+            R301 = p.create_relation(R1="parent relation")
+            R302 = p.create_relation(R1="sub relation", R17__is_subproperty_of=R301)
+
+            I701 = p.create_item(
+                R1__has_label="rule: just match subproperties",
+                R2__has_description=(
+                    "if two items are related by a subproperty, then they are also related by the parent property"
+                ),
+                R4__is_instance_of=p.I41["semantic rule"],
+            )
+
+            with I701.scope("context") as cm:
+                cm.new_rel_var("rel1")  # -> p.instance_of(p.I40["general relation"]))
+                cm.new_rel_var("rel2")  # -> p.instance_of(p.I40["general relation"]))
+                cm.uses_external_entities(I701)
+
+                # do not ignore the I40-items: unlink the "ignore-qualifier"
+                cm.rel1.get_relations("R4")[0].qualifiers[0].unlink()
+                cm.rel2.get_relations("R4")[0].qualifiers[0].unlink()
+
+            with I701.scope("premises") as cm:
+                cm.new_rel(cm.rel1, p.R17["is subproperty of"], cm.rel2)
+
+            with I701.scope("assertions") as cm:
+                cm.new_rel(cm.rel1, p.R54["is matched by rule"], I701)
+
+            new_stms = p.ruleengine.apply_semantic_rule(I701)
+
+            self.assertEqual(len(new_stms), 1)
+
+            # new rule
+
+            R303 = p.create_relation(R1="another relation")
+
+            I702 = p.create_item(
+                R1__has_label="rule: just match subproperties (2)",
+                R2__has_description=(
+                    "if two items are related by a subproperty, then they are also related by the parent property"
+                ),
+                R4__is_instance_of=p.I41["semantic rule"],
+            )
+
+            with I702.scope("context") as cm:
+                cm.new_rel_var("rel1")  # -> p.instance_of(p.I40["general relation"]))
+                cm.uses_external_entities(I702)
+
+                # do not ignore the I40-items: unlink the "ignore-qualifier"
+                cm.rel1.get_relations("R4")[0].qualifiers[0].unlink()
+
+            with I702.scope("premises") as cm:
+                cm.new_rel(cm.rel1, p.R1["has label"], "another relation")
+
+            with I702.scope("assertions") as cm:
+                cm.new_rel(cm.rel1, p.R54["is matched by rule"], I702)
+
+            new_stms = p.ruleengine.apply_semantic_rule(I702)
+
+            self.assertEqual(len(new_stms), 1)
+
 
 class Test_Z_Core(HouskeeperMixin, unittest.TestCase):
     """

@@ -515,17 +515,18 @@ class RuleApplicator:
 
     def create_simple_graph(self) -> nx.DiGraph:
         """
-        Create graph without regarding qualifiers. Nodes: uris
+        Create graph without regarding qualifiers. Nodes: uris (of items and relations)
 
         :return:
         """
         G = nx.DiGraph()
 
-        for item_uri, item in core.ds.items.items():
+        for uri, entity in list(core.ds.items.items()) + list(core.ds.relations.items()):
 
             # prevent items created inside scopes
-            if is_node_for_simple_graph(item):
-                G.add_node(item_uri, itm=item, is_literal=False)
+            if is_node_for_simple_graph(entity):
+                # TODO: rename kwarg itm to ent
+                G.add_node(uri, itm=entity, is_literal=False)
 
         all_rels = self.get_all_node_relations()
         for uri_tup, rel_cont in all_rels.items():
@@ -552,8 +553,8 @@ class RuleApplicator:
         # {'erk:/builtins#R1': {'erk:/builtins#R1': [RE(...), ...], ...}, ..., 'erk:/builtins#I1': {...}}
         for subj_uri, stm_dict in core.ds.statements.items():
             entity = core.ds.get_entity_by_uri(subj_uri, strict=False)
-            if not isinstance(entity, core.Item):
-                # this omits all relations
+            if not isinstance(entity, core.Entity):
+                # this omits all Qualifiers
                 continue
 
             for rel_uri, stm_list in stm_dict.items():
@@ -566,10 +567,7 @@ class RuleApplicator:
                     if stm.corresponding_entity is not None:
                         # case 1: object is not a literal. must be an item (otherwise ignore)
                         assert stm.corresponding_literal is None
-                        if not isinstance(stm.corresponding_entity, core.Item):
-                            # some relation edges point to an relation-type
-                            # (maybe this will change in the future)
-                            continue
+
                         c = Container(rel_uri=rel_uri, rel_props=rel_props)
                         res[(subj_uri, stm.corresponding_entity.uri)] = c
                         # TODO: support multiple relations in the graph (MultiDiGraph)
@@ -625,15 +623,15 @@ def edge_matcher(e1d: dict, e2d: dict) -> bool:
     return True
 
 
-def is_node_for_simple_graph(item: core.Item) -> bool:
+def is_node_for_simple_graph(entity: core.Entity) -> bool:
     """
     exclude nodes which are defined inside certain scopes
 
     :param item:
     :return:
     """
-    assert isinstance(item, core.Item)
-    r20_rels = item.get_relations("R20__has_defining_scope")
+    assert isinstance(entity, core.Entity)
+    r20_rels = entity.get_relations("R20__has_defining_scope")
 
     if not r20_rels:
         return True

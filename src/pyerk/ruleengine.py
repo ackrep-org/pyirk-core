@@ -156,7 +156,7 @@ class RuleApplicator:
 
         condition_functions, cond_func_arg_nodes = self.get_condition_funcs_and_args()
 
-        asserted_new_item_factories, ani_arg_nodes, ani_node_names = self.get_asserted_new_item_factories()
+        consequent_functions, cf_arg_nodes, anchor_node_names = self.prepare_consequent_functions()
         asserted_relation_templates = self.get_asserted_relation_templates()
 
         new_stm_list = []
@@ -185,17 +185,27 @@ class RuleApplicator:
                 continue
 
             call_args_list = []
-            for node_tuple in ani_arg_nodes:
+            for node_tuple in cf_arg_nodes:
                 call_args_list.append((res_dict[node] for node in node_tuple))
-            asserted_new_items = [
-                func(*call_args) for func, call_args in zip(asserted_new_item_factories, call_args_list)
+            cf_results = [
+                func(*call_args) for func, call_args in zip(consequent_functions, call_args_list)
             ]
+
+            cf_results: List[core.RuleResult]
+            asserted_new_items = []
+            for cfr in cf_results:
+                assert isinstance(cfr, core.RuleResult)
+                if ne := cfr.new_entities:
+                    assert len(ne) == 1
+                    asserted_new_items.append(ne[0])
+                else:
+                    asserted_new_items.append(None)
 
             # some of the functions might have returned None (called becaus of their side effects)
             # these pairs are sorted out below (via continue)
 
             # augment the dict with entries like {"fiat0": <Item Ia6733["some item"]>}
-            search_dict = {**res_dict, **dict(zip(ani_node_names, asserted_new_items))}
+            search_dict = {**res_dict, **dict(zip(anchor_node_names, asserted_new_items))}
 
             for n1, rel, n2 in asserted_relation_templates:
 
@@ -240,11 +250,14 @@ class RuleApplicator:
 
         return func_list, args_node_list
 
-    def get_asserted_new_item_factories(self) -> (List[callable], List[Tuple[int]], List[str]):
+    def prepare_consequent_functions(self) -> (List[callable], List[Tuple[int]], List[str]):
         """
-        Return a list of functions; each creates a new item as a consequence of a rule
+        Creates 3 lists:
+            - a list of the consequent functions (might create a new item, new statement or have other side effects)
+            - a list of argument nodes (which will serve as keys for the actual arguments)
+            - a list of the node names
         """
-        factory_list = []
+        func_list = []
         args_node_list = []
         node_names = []
 
@@ -257,7 +270,7 @@ class RuleApplicator:
             if not fiat_factory:
                 msg = f"The asserted new item {var} unexpectedly has no method `fiat_factory`."
                 raise core.aux.SemanticRuleError(msg)
-            factory_list.append(fiat_factory)
+            func_list.append(fiat_factory)
 
             # now pepare the arguments
             arg_nodes = []
@@ -266,7 +279,7 @@ class RuleApplicator:
                 arg_nodes.append(node)
             args_node_list.append(tuple(arg_nodes))
             node_names.append(self.asserted_nodes.a[var.uri])
-        return factory_list, args_node_list, node_names
+        return func_list, args_node_list, node_names
 
     def get_asserted_relation_templates(self) -> List[Tuple[int, core.Relation, int]]:
         """
@@ -550,7 +563,7 @@ class RuleApplicator:
         res = {}
 
         # core.ds.statements
-        # {'erk:/builtins#R1': {'erk:/builtins#R1': [RE(...), ...], ...}, ..., 'erk:/builtins#I1': {...}}
+        # {'erk:/builtins#R1': {'erk:/builtins#R1': [S(...), ...], ...}, ..., 'erk:/builtins#I1': {...}}
         for subj_uri, stm_dict in core.ds.statements.items():
             entity = core.ds.get_entity_by_uri(subj_uri, strict=False)
             if not isinstance(entity, core.Entity):
@@ -568,7 +581,7 @@ class RuleApplicator:
                         # case 1: object is not a literal. must be an item (otherwise ignore)
                         assert stm.corresponding_literal is None
 
-                        c = Container(rel_uri=rel_uri, rel_props=rel_props)
+                        c = Container(rel_uri=rel_uri, rel_props=rel_props, rel_entity=stm.predicate)
                         res[(subj_uri, stm.corresponding_entity.uri)] = c
                         # TODO: support multiple relations in the graph (MultiDiGraph)
                         break
@@ -576,7 +589,7 @@ class RuleApplicator:
                         # case 2: object is a literal
                         assert stm.corresponding_literal is not None
                         assert stm.corresponding_entity is None
-                        c = Container(rel_uri=rel_uri, rel_props=rel_props)
+                        c = Container(rel_uri=rel_uri, rel_props=rel_props, rel_entity=stm.predicate)
                         literal_uri = self._make_literal(stm.corresponding_literal)
 
                         res[(subj_uri, literal_uri)] = c

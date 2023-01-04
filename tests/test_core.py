@@ -1427,7 +1427,6 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
 
             self.assertEqual(len(res.new_statements), 1)
 
-
     def test_d07__zebra_puzzle_stage02(self):
         """
         test subrelation rule
@@ -1466,6 +1465,56 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
 
             self.assertEqual(len(res.new_statements), 1)
             self.assertEqual(itm1.R301__parent_relation, [itm2])
+
+    def test_d08__zebra_puzzle_stage02(self):
+        """
+        test add reverse of symmetrical relations
+        """
+
+        with p.uri_context(uri=TEST_BASE_URI):
+            R301 = p.create_relation(R1="relation1", R42__is_symmetrical=True)
+            R302 = p.create_relation(R1="relation2")
+
+            itm1 = p.instance_of(p.I1["general item"])
+            itm2 = p.instance_of(p.I1["general item"])
+            itm3 = p.instance_of(p.I1["general item"])
+
+            itm4 = p.instance_of(p.I1["general item"])
+            itm5 = p.instance_of(p.I1["general item"])
+
+            itm1.set_relation(R301["relation1"], itm2)  # this should entail the reversed statement
+            itm1.set_relation(R302["relation2"], itm3)  # this should entail nothing
+
+            # this should remain unchanged because, the symmetrically associated statement does already exist
+            itm4.set_relation(R301["relation1"], itm5)
+            itm5.set_relation(R301["relation1"], itm4)
+
+            I701 = p.create_item(
+                R1__has_label="rule: imply parent relation of a subrelation ",
+                R2__has_description=(
+                    "given statement (s, p, o) where p.R42__is_symmetrical==True implies statement (o, p, s)"
+                ),
+                R4__is_instance_of=p.I41["semantic rule"],
+            )
+
+            with I701.scope("context") as cm:
+                cm.new_var(rel1=p.instance_of(p.I40["general relation"]))
+
+            with I701.scope("premises") as cm:
+                cm.new_rel(cm.rel1, p.R42["is symmetrical"], True)
+
+            with I701.scope("assertions") as cm:
+                cm.new_consequent_func(p.reverse_statements, cm.rel1)
+
+            self.assertEqual(itm2.R301, [])
+            res = p.ruleengine.apply_semantic_rule(I701)
+
+            # at time of writing: one new statement is caused already by a symmetrical relation from builtin_entities
+            self.assertGreaterEqual(len(res.new_statements), 2)
+            self.assertEqual(itm1.R301, [itm2])
+            self.assertEqual(itm3.R302, [])
+            self.assertEqual(itm4.R301, [itm5])
+            self.assertEqual(itm5.R301, [itm4])
 
 
 class Test_Z_Core(HouskeeperMixin, unittest.TestCase):

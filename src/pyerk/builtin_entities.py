@@ -1814,6 +1814,27 @@ def copy_statements(self, rel1: Relation, rel2: Relation):
     return res
 
 
+def reverse_statements(self, rel: Relation):
+    """
+    For every statement like (i1, rel1, i2) create a new statement (i2, rel, i1) (if it does not yet exist).
+    """
+    res = RuleResult()
+    for stm in ds.relation_statements[rel.uri]:
+        stm: Statement
+        # TODO: handle qualifiers
+        assert isinstance(stm.object, Entity)
+        existing_reverse_statement_objs = stm.object.get_relations(rel.uri, return_obj=True)
+        if stm.subject in existing_reverse_statement_objs:
+            # the symmetrically associated statement does already exist -> do nothing
+            continue
+        new_stm = stm.object.set_relation(rel, stm.subject)
+        res.new_statements.append(new_stm)
+
+    # this function intentially does not return a new item; only called for its side-effects
+    return res
+
+
+
 # testing
 
 

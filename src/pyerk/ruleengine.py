@@ -396,7 +396,7 @@ class RuleApplicator:
         # relations)
         if itm.R4 == bi.I40["general relation"]:
             q = itm.get_relations("R4")[0].qualifiers
-            if q and q[0].predicate == bi.R59["ignore in rule prototype graph"] and q[0].object:
+            if q and q[0].predicate == bi.R59["has rule-prototype-graph-mode"] and q[0].object == 1:
                 return True
         # TODO: this is likely too simple (it makes reasoning over anchor-items hard, )cannot be used in the rule))
         if itm.R4 == bi.I43["anchor item"]:

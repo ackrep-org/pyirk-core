@@ -722,7 +722,7 @@ class _rule__CM(ScopingCM):
         """
 
         variable_object = instance_of(
-            I40["general relation"], r1='instance of I40["general relation"]', qualifiers=[qff_ignore_in_rule_ptg(True)]
+            I40["general relation"], r1='instance of I40["general relation"]', qualifiers=[qff_has_rule_ptg_mode(1)]
         )
 
         self._new_var(name, variable_object)
@@ -1695,15 +1695,17 @@ R58 = create_builtin_relation(
 
 R59 = create_builtin_relation(
     key_str="R59",
-    R1__has_label="ignore in rule prototype graph",
+    R1__has_label="has rule-prototype-graph-mode",
     R2__has_description=(
-        "specifies that the subject should be ignored when constructing the prototype graph of an I41__semantic_rule",
+        "specifies that the subject should be threated according to the mode (int number) when constructing the "
+        "prototype graph of an I41__semantic_rule; Modes: 0 -> normal; 1 -> ignore node, 2 -> relation statement",
     ),
     R8__has_domain_of_argument_1=I1["general item"],
-    R11__has_range_of_result=bool,
+    R11__has_range_of_result=int,
+    R18__has_usage_hint="used to adjust the meaning of a statement in the scopes of a I41__semantinc_rule"
 )
 
-qff_ignore_in_rule_ptg = QualifierFactory(R59["ignore in rule prototype graph"])
+qff_has_rule_ptg_mode = QualifierFactory(R59["has rule-prototype-graph-mode"])
 
 R60 = create_builtin_relation(
     key_str="R60",

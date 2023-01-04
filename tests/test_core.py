@@ -2,6 +2,7 @@ import unittest
 import sys
 import os
 from os.path import join as pjoin
+from collections import defaultdict
 
 import rdflib
 
@@ -46,6 +47,8 @@ TEST_DATA_PATH_MA = pjoin(TEST_DATA_REPO_PATH, "math1.py")
 TEST_DATA_PATH3 = pjoin(TEST_DATA_REPO_PATH, "agents1.py")
 TEST_DATA_PATH_ZEBRA01 = pjoin(TEST_DATA_DIR1, "zebra01.py")
 TEST_DATA_PATH_ZEBRA02 = pjoin(TEST_DATA_DIR1, "zebra02.py")
+TEST_DATA_PATH_ZEBRA_BASE_DATA = pjoin(TEST_DATA_DIR1, "zebra_base_data.py")
+TEST_DATA_PATH_ZEBRA_RULES = pjoin(TEST_DATA_DIR1, "zebra_puzzle_rules.py")
 TEST_MOD_NAME = "control_theory1"
 
 # useful to get the currently latest sha strings:
@@ -1515,6 +1518,36 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
             self.assertEqual(itm3.R302, [])
             self.assertEqual(itm4.R301, [itm5])
             self.assertEqual(itm5.R301, [itm4])
+
+    def test_d09__zebra_puzzle_stage02(self):
+        """
+        apply zebra puzzle rules to zebra puzzle data and assess correctness of the result
+        """
+
+        zb = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA_BASE_DATA, prefix="zb")
+        zr = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA_RULES, prefix="zr", reuse_loaded=True)
+
+        # before loading the hint, we can already infer some new statements
+        res = p.ruleengine.apply_semantic_rules(
+            zr.I702["rule: add reverse statement for symmetrical relations"],
+            mod_context_uri=zb.__URI__
+        )
+
+        self.assertEqual(len(res.rel_map), 1)
+        self.assertIn(p.R43["is opposite of"].uri, res.rel_map)
+
+        # load the hints and perform basic inferrence
+        zp = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA02, prefix="zp")
+        res = p.ruleengine.apply_semantic_rules(
+            zp.zr.I701["rule: imply parent relation of a subrelation"],
+            zp.zr.I702["rule: add reverse statement for symmetrical relations"],
+            mod_context_uri=zp.__URI__
+        )
+
+        # only inferrence until now: 5 R3606["lives next to"]-statements
+        self.assertEqual(len(res.new_statements), 5)
+        self.assertEqual(len(res.rel_map), 1)
+        self.assertIn(zp.zb.R3606["lives next to"].uri, res.rel_map)
 
 
 class Test_Z_Core(HouskeeperMixin, unittest.TestCase):

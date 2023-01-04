@@ -20,6 +20,47 @@ p.register_mod(__URI__, keymanager)
 p.start_mod(__URI__)
 
 
+I701 = p.create_item(
+    R1__has_label="rule: imply parent relation of a subrelation",
+    R2__has_description=(
+        "items which are related by a subrelation should also be related by the parent relation"
+    ),
+    R4__is_instance_of=p.I41["semantic rule"],
+)
+
+with I701.scope("context") as cm:
+    cm.new_var(rel1=p.instance_of(p.I40["general relation"]))
+    cm.new_var(rel2=p.instance_of(p.I40["general relation"]))
+
+with I701.scope("premises") as cm:
+    cm.new_rel(cm.rel1, p.R17["is subproperty of"], cm.rel2)
+
+with I701.scope("assertions") as cm:
+    cm.new_consequent_func(p.copy_statements, cm.rel1, cm.rel2)
+
+# ###############################################################################
+
+
+I702 = p.create_item(
+    R1__has_label="rule: add reverse statement for symmetrical relations",
+    R2__has_description=(
+        "given statement (s, p, o) where p.R42__is_symmetrical==True implies statement (o, p, s)"
+    ),
+    R4__is_instance_of=p.I41["semantic rule"],
+)
+
+with I702.scope("context") as cm:
+    cm.new_var(rel1=p.instance_of(p.I40["general relation"]))
+
+with I702.scope("premises") as cm:
+    cm.new_rel(cm.rel1, p.R42["is symmetrical"], True)
+
+with I702.scope("assertions") as cm:
+    cm.new_consequent_func(p.reverse_statements, cm.rel1)
+
+# ###############################################################################
+
+
 I710 = p.create_item(
     R1__has_label="rule: identify same items via zb__R2850__is_functional_activity",
     R2__has_description=(

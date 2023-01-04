@@ -2072,9 +2072,20 @@ class RuleResult:
         self.unlinked_entities = []
         self.partial_results = []
 
+        # dict like {rel_uri1: [stm1, stm2, ...]}
+        self.rel_map = defaultdict(list)
+
+    def add_statement(self, stm: Statement):
+        self.new_statements.append(stm)
+        self.rel_map[stm.predicate.uri].append(stm)
+
+    def add_statements(self, stms: List[Statement]):
+        for stm in stms:
+            self.add_statement(stm)
+
     def add_partial(self, part: "RuleResult"):
         assert isinstance(part, RuleResult)
-        self.new_statements.extend(part.new_statements)
+        self.add_statements(part.new_statements)
         self.new_entities.extend(part.new_entities)
         self.unlinked_entities.extend(part.unlinked_entities)
 

@@ -195,7 +195,7 @@ class RuleApplicator:
             asserted_new_items = []
             for cfr in cf_results:
                 assert isinstance(cfr, core.RuleResult)
-                result.new_statements.extend(cfr.new_statements)
+                result.add_statements(cfr.new_statements)
                 result.unlinked_entities.extend(cfr.unlinked_entities)
                 if ne := cfr.new_entities:
                     assert len(ne) == 1
@@ -224,7 +224,7 @@ class RuleApplicator:
 
                 # TODO: add qualifiers
                 new_stm = new_subj.set_relation(rel, new_obj)
-                result.new_statements.append(new_stm)
+                result.add_statement(new_stm)
 
         return result
 

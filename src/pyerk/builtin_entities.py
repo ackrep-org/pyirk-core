@@ -1827,6 +1827,20 @@ def reverse_statements(self, rel: Relation):
         if stm.subject in existing_reverse_statement_objs:
             # the symmetrically associated statement does already exist -> do nothing
             continue
+
+        # do not process statements which are made inside of a rule (recognizable via qualifier)
+        continue_flag = False
+        for qf in stm.qualifiers:
+            if qf.predicate == R20["has defining scope"]:
+                anchor_obj = qf.object.R21__is_scope_of
+                if anchor_obj.R4__is_instance_of == I41["semantic rule"]:
+                    continue_flag = True
+                    # end iterating over qualifiers
+                    break
+
+        if continue_flag:
+            continue
+
         new_stm = stm.object.set_relation(rel, stm.subject)
         res.new_statements.append(new_stm)
 

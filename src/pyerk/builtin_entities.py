@@ -14,6 +14,7 @@ from .core import (
     QualifierFactory,
     RawQualifier,
     ds,
+    RuleResult,
 )
 
 from .settings import BUILTINS_URI
@@ -1771,22 +1772,16 @@ def get_relation_properties(rel_entity: Entity) -> List[str]:
 
 
 # this function is intended to be attached to an item in the assertions-scope of a semantic rule
-# ("pseudo fiat function")
+# ("consequent function")
 def replacer_method(self, old_item, new_item):
 
-    old = old_item.R1
-    new = new_item.R1
-
     try:
-        core.replace_and_unlink_entity(old_item, new_item)
+        res = core.replace_and_unlink_entity(old_item, new_item)
     except core.aux.UnknownURIError:
         # if one of the two does not exist -> do nothing
-        pass
-    else:
-        pass
+        res = RuleResult()
 
-    # this function intentially does not return a new item; only called for its side-effects
-    return None
+    return res
 
 
 # this function is intended to be attached to an item in the premise-scope of a semantic rule as condition function
@@ -1800,6 +1795,23 @@ def label_compare_method(self, item1, item2):
         return False
 
     return item1.R1 < item2.R1
+
+
+# this function is intended to be attached to an item in the assertions-scope of a semantic rule
+# ("consequent function")
+def copy_statements(self, rel1: Relation, rel2: Relation):
+    """
+    For every statement like (i1, rel1, i2) create a new statement with rel2 as predicate.
+    """
+    res = RuleResult()
+    for stm in ds.relation_statements[rel1.uri]:
+        stm: Statement
+        # TODO: handle qualifiers
+        new_stm = stm.subject.set_relation(rel2, stm.object)
+        res.new_statements.append(new_stm)
+
+    # this function intentially does not return a new item; only called for its side-effects
+    return res
 
 
 # testing

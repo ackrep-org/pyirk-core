@@ -166,6 +166,7 @@ def tuple_difference_factory(self, tuple_item1, tuple_item2):
     """
     Create a new tuple item which contains the elements which are in tuple1 but not in tuple2
     """
+    res = p.RuleResult()
     assert tuple_item1.R4__is_instance_of == p.I33["tuple"]
     assert tuple_item2.R4__is_instance_of == p.I33["tuple"]
     elements1 = tuple_item1.get_relations("R39__has_element", return_obj=True)
@@ -173,7 +174,7 @@ def tuple_difference_factory(self, tuple_item1, tuple_item2):
 
     # TODO: this could be speed up by using dicts:
     new_elts = (e for e in elements1 if e not in elements2)
-    res = p.new_tuple(*new_elts)
+    res.new_entities.append(p.new_tuple(*new_elts))
 
     return res
 

@@ -1976,6 +1976,8 @@ def replace_and_unlink_entity(old_entity: Entity, new_entity: Entity):
     Then unlink `old_entity`.
     """
 
+    res = RuleResult()
+
     # ensure both entities exist (raise UnknownURIError otherwise):
     ds.get_entity_by_uri(old_entity.uri)
     ds.get_entity_by_uri(new_entity.uri)
@@ -1984,6 +1986,7 @@ def replace_and_unlink_entity(old_entity: Entity, new_entity: Entity):
     stm_dict2 = old_entity.get_relations()  # where it is subj
 
     _unlink_entity(old_entity.uri, remove_from_mod=True)
+    res.unlinked_entities.append(old_entity)
 
     for relation_uri, stm_list in list(stm_dict1.items()) + list(stm_dict2.items()):
         for stm in stm_list:
@@ -1997,6 +2000,8 @@ def replace_and_unlink_entity(old_entity: Entity, new_entity: Entity):
                 assert subject == old_entity
                 if not new_entity.get_relations(predicate.uri):
                     new_entity.set_relation(predicate, obj, qualifiers=qlf)
+
+    return res
 
 
 def register_mod(uri: str, keymanager: KeyManager, check_uri=True):
@@ -2059,6 +2064,13 @@ class LangaguageCode:
 en = LangaguageCode("en")
 de = LangaguageCode("de")
 
+
+class RuleResult:
+    def __init__(self):
+        self.new_statements = []
+        self.new_entities = []
+        self.unlinked_entities = []
+        self.had_sideeffects = None
 
 def script_main(fpath):
     IPS()

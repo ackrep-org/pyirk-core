@@ -58,7 +58,7 @@ TEST_ACKREP_DATA_FOR_UT_PATH = pjoin(ERK_ROOT_DIR, "..", "ackrep", "ackrep_data_
 
 os.environ["UNITTEST"] = "True"
 
-__URI__ = TEST_BASE_URI = "erk:/local/unittest/"
+__URI__ = TEST_BASE_URI = "erk:/local/unittest"
 
 
 # this serves to print the test-method-name before it is executed (useful for debugging, see setUP below)
@@ -1386,13 +1386,9 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
             )
 
             with I701.scope("context") as cm:
-                cm.new_rel_var("rel1")  # -> p.instance_of(p.I40["general relation"]))
-                cm.new_rel_var("rel2")  # -> p.instance_of(p.I40["general relation"]))
+                cm.new_var(rel1=p.instance_of(p.I40["general relation"]))
+                cm.new_var(rel2=p.instance_of(p.I40["general relation"]))
                 cm.uses_external_entities(I701)
-
-                # do not ignore the I40-items: unlink the "ignore-qualifier"
-                cm.rel1.get_relations("R4")[0].qualifiers[0].unlink()
-                cm.rel2.get_relations("R4")[0].qualifiers[0].unlink()
 
             with I701.scope("premises") as cm:
                 cm.new_rel(cm.rel1, p.R17["is subproperty of"], cm.rel2)
@@ -1417,11 +1413,8 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
             )
 
             with I702.scope("context") as cm:
-                cm.new_rel_var("rel1")  # -> p.instance_of(p.I40["general relation"]))
+                cm.new_var(rel1=p.instance_of(p.I40["general relation"]))
                 cm.uses_external_entities(I702)
-
-                # do not ignore the I40-items: unlink the "ignore-qualifier"
-                cm.rel1.get_relations("R4")[0].qualifiers[0].unlink()
 
             with I702.scope("premises") as cm:
                 cm.new_rel(cm.rel1, p.R1["has label"], "another relation")

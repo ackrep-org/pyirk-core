@@ -2070,7 +2070,15 @@ class RuleResult:
         self.new_statements = []
         self.new_entities = []
         self.unlinked_entities = []
-        self.had_sideeffects = None
+        self.partial_results = []
+
+    def add_partial(self, part: "RuleResult"):
+        assert isinstance(part, RuleResult)
+        self.new_statements.extend(part.new_statements)
+        self.new_entities.extend(part.new_entities)
+        self.unlinked_entities.extend(part.unlinked_entities)
+
+        self.partial_results.append(part)
 
 def script_main(fpath):
     IPS()

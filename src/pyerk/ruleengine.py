@@ -31,19 +31,19 @@ def apply_all_semantic_rules(mod_context_uri=None) -> List[core.Statement]:
     :returns:  list of newly created statements
     """
     rule_instances = get_all_rules()
-    new_stm_list = []
+    total_res = core.RuleResult()
     for rule in rule_instances:
         res = apply_semantic_rule(rule, mod_context_uri)
-        new_stm_list.extend(res)
+        total_res.add_partial(res)
 
-    return new_stm_list
+    return total_res
 
 def apply_semantic_rules(*rules: List, mod_context_uri: str = None) -> List[core.Statement]:
 
-    total_res = []
+    total_res = core.RuleResult()
     for rule in rules:
         res = apply_semantic_rule(rule, mod_context_uri)
-        total_res.extend(res)
+        total_res.add_partial(res)
 
     return total_res
 
@@ -125,7 +125,7 @@ class RuleApplicator:
 
         self.create_prototypes_for_fiat_entities()
 
-    def apply(self) -> List[core.Statement]:
+    def apply(self) -> core.RuleResult:
         """
         Application of a semantic rule either in a specified module context or in the currently active module.
 
@@ -141,7 +141,7 @@ class RuleApplicator:
                 res = self._apply()
         return res
 
-    def _apply(self) -> List[core.Statement]:
+    def _apply(self) -> core.RuleResult:
         """
         Perform the actual application of the rule:
             - perform subgraph matching
@@ -159,7 +159,7 @@ class RuleApplicator:
         consequent_functions, cf_arg_nodes, anchor_node_names = self.prepare_consequent_functions()
         asserted_relation_templates = self.get_asserted_relation_templates()
 
-        new_stm_list = []
+        result = core.RuleResult()
 
         for res_dict in result_map:
             # res_dict represents one situation where the assertions should be applied
@@ -222,9 +222,9 @@ class RuleApplicator:
 
                 # TODO: add qualifiers
                 new_stm = new_subj.set_relation(rel, new_obj)
-                new_stm_list.append(new_stm)
+                result.new_statements.append(new_stm)
 
-        return new_stm_list
+        return result
 
     def get_condition_funcs_and_args(self) -> (List[callable], List[Tuple[int]]):
         """

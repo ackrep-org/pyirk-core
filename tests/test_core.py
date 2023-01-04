@@ -1037,7 +1037,7 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
 
         # ensure that after rule application there is at least one new relation
         self.assertEqual(len(mod1.I9642["local exponential stability"].get_relations("R17__is_subproperty_of")), 2)
-        for r in res:
+        for r in res.new_statements:
             print(r)
 
     def test_c06__ruleengine05(self):
@@ -1070,7 +1070,8 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
 
         matching_rules = zb.unknown_beverage1.get_relations("R54__is_matched_by_rule", return_obj=True)
         self.assertEqual(matching_rules, [])
-        c.new_stms = p.ruleengine.apply_semantic_rule(c.rule, mod_context_uri=zb.__URI__)
+        res = p.ruleengine.apply_semantic_rule(c.rule, mod_context_uri=zb.__URI__)
+        c.new_stms = res.new_statements
 
         relevant_statements = [stm for stm in c.new_stms if stm.subject == zb.unknown_beverage1]
 
@@ -1097,8 +1098,8 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         self.assertEqual(c.zb.unknown_beverage2.R56__is_one_of[0].R39__has_element[0], c.zb.I6756["tea"])
 
         # apply next rule: establishing R47__is_same_as relationship
-        new_stms = p.ruleengine.apply_semantic_rule(c.zb.I904, mod_context_uri=c.zb.__URI__)
-        self.assertGreaterEqual(len(new_stms), 2)
+        res = p.ruleengine.apply_semantic_rule(c.zb.I904, mod_context_uri=c.zb.__URI__)
+        self.assertGreaterEqual(len(res.new_statements), 2)
 
         self.assertEqual(c.zb.unknown_beverage1.R47__is_same_as[0], c.zb.I7509["water"])
         self.assertEqual(c.zb.unknown_beverage2.R47__is_same_as[0], c.zb.I6756["tea"])
@@ -1136,13 +1137,13 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         neighbour = zp.person1.zb__R2353__lives_immediatly_right_of
         self.assertIsNone(neighbour)
 
-        new_stms = p.ruleengine.apply_semantic_rule(zp.zr.I710, mod_context_uri=zp.__URI__)
+        res = p.ruleengine.apply_semantic_rule(zp.zr.I710, mod_context_uri=zp.__URI__)
 
         # assert that both statemens have been created:
         # S(person1,  p.R47["is same as"], person2)
         # S(person2,  p.R47["is same as"], person1)
         counter = 0
-        for stm in new_stms:
+        for stm in res.new_statements:
             stm: p.Statement
             if stm.subject == zp.person1:
                 self.assertEqual(stm.predicate, p.R47["is same as"])
@@ -1194,9 +1195,9 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
             self.assertEqual(itm2.R54__is_matched_by_rule, [])
             self.assertEqual(itm3.R54__is_matched_by_rule, [])
 
-            new_stms = p.ruleengine.apply_semantic_rule(I702)
+            res = p.ruleengine.apply_semantic_rule(I702)
 
-        self.assertEqual(len(new_stms), 3)
+        self.assertEqual(len(res.new_statements), 3)
         self.assertEqual(itm1.R54__is_matched_by_rule, [I702])
         self.assertEqual(itm2.R54__is_matched_by_rule, [I702])
         self.assertEqual(itm3.R54__is_matched_by_rule, [I702])
@@ -1235,9 +1236,9 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
             with I703.scope("assertions") as cm:
                 cm.new_rel(cm.x, p.R54["is matched by rule"], I703)
 
-            new_stms = p.ruleengine.apply_semantic_rule(I703)
+            res = p.ruleengine.apply_semantic_rule(I703)
 
-        self.assertEqual(len(new_stms), 1)
+        self.assertEqual(len(res.new_statements), 1)
 
         # next rule:
 
@@ -1269,9 +1270,9 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
                 cm.new_rel(cm.x, p.R54["is matched by rule"], I704)
                 cm.new_consequent_func(p.replacer_method, cm.y, cm.x)
 
-            new_stms = p.ruleengine.apply_semantic_rule(I704)
+            res = p.ruleengine.apply_semantic_rule(I704)
 
-        self.assertEqual(len(new_stms), 1)
+        self.assertEqual(len(res.new_statements), 1)
 
         # confirm the replacement
         self.assertEqual(itm1.R31__is_in_mathematical_relation_with, [itm2])
@@ -1396,9 +1397,9 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
             with I701.scope("assertions") as cm:
                 cm.new_rel(cm.rel1, p.R54["is matched by rule"], I701)
 
-            new_stms = p.ruleengine.apply_semantic_rule(I701)
+            res = p.ruleengine.apply_semantic_rule(I701)
 
-            self.assertEqual(len(new_stms), 1)
+            self.assertEqual(len(res.new_statements), 1)
 
             # new rule
 
@@ -1422,9 +1423,9 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
             with I702.scope("assertions") as cm:
                 cm.new_rel(cm.rel1, p.R54["is matched by rule"], I702)
 
-            new_stms = p.ruleengine.apply_semantic_rule(I702)
+            res = p.ruleengine.apply_semantic_rule(I702)
 
-            self.assertEqual(len(new_stms), 1)
+            self.assertEqual(len(res.new_statements), 1)
 
 
     def test_d07__zebra_puzzle_stage02(self):
@@ -1460,9 +1461,10 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
             with I701.scope("assertions") as cm:
                 cm.new_consequent_func(p.copy_statements, cm.rel1, cm.rel2)
 
-            new_stms = p.ruleengine.apply_semantic_rule(I701)
+            rule_res = p.ruleengine.apply_semantic_rule(I701)
+            # self.assertEqual(len(rule_res.new_statements), 1)
 
-            # this is not yet the dedired result
+            # this is not yet the desired result
             # IPS()
 
 class Test_Z_Core(HouskeeperMixin, unittest.TestCase):

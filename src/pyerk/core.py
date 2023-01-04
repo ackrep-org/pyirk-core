@@ -2008,11 +2008,15 @@ def replace_and_unlink_entity(old_entity: Entity, new_entity: Entity):
             subject: Item
             qlf = stm.qualifiers
             if obj == old_entity:
-                subject.set_relation(predicate, new_entity, qualifiers=qlf)
+                # case1: old_entity was object, subject stays the same
+                new_stm = subject.set_relation(predicate, new_entity, qualifiers=qlf)
             else:
+                # case2: old_entity was subject, subject must be new_entity
                 assert subject == old_entity
                 if not new_entity.get_relations(predicate.uri):
-                    new_entity.set_relation(predicate, obj, qualifiers=qlf)
+                    # prevent the creation of a duplicated statement
+                    new_stm = new_entity.set_relation(predicate, obj, qualifiers=qlf)
+                    res.add_statement(new_stm)
 
     return res
 
@@ -2089,6 +2093,7 @@ class RuleResult:
         self.rel_map = defaultdict(list)
 
     def add_statement(self, stm: Statement):
+        assert stm not in self.new_statements
         self.new_statements.append(stm)
         self.rel_map[stm.predicate.uri].append(stm)
 

@@ -2,7 +2,7 @@ import unittest
 import sys
 import os
 from os.path import join as pjoin
-from collections import defaultdict
+import random
 
 import rdflib
 
@@ -25,6 +25,10 @@ python3 -m unititest
 
 
 """
+
+# ensure reproducible results
+# (the result order of graph algorithms imported in ruleengine seems to depend on random numbers)
+random.seed(1714)
 
 activate_ips_on_exception()
 
@@ -1562,6 +1566,16 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         self.assertEqual(len(res.new_statements), 5)
         self.assertEqual(len(res.rel_map), 1)
         self.assertIn(zp.zb.R3606["lives next to"].uri, res.rel_map)
+
+        res = p.ruleengine.apply_semantic_rules(
+            zp.zr.I710["rule: identify same items via zb__R2850__is_functional_activity"],
+            zp.zr.I720["rule: replace (some) same_as-items"],
+            mod_context_uri=zp.__URI__
+        )
+
+        IPS()
+
+
 
 
 class Test_Z_Core(HouskeeperMixin, unittest.TestCase):

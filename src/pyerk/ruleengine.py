@@ -539,7 +539,8 @@ class RuleApplicator:
                 rel_statements = None
             self.P.add_node(i, itm=c, entity=var, is_literal=False, rel_statements=rel_statements)
             self.local_nodes.add_pair(var.uri, i)
-            self.local_node_names.add_pair(var.uri, var.R23__has_name_in_scope)
+            if var not in self.external_entities:
+                self.local_node_names.add_pair(var.uri, var.R23__has_name_in_scope)
             i += 1
 
     def _create_psg_edges(self) -> None:

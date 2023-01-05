@@ -446,16 +446,21 @@ class RuleApplicator:
         e1 = n1d["itm"]
         e2 = n2d["entity"]
 
+        rel_statements = n2d["rel_statements"]
+
         # todo: this could be faster (list lookup is slow for long lists, however that list should be short)
         if e2 in self.external_entities:
+            # case 1: compare exact entities (nodes in graph)
             return e2 == e1
-        # I40["general relation"]; use the short syntax here for performance reasons
-        elif e2.R4 == bi.I40:
+        elif rel_statements is not None:
+            #case 2: the node represents also a relation with some specific properties (specified via rel_statements)
+            # I40["general relation"]; use the short syntax here for performance reasons
+            assert e2.R4 == bi.I40
             if not isinstance(e1, core.Relation):
                 return False
-            return compare_relation_statements(e1, n2d["rel_statements"])
+            return compare_relation_statements(e1, rel_statements)
         else:
-            # for non-external entities, all nodes should match
+            # for all other nodes, all nodes should match
             # -> let the edges decide
 
             return True
@@ -523,7 +528,6 @@ class RuleApplicator:
 
             if self._ignore_item(var):
                 continue
-
 
             c = Container()
             for relname in ["R3", "R4"]:

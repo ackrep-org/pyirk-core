@@ -1639,8 +1639,6 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
             mod_context_uri=zp.__URI__
         )
 
-        IPS()
-
 
 class Test_Z_Core(HouskeeperMixin, unittest.TestCase):
     """

@@ -723,7 +723,7 @@ class _rule__CM(ScopingCM):
         """
 
         variable_object = instance_of(
-            I40["general relation"], r1='instance of I40["general relation"]', qualifiers=[qff_has_rule_ptg_mode(1)]
+            I40["general relation"], r1=f"{name} (I40__general_relation)", qualifiers=[qff_has_rule_ptg_mode(1)]
         )
 
         self._new_var(name, variable_object)
@@ -1725,7 +1725,11 @@ R60 = create_builtin_relation(
 R62 = create_builtin_relation(
     key_str="R62",
     R1__has_label="is relation property",
-    R2__has_description="specifies that a relation is a rule property and thus threated specially in by edge matching",
+    R2__has_description=(
+        "specifies that a relation is a 'relation property' (like R22_is_functional) and thus threated specially "
+        "by edge matching."
+    ),
+
     R8__has_domain_of_argument_1=I40["general relation"],
     R11__has_range_of_result=bool,
     R22__is_functional=True,
@@ -1767,7 +1771,6 @@ def get_relation_properties(rel_entity: Entity) -> List[str]:
         if res == [True]:
             rel_props.append(rp_uri)
     rel_props.sort()
-
     return rel_props
 
 
@@ -1846,6 +1849,13 @@ def reverse_statements(self, rel: Relation):
 
     # this function intentially does not return a new item; only called for its side-effects
     return res
+
+
+def add_arg_tuples_for_statement(self, subj, pred, obj):
+    """
+    ...
+    """
+    IPS()
 
 
 

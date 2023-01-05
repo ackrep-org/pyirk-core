@@ -7,8 +7,9 @@ This module contains some rules for determining the solution of the zebra puzzle
 See https://en.wikipedia.org/wiki/Zebra_Puzzle
 """
 
-
 import pyerk as p
+
+from ipydex import IPS  # for debugging
 
 zb = p.erkloader.load_mod_from_path("./zebra_base_data.py", prefix="zb", reuse_loaded=True)
 
@@ -111,6 +112,83 @@ with I720.scope("premises") as cm:
 
 with I720.scope("assertions") as cm:
     cm.new_consequent_func(p.replacer_method, cm.itm2, cm.itm1)
+
+# ###############################################################################
+
+
+I730 = p.create_item(
+    R1__has_label="rule: deduce negative facts for neighbours",
+    R2__has_description=("deduce some negative facts e.g. which pet a person does not own"),
+    R4__is_instance_of=p.I41["semantic rule"],
+)
+
+with I730.scope("context") as cm:
+    cm.new_var(h1=p.instance_of(zb.I7435["human"]))
+    cm.new_var(h2=p.instance_of(zb.I7435["human"]))
+
+    cm.new_var(itm1=p.instance_of(p.I1["general item"]))
+    cm.new_rel_var("rel1")  # -> p.instance_of(p.I40["general relation"]))
+    # cm.new_rel_var("rel2")  # -> p.instance_of(p.I40["general relation"]))
+
+    cm.uses_external_entities(zb.I7435["human"])
+    # cm.uses_external_entities(I730)
+
+with I730.scope("premises") as cm:
+
+    # redefine R4 to make it part of the premise
+    cm.new_rel(cm.h1, p.R4["is instance of"], zb.I7435["human"], overwrite=True)
+    cm.new_rel(cm.h2, p.R4["is instance of"], zb.I7435["human"], overwrite=True)
+
+    cm.new_rel(cm.rel1, zb.R2850["is functional activity"], True)
+    cm.new_rel(cm.h1, cm.rel1, cm.itm1)
+    cm.new_rel(cm.h1, zb.R4872["lives not next to"], cm.h2)
+
+
+# define a consequent function for this rule
+def set_opposite_for(self, subj_entity, primal_rel, obj_entity):
+
+    res = p.RuleResult()
+
+    IPS()
+    opp_rel = primal_rel.R43__is_opposite_of
+
+    if not opp_rel:
+        return res
+
+    assert isinstance(opp_rel, p.Relation)
+
+    new_stm = subj_entity.set_relation(opp_rel, obj_entity)
+    res.new_statements.append(new_stm)
+
+    return res
+
+with I730.scope("assertions") as cm:
+    cm.new_consequent_func(set_opposite_for, cm.h2, cm.rel1, cm.itm1)
+
+# ###############################################################################
+
+# does not yet work
+I703 = p.create_item(
+    R1__has_label="rule: deduce negative facts for neighbours",
+    R2__has_description=("deduce some negative facts e.g. which pet a person does not own"),
+    R4__is_instance_of=p.I41["semantic rule"],
+)
+
+with I703.scope("context") as cm:
+    cm.new_var(itm1=p.instance_of(p.I1["general item"]))
+    cm.new_var(itm2=p.instance_of(p.I1["general item"]))
+
+    cm.new_rel_var("rel1")  # -> p.instance_of(p.I40["general relation"]))
+    # cm.new_rel_var("rel2")  # -> p.instance_of(p.I40["general relation"]))
+
+with I703.scope("premises") as cm:
+
+    cm.new_rel(cm.rel1, zb.R2850["is functional activity"], True)
+    cm.new_rel(cm.itm1, cm.rel1, cm.itm1)
+
+
+with I703.scope("assertions") as cm:
+    pass
 
 # ###############################################################################
 p.end_mod()

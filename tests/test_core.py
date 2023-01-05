@@ -972,7 +972,7 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
                 R1__has_label="subproperty rule 1",
                 R2__has_description=(
                     # "specifies the 'transitivity' of I11_mathematical_property-instances via R17_issubproperty_of"
-                    "specifies the 'transitivity' of R17_issubproperty_of"
+                    "specifies the 'transitivity' of R17_is_subproperty_of"
                 ),
                 R4__is_instance_of=p.I41["semantic rule"],
             )
@@ -1042,9 +1042,8 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
 
         self.assertEqual(len(ra.get_asserted_relation_templates()), 1)
 
-        P = ra.create_prototype_subgraph_from_rule()
-        self.assertEqual(P.number_of_nodes(), 3)
-        self.assertEqual(P.number_of_edges(), 2)
+        self.assertEqual(ra.P.number_of_nodes(), 3)
+        self.assertEqual(ra.P.number_of_edges(), 2)
 
         res_graph = ra.match_subgraph_P()
 

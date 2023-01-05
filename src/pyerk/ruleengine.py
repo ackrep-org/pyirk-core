@@ -8,6 +8,7 @@ This module contains code to enable semantic inferences based on special items (
 
 from typing import List, Tuple, Optional
 from collections import defaultdict
+from enum import Enum
 
 import networkx as nx
 from networkx.algorithms import isomorphism as nxiso
@@ -82,6 +83,10 @@ def filter_relevant_stms(re_list: List[core.Statement]) -> List[core.Statement]:
             res.append(stm.subject)
     return res
 
+class PremiseType(Enum):
+    GRAPH = 0
+    SPARQL = 1
+
 
 class RuleApplicator:
     """
@@ -108,8 +113,11 @@ class RuleApplicator:
         # TODO: rename "context" -> "setting"
         self.setting_stms = filter_relevant_stms(rule.scp__context.get_inv_relations("R20"))
         self.premises_stms = filter_relevant_stms(rule.scp__premises.get_inv_relations("R20"))
+        self.sparql_src = rule.scp__premises.get_relations("R63__has_SPARQL_source", return_obj=True)
         self.assertions_stms = filter_relevant_stms(rule.scp__assertions.get_inv_relations("R20"))
         self.literals = {}
+
+        self.premise_type = self.get_premise_type()
 
         # store I40["general relation"] instances which might serve as subject
         self.subjectivized_predicates = core.aux.OneToOneMapping()
@@ -129,7 +137,8 @@ class RuleApplicator:
 
         self.G: nx.DiGraph = self.create_simple_graph()
 
-        self.P: nx.DiGraph = self.create_prototype_subgraph_from_rule()
+        self.P: nx.DiGraph = None
+        self.create_prototype_subgraph_from_rule()
 
         self.create_prototypes_for_fiat_entities()
 
@@ -151,17 +160,25 @@ class RuleApplicator:
 
     def _apply(self) -> core.RuleResult:
         """
-        Perform the actual application of the rule:
-            - perform subgraph matching
+        Perform the actual application of the rule (either via aubgraph monomorphism or via SPARQL query)
+        """
+
+        if self.premise_type == PremiseType.GRAPH:
+            result_maps = self.match_subgraph_P()
+            # TODO: for debugging this the following things might be helpful:
+            # - a mapping like self.local_nodes.a but with labels instead of uris
+            # - a visualization of the prototype graph self.P
+        else:
+            raise NotImplementedError
+
+        return self._process_result_map(result_maps)
+
+
+    def _process_result_map(self, result_maps) -> core.RuleResult:
+        """
             - process the found subgraphs with the assertion
         """
 
-        result_map = self.match_subgraph_P()
-        IPS()
-
-        # TODO: for debugging this the following things might be helpful:
-        # - a mapping like self.local_nodes.a but with labels instead of uris
-        # - a visualization of the prototype graph self.P
 
         condition_functions, cond_func_arg_nodes = self.get_condition_funcs_and_args()
 
@@ -170,7 +187,7 @@ class RuleApplicator:
 
         result = core.RuleResult()
 
-        for res_dict in result_map:
+        for res_dict in result_maps:
             # res_dict represents one situation where the assertions should be applied
             # it's a dict {<node-number>: <item>, ...} like
             # {
@@ -341,7 +358,7 @@ class RuleApplicator:
         res = list(GM.subgraph_monomorphisms_iter())
         # res = list(GM.subgraph_isomorphisms_iter())
 
-        # invert the dicts (todo: find out why switching G and P does not work)
+        # invert the dicts (switching G and P does not work)
         # and introduce items for uris
 
         new_res = []
@@ -436,12 +453,32 @@ class RuleApplicator:
             return True
         return False
 
-    def create_prototype_subgraph_from_rule(self) -> nx.DiGraph:
+    def get_premise_type(self) -> PremiseType:
+
+        if self.sparql_src:
+            assert len(self.premises_stms) == 0
+            return PremiseType.SPARQL
+        else:
+            return PremiseType.GRAPH
+
+
+    def create_prototype_subgraph_from_rule(self) -> None:
         """
         Create a prototype graph from the scopes 'setting' and 'premise'.
         """
 
-        P = nx.DiGraph()
+        self._create_psg_nodes()
+        if self.premise_type == PremiseType.GRAPH:
+            self._create_psg_edges()
+
+
+    def _create_psg_nodes(self) -> None:
+        """
+        Create P and add all nodes (except those for literal values, which will be added adhoc during processing of
+        the statements, see _create_psg_edges)
+        """
+
+        self.P = nx.DiGraph()
 
         # counter for node-values
         i = 0
@@ -470,9 +507,13 @@ class RuleApplicator:
                 rel_statements: list = self.relation_statements[var.uri]
             else:
                 rel_statements = None
-            P.add_node(i, itm=c, entity=var, is_literal=False, rel_statements=rel_statements)
+            self.P.add_node(i, itm=c, entity=var, is_literal=False, rel_statements=rel_statements)
             self.local_nodes.add_pair(var.uri, i)
             i += 1
+
+    def _create_psg_edges(self) -> None:
+
+        i = len(self.local_nodes.a)
 
         for stm in self.setting_stms + self.premises_stms:
 
@@ -516,7 +557,7 @@ class RuleApplicator:
                     pass
                 else:
                     # normally handle the literal -> create a wrapper node
-                    P.add_node(i, value=obj, is_literal=True)
+                    self.P.add_node(i, value=obj, is_literal=True)
                     uri = self._make_literal(obj)
                     self.local_nodes.add_pair(uri, i)
                     n2 = i
@@ -531,10 +572,10 @@ class RuleApplicator:
                 self.relation_statements[subj.uri].append(stm)
             else:
                 # todo: merge rel_props with rel_statements
-                P.add_edge(n1, n2, rel_uri=pred.uri, rel_props=rel_props, rel_statements=rel_statements)
+                self.P.add_edge(n1, n2, rel_uri=pred.uri, rel_props=rel_props, rel_statements=rel_statements)
 
         # components_container
-        cc = self._get_weakly_connected_components(P)
+        cc = self._get_weakly_connected_components(self.P)
 
         if len(cc.main_components) == 0:
             raise core.aux.SemanticRuleError("empty prototype graph")
@@ -545,8 +586,6 @@ class RuleApplicator:
                 f"Expected: 1, but got ({len(cc.var_components)}). Possible reason: unused variables in the rules context."
             )
             raise core.aux.SemanticRuleError(msg)
-
-        return P
 
     def _get_weakly_connected_components(self, P) -> Container:
         """

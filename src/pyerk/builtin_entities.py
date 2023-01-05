@@ -716,6 +716,16 @@ class _rule__CM(ScopingCM):
         for arg in args:
             self.scope.set_relation(R55["uses as external entity"], arg)
 
+    def set_sparql(self, sparql_src: str):
+        """
+        Define the `WHERE`-part of a sparql SELECT-query
+        """
+        # TODO check sparql syntax
+        assert isinstance(sparql_src, str)
+
+        self.scope.set_relation(R63["has SPARQL source"], sparql_src)
+
+
     def new_rel_var(self, name):
         """
         Create an instance of I40["general relation"] to represent a relation inside a rule.
@@ -1742,7 +1752,6 @@ R42["is symmetrical"].set_relation(R62["is relation property"], True)
 R60["is transitive"].set_relation(R62["is relation property"], True)
 R62["is relation property"].set_relation(R62["is relation property"], True)
 
-
 def get_relation_properties_uris():
 
     stms: List[Statement] = ds.relation_statements[R62.uri]
@@ -1851,13 +1860,16 @@ def reverse_statements(self, rel: Relation):
     return res
 
 
-def add_arg_tuples_for_statement(self, subj, pred, obj):
-    """
-    ...
-    """
-    IPS()
-
-
+R63 = create_builtin_relation(
+    key_str="R63",
+    R1__has_label="has SPARQL source",
+    R2__has_description=(
+        "specifies that the subject (a scope) is featured by some unique SPARQL source code"
+    ),
+    R8__has_domain_of_argument_1=I16["scope"],
+    R11__has_range_of_result=str,
+    R22__is_functional=True,
+)
 
 # testing
 

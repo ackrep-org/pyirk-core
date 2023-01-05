@@ -77,14 +77,27 @@ with I710.scope("context") as cm:
     cm.new_rel_var("rel1")  # -> p.instance_of(p.I40["general relation"]))
 
 with I710.scope("premises") as cm:
-    cm.new_rel(cm.ph1, p.R57["is placeholder"], True)
-    cm.new_rel(cm.ph2, p.R57["is placeholder"], True)
+    cm.set_sparql(
+        """
+        WHERE {
+        ?ph1 :R57 True.
+        ?ph2 :R57 True.
+        ?ph1 ?rel1 ?some_itm.
+        ?ph2 ?rel1 ?some_itm.
 
-    # both placeholders are related to the same item via the same relation
-    cm.new_rel(cm.ph1, cm.rel1, cm.some_itm)  # -> p.R58["wildcard relation"]
-    cm.new_rel(cm.ph2, cm.rel1, cm.some_itm)  # -> p.R58["wildcard relation"]
+        ?rel1 :zb__R2850 True.
+        }
+        """
+    )
+        # ?rel1 :zb__R2850__is_functional_activity True.
+    # cm.new_rel(cm.ph1, p.R57["is placeholder"], True)
+    # cm.new_rel(cm.ph2, p.R57["is placeholder"], True)
 
-    cm.new_rel(cm.rel1, zb.R2850["is functional activity"], True)
+    # # both placeholders are related to the same item via the same relation
+    # cm.new_rel(cm.ph1, cm.rel1, cm.some_itm)  # -> p.R58["wildcard relation"]
+    # cm.new_rel(cm.ph2, cm.rel1, cm.some_itm)  # -> p.R58["wildcard relation"]
+
+    # cm.new_rel(cm.rel1, zb.R2850["is functional activity"], True)
 
 with I710.scope("assertions") as cm:
     cm.new_rel(cm.ph1, p.R47["is same as"], cm.ph2)

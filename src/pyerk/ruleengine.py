@@ -157,6 +157,7 @@ class RuleApplicator:
         """
 
         result_map = self.match_subgraph_P()
+        IPS()
 
         # TODO: for debugging this the following things might be helpful:
         # - a mapping like self.local_nodes.a but with labels instead of uris

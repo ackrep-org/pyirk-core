@@ -1550,6 +1550,61 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
 
     def test_d09__zebra_puzzle_stage02(self):
         """
+        test conversion of predicate to subject
+        """
+
+        with p.uri_context(uri=TEST_BASE_URI):
+            R2850 = p.create_relation(R1="is functional activity")
+            R301 = p.create_relation(R1="relation1", R2850__is_functional_activity=True)
+            R302 = p.create_relation(R1="distraction relation", R2850__is_functional_activity=False)
+            R303 = p.create_relation(R1="distraction relation2")
+
+            x1 = p.instance_of(p.I1["general item"])
+            x2 = p.instance_of(p.I1["general item"])
+            z1 = p.instance_of(p.I1["general item"])
+            z2 = p.instance_of(p.I1["general item"])
+
+            x1.set_relation(R301, x2)
+
+            x1.set_relation(R302, z1)
+            x2.set_relation(R303, z2)
+
+            I703 = p.create_item(
+                R1__has_label="rule: match subject, predicate object together",
+                R2__has_description=(
+                    "match subject, predicate object together where pred.R2850__is_functional_activity==True"
+                ),
+                R4__is_instance_of=p.I41["semantic rule"],
+            )
+
+            with I703.scope("context") as cm:
+                cm.new_var(itm1=p.instance_of(p.I1["general item"]))
+                cm.new_var(itm2=p.instance_of(p.I1["general item"]))
+                cm.uses_external_entities(I703)
+
+                cm.new_rel_var("rel1")
+
+            with I703.scope("premises") as cm:
+
+                cm.new_rel(cm.rel1, R2850["is functional activity"], True)
+                cm.new_rel(cm.itm1, cm.rel1, cm.itm2)
+
+            with I703.scope("assertions") as cm:
+                cm.new_rel(cm.itm1, p.R54["is matched by rule"], I703)
+                cm.new_rel(cm.itm2, p.R54["is matched by rule"], I703)
+                cm.new_rel(cm.rel1, p.R54["is matched by rule"], I703)
+
+                # cm.new_consequent_func(p.add_arg_tuples_for_statement, cm.itm1, cm.rel1, cm.itm2)
+
+            res = p.ruleengine.apply_semantic_rule(I703)
+            self.assertEqual(len(res.new_statements), 3)
+            self.assertEqual(x1.R54, [I703])
+            self.assertEqual(x2.R54, [I703])
+            self.assertEqual(R301.R54, [I703])
+
+
+    def test_d10__zebra_puzzle_stage02(self):
+        """
         apply zebra puzzle rules to zebra puzzle data and assess correctness of the result
         """
 

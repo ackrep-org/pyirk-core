@@ -7,6 +7,7 @@ This module contains code to enable semantic inferences based on special items (
 """
 
 from typing import List, Tuple, Optional
+from collections import defaultdict
 
 import networkx as nx
 from networkx.algorithms import isomorphism as nxiso
@@ -109,6 +110,13 @@ class RuleApplicator:
         self.premises_stms = filter_relevant_stms(rule.scp__premises.get_inv_relations("R20"))
         self.assertions_stms = filter_relevant_stms(rule.scp__assertions.get_inv_relations("R20"))
         self.literals = {}
+
+        # store I40["general relation"] instances which might serve as subject
+        self.subjectivized_predicates = core.aux.OneToOneMapping()
+
+        # for every local node (integer key) store a list of relations like:
+        # {<uri1>: S5971(<Item Ia5322["rel1 (I40__general_rel)"]>, <Relation R2850["is functional activity"]>, True)}
+        self.relation_statements = defaultdict(list)
 
         # a: {rule_sope_uri1: P_node_index1, ...}, b: {P_node_index1: rule_sope_uri1, ...}
         self.local_nodes = core.aux.OneToOneMapping()
@@ -393,6 +401,11 @@ class RuleApplicator:
         # todo: this could be faster (list lookup is slow for long lists, however that list should be short)
         if e2 in self.external_entities:
             return e2 == e1
+        # I40["general relation"]; use the short syntax here for performance reasons
+        elif e2.R4 == bi.I40:
+            if not isinstance(e1, core.Relation):
+                return False
+            return compare_relation_statements(e1, n2d["rel_statements"])
         else:
             # for non-external entities, all nodes should match
             # -> let the edges decide
@@ -406,13 +419,17 @@ class RuleApplicator:
             self.asserted_nodes.add_pair(var.uri, node_name)
 
     @staticmethod
-    def _ignore_item(itm: bi.Item) -> bool:
+    def _is_subjectivized_predicate(itm: bi.Item) -> bool:
         # This mechanism allows to ignore some nodes (because they have other roles, e.g. serving as proxy-item for
         # relations)
         if itm.R4 == bi.I40["general relation"]:
             q = itm.get_relations("R4")[0].qualifiers
             if q and q[0].predicate == bi.R59["has rule-prototype-graph-mode"] and q[0].object == 1:
                 return True
+        return False
+
+    @staticmethod
+    def _ignore_item(itm: bi.Item) -> bool:
         # TODO: this is likely too simple (it makes reasoning over anchor-items hard, )cannot be used in the rule))
         if itm.R4 == bi.I43["anchor item"]:
             return True
@@ -439,6 +456,7 @@ class RuleApplicator:
             if self._ignore_item(var):
                 continue
 
+
             c = Container()
             for relname in ["R3", "R4"]:
                 try:
@@ -446,7 +464,12 @@ class RuleApplicator:
                 except (AttributeError, KeyError):
                     value = None
                 c[relname] = value
-            P.add_node(i, itm=c, entity=var, is_literal=False)
+            if self._is_subjectivized_predicate(var):
+                self.subjectivized_predicates.add_pair(var.uri, i)
+                rel_statements: list = self.relation_statements[var.uri]
+            else:
+                rel_statements = None
+            P.add_node(i, itm=c, entity=var, is_literal=False, rel_statements=rel_statements)
             self.local_nodes.add_pair(var.uri, i)
             i += 1
 
@@ -460,14 +483,26 @@ class RuleApplicator:
             assert isinstance(subj, core.Entity)
             assert isinstance(pred, core.Relation)
 
+            subjectivized_predicate = self._is_subjectivized_predicate(subj)
+
             if pred == bi.R58["wildcard relation"]:
                 # for wildcard relations we have to determine the relevant relation properties
                 # like R22__is_functional etc.
                 # see also function edge_matcher
+
+                # retrieve the object of qualifier R34["has proxy item"]
+                # this binds a R58["wildcard relation"]-instance to a I40["general relation"] instance
                 proxy_item = bi.get_proxy_item(stm)
 
+                # note this dict might currently be empty but might be filled later (see _is_subjectivized_predicate)
+                rel_statements: list = self.relation_statements[proxy_item.uri]
+
+                # TODO drop rel_props
                 rel_props = bi.get_relation_properties(proxy_item)
             else:
+                rel_statements = []
+
+                # TODO drop rel_props
                 rel_props = []
 
             n1 = self.local_nodes.a[subj.uri]
@@ -475,23 +510,35 @@ class RuleApplicator:
             if isinstance(obj, core.Entity):
                 n2 = self.local_nodes.a[obj.uri]
             elif isinstance(obj, core.allowed_literal_types):
-                # create a wrapper node
-                P.add_node(i, value=obj, is_literal=True)
-                uri = self._make_literal(obj)
-                self.local_nodes.add_pair(uri, i)
-                n2 = i
-                i += 1
+                if subjectivized_predicate:
+                    # Note: if subjectivized_predicate the literal should occur in the prototype graphe
+                    pass
+                else:
+                    # normally handle the literal -> create a wrapper node
+                    P.add_node(i, value=obj, is_literal=True)
+                    uri = self._make_literal(obj)
+                    self.local_nodes.add_pair(uri, i)
+                    n2 = i
+                    i += 1
 
             else:
                 msg = f"While processing {self.rule}: unexpected type of obj: {type(obj)}"
                 raise TypeError(msg)
 
-            P.add_edge(n1, n2, rel_uri=pred.uri, rel_props=rel_props)
+            if subjectivized_predicate:
+                # this statement is not added to the graph directly, but instead influences the edge_matcher
+                self.relation_statements[subj.uri].append(stm)
+            else:
+                # todo: merge rel_props with rel_statements
+                P.add_edge(n1, n2, rel_uri=pred.uri, rel_props=rel_props, rel_statements=rel_statements)
 
         # components_container
         cc = self._get_weakly_connected_components(P)
 
-        if len(cc.var_components) != 1:
+        if len(cc.main_components) == 0:
+            raise core.aux.SemanticRuleError("empty prototype graph")
+
+        if len(cc.main_components) > 1:
             msg = (
                 f"unexpected number of components of prototype graph while applying rule {self.rule}."
                 f"Expected: 1, but got ({len(cc.var_components)}). Possible reason: unused variables in the rules context."
@@ -504,7 +551,7 @@ class RuleApplicator:
         """
         Get weakly connected components and sort them  (separate those which contain only external variables).
 
-        Background: the external variables are allowed to be disconnected from the rest
+        Background: external variables are allowed to be disconnected from the rest
         """
         components = list(nx.weakly_connected_components(P))
 
@@ -512,13 +559,18 @@ class RuleApplicator:
 
         var_uris = [v.uri for v in self.vars]
         ee_uris = [v.uri for v in self.external_entities]
-        res = Container(var_components=[], ee_components=[])
+        res = Container(main_components=[], ee_components=[], subjectivized_predicates_components=[])
 
         for component in components:
             for node in component:
                 uri = self.local_nodes.b[node]
                 if uri in var_uris:
-                    res.var_components.append(component)
+                    if uri in self.subjectivized_predicates.a:
+                        # this kind of nodes is allowed to form disconnected components
+                        # (it is only related to the other nodes as predicate)
+                        res.subjectivized_predicates_components.append(component)
+                    else:
+                        res.main_components.append(component)
                     break
                 else:
                     assert uri in ee_uris
@@ -629,12 +681,31 @@ def edge_matcher(e1d: dict, e2d: dict) -> bool:
 
     if e2d["rel_uri"] == wildcard_relation_uri:
         # wildcard relations matches any relation which has the required relation properties
-        if set(e2d["rel_props"]).issubset(e1d["rel_props"]):
-            return True
+
+        return compare_relation_statements(e1d["rel_entity"], e2d["rel_statements"])
+
+        # if set(e2d["rel_props"]).issubset(e1d["rel_props"]):
+        #     return True
 
     if e1d["rel_uri"] != e2d["rel_uri"]:
         return False
 
+    return True
+
+# Note this function will be called very often -> check for speedup possibilites
+def compare_relation_statements(rel1: core.Relation, stm_list: List[core.Statement]):
+    """
+    decide whether a given relation fulfills all given statements
+    """
+
+    for stm in stm_list:
+        raw_res = rel1.get_relations(stm.predicate.uri, return_obj=True)
+        if raw_res == []:
+            return False
+        if raw_res[0] != stm.object:
+            return False
+
+    # all statements have matched
     return True
 
 

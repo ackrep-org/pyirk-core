@@ -1635,9 +1635,18 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         res = p.ruleengine.apply_semantic_rules(
             zp.zr.I710["rule: identify same items via zb__R2850__is_functional_activity"],
             zp.zr.I720["rule: replace (some) same_as-items"],
+            mod_context_uri=zp.__URI__
+        )
+
+        res = p.ruleengine.apply_semantic_rule(
             zp.zr.I730["rule: deduce negative facts for neighbours"],
             mod_context_uri=zp.__URI__
         )
+
+        self.assertEqual(len(res.new_statements), 10)
+
+        # check one particular example
+        self.assertEqual(zb.I9848["Norwegian"].zb__R1055__has_not_house_color, [zb.I1497["blue"]])
 
 
 class Test_Z_Core(HouskeeperMixin, unittest.TestCase):

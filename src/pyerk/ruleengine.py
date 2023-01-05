@@ -267,6 +267,13 @@ class RuleApplicator:
 
             for n1, rel, n2 in asserted_relation_templates:
 
+                # in most cases rel is an Relation, but it could also be a proxy-item for a relation
+                if isinstance(rel, p.Item):
+                    # we have a proxy item
+                    assert rel.R4__is_instance_of == p.I40["general relation"]
+                    rel_node = self.local_nodes.a[rel.uri]
+                    rel = search_dict[rel_node]
+
                 new_subj = search_dict[n1]
 
                 if new_subj is None:
@@ -371,6 +378,10 @@ class RuleApplicator:
                     "maybe (registration as external entity) in setting)"
                 )
                 raise ValueError(msg)
+
+            if proxy_item:=bi.get_proxy_item(stm, strict=False):
+                if self._is_subjectivized_predicate(proxy_item):
+                    pred = proxy_item
             res.append((self.extended_local_nodes.a[sub.uri], pred, self.extended_local_nodes.a[obj.uri]))
 
         return res

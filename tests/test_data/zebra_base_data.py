@@ -408,3 +408,23 @@ All Hints (from https://en.wikipedia.org/wiki/Zebra_Puzzle):
 
 
 p.end_mod()
+
+
+def report():
+
+    all_humans = I7435["human"].get_inv_relations("R4", return_subj=True)
+
+    for h in all_humans:
+        if h.R20__has_defining_scope:
+            continue
+
+        print(f"{h.R1}\n")
+        stm_dict = h.get_relations()
+        stms = []
+        for v in stm_dict.values():
+            stms.extend(v)
+
+        for stm in stms:
+            if stm.predicate.zb__R2850__is_functional_activity or stm.predicate.R43__is_opposite_of:
+                print(f"  {stm.predicate.R1:>30}  {stm.object.R1}")
+        print("-"*40, "\n")

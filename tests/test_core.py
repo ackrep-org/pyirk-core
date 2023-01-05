@@ -1638,7 +1638,7 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
             mod_context_uri=zp.__URI__
         )
 
-        res = p.ruleengine.apply_semantic_rule(
+        res_I730 = res = p.ruleengine.apply_semantic_rule(
             zp.zr.I730["rule: deduce negative facts for neighbours"],
             mod_context_uri=zp.__URI__
         )
@@ -1647,6 +1647,15 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
 
         # check one particular example
         self.assertEqual(zb.I9848["Norwegian"].zb__R1055__has_not_house_color, [zb.I1497["blue"]])
+
+        res_I740 = res = p.ruleengine.apply_semantic_rule(
+             zp.zr.I740["rule: deduce more negative facts from negative facts"],
+             mod_context_uri=zp.__URI__
+         )
+
+        self.assertEqual(len(res.new_statements), 0)
+
+        # IPS()
 
 
 class Test_Z_Core(HouskeeperMixin, unittest.TestCase):

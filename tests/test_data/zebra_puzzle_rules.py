@@ -161,4 +161,49 @@ with I730.scope("assertions") as cm:
     cm.new_rel(cm.h2, cm.rel2, cm.itm1)
 
 # ###############################################################################
+
+I740 = p.create_item(
+    R1__has_label="rule: deduce more negative facts from negative facts",
+    R2__has_description=("deduce e.g. if h1 onws not dog, but dog owner drinks milk then h1 drinks not milk"),
+    R4__is_instance_of=p.I41["semantic rule"],
+)
+
+with I740.scope("context") as cm:
+    cm.new_var(h1=p.instance_of(zb.I7435["human"]))
+    cm.new_var(h2=p.instance_of(zb.I7435["human"]))
+    cm.new_var(itm1=p.instance_of(p.I1["general item"]))
+    cm.new_var(itm2=p.instance_of(p.I1["general item"]))
+
+    cm.new_rel_var("rel1")
+    cm.new_rel_var("rel2")
+    cm.new_rel_var("rel1_not")
+    cm.new_rel_var("rel2_not")
+
+with I740.scope("premises") as cm:
+    cm.set_sparql(
+        """
+        WHERE {
+            ?h1 ?rel1 ?itm1.
+            ?h1 ?rel2 ?itm2.
+            FILTER (?rel1 != ?rel2)
+            FILTER (?itm1 != ?itm2)
+
+            ?rel1 zb:R2850 true.     # R2850__is_functional_activity
+            ?rel2 zb:R2850 true.     # R2850__is_functional_activity
+
+            ?rel1 :R43 ?rel1_not.        # R43__is_opposite_of
+            ?rel2 :R43 ?rel2_not.        # R43__is_opposite_of
+
+            ?h2 ?rel1_not ?itm1.
+
+            # prevent the addition of already known relations
+            MINUS { ?h2 ?rel2_not ?itm2.}
+        }
+        """
+    )
+
+with I740.scope("assertions") as cm:
+    cm.new_rel(cm.h2, cm.rel2_not, cm.itm2)
+
+# ###############################################################################
 p.end_mod()

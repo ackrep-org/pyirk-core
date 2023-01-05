@@ -80,12 +80,13 @@ with I710.scope("premises") as cm:
     cm.set_sparql(
         """
         WHERE {
-        ?ph1 :R57 True.
-        ?ph2 :R57 True.
+        ?ph1 :R57 true.
+        ?ph2 :R57 true.
         ?ph1 ?rel1 ?some_itm.
         ?ph2 ?rel1 ?some_itm.
 
-        ?rel1 :zb__R2850 True.
+        ?rel1 zb:R2850 true.
+        FILTER (?ph1 != ?ph2)
         }
         """
     )

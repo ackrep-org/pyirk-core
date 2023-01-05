@@ -9,6 +9,7 @@ This module contains code to enable semantic inferences based on special items (
 from typing import List, Tuple, Optional
 from collections import defaultdict
 from enum import Enum
+import textwrap
 
 import networkx as nx
 from networkx.algorithms import isomorphism as nxiso
@@ -20,8 +21,11 @@ from addict import Addict as Container
 from ipydex import IPS
 
 from . import core
+
+# todo: replace bi. with p. etc
 from . import builtin_entities as bi
 from . import builtin_entities as b
+import pyerk as p
 
 LITERAL_BASE_URI = "erk:/tmp/literals"
 
@@ -126,8 +130,11 @@ class RuleApplicator:
         # {<uri1>: S5971(<Item Ia5322["rel1 (I40__general_rel)"]>, <Relation R2850["is functional activity"]>, True)}
         self.relation_statements = defaultdict(list)
 
-        # a: {rule_sope_uri1: P_node_index1, ...}, b: {P_node_index1: rule_sope_uri1, ...}
+        # a: {var_uri1: P_node_index1, ...}, b: {P_node_index1: var_uri1, ...}
         self.local_nodes = core.aux.OneToOneMapping()
+
+        # a: {var_uri1: "imt1", ...}, b: ...
+        self.local_node_names = core.aux.OneToOneMapping()
 
         # this structure holds the nodes corresponding to the fiat_prototypes
         self.asserted_nodes = core.aux.OneToOneMapping()
@@ -169,7 +176,30 @@ class RuleApplicator:
             # - a mapping like self.local_nodes.a but with labels instead of uris
             # - a visualization of the prototype graph self.P
         else:
-            raise NotImplementedError
+            where_clause = textwrap.dedent(self.sparql_src[0])
+            var_names = "?" + " ?".join(self.local_node_names.b.keys())  # -> e.g. "?ph1 ?ph2 ?some_itm ?rel1"
+
+            prefixes = []
+            for mod_uri, prefix in p.ds.uri_prefix_mapping.a.items():
+                if mod_uri == p.settings.BUILTINS_URI:
+                    prefix=""
+                prefixes.append(f"PREFIX {prefix}: <{mod_uri}#>")
+
+            prefix_block = "\n".join(prefixes)
+            qsrc = f"{prefix_block}\nSELECT {var_names}\n{where_clause}"
+
+            p.ds.rdfgraph = p.rdfstack.create_rdf_triples()
+            res = p.ds.rdfgraph.query(qsrc)
+            res2 = p.aux.apply_func_to_table_cells(p.rdfstack.convert_from_rdf_to_pyerk, res)
+
+            result_maps = []
+            for row in res2:
+                res_map = {}
+                assert len(row) == len(self.vars)
+                for v, entity in zip(self.vars, row):
+                    node = self.local_nodes.a[v.uri]
+                    res_map[node] = entity
+                result_maps.append(res_map)
 
         return self._process_result_map(result_maps)
 
@@ -509,6 +539,7 @@ class RuleApplicator:
                 rel_statements = None
             self.P.add_node(i, itm=c, entity=var, is_literal=False, rel_statements=rel_statements)
             self.local_nodes.add_pair(var.uri, i)
+            self.local_node_names.add_pair(var.uri, var.R23__has_name_in_scope)
             i += 1
 
     def _create_psg_edges(self) -> None:

@@ -1394,9 +1394,6 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
             zp.zr.I720["rule: replace (some) same_as-items"], mod_context_uri=zp.__URI__
         )
 
-        # this tests fails sometimes because the order of the match-dicts from the DiGraph-Matcher varies and
-        # thus sometimes person2 is replaced with person1 and sometimes vice versa
-
         neighbour_after = zp.person1.zb__R2353__lives_immediatly_right_of
         self.assertEqual(neighbour_after, zp.person3)
 

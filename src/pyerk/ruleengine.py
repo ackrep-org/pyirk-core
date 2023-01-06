@@ -362,7 +362,14 @@ class RuleApplicator:
             # now pepare the arguments
             arg_nodes = []
             for arg in call_args:
-                node = self.local_nodes.a[arg.uri]
+                try:
+                    node = self.local_nodes.a[arg.uri]
+                except KeyError:
+                    msg = (
+                        f"Entity {arg} is unknown in local nodes of rule {self.rule}. Possible reason: missing "
+                        "declaration in scope('setting')."
+                    )
+                    raise core.aux.SemanticRuleError(msg)
                 arg_nodes.append(node)
             args_node_list.append(tuple(arg_nodes))
             node_names.append(self.asserted_nodes.a[var.uri])

@@ -2130,6 +2130,9 @@ class RuleResult:
         for stm in stms:
             self.add_statement(stm)
 
+    def add_entity(self, entity: Entity):
+        self.new_entities.append(entity)
+
     def extend(self, part: "RuleResult"):
         assert isinstance(part, RuleResult)
         self.add_statements(part.new_statements)

@@ -1115,7 +1115,7 @@ def check_processed_key_label(pkey: ProcessedStmtKey) -> None:
         # entity does not exist -> no label to compare with
         return
     label_compare_str1 = entity.R1
-    label_compare_str2 = entity.R1.replace(" ", "_")
+    label_compare_str2 = entity.R1.replace(" ", "_").replace("-", "_")
 
     if pkey.label.lower() not in (label_compare_str1.lower(), label_compare_str2.lower()):
         msg = (
@@ -1502,6 +1502,21 @@ class Statement:
     def is_qualifier(self):
         # TODO: replace this by isinstance(stm, QualifierStatement)
         return isinstance(self.subject, Statement)
+
+    def get_first_qualifier_obj_with_rel(self, key=None, uri=None):
+        assert [key, uri].count(None) == 1, "exactly one of the arguments must be provided, not 0 not 2"
+
+        if key:
+            uri = process_key_str(key).uri
+
+        for qstm in self.qualifiers:
+            if qstm.predicate.uri == uri:
+                return qstm.object
+
+        return None
+
+
+
 
     def unlink(self, *args) -> None:
         """
@@ -2115,12 +2130,14 @@ class RuleResult:
         for stm in stms:
             self.add_statement(stm)
 
-    def add_partial(self, part: "RuleResult"):
+    def extend(self, part: "RuleResult"):
         assert isinstance(part, RuleResult)
         self.add_statements(part.new_statements)
         self.new_entities.extend(part.new_entities)
         self.unlinked_entities.extend(part.unlinked_entities)
 
+    def add_partial(self, part: "RuleResult"):
+        self.extend(part)
         self.partial_results.append(part)
 
 def script_main(fpath):

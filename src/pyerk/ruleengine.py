@@ -259,16 +259,15 @@ class RuleApplicator:
             call_args_list = []
             for node_tuple in cf_arg_nodes:
                 call_args_list.append((res_dict[node] for node in node_tuple))
-            cf_results = [
+
+            csq_fnc_results: List[core.RuleResult] = [
                 func(*call_args) for func, call_args in zip(consequent_functions, call_args_list)
             ]
 
-            cf_results: List[core.RuleResult]
             asserted_new_items = []
-            for cfr in cf_results:
+            for cfr in csq_fnc_results:
                 assert isinstance(cfr, core.RuleResult)
-                result.add_statements(cfr.new_statements)
-                result.unlinked_entities.extend(cfr.unlinked_entities)
+                result.extend(cfr)
                 if ne := cfr.new_entities:
                     assert len(ne) == 1
                     asserted_new_items.append(ne[0])
@@ -384,6 +383,12 @@ class RuleApplicator:
 
         res = []
         for stm in self.assertions_stms:
+            if stm.get_first_qualifier_obj_with_rel("R59__has_rule_prototype_graph_mode") == 4:
+                # this is just an auxiliary statement for consequent function like
+                #  S8409(<Item Ia9327["fiat_item0"]>, <Relation R29["has argument"]>, <Item I9040["XYZ"]>)
+                # the relation itself should not be created as a consequence
+                continue
+
             sub, pred, obj = stm.relation_tuple
             assert isinstance(pred, core.Relation)
 

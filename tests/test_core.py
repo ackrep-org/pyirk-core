@@ -623,10 +623,10 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
 
         # get item via prefix and key
-        itm1: p.Item = p.ds.get_entity_by_key_str("ct__I3749__Cayley-Hamilton_theorem")
+        itm1: p.Item = p.ds.get_entity_by_key_str("ct__I3749__Cayley_Hamilton_theorem")
 
         # get item via key and uri
-        itm2: p.Item = p.ds.get_entity_by_key_str("I3749__Cayley-Hamilton_theorem", mod_uri=mod1.__URI__)
+        itm2: p.Item = p.ds.get_entity_by_key_str("I3749__Cayley_Hamilton_theorem", mod_uri=mod1.__URI__)
 
         self.assertEqual(itm1, itm2)
 
@@ -1749,7 +1749,19 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
 
         self.assertEqual(len(res.new_statements), 0)
 
-        # IPS()
+        # this will change soon
+        self.assertEqual(zb.I4037["Englishman"].zb__R9040__lives_in_numbered_house, None)
+
+        # apply next rule:
+        res_I750 = res = p.ruleengine.apply_semantic_rule(
+             zp.zr.I750["rule: every human lives in one house"],
+             mod_context_uri=zp.__URI__
+         )
+
+        self.assertEqual(len(res.new_statements), 13)
+
+        # revist the  example from above
+        self.assertNotEqual(zb.I4037["Englishman"].zb__R9040__lives_in_numbered_house, None)
 
 
 class Test_Z_Core(HouskeeperMixin, unittest.TestCase):

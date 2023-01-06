@@ -813,7 +813,7 @@ class _rule__CM(ScopingCM):
 
         for arg in args:
             # args are supposed to be variables created in the "setting"-scope
-            self.new_rel(factory_anchor, R29["has argument"], arg)
+            self.new_rel(factory_anchor, R29["has argument"], arg, qualifiers=[qff_has_rule_ptg_mode(4)])
 
 
 def _rule__scope(self: Item, scope_name: str):
@@ -1726,7 +1726,7 @@ R59 = create_builtin_relation(
     R2__has_description=(
         "specifies that the subject should be threated according to the mode (int number) when constructing the "
         "prototype graph of an I41__semantic_rule; Modes: 0 -> normal; 1 -> ignore node, 2 -> relation statement, "
-        "3 -> variable literal; currently '2' is not implemented.",
+        "3 -> variable literal, 4 -> function-anchor; currently '2' is not implemented.",
     ),
     R8__has_domain_of_argument_1=I1["general item"],
     R11__has_range_of_result=int,
@@ -1800,18 +1800,29 @@ def get_relation_properties(rel_entity: Entity) -> List[str]:
     return rel_props
 
 
-# this function is intended to be attached to an item in the assertions-scope of a semantic rule
-# ("consequent function")
-def replacer_method(self, old_item, new_item):
+R63 = create_builtin_relation(
+    key_str="R63",
+    R1__has_label="has SPARQL source",
+    R2__has_description=(
+        "specifies that the subject (a scope) is featured by some unique SPARQL source code"
+    ),
+    R8__has_domain_of_argument_1=I16["scope"],
+    R11__has_range_of_result=str,
+    R22__is_functional=True,
+)
 
-    try:
-        res = core.replace_and_unlink_entity(old_item, new_item)
-    except core.aux.UnknownURIError:
-        # if one of the two does not exist -> do nothing
-        res = RuleResult()
 
-    return res
+I44 = create_builtin_item(
+    key_str="I44",
+    R1__has_label="variable literal",
+    R2__has_description="base class for items which represent variable literal values inside semantic rules",
+    R4__is_instance_of=I2["Metaclass"],
+    R18__has_usage_hint="used in the class _rule__CM",
+)
 
+# ######################################################################################################################
+# condition functions (to be used in the premise scope of a rule)
+# ######################################################################################################################
 
 def label_compare_method(self, item1, item2) -> bool:
     """
@@ -1837,8 +1848,24 @@ def does_not_have_relation(self, item: Item, rel: Relation) -> bool:
     return not res
 
 
-# this function is intended to be attached to an item in the assertions-scope of a semantic rule
-# ("consequent function")
+# ######################################################################################################################
+# consequent functions (to be used in the assertion scope of a rule)
+# ######################################################################################################################
+
+def replacer_method(self, old_item, new_item):
+    """
+    replace old_item with new_item in every statement, unlink the old item
+    """
+
+    try:
+        res = core.replace_and_unlink_entity(old_item, new_item)
+    except core.aux.UnknownURIError:
+        # if one of the two does not exist -> do nothing
+        res = RuleResult()
+
+    return res
+
+
 def copy_statements(self, rel1: Relation, rel2: Relation):
     """
     For every statement like (i1, rel1, i2) create a new statement with rel2 as predicate.
@@ -1884,29 +1911,29 @@ def reverse_statements(self, rel: Relation):
         new_stm = stm.object.set_relation(rel, stm.subject)
         res.new_statements.append(new_stm)
 
-    # this function intentially does not return a new item; only called for its side-effects
     return res
 
 
-R63 = create_builtin_relation(
-    key_str="R63",
-    R1__has_label="has SPARQL source",
-    R2__has_description=(
-        "specifies that the subject (a scope) is featured by some unique SPARQL source code"
-    ),
-    R8__has_domain_of_argument_1=I16["scope"],
-    R11__has_range_of_result=str,
-    R22__is_functional=True,
-)
+def new_instance_as_object(self, subj, pred, obj_type, name_prefix=None):
+    """
+    Create a new instance of obj_type and then use this as the object in a new statement.
+    """
 
+    res = RuleResult()
 
-I44 = create_builtin_item(
-    key_str="I44",
-    R1__has_label="variable literal",
-    R2__has_description="base class for items which represent variable literal values inside semantic rules",
-    R4__is_instance_of=I2["Metaclass"],
-    R18__has_usage_hint="used in the class _rule__CM",
-)
+    if name_prefix is None:
+        name_prefix = f"{obj_type.R1} of "
+
+    name = f"{name_prefix}{subj.R1}"
+
+    new_obj = instance_of(obj_type, r1=name)
+
+    new_stm = subj.set_relation(pred, new_obj)
+
+    res.new_statements.append(new_stm)
+    res.new_entities.append(new_obj)
+    return res
+
 
 # testing
 

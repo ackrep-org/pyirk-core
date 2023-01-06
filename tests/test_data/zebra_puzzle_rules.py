@@ -206,4 +206,34 @@ with I740.scope("assertions") as cm:
     cm.new_rel(cm.h2, cm.rel2_not, cm.itm2)
 
 # ###############################################################################
+
+
+I750 = p.create_item(
+    R1__has_label="rule: every human lives in one house",
+    R2__has_description=("human should have a house associated, create a new instance if neccessary"),
+    R4__is_instance_of=p.I41["semantic rule"],
+)
+
+with I750.scope("context") as cm:
+    cm.new_var(p1=p.instance_of(zb.I7435["human"]))
+    cm.uses_external_entities(zb.I7435["human"], zb.R9040["lives in numbered house"], zb.I8809["house number"])
+
+with I750.scope("premises") as cm:
+    cm.new_rel(cm.p1, p.R4["is instance of"], zb.I7435["human"], overwrite=True)
+    cm.new_condition_func(p.does_not_have_relation, cm.p1, zb.R9040["lives in numbered house"])
+
+with I750.scope("assertions") as cm:
+    cm.new_consequent_func(
+        p.new_instance_as_object, cm.p1, zb.R9040["lives in numbered house"], zb.I8809["house number"]
+    )
+    # cm.new_rel(cm.h2, cm.rel2_not, cm.itm2)
+    # zb.I8809["house number"]
+    #     cm.new_variable_literal("house_index1")
+
+
+# ###############################################################################
+
+
+    # cm.new_rel(cm.h1, zb.R9040["lives in numbered house"], cm.house1)
+
 p.end_mod()

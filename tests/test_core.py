@@ -1598,7 +1598,7 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
             self.assertEqual(x2.R54, [I703])
             self.assertEqual(R301.R54, [I703])
 
-    def test_d09a__zebra_puzzle_stage02(self):
+    def test_d10__zebra_puzzle_stage02(self):
         """
         test to match variable literal values
         """
@@ -1648,7 +1648,55 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
             self.assertEqual(z2.R302[-1], 3.1415)
 
 
-    def test_d10__zebra_puzzle_stage02(self):
+    def test_d11__zebra_puzzle_stage02(self):
+        """
+        test to match the nonexistence of some specific statements
+        """
+
+        with p.uri_context(uri=TEST_BASE_URI):
+            R301 = p.create_relation(R1="semantic relation")
+            R302 = p.create_relation(R1="data attribute")
+
+            x1 = p.instance_of(p.I1["general item"])
+            x2 = p.instance_of(p.I1["general item"])
+            x3 = p.instance_of(p.I1["general item"])
+            x4 = p.instance_of(p.I1["general item"])
+
+            x1.set_relation(R302, 1)
+            x2.set_relation(R302, 1)
+            x3.set_relation(R302, 1)
+            x4.set_relation(R302, 1)
+
+            x1.set_relation(R301, x2)
+            x2.set_relation(R301, x3)
+
+            # try to find those items which have no R301 relation
+            I703 = p.create_item(
+                R1__has_label="rule: match the nonexistence of some specific statements",
+                R2__has_description=(
+                    "match the nonexistence of some specific statements"
+                ),
+                R4__is_instance_of=p.I41["semantic rule"],
+            )
+
+            with I703.scope("context") as cm:
+                cm.new_var(var1=p.instance_of(p.I1["general item"]))
+                cm.uses_external_entities(R301)
+
+            with I703.scope("premises") as cm:
+                cm.new_rel(cm.var1, R302["data attribute"], 1)
+                cm.new_condition_func(p.does_not_have_relation, cm.var1, R301["semantic relation"])
+
+            with I703.scope("assertions") as cm:
+                cm.new_rel(cm.var1, R302, "good")
+
+            res = p.ruleengine.apply_semantic_rule(I703)
+
+            self.assertEqual(len(res.new_statements), 2)
+            self.assertEqual(x3.R302[-1], "good")
+            self.assertEqual(x4.R302[-1], "good")
+
+    def test_e01__zebra_puzzle_stage02(self):
         """
         apply zebra puzzle rules to zebra puzzle data and assess correctness of the result
         """

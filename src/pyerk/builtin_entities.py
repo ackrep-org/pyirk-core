@@ -1813,8 +1813,10 @@ def replacer_method(self, old_item, new_item):
     return res
 
 
-# this function is intended to be attached to an item in the premise-scope of a semantic rule as condition function
-def label_compare_method(self, item1, item2):
+def label_compare_method(self, item1, item2) -> bool:
+    """
+    Condition function for rules. Returns True if label of item 1 is alphabetically smaller then that of item2
+    """
 
     if item2.R1 is None:
         # item2 is (probably) undefined
@@ -1824,6 +1826,15 @@ def label_compare_method(self, item1, item2):
         return False
 
     return item1.R1 < item2.R1
+
+
+def does_not_have_relation(self, item: Item, rel: Relation) -> bool:
+    """
+    Condition function for rules. Returns True if item does not have any statement where rel is the predicate
+    """
+
+    res = item.get_relations(rel.uri)
+    return not res
 
 
 # this function is intended to be attached to an item in the assertions-scope of a semantic rule

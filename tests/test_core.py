@@ -1605,7 +1605,7 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
 
         with p.uri_context(uri=TEST_BASE_URI):
             R301 = p.create_relation(R1="semantic relation")
-            R302 = p.create_relation(R1="literal attribute")
+            R302 = p.create_relation(R1="data attribute")
 
             x1 = p.instance_of(p.I1["general item"])
             x2 = p.instance_of(p.I1["general item"])
@@ -1627,19 +1627,25 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
             )
 
             with I703.scope("context") as cm:
-                cm.new_var(v1=p.instance_of(p.I1["general item"]))
-                cm.new_variable_literal("v2")
+                cm.new_var(var1=p.instance_of(p.I1["general item"]))
+                cm.new_var(var2=p.instance_of(p.I1["general item"]))
+                cm.new_variable_literal("val1")
 
             with I703.scope("premises") as cm:
 
-                cm.new_rel(cm.v1, R301["semantic relation"], cm.v2)
+                cm.new_rel(cm.var1, R301["semantic relation"], cm.var2)
+                cm.new_rel(cm.var1, R302["data attribute"], cm.val1)
 
             with I703.scope("assertions") as cm:
-                cm.new_rel(cm.v1, R302, "good")
+                cm.new_rel(cm.var1, R302, "good")
+                cm.new_rel(cm.var2, R302, cm.val1)
 
             res = p.ruleengine.apply_semantic_rule(I703)
             self.assertEqual(x1.R302[-1], "good")
             self.assertEqual(z1.R302[-1], "good")
+
+            self.assertEqual(x2.R302[-1], 42)
+            self.assertEqual(z2.R302[-1], 3.1415)
 
 
     def test_d10__zebra_puzzle_stage02(self):

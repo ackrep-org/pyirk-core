@@ -1763,6 +1763,16 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         # revist the  example from above
         self.assertNotEqual(zb.I4037["Englishman"].zb__R9040__lives_in_numbered_house, None)
 
+        # apply next rule:
+        res_I760 = res = p.ruleengine.apply_semantic_rule(
+             zp.zr.I760["rule: deduce impossible house numbers of neighbour"],
+             mod_context_uri=zp.__URI__
+         )
+
+        self.assertEqual(len(res.new_statements), 1)
+        self.assertEqual(len(res.new_entities), 1)
+        self.assertEqual(res.new_entities[0].R38__has_length, 4)
+
 
 class Test_Z_Core(HouskeeperMixin, unittest.TestCase):
     """

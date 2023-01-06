@@ -169,7 +169,7 @@ key reservoir created with: `pyerk -l zebra01.py ag -nk 100`
 supposed keys:
 
 
-I8139
+
 I8768
 I6020
 I2693

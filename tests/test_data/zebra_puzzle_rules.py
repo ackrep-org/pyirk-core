@@ -230,10 +230,59 @@ with I750.scope("assertions") as cm:
     # zb.I8809["house number"]
     #     cm.new_variable_literal("house_index1")
 
+# ###############################################################################
+
+
+I760 = p.create_item(
+    R1__has_label="rule: deduce impossible house numbers of neighbour",
+    R2__has_description=("next to house 1 is house 2"),
+    R4__is_instance_of=p.I41["semantic rule"],
+)
+
+with I760.scope("context") as cm:
+    # persons
+    cm.new_var(p1=p.instance_of(zb.I7435["human"]))
+    cm.new_var(p2=p.instance_of(zb.I7435["human"]))
+
+    # house numbers
+    cm.new_var(hn1=p.instance_of(p.I1["general item"]))
+    cm.new_var(hn2=p.instance_of(p.I1["general item"]))
+
+    # house number indices
+    cm.new_variable_literal("house_index1")
+
+with I760.scope("premises") as cm:
+    cm.new_rel(cm.p1, zb.R3606["lives next to"], cm.p2)
+    cm.new_rel(cm.p1, zb.R9040["lives in numbered house"], cm.hn1)
+    cm.new_rel(cm.p2, zb.R9040["lives in numbered house"], cm.hn2)
+
+    cm.new_rel(cm.hn1, p.R40["has index"], cm.house_index1)
+
+
+def exclude_house_numbers_for_neighbour(self, nbr_hn: p.Item, primal_house_index: int) -> p.RuleResult:
+    """
+    Given the index (int) of a (primal) house, inferre which house_number (represented by nbr_hn) are not allowed
+    for the neighbour
+    """
+
+    res = p.RuleResult()
+
+    possible_indices = {primal_house_index - 1, primal_house_index + 1}
+    impossible_indices = set(zb.possible_house_indices.R39__has_element).difference(possible_indices)
+
+    imp_idcs_tup = p.new_tuple(*impossible_indices)
+
+    stm = nbr_hn.set_relation(zb.R8139["has impossible indices"], imp_idcs_tup)
+    res.add_statement(stm)
+    res.add_entity(imp_idcs_tup)
+    return res
+
+with I760.scope("assertions") as cm:
+    cm.new_consequent_func(exclude_house_numbers_for_neighbour, cm.hn2, cm.house_index1)
+
 
 # ###############################################################################
 
 
-    # cm.new_rel(cm.h1, zb.R9040["lives in numbered house"], cm.house1)
 
 p.end_mod()

@@ -348,6 +348,8 @@ class RuleApplicator:
         args_node_list = []
         node_names = []
 
+        self._fill_extended_local_nodes()
+
         for var in self.fiat_prototype_vars:
 
             call_args = var.get_relations("R29", return_obj=True)
@@ -363,7 +365,7 @@ class RuleApplicator:
             arg_nodes = []
             for arg in call_args:
                 try:
-                    node = self.local_nodes.a[arg.uri]
+                    node = self.extended_local_nodes.a[arg.uri]
                 except KeyError:
                     msg = (
                         f"Entity {arg} is unknown in local nodes of rule {self.rule}. Possible reason: missing "
@@ -379,14 +381,7 @@ class RuleApplicator:
         """
         Create a list like [(0, R25, 1), ...]
         """
-
-        # join local_nodes + asserted_nodes + literal_variable_nodes
-        assert self.extended_local_nodes is None
-        self.extended_local_nodes = core.aux.OneToOneMapping(**self.local_nodes.a)
-        for k, v in self.asserted_nodes.a.items():
-            self.extended_local_nodes.add_pair(k, v)
-        for k, v in self.literal_variable_nodes.a.items():
-            self.extended_local_nodes.add_pair(k, v)
+        self._fill_extended_local_nodes()
 
         res = []
         for stm in self.assertions_stms:
@@ -432,6 +427,19 @@ class RuleApplicator:
             res.append((self.extended_local_nodes.a[sub.uri], pred, final_obj))
 
         return res
+
+    def _fill_extended_local_nodes(self):
+        """
+        join local_nodes + asserted_nodes + literal_variable_nodes
+        """
+        if self.extended_local_nodes is not None:
+            return
+
+        self.extended_local_nodes = core.aux.OneToOneMapping(**self.local_nodes.a)
+        for k, v in self.asserted_nodes.a.items():
+            self.extended_local_nodes.add_pair(k, v)
+        for k, v in self.literal_variable_nodes.a.items():
+            self.extended_local_nodes.add_pair(k, v)
 
     def match_subgraph_P(self) -> List[dict]:
         assert self.P is not None

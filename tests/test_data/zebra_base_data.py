@@ -381,6 +381,20 @@ R4872 = p.create_relation(
 )
 
 
+# auxiliary relations
+
+R8139 = p.create_relation(
+    R1__has_label="has impossible indices",
+    R8__has_domain_of_argument_1=I8809["house number"],
+    R11__has_range_of_result=p.I33["tuple"],
+    # R43__is_opposite_of=R40["has_index"],
+)
+
+
+# further information:
+possible_house_indices = p.new_tuple(1, 2, 3, 4, 5)
+
+
 # ###############################################################################
 
 """

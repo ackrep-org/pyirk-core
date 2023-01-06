@@ -299,6 +299,10 @@ class RuleApplicator:
                 assert isinstance(rel, core.Relation)
                 assert isinstance(new_subj, core.Entity)
 
+                if new_subj.R20__has_defining_scope:
+                    # rules should not affect items inside scopes (maybe this will be more precise in the future)
+                    continue
+
                 if isinstance(n2, LiteralWrapper):
                     new_obj = n2.value
                 else:

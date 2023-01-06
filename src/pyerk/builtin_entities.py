@@ -418,9 +418,11 @@ def _register_scope(self, name: str) -> (dict, "Item"):
         scope = instance_of(I16["scope"], r1=scope_name, r2=f"scope of {self.R1}")
         scope.set_relation(R21["is scope of"], self)
 
-        # prevent accidental overwriting
-        assert scope_name not in self.__dict__
-        self.__dict__[scope_name] = scope
+    # prevent accidental overwriting
+    msg = f"Entity {self} already has a scope with name '{name}'.\nPossible reason: copy-paste-error."
+    if scope_name in self.__dict__:
+        raise core.aux.InvalidScopeNameError(msg)
+    self.__dict__[scope_name] = scope
 
     assert isinstance(ns, dict)
     assert isinstance(scope, Item) and (scope.R21__is_scope_of == self)

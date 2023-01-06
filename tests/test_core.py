@@ -630,7 +630,10 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
 
         self.assertEqual(itm1, itm2)
 
-        Z: p.Item = itm1.scope("context").namespace["Z"]
+        itm1_setting_namespace = itm1._ns_context
+        # alternative way to access names (graph based but bulky): itm1.scp__context.get_inv_relations("R20"), ...
+
+        Z: p.Item = itm1_setting_namespace["Z"]
 
         r31_list = Z.get_inv_relations("R31__is_in_mathematical_relation_with")
         stm: p.Statement = r31_list[0].dual_statement  # taking the dual because we got it via the inverse relation
@@ -648,8 +651,8 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
 
         # ensure reproducible results of applied mappings
         lhs = eq.R26__has_lhs
-        P: p.Item = itm1.scope("context").namespace["P"]
-        A: p.Item = itm1.scope("context").namespace["A"]
+        P: p.Item = itm1_setting_namespace["P"]
+        A: p.Item = itm1_setting_namespace["A"]
         tmp = P(A)
         self.assertEqual(lhs, tmp)
 
@@ -955,6 +958,21 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
 
             rep_str2 = repr(itm1)
             self.assertTrue(rep_str2.endswith('["!!unlinked: itm1"]>'))
+
+    def test_d09__raise_invalid_scope_name_error(self):
+
+        with p.uri_context(uri=TEST_BASE_URI, prefix="ut"):
+
+            prop = p.instance_of(p.I15["implication proposition"])
+
+            scp1 = prop.scope("setting")
+
+            with self.assertRaises(p.aux.InvalidScopeNameError):
+                prop.scope("setting")
+
+            scp2 = prop.scope("premise")
+
+        self.assertNotEqual(scp1, scp2)
 
 
 class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):

@@ -135,6 +135,10 @@ class InvalidShortKeyError(PyERKError):
     pass
 
 
+class InvalidScopeNameError(PyERKError):
+    pass
+
+
 class ModuleAlreadyLoadedError(PyERKError):
     pass
 

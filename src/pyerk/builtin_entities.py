@@ -725,6 +725,22 @@ class _rule__CM(ScopingCM):
 
         self.scope.set_relation(R63["has SPARQL source"], sparql_src)
 
+    def new_variable_literal(self, name):
+        """
+        Create an instance of I44["variable literal"] to represent a literal.inside a rule. Variable means that
+        the literal can have a different value for each match.
+        Because this item takes a special role it is marked with a qualifier.
+        """
+
+        variable_object = instance_of(
+            I44["variable literal"], r1=f"{name} (I44__variable_literal)"
+        )
+
+        variable_object.set_relation(R59["has rule-prototype-graph-mode"], 3)
+
+
+
+        return self._new_var(name, variable_object)
 
     def new_rel_var(self, name):
         """
@@ -736,7 +752,7 @@ class _rule__CM(ScopingCM):
             I40["general relation"], r1=f"{name} (I40__general_relation)", qualifiers=[qff_has_rule_ptg_mode(1)]
         )
 
-        self._new_var(name, variable_object)
+        return self._new_var(name, variable_object)
 
     def new_rel(self, sub: Entity, pred: Entity, obj: Entity, qualifiers=None, overwrite=False) -> Statement:
 
@@ -1709,7 +1725,8 @@ R59 = create_builtin_relation(
     R1__has_label="has rule-prototype-graph-mode",
     R2__has_description=(
         "specifies that the subject should be threated according to the mode (int number) when constructing the "
-        "prototype graph of an I41__semantic_rule; Modes: 0 -> normal; 1 -> ignore node, 2 -> relation statement",
+        "prototype graph of an I41__semantic_rule; Modes: 0 -> normal; 1 -> ignore node, 2 -> relation statement, "
+        "3 -> variable literal; currently '2' is not implemented.",
     ),
     R8__has_domain_of_argument_1=I1["general item"],
     R11__has_range_of_result=int,
@@ -1869,6 +1886,15 @@ R63 = create_builtin_relation(
     R8__has_domain_of_argument_1=I16["scope"],
     R11__has_range_of_result=str,
     R22__is_functional=True,
+)
+
+
+I44 = create_builtin_item(
+    key_str="I44",
+    R1__has_label="variable literal",
+    R2__has_description="base class for items which represent variable literal values inside semantic rules",
+    R4__is_instance_of=I2["Metaclass"],
+    R18__has_usage_hint="used in the class _rule__CM",
 )
 
 # testing

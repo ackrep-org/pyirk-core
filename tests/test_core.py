@@ -1598,6 +1598,49 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
             self.assertEqual(x2.R54, [I703])
             self.assertEqual(R301.R54, [I703])
 
+    def test_d09a__zebra_puzzle_stage02(self):
+        """
+        test to match variable literal values
+        """
+
+        with p.uri_context(uri=TEST_BASE_URI):
+            R301 = p.create_relation(R1="semantic relation")
+            R302 = p.create_relation(R1="literal attribute")
+
+            x1 = p.instance_of(p.I1["general item"])
+            x2 = p.instance_of(p.I1["general item"])
+            z1 = p.instance_of(p.I1["general item"])
+            z2 = p.instance_of(p.I1["general item"])
+
+            x1.set_relation(R302, 42)
+            x1.set_relation(R301, x2)
+
+            z1.set_relation(R302, 3.1415)
+            z1.set_relation(R301, z2)
+
+            I703 = p.create_item(
+                R1__has_label="rule: match literal variable values",
+                R2__has_description=(
+                    "match literal objects as nodes, such that they can be used in consequent functions"
+                ),
+                R4__is_instance_of=p.I41["semantic rule"],
+            )
+
+            with I703.scope("context") as cm:
+                cm.new_var(v1=p.instance_of(p.I1["general item"]))
+                cm.new_variable_literal("v2")
+
+            with I703.scope("premises") as cm:
+
+                cm.new_rel(cm.v1, R301["semantic relation"], cm.v2)
+
+            with I703.scope("assertions") as cm:
+                cm.new_rel(cm.v1, R302, "good")
+
+            res = p.ruleengine.apply_semantic_rule(I703)
+            self.assertEqual(x1.R302[-1], "good")
+            self.assertEqual(z1.R302[-1], "good")
+
 
     def test_d10__zebra_puzzle_stage02(self):
         """

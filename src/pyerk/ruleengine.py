@@ -92,6 +92,11 @@ class PremiseType(Enum):
     SPARQL = 1
 
 
+class LiteralWrapper:
+    def __init__(self, value):
+        self.value = value
+
+
 class RuleApplicator:
     """
     Class to handle the application of a single semantic rule.
@@ -105,6 +110,13 @@ class RuleApplicator:
         subjects = rule.scp__context.get_inv_relations("R20__has_defining_scope", return_subj=True)
         self.vars = [s for s in subjects if isinstance(s, core.Entity)]
         self.external_entities = rule.scp__context.get_relations("R55__uses_as_external_entity", return_obj=True)
+
+        self.vars_for_literals = [
+            s for s in subjects if (
+                # TODO: fix dash-name problem for R59__has_rule_prototype_graph_mode and make R59 functional
+                getattr(s, "R4__is_instance_of", None) == p.I44["variable literal"] and s.R59 == [3]
+            )
+        ]
 
         # this are the variables created in the assertion scope
         subjects = rule.scp__assertions.get_inv_relations("R20__has_defining_scope", return_subj=True)
@@ -139,15 +151,19 @@ class RuleApplicator:
         # this structure holds the nodes corresponding to the fiat_prototypes
         self.asserted_nodes = core.aux.OneToOneMapping()
 
+        # this structure holds the nodes corresponding to variable literal values (different literals for every match)
+        self.literal_variable_nodes = core.aux.OneToOneMapping()
+
         # will be set when needed (holds the union of both previous structures)
         self.extended_local_nodes = None
 
         self.G: nx.DiGraph = self.create_simple_graph()
 
+        self.create_prototypes_for_fiat_entities()
+        self.create_prototypes_for_variable_literals()
+
         self.P: nx.DiGraph = None
         self.create_prototype_subgraph_from_rule()
-
-        self.create_prototypes_for_fiat_entities()
 
     def apply(self) -> core.RuleResult:
         """
@@ -280,10 +296,13 @@ class RuleApplicator:
                     # this was a result of a pure-side-effect-function -> do nothing
                     continue
 
-                new_obj = search_dict[n2]
-
                 assert isinstance(rel, core.Relation)
                 assert isinstance(new_subj, core.Entity)
+
+                if isinstance(n2, LiteralWrapper):
+                    new_obj = n2.value
+                else:
+                    new_obj = search_dict[n2]
 
                 # TODO: add qualifiers
                 new_stm = new_subj.set_relation(rel, new_obj)
@@ -351,10 +370,12 @@ class RuleApplicator:
         Create a list like [(0, R25, 1), ...]
         """
 
-        # join local_nodes and asserted_nodes:
+        # join local_nodes + asserted_nodes + literal_variable_nodes
         assert self.extended_local_nodes is None
         self.extended_local_nodes = core.aux.OneToOneMapping(**self.local_nodes.a)
         for k, v in self.asserted_nodes.a.items():
+            self.extended_local_nodes.add_pair(k, v)
+        for k, v in self.literal_variable_nodes.a.items():
             self.extended_local_nodes.add_pair(k, v)
 
         res = []
@@ -362,8 +383,12 @@ class RuleApplicator:
             sub, pred, obj = stm.relation_tuple
             assert isinstance(pred, core.Relation)
 
-            # todo: handle literals here
-            assert isinstance(obj, core.Entity)
+            if isinstance(obj, p.allowed_literal_types):
+                obj = LiteralWrapper(obj)
+                entity_obj_flag = False
+            else:
+                assert isinstance(obj, core.Entity)
+                entity_obj_flag = True
 
             if not sub.uri in self.extended_local_nodes.a:
                 msg = (
@@ -372,7 +397,7 @@ class RuleApplicator:
                 )
                 raise ValueError(msg)
 
-            if not obj.uri in self.extended_local_nodes.a:
+            if entity_obj_flag and not obj.uri in self.extended_local_nodes.a:
                 msg = (
                     f"unknown object {obj} of rule {self.rule} (uri not in extended_local_nodes; "
                     "maybe (registration as external entity) in setting)"
@@ -382,7 +407,13 @@ class RuleApplicator:
             if proxy_item:=bi.get_proxy_item(stm, strict=False):
                 if self._is_subjectivized_predicate(proxy_item):
                     pred = proxy_item
-            res.append((self.extended_local_nodes.a[sub.uri], pred, self.extended_local_nodes.a[obj.uri]))
+
+            if entity_obj_flag:
+                final_obj = self.extended_local_nodes.a[obj.uri]
+            else:
+                final_obj = obj  # the LiteralWrapper instance
+
+            res.append((self.extended_local_nodes.a[sub.uri], pred, final_obj))
 
         return res
 
@@ -445,7 +476,9 @@ class RuleApplicator:
         """
 
         if n1d["is_literal"]:
-            if n2d["is_literal"]:
+            if n2d.get("is_variable_literal"):
+                return True
+            elif n2d["is_literal"]:
                 return n1d["value"] == n2d["value"]
             else:
                 return False
@@ -457,7 +490,7 @@ class RuleApplicator:
         e1 = n1d["itm"]
         e2 = n2d["entity"]
 
-        rel_statements = n2d["rel_statements"]
+        rel_statements = n2d.get("rel_statements")
 
         # todo: this could be faster (list lookup is slow for long lists, however that list should be short)
         if e2 in self.external_entities:
@@ -476,7 +509,12 @@ class RuleApplicator:
 
             return True
 
-    def create_prototypes_for_fiat_entities(self) -> nx.DiGraph:
+    def create_prototypes_for_variable_literals(self):
+        for i, var in enumerate(self.vars_for_literals):
+            node_name = f"vlit{i}"
+            self.literal_variable_nodes.add_pair(var.uri, node_name)
+
+    def create_prototypes_for_fiat_entities(self):
 
         for i, var in enumerate(self.fiat_prototype_vars):
             node_name = f"fiat{i}"
@@ -497,6 +535,10 @@ class RuleApplicator:
         # TODO: this is likely too simple (it makes reasoning over anchor-items hard, )cannot be used in the rule))
         if itm.R4 == bi.I43["anchor item"]:
             return True
+        # TODO solve R59["has rule-prototype-graph-mode"] dash problem and functionality
+        if r59 := itm.R59:
+            if r59[0] > 0:
+                return True
         return False
 
     def get_premise_type(self) -> PremiseType:
@@ -597,7 +639,12 @@ class RuleApplicator:
             n1 = self.local_nodes.a[subj.uri]
 
             if isinstance(obj, core.Entity):
-                n2 = self.local_nodes.a[obj.uri]
+                if obj.R59:
+                    # handle variable_literal
+                    n2 = self.literal_variable_nodes.a[obj.uri]
+                    self.P.add_node(n2, entity=obj, is_literal=False, is_variable_literal=True)
+                else:
+                    n2 = self.local_nodes.a[obj.uri]
             elif isinstance(obj, core.allowed_literal_types):
                 if subjectivized_predicate:
                     # Note: if subjectivized_predicate the literal should occur in the prototype graphe

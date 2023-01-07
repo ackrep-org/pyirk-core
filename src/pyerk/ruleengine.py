@@ -159,12 +159,23 @@ class RuleApplicator:
     def extract_premise_stm_lists(self):
 
         premise_stm_lists = []
-        direct_stms = filter_relevant_stms(self.rule.scp__premises.get_inv_relations("R20"))
+        direct_stms = filter_relevant_stms(self.rule.scp__premises.get_inv_relations("R20__has_defining_scope"))
 
         if scope_OR := getattr(self.rule.scp__premises, "scp__OR", None):
-            branch_stms = filter_relevant_stms(scope_OR.get_inv_relations("R20"))
-            for stm in branch_stms:
+            direct_OR_scope_stms = filter_relevant_stms(scope_OR.get_inv_relations("R20__has_defining_scope"))
+
+            for stm in direct_OR_scope_stms:
+                # every such statements triggers a new branch
                 premise_stm_lists.append([*direct_stms, stm])
+
+            sub_scopes = scope_OR.get_inv_relations("R21__is_scope_of", return_subj=True)
+
+            for scope_item in sub_scopes:
+                direct_AND_scope_stms = filter_relevant_stms(scope_item.get_inv_relations("R20__has_defining_scope"))
+
+                # those statements together form a new branch
+                premise_stm_lists.append([*direct_stms, *direct_AND_scope_stms])
+
         else:
             premise_stm_lists.append(direct_stms)
 

@@ -1857,10 +1857,9 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
 
             res = p.ruleengine.apply_semantic_rule(I704)
 
+            self.assertEqual(len(res.new_statements), 2)
             self.assertEqual(x4.R302[-1], "good2")
-            # IPS()
-            # does not yet work
-            # self.assertEqual(x1.R302[-1], "good2")
+            self.assertEqual(x1.R302[-1], "good2")
 
     def test_e01__zebra_puzzle_stage02(self):
         """

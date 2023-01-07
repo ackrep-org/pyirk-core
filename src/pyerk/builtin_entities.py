@@ -391,7 +391,7 @@ I16 = create_builtin_item(
 # Once the scope item has been defined it is possible to endow the Entity class with more features
 
 
-def _register_scope(self, name: str) -> (dict, "Item"):
+def _register_scope(self, name: str, scope_type: str = None) -> (dict, "Item"):
     """
     Create a namespace-object (dict) and a Scope-Item
     :param name:    the name of the scope
@@ -426,6 +426,14 @@ def _register_scope(self, name: str) -> (dict, "Item"):
 
     assert isinstance(ns, dict)
     assert isinstance(scope, Item) and (scope.R21__is_scope_of == self)
+
+    if scope_type is None:
+        scope_type = name.upper()
+
+        # TODO: remove this after renaming has taken place:
+        new_types = {"CONTEXT": "SETTING", "PREMISES": "PREMISE", "ASSERTIONS": "ASSERTION"}
+        scope_type = new_types.get(scope_type, scope_type)
+    scope.set_relation(R64["has scope type"], scope_type)
 
     return ns, scope
 
@@ -716,9 +724,22 @@ def _proposition__scope(self: Item, scope_name: str):
 
 class SubScopeMixin:
 
-    def _create_subscope_cm(self, name):
+    def _create_subscope_cm(self, scope_type):
+
+        assert scope_type in ("OR", "AND")
+
+        if scope_type == "OR":
+            # currently we only allow one OR-subscope
+            name = scope_type
+        elif scope_type == "AND":
+            # we allow multiple AND-subscopes
+            all_sub_scopes = self.scope.get_inv_relations("R21__is_scope_of", return_subj=True)
+            and_sub_scopes = [scp for scp in all_sub_scopes if scp.R64__has_scope_type == "AND"]
+
+            name = f"scope_type{len(and_sub_scopes)}"
 
         namespace, scope = self.scope._register_scope(name)
+
         cm = RulePremiseSubScope(itm=self.item, namespace=namespace, scope=scope)
         return cm
 
@@ -727,8 +748,8 @@ class SubScopeMixin:
         Register a subscope for OR-connected statements
         """
 
-        if self.scope.R1 not in  ("scp__premises", "scp__AND"):
-            msg = "logical subscope is only allowed inside 'premise'-scope and AND-subscope"
+        if self.scope.R64__has_scope_type not in  ("PREMISE", "AND"):
+            msg = "logical OR subscope is only allowed inside 'premise'-scope and AND-subscope"
             raise core.aux.SemanticRuleError(msg)
 
         return self._create_subscope_cm("OR")
@@ -861,8 +882,8 @@ class RulePremiseSubScope(ScopingCM, SubScopeMixin):
         Register a subscope for AND-connected statements
         """
 
-        if self.scope.R1 not in  ("scp__OR",):
-            msg = "logical subscope is only allowed inside OR-subscope"
+        if self.scope.R64__has_scope_type not in  ("OR",):
+            msg = "logical AND-subscope is only allowed inside OR-subscope"
             raise core.aux.SemanticRuleError(msg)
 
         return self._create_subscope_cm("AND")
@@ -1872,6 +1893,18 @@ I44 = create_builtin_item(
     R2__has_description="base class for items which represent variable literal values inside semantic rules",
     R4__is_instance_of=I2["Metaclass"],
     R18__has_usage_hint="used in the class _rule__CM",
+)
+
+
+R64 = create_builtin_relation(
+    key_str="R64",
+    R1__has_label="has scope type",
+    R2__has_description=(
+        "specifies the subject (a scope) has a certain type (currently 'OR', 'AND')"
+    ),
+    R8__has_domain_of_argument_1=I16["scope"],
+    R11__has_range_of_result=str,
+    R22__is_functional=True,
 )
 
 # ######################################################################################################################

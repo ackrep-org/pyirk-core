@@ -1787,14 +1787,17 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
 
             with I703.scope("premises") as cm:
                 with cm.OR() as cm_OR:
-                    cm.new_rel(cm.var1, R302, 10)
-                    cm.new_rel(cm.var1, R302, 20)
+                    cm_OR.new_rel(cm.var1, R302, 10)
+                    with self.assertRaises(p.aux.InvalidScopeNameError):
+                        cm.new_rel(cm.var1, R302, 20)
+                    cm_OR.new_rel(cm.var1, R302, 20)
 
             with I703.scope("assertions") as cm:
                 cm.new_rel(cm.var1, R302, "good")
 
             res = p.ruleengine.apply_semantic_rule(I703)
 
+            self.assertEqual(I703.scp__premises.scp__OR.R4, p.I16["scope"])
             # does not yet work
 
             # self.assertEqual(x1.R302[-1], "good")

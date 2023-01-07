@@ -571,6 +571,7 @@ class ScopingCM:
         return self._new_var(variable_name, variable_object)
 
     def _new_var(self, variable_name: str, variable_object: Entity) -> Entity:
+        self._check_scope()
         variable_object: Entity
 
         add_scope_to_defining_statement(variable_object, self.scope)
@@ -609,6 +610,7 @@ class ScopingCM:
         :return: the newly created Statement
 
         """
+        self._check_scope()
         assert isinstance(sub, Entity)
         assert isinstance(pred, Relation)
         if isinstance(qualifiers, RawQualifier):
@@ -648,6 +650,13 @@ class ScopingCM:
 
         # return that function object
         return scopingcm_factory
+
+    def _check_scope(self):
+        active_scope = ds.scope_stack[-1]
+
+        if not active_scope == self.scope:
+            msg = f"Unexpected active scope: ({active_scope}). Expected: {self.scope}"
+            raise core.aux.InvalidScopeNameError(msg)
 
 
 class _proposition__CM(ScopingCM):

@@ -1768,20 +1768,29 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
             R301 = p.create_relation(R1="semantic relation")
             R302 = p.create_relation(R1="data attribute")
 
-            x1 = p.instance_of(p.I1["general item"])
-            x2 = p.instance_of(p.I1["general item"])
-            x3 = p.instance_of(p.I1["general item"])
+            x0 = p.instance_of(p.I35["real number"])
+            x1 = p.instance_of(p.I35["real number"])
+            x2 = p.instance_of(p.I35["real number"])
+            x3 = p.instance_of(p.I35["real number"])
+            x4 = p.instance_of(p.I35["real number"])
 
+            x0.set_relation(R302, 0)
             x1.set_relation(R302, 10)
             x2.set_relation(R302, 20)
-            x3.set_relation(R302, 30)
+            x3.set_relation(R302, 20)
+
+            x4.set_relation(R302, 30)
+
+            x1.set_relation(R301, x0)
+            x2.set_relation(R301, x0)
 
             I703 = p.create_item(
-                R1__has_label="rule with subscope in premises",
+                R1__has_label="rule with OR-subscope in premises",
                 R4__is_instance_of=p.I41["semantic rule"],
             )
 
             with I703.scope("context") as cm:
+                cm.new_var(var0=p.instance_of(p.I1["general item"]))
                 cm.new_var(var1=p.instance_of(p.I1["general item"]))
 
                 with self.assertRaises(p.aux.SemanticRuleError):
@@ -1790,11 +1799,18 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
                         pass
 
             with I703.scope("premises") as cm:
+
+                # this condition must hold in all cases:
+                cm.new_rel(cm.var1, R301, cm.var0)
+
                 with cm.OR() as cm_OR:
+                    # one of these two conditions must hold
                     cm_OR.new_rel(cm.var1, R302, 10)
+                    cm_OR.new_rel(cm.var1, R302, 20)
+
+                    # test error-raising to prevent unintended mis-association of scopes
                     with self.assertRaises(p.aux.InvalidScopeNameError):
                         cm.new_rel(cm.var1, R302, 20)
-                    cm_OR.new_rel(cm.var1, R302, 20)
 
             with I703.scope("assertions") as cm:
                 cm.new_rel(cm.var1, R302, "good")
@@ -1806,7 +1822,42 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
             self.assertEqual(x1.R302[-1], "good")
             self.assertEqual(x2.R302[-1], "good")
             self.assertNotEqual(x3.R302[-1], "good")
+            self.assertNotEqual(x4.R302[-1], "good")
 
+            # new rule
+
+            c1 = p.instance_of(p.I34["complex number"])
+
+            I704 = p.create_item(
+                R1__has_label="rule with OR-and-AND-subscopes in premises",
+                R4__is_instance_of=p.I41["semantic rule"],
+            )
+
+            with I704.scope("context") as cm:
+                cm.new_var(var0=p.instance_of(p.I1["general item"]))
+                cm.new_var(var1=p.instance_of(p.I1["general item"]))
+
+                cm.uses_external_entities(p.I35["real number"])
+
+            with I704.scope("premises") as cm:
+
+                # this condition must hold in all cases:
+                cm.new_rel(cm.var1, p.R4["is instance of"], p.I35["real number"], overwrite=True)
+
+                with cm.OR() as cm_OR:
+                    # either (var1 == 0) or (var1 == 10) and (var1 R301-related to some var0)
+                    cm_OR.new_rel(cm.var1, R302, 0)
+                    with cm_OR.AND() as cm_AND:
+                        cm_AND.new_rel(cm.var1, R302, 10)
+                        cm_AND.new_rel(cm.var1, R301, cm.var0)
+
+            with I704.scope("assertions") as cm:
+                cm.new_rel(cm.var1, R302, "good2")
+
+            # does not yet work
+            # IPS()
+            # res = p.ruleengine.apply_semantic_rule(I704)
+            # self.assertEqual(x1.R302[-1], "good2")
 
     def test_e01__zebra_puzzle_stage02(self):
         """

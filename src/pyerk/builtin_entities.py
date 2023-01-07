@@ -714,7 +714,27 @@ def _proposition__scope(self: Item, scope_name: str):
     return cm
 
 
-class _rule__CM(ScopingCM):
+class SubScopeMixin:
+
+    def _create_subscope_cm(self, name):
+
+        namespace, scope = self.scope._register_scope(name)
+        cm = RulePremiseSubScope(itm=self.item, namespace=namespace, scope=scope)
+        return cm
+
+    def OR(self):
+        """
+        Register a subscope for OR-connected statements
+        """
+
+        if self.scope.R1 not in  ("scp__premises", "scp__AND"):
+            msg = "logical subscope is only allowed inside 'premise'-scope and AND-subscope"
+            raise core.aux.SemanticRuleError(msg)
+
+        return self._create_subscope_cm("OR")
+
+
+class _rule__CM(ScopingCM, SubScopeMixin):
     def __init__(self, *args, **kwargs):
 
         self.anchor_item_counter = 0
@@ -826,26 +846,26 @@ class _rule__CM(ScopingCM):
             # args are supposed to be variables created in the "setting"-scope
             self.new_rel(factory_anchor, R29["has argument"], arg, qualifiers=[qff_has_rule_ptg_mode(4)])
 
-    def OR(self):
-        """
-        Register a subscope for OR-connected Statements
-        """
-
-        if self.scope.R1 != "scp__premises":
-            msg = "logical subscope is only allowed inside 'premise'-scope"
-            raise core.aux.SemanticRuleError(msg)
-
-        namespace, scope = self.scope._register_scope("OR")
-
-        cm = RulePremiseSubScope(itm=self.item, namespace=namespace, scope=scope)
-        return cm
+    def AND(self):
+        msg = "AND-logical subscope is only allowed inside a subscope of a 'premise'-scope"
+        raise core.aux.SemanticRuleError(msg)
 
 
-class RulePremiseSubScope(ScopingCM):
+class RulePremiseSubScope(ScopingCM, SubScopeMixin):
     """
     Context Manager for logical subscopes (like OR and AND) in premises
     """
-    pass
+
+    def AND(self):
+        """
+        Register a subscope for AND-connected statements
+        """
+
+        if self.scope.R1 not in  ("scp__OR",):
+            msg = "logical subscope is only allowed inside OR-subscope"
+            raise core.aux.SemanticRuleError(msg)
+
+        return self._create_subscope_cm("AND")
 
 
 def _rule__scope(self: Item, scope_name: str):

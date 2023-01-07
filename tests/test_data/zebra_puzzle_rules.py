@@ -122,6 +122,8 @@ with I720.scope("premises") as cm:
 
     # ensure that item with the alphabetically bigger label will be replaced by the item with the lower label
     # e.g. person2 will be replaced by person1 etc.# the `self` is necessary because this function will become a method
+
+    # TODO: this blocks the second application because only one itm is placeholder -> introduce logical OR
     cm.new_condition_func(p.label_compare_method, cm.itm1, cm.itm2)
 
 with I720.scope("assertions") as cm:
@@ -286,31 +288,116 @@ with I760.scope("assertions") as cm:
 
 I770 = p.create_item(
     R1__has_label="rule: deduce impossible house_number items from impossible indices",
-    R2__has_description=("deduce impossible house_number items from impossible indices"),
+    R2__has_description=("deduce impossible house_number items (R52__is_none_of) from impossible indices"),
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
 with I770.scope("context") as cm:
     cm.new_var(hn1=p.instance_of(zb.I8809["house number"]))
-    cm.new_var(hn2=p.instance_of(zb.I8809["house number"]))
     cm.new_var(imp_idcs_tup=p.instance_of(p.I33["tuple"]))
-    cm.new_variable_literal("index_val")
 
     cm.uses_external_entities(zb.I8809["house number"])
 
 with I770.scope("premises") as cm:
     cm.new_rel(cm.hn1, p.R4["is instance of"], zb.I8809["house number"], overwrite=True)
-    cm.new_rel(cm.hn2, p.R4["is instance of"], zb.I8809["house number"], overwrite=True)
     cm.new_rel(cm.hn1, zb.R8139["has impossible indices"], cm.imp_idcs_tup)
-    cm.new_rel(cm.imp_idcs_tup, p.R39["has element"], cm.index_val)
-    cm.new_rel(cm.hn2, p.R40["has index"], cm.index_val)
+
+
+def create_none_of_tuple(self, hn_item, imp_idcs_tup):
+
+    res = p.RuleResult()
+
+    all_house_numbers: list = zb.all_house_number_tuple.R39__has_element
+
+    # tuple-item -> list
+    imp_idcs: list = imp_idcs_tup.R39__has_element
+
+    impossible_house_numbers = [h for h in all_house_numbers if getattr(h, "R40__has_index")[0] in imp_idcs]
+
+    imp_hn_tup = p.new_tuple(*impossible_house_numbers)
+
+    stm = hn_item.set_relation(p.R52["is none of"], imp_hn_tup)
+
+    res.add_entity(hn_item)
+    res.add_statement(stm)
+
+    return res
 
 with I770.scope("assertions") as cm:
-    cm.new_rel(cm.hn1, p.R50["is different from"], cm.hn2)
+    cm.new_consequent_func(create_none_of_tuple, cm.hn1, cm.imp_idcs_tup)
 
 
 # ###############################################################################
 
+I780 = p.create_item(
+    R1__has_label="rule: infere from 'is none of' -> 'is one of'",
+    R2__has_description=("principle of exclusion, part 1: infere from 'is none of' -> 'is one of'"),
+    R4__is_instance_of=p.I41["semantic rule"],
+)
 
+with I780.scope("context") as cm:
+    cm.new_var(cls1=p.instance_of(p.I1["general item"]))
+    cm.new_var(itm1=p.instance_of(p.I1["general item"]))
+    cm.new_var(tup1=p.instance_of(p.I33["tuple"]))
+    cm.new_var(tup2=p.instance_of(p.I33["tuple"]))
+
+    cm.uses_external_entities(p.I2["Metaclass"])
+
+
+with I780.scope("premises") as cm:
+    cm.new_rel(cm.cls1, p.R4["is instance of"], p.I2["Metaclass"], overwrite=True)
+    cm.new_rel(cm.itm1, p.R4["is instance of"], cm.cls1, overwrite=True)
+    cm.new_rel(cm.cls1, p.R51["instances are from"], cm.tup1)
+    cm.new_rel(cm.itm1, p.R52["is none of"], cm.tup2)
+
+
+def tuple_difference_factory(self, tuple_item1, tuple_item2):
+    """
+    Create a new tuple item which contains the elements which are in tuple1 but not in tuple2
+    """
+    res = p.RuleResult()
+    assert tuple_item1.R4__is_instance_of == p.I33["tuple"]
+    assert tuple_item2.R4__is_instance_of == p.I33["tuple"]
+    elements1 = tuple_item1.get_relations("R39__has_element", return_obj=True)
+    elements2 = tuple_item2.get_relations("R39__has_element", return_obj=True)
+
+    # TODO: this could be speed up by using dicts:
+    new_elts = (e for e in elements1 if e not in elements2)
+    res.new_entities.append(p.new_tuple(*new_elts))
+
+    return res
+
+
+with I780.scope("assertions") as cm:
+    cm.new_var(tup_diff=p.instance_of(p.I33["tuple"]))  # remaining items
+    # cm.tup_diff.add_method(tuple_difference_factory, "fiat_factory")
+
+    cm.new_consequent_func(tuple_difference_factory, cm.tup1, cm.tup2, anchor_item=cm.tup_diff)
+
+    cm.new_rel(cm.itm1, p.R56["is one of"], cm.tup_diff)
+
+# ###############################################################################
+
+
+I790 = p.create_item(
+    R1__has_label="rule: infere from 'is one of' -> 'is same as'",
+    R2__has_description=("principle of exclusion part 2: infere from 'is one of' -> 'is same as of'"),
+    R4__is_instance_of=p.I41["semantic rule"],
+)
+
+with I790.scope("context") as cm:
+    cm.new_var(itm1=p.instance_of(p.I1["general item"]))
+    cm.new_var(elt0=p.instance_of(p.I1["general item"]))
+    cm.new_var(tup1=p.instance_of(p.I33["tuple"]))
+
+with I790.scope("premises") as cm:
+    cm.new_rel(cm.itm1, p.R56["is one of"], cm.tup1)
+    cm.new_rel(cm.tup1, p.R38["has length"], 1)
+    cm.new_rel(cm.tup1, p.R39["has element"], cm.elt0)
+
+with I790.scope("assertions") as cm:
+    cm.new_rel(cm.elt0, p.R47["is same as"], cm.itm1)
+
+# ###############################################################################
 
 p.end_mod()

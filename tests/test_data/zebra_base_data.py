@@ -212,6 +212,8 @@ I1383 = p.create_item(
     R40__has_index=5,
 )
 
+all_house_number_tuple = p.close_class_with_R51(I8809["house number"])
+
 
 # ###############################################################################
 
@@ -379,7 +381,6 @@ R4872 = p.create_relation(
     R11__has_range_of_result=I7435["human"],
     R43__is_opposite_of=R3606["lives next to"]
 )
-
 
 # auxiliary relations
 

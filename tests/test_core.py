@@ -1817,7 +1817,9 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
              mod_context_uri=zp.__URI__
          )
 
-        self.assertEqual(len(res.new_statements), 13)
+        new_houses_nbr = len(res.new_entities)
+        self.assertEqual(new_houses_nbr, 13)
+        self.assertEqual(len(res.new_statements), new_houses_nbr*2)  # including placeholder-statements
 
         # revist the  example from above
         self.assertNotEqual(zb.I4037["Englishman"].zb__R9040__lives_in_numbered_house, None)
@@ -1837,14 +1839,39 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
              zp.zr.I770["rule: deduce impossible house_number items from impossible indices"],
              mod_context_uri=zp.__URI__
          )
-        self.assertEqual(len(res.new_statements), 4)
 
-        expected_house_numbers = (zb.I6448["house 1"], zb.I4735["house 3"], zb.I4785["house 4"], zb.I1383["house 5"])
+        #  [S6265(<Item Ia7903["house number of person12"]>, <Rel. R52["is none of"]>, <Item Ia5222["4-tuple: ..>)]
+        self.assertEqual(len(res.new_statements), 1)
 
-        for stm in res.new_statements:
-            self.assertEqual(stm.subject.R4__is_instance_of, zb.I8809["house number"])
-            self.assertEqual(stm.predicate, p.R50["is different from"])
-            self.assertIn(stm.object, expected_house_numbers)
+        # apply next rule:
+        res_I780 = res = p.ruleengine.apply_semantic_rule(
+             zp.zr.I780,
+             mod_context_uri=zp.__URI__
+         )
+
+        # [S2144(<Item Ia7903["house number of person12"]>, <Relation R56["is one of"]>, <Item Ia8692["1-tuple: ...]>)]
+        self.assertEqual(len(res.new_statements), 1)
+
+        # apply next rule:
+        res_I790 = res = p.ruleengine.apply_semantic_rule(
+             zp.zr.I790["rule: infere from 'is one of' -> 'is same as'"],
+             mod_context_uri=zp.__URI__
+         )
+
+        # [S8944(<Item Ia7903["house number of person12"]>, <Relation R47["is same as"]>, <Item I7582["house 2"]>)]
+        self.assertEqual(len(res.new_statements), 1)
+
+
+        # apply next rule:
+        res_I720b = res = p.ruleengine.apply_semantic_rules(
+            zp.zr.I702["rule: add reverse statement for symmetrical relations"],
+            # (This rule does not yet have any effect, see its comment)
+            # zp.zr.I720["rule: replace (some) same_as-items"],
+            mod_context_uri=zp.__URI__
+         )
+
+        # IPS()
+
 
 class Test_Z_Core(HouskeeperMixin, unittest.TestCase):
     """

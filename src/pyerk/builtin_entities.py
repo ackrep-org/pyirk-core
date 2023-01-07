@@ -1396,6 +1396,7 @@ R39 = create_builtin_relation(
     # TODO specify inverse relation R15
 )
 
+# TODO: should be functional
 R40 = create_builtin_relation(
     key_str="R40",
     R1__has_label="has index",
@@ -1588,6 +1589,7 @@ R47 = create_builtin_relation(
     key_str="R47",
     R1__has_label="is same as",
     R2__has_description=("specifies that subject and object are identical"),
+    R42__is_symmetrical=True,
     # TODO: model that this is (probably)  equivalent to "owl:sameAs"
 )
 

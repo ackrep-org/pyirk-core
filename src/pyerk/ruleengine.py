@@ -356,7 +356,7 @@ class RuleApplicatorWorker():
         self.extended_local_nodes = None
 
         # list of triples [(node1, <Relation>, node2), ...]
-        self.asserted_relation_templates: List[tuple]
+        self.asserted_relation_templates: List[tuple] = None
 
         self.P: nx.DiGraph = None
         self.create_prototype_subgraph_from_rule()
@@ -615,7 +615,11 @@ class RuleApplicatorWorker():
 
             if entity_obj_flag:
                 final_obj = self.extended_local_nodes.a[obj.uri]
-                self.ensure_node_of_P(final_obj)
+                if final_obj in self.parent.asserted_nodes.b or final_obj in self.parent.literal_variable_nodes.b:
+                    # `final_obj` is like "fiat0", "vlit0"; it will be handled during `_process_result_map`
+                    pass
+                else:
+                    self.ensure_node_of_P(final_obj)
             else:
                 final_obj = obj  # the LiteralWrapper instance
 
@@ -764,13 +768,11 @@ class RuleApplicatorWorker():
         """
 
         self._create_psg_nodes()
+        self.asserted_relation_templates = self.get_asserted_relation_templates()
         if self.parent.premise_type == PremiseType.GRAPH:
-            # this might also add nodes
+
+            # this call might also add further nodes
             self._create_psg_edges()
-
-            # this might also add nodes
-            self.asserted_relation_templates = self.get_asserted_relation_templates()
-
 
     def _create_psg_nodes(self) -> None:
         """
@@ -809,7 +811,10 @@ class RuleApplicatorWorker():
             node_data = dict(i=i, itm=c, entity=var, is_literal=False, rel_statements=rel_statements)
             self.local_node_candidates[i] = node_data
             self.local_nodes.add_pair(var.uri, i)
-            if var not in self.parent.external_entities:
+            if var in self.parent.external_entities:
+                # external entities will get a node in all cases (disconnected from the main component is allowed)
+                self.P.add_node(i, **node_data)
+            else:
                 self.local_node_names.add_pair(var.uri, var.R23__has_name_in_scope)
             i += 1
 

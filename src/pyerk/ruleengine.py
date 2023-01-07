@@ -99,15 +99,21 @@ class LiteralWrapper:
 
 class RuleApplicator:
     """
-    Class to handle the application of a single semantic rule.
+    Class to handle the application of a single semantic rule. Deploys several RuleApplicatorWorkers
+
     """
 
     def __init__(self, rule: core.Entity, mod_context_uri: Optional[str] = None):
         self.rule = rule
         self.mod_context_uri = mod_context_uri
 
+        self.literals = core.aux.OneToOneMapping()
+
+        self.premise_stm_lists = self.extract_premise_stm_lists()
+
         # get all subjects (Entities or Statements of the setting-scope)
         subjects = rule.scp__context.get_inv_relations("R20__has_defining_scope", return_subj=True)
+
         self.vars = [s for s in subjects if isinstance(s, core.Entity)]
         self.external_entities = rule.scp__context.get_relations("R55__uses_as_external_entity", return_obj=True)
 
@@ -122,31 +128,8 @@ class RuleApplicator:
         subjects = rule.scp__assertions.get_inv_relations("R20__has_defining_scope", return_subj=True)
         self.fiat_prototype_vars = [s for s in subjects if isinstance(s, core.Entity)]
 
-        # this are the variables created in the premise scope
-        subjects = rule.scp__premises.get_inv_relations("R20__has_defining_scope", return_subj=True)
-        self.condition_func_anchor_items = [s for s in subjects if isinstance(s, core.Item)]
-
         # TODO: rename "context" -> "setting"
         self.setting_stms = filter_relevant_stms(rule.scp__context.get_inv_relations("R20"))
-        self.premises_stms = filter_relevant_stms(rule.scp__premises.get_inv_relations("R20"))
-        self.sparql_src = rule.scp__premises.get_relations("R63__has_SPARQL_source", return_obj=True)
-        self.assertions_stms = filter_relevant_stms(rule.scp__assertions.get_inv_relations("R20"))
-        self.literals = core.aux.OneToOneMapping()
-
-        self.premise_type = self.get_premise_type()
-
-        # store I40["general relation"] instances which might serve as subject
-        self.subjectivized_predicates = core.aux.OneToOneMapping()
-
-        # for every local node (integer key) store a list of relations like:
-        # {<uri1>: S5971(<Item Ia5322["rel1 (I40__general_rel)"]>, <Relation R2850["is functional activity"]>, True)}
-        self.relation_statements = defaultdict(list)
-
-        # a: {var_uri1: P_node_index1, ...}, b: {P_node_index1: var_uri1, ...}
-        self.local_nodes = core.aux.OneToOneMapping()
-
-        # a: {var_uri1: "imt1", ...}, b: ...
-        self.local_node_names = core.aux.OneToOneMapping()
 
         # this structure holds the nodes corresponding to the fiat_prototypes
         self.asserted_nodes = core.aux.OneToOneMapping()
@@ -154,16 +137,39 @@ class RuleApplicator:
         # this structure holds the nodes corresponding to variable literal values (different literals for every match)
         self.literal_variable_nodes = core.aux.OneToOneMapping()
 
-        # will be set when needed (holds the union of both previous structures)
-        self.extended_local_nodes = None
-
-        self.G: nx.DiGraph = self.create_simple_graph()
+        self.sparql_src = None
+        self.premise_type = self.get_premise_type()
 
         self.create_prototypes_for_fiat_entities()
         self.create_prototypes_for_variable_literals()
 
-        self.P: nx.DiGraph = None
-        self.create_prototype_subgraph_from_rule()
+        self.G: nx.DiGraph = self.create_simple_graph()
+        self.ra_workers = [RuleApplicatorWorker(self, premise_stms) for premise_stms in self.premise_stm_lists]
+
+    def get_premise_type(self) -> PremiseType:
+
+        self.sparql_src = self.rule.scp__premises.get_relations("R63__has_SPARQL_source", return_obj=True)
+
+        if self.sparql_src:
+            assert self.premise_stm_lists == [[]]
+            return PremiseType.SPARQL
+        else:
+            return PremiseType.GRAPH
+
+    def extract_premise_stm_lists(self):
+
+        premise_stm_lists = []
+        direct_stms = filter_relevant_stms(self.rule.scp__premises.get_inv_relations("R20"))
+
+        if scope_OR := getattr(self.rule.scp__premises, "scp__OR", None):
+            branch_stms = filter_relevant_stms(scope_OR.get_inv_relations("R20"))
+            for stm in branch_stms:
+                premise_stm_lists.append([*direct_stms, stm])
+        else:
+            premise_stm_lists.append(direct_stms)
+
+        return premise_stm_lists
+
 
     def apply(self) -> core.RuleResult:
         """
@@ -181,18 +187,162 @@ class RuleApplicator:
                 res = self._apply()
         return res
 
+
     def _apply(self) -> core.RuleResult:
         """
         Perform the actual application of the rule (either via aubgraph monomorphism or via SPARQL query)
         """
 
         if self.premise_type == PremiseType.GRAPH:
-            return self._apply_premise_branches()
+            total_res = p.RuleResult()
+            for ra_worker in self.ra_workers:
+                res = ra_worker.apply_graph_premise()
+                total_res.extend(res)
+            return total_res
 
         else:
-            return self._apply_sparql_premise()
+            assert len(self.ra_workers) == 1
+            return self.ra_workers[0].apply_sparql_premise()
 
-    def _apply_sparql_premise(self) -> core.RuleResult:
+    def create_prototypes_for_variable_literals(self):
+        for i, var in enumerate(self.vars_for_literals):
+            node_name = f"vlit{i}"
+            self.literal_variable_nodes.add_pair(var.uri, node_name)
+
+    def create_prototypes_for_fiat_entities(self):
+
+        for i, var in enumerate(self.fiat_prototype_vars):
+            node_name = f"fiat{i}"
+            self.asserted_nodes.add_pair(var.uri, node_name)
+
+    def create_simple_graph(self) -> nx.DiGraph:
+        """
+        Create graph without regarding qualifiers. Nodes: uris (of items and relations)
+
+        :return:
+        """
+        G = nx.DiGraph()
+
+        for uri, entity in list(core.ds.items.items()) + list(core.ds.relations.items()):
+
+            # prevent items created inside scopes
+            if is_node_for_simple_graph(entity):
+                # TODO: rename kwarg itm to ent
+                G.add_node(uri, itm=entity, is_literal=False)
+
+        all_rels = self.get_all_node_relations()
+        for uri_tup, rel_cont in all_rels.items():
+            uri1, uri2 = uri_tup
+            if uri1 in G.nodes and uri2.startswith(LITERAL_BASE_URI):
+                literal_value = self.literals.a[uri2]
+                G.add_node(uri2, is_literal=True, value=literal_value)
+                G.add_edge(*uri_tup, itm1=core.ds.get_entity_by_uri(uri1), itm2=literal_value, **rel_cont)
+            elif uri1 in G.nodes and uri2 in G.nodes:
+                G.add_edge(
+                    *uri_tup, itm1=core.ds.get_entity_by_uri(uri1), itm2=core.ds.get_entity_by_uri(uri2), **rel_cont
+                )
+            else:
+                pass
+                # uri1 belongs to an ignored item (eg from inside a scope)
+
+        return G
+
+    def get_all_node_relations(self) -> dict:
+        """
+        returns a dict of all graph-relevant relations {(uri1, uri2): Container(rel_uri=uri3), ...}
+        """
+
+        res = {}
+
+        # core.ds.statements
+        # {'erk:/builtins#R1': {'erk:/builtins#R1': [S(...), ...], ...}, ..., 'erk:/builtins#I1': {...}}
+        for subj_uri, stm_dict in core.ds.statements.items():
+            entity = core.ds.get_entity_by_uri(subj_uri, strict=False)
+            if not isinstance(entity, core.Entity):
+                # this omits all Qualifiers
+                continue
+
+            for rel_uri, stm_list in stm_dict.items():
+                for stm in stm_list:
+                    assert isinstance(stm, core.Statement)
+                    assert len(stm.relation_tuple) == 3
+
+                    rel_props = bi.get_relation_properties(stm.predicate)
+
+                    if stm.corresponding_entity is not None:
+                        # case 1: object is not a literal. must be an item (otherwise ignore)
+                        assert stm.corresponding_literal is None
+
+                        c = Container(rel_uri=rel_uri, rel_props=rel_props, rel_entity=stm.predicate)
+                        res[(subj_uri, stm.corresponding_entity.uri)] = c
+                        # TODO: support multiple relations in the graph (MultiDiGraph)
+                        break
+                    else:
+                        # case 2: object is a literal
+                        assert stm.corresponding_literal is not None
+                        assert stm.corresponding_entity is None
+                        c = Container(rel_uri=rel_uri, rel_props=rel_props, rel_entity=stm.predicate)
+                        literal_uri = self._make_literal(stm.corresponding_literal)
+
+                        res[(subj_uri, literal_uri)] = c
+
+        return res
+
+    def _make_literal(self, value) -> str:
+        """
+        create (if neccessary) and return an uri for an literal value
+        """
+
+        if uri:=self.literals.b.get(value):
+            return uri
+        i = len(self.literals.a)
+        uri = f"{LITERAL_BASE_URI}#{i}"
+        self.literals.add_pair(uri, value)
+
+        return uri
+
+class RuleApplicatorWorker():
+
+    """
+    Performs the application of one premise branch of a rule
+    """
+
+    def __init__(self, parent: RuleApplicator, premise_stms: list):
+        # get all subjects (Entities or Statements of the setting-scope)
+
+        self.parent = parent
+        self.premises_stms = premise_stms
+
+        rule = parent.rule
+
+        # this are the variables created in the premise scope
+        subjects = rule.scp__premises.get_inv_relations("R20__has_defining_scope", return_subj=True)
+        self.condition_func_anchor_items = [s for s in subjects if isinstance(s, core.Item)]
+
+        self.sparql_src = rule.scp__premises.get_relations("R63__has_SPARQL_source", return_obj=True)
+        self.assertions_stms = filter_relevant_stms(rule.scp__assertions.get_inv_relations("R20"))
+
+        # for every local node (integer key) store a list of relations like:
+        # {<uri1>: S5971(<Item Ia5322["rel1 (I40__general_rel)"]>, <Relation R2850["is functional activity"]>, True)}
+        self.relation_statements = defaultdict(list)
+
+        # a: {var_uri1: P_node_index1, ...}, b: {P_node_index1: var_uri1, ...}
+        self.local_nodes = core.aux.OneToOneMapping()
+
+        # a: {var_uri1: "imt1", ...}, b: ...
+        self.local_node_names = core.aux.OneToOneMapping()
+
+        # store I40["general relation"] instances which might serve as subject
+        self.subjectivized_predicates = core.aux.OneToOneMapping()
+
+        # will be set when needed (holds the union of both previous structures)
+        self.extended_local_nodes = None
+
+        self.P: nx.DiGraph = None
+        self.create_prototype_subgraph_from_rule()
+
+
+    def apply_sparql_premise(self) -> core.RuleResult:
         where_clause = textwrap.dedent(self.sparql_src[0])
         var_names = "?" + " ?".join(self.local_node_names.b.keys())  # -> e.g. "?ph1 ?ph2 ?some_itm ?rel1"
 
@@ -212,28 +362,28 @@ class RuleApplicator:
         result_maps = []
         for row in res2:
             res_map = {}
-            assert len(row) == len(self.vars)
-            for v, entity in zip(self.vars, row):
+            assert len(row) == len(self.parent.vars)
+            for v, entity in zip(self.parent.vars, row):
                 node = self.local_nodes.a[v.uri]
                 res_map[node] = entity
             result_maps.append(res_map)
 
         return self._process_result_map(result_maps)
 
-    def _apply_premise_branches(self) -> core.RuleResult:
+    def apply_graph_premise(self) -> core.RuleResult:
 
         result_maps = self.match_subgraph_P()
         # TODO: for debugging the result_maps data structure the following things might be helpful:
         # - a mapping like self.local_nodes.a but with labels instead of uris
         # - a visualization of the prototype graph self.P
         res = self._process_result_map(result_maps)
+
         return res
 
     def _process_result_map(self, result_maps) -> core.RuleResult:
         """
             - process the found subgraphs with the assertion
         """
-
 
         condition_functions, cond_func_arg_nodes = self.get_condition_funcs_and_args()
 
@@ -368,7 +518,7 @@ class RuleApplicator:
 
         self._fill_extended_local_nodes()
 
-        for var in self.fiat_prototype_vars:
+        for var in self.parent.fiat_prototype_vars:
 
             call_args = var.get_relations("R29", return_obj=True)
             fiat_factory = getattr(var, "fiat_factory", None)
@@ -384,7 +534,7 @@ class RuleApplicator:
             for arg in call_args:
                 if isinstance(arg, p.allowed_literal_types):
                     # allow literal arguments for consequent functions
-                    uri = self._make_literal(arg)
+                    uri = self.parent._make_literal(arg)
                     self.extended_local_nodes.add_pair(uri, LiteralWrapper(arg))
                 else:
                     uri = arg.uri
@@ -399,7 +549,7 @@ class RuleApplicator:
                     raise core.aux.SemanticRuleError(msg)
                 arg_nodes.append(node)
             args_node_list.append(tuple(arg_nodes))
-            node_names.append(self.asserted_nodes.a[var.uri])
+            node_names.append(self.parent.asserted_nodes.a[var.uri])
         return func_list, args_node_list, node_names
 
     def get_asserted_relation_templates(self) -> List[Tuple[int, core.Relation, int]]:
@@ -455,15 +605,15 @@ class RuleApplicator:
 
     def _fill_extended_local_nodes(self):
         """
-        join local_nodes + asserted_nodes + literal_variable_nodes
+        join local_nodes + asserted_nodes + parent.literal_variable_nodes
         """
         if self.extended_local_nodes is not None:
             return
 
         self.extended_local_nodes = core.aux.OneToOneMapping(**self.local_nodes.a)
-        for k, v in self.asserted_nodes.a.items():
+        for k, v in self.parent.asserted_nodes.a.items():
             self.extended_local_nodes.add_pair(k, v)
-        for k, v in self.literal_variable_nodes.a.items():
+        for k, v in self.parent.literal_variable_nodes.a.items():
             self.extended_local_nodes.add_pair(k, v)
 
     def match_subgraph_P(self) -> List[dict]:
@@ -471,7 +621,7 @@ class RuleApplicator:
 
         # restrictions for matching nodes: none
         # ... for matching edges: relation-uri must match
-        GM = nxiso.DiGraphMatcher(self.G, self.P, node_match=self._node_matcher, edge_match=edge_matcher)
+        GM = nxiso.DiGraphMatcher(self.parent.G, self.P, node_match=self._node_matcher, edge_match=edge_matcher)
 
         # for the difference between subgraph monomorphisms and isomorphisms see:
         # https://networkx.org/documentation/stable/reference/algorithms/isomorphism.vf2.html#subgraph-isomorphism
@@ -500,7 +650,7 @@ class RuleApplicator:
         return literal or entity based on uri
         """
         if uri.startswith(LITERAL_BASE_URI):
-            return self.literals.a[uri]
+            return self.parent.literals.a[uri]
         else:
             return core.ds.get_entity_by_uri(uri)
 
@@ -542,7 +692,7 @@ class RuleApplicator:
         rel_statements = n2d.get("rel_statements")
 
         # todo: this could be faster (list lookup is slow for long lists, however that list should be short)
-        if e2 in self.external_entities:
+        if e2 in self.parent.external_entities:
             # case 1: compare exact entities (nodes in graph)
             return e2 == e1
         elif rel_statements is not None:
@@ -557,17 +707,6 @@ class RuleApplicator:
             # -> let the edges decide
 
             return True
-
-    def create_prototypes_for_variable_literals(self):
-        for i, var in enumerate(self.vars_for_literals):
-            node_name = f"vlit{i}"
-            self.literal_variable_nodes.add_pair(var.uri, node_name)
-
-    def create_prototypes_for_fiat_entities(self):
-
-        for i, var in enumerate(self.fiat_prototype_vars):
-            node_name = f"fiat{i}"
-            self.asserted_nodes.add_pair(var.uri, node_name)
 
     @staticmethod
     def _is_subjectivized_predicate(itm: bi.Item) -> bool:
@@ -605,7 +744,7 @@ class RuleApplicator:
         """
 
         self._create_psg_nodes()
-        if self.premise_type == PremiseType.GRAPH:
+        if self.parent.premise_type == PremiseType.GRAPH:
             self._create_psg_edges()
 
 
@@ -620,7 +759,7 @@ class RuleApplicator:
         # counter for node-values
         i = 0
 
-        for var in self.vars + self.external_entities:
+        for var in self.parent.vars + self.parent.external_entities:
 
             assert isinstance(var, core.Entity)
 
@@ -645,7 +784,7 @@ class RuleApplicator:
                 rel_statements = None
             self.P.add_node(i, itm=c, entity=var, is_literal=False, rel_statements=rel_statements)
             self.local_nodes.add_pair(var.uri, i)
-            if var not in self.external_entities:
+            if var not in self.parent.external_entities:
                 self.local_node_names.add_pair(var.uri, var.R23__has_name_in_scope)
             i += 1
 
@@ -653,7 +792,7 @@ class RuleApplicator:
 
         i = len(self.local_nodes.a)
 
-        for stm in self.setting_stms + self.premises_stms:
+        for stm in self.parent.setting_stms + self.premises_stms:
 
             subj, pred, obj = stm.relation_tuple
 
@@ -690,7 +829,7 @@ class RuleApplicator:
             if isinstance(obj, core.Entity):
                 if obj.R59:
                     # handle variable_literal
-                    n2 = self.literal_variable_nodes.a[obj.uri]
+                    n2 = self.parent.literal_variable_nodes.a[obj.uri]
                     self.P.add_node(n2, entity=obj, is_literal=False, is_variable_literal=True)
                 else:
                     n2 = self.local_nodes.a[obj.uri]
@@ -701,7 +840,7 @@ class RuleApplicator:
                 else:
                     # normally handle the literal -> create a wrapper node
                     self.P.add_node(i, value=obj, is_literal=True)
-                    uri = self._make_literal(obj)
+                    uri = self.parent._make_literal(obj)
                     self.local_nodes.add_pair(uri, i)
                     n2 = i
                     i += 1
@@ -740,8 +879,8 @@ class RuleApplicator:
 
         # each component is a set like {0, 1, ...}
 
-        var_uris = [v.uri for v in self.vars]
-        ee_uris = [v.uri for v in self.external_entities]
+        var_uris = [v.uri for v in self.parent.vars]
+        ee_uris = [v.uri for v in self.parent.external_entities]
         res = Container(main_components=[], ee_components=[], subjectivized_predicates_components=[])
 
         for component in components:
@@ -762,92 +901,6 @@ class RuleApplicator:
                 res.ee_components.append(component)
 
         return res
-
-    def create_simple_graph(self) -> nx.DiGraph:
-        """
-        Create graph without regarding qualifiers. Nodes: uris (of items and relations)
-
-        :return:
-        """
-        G = nx.DiGraph()
-
-        for uri, entity in list(core.ds.items.items()) + list(core.ds.relations.items()):
-
-            # prevent items created inside scopes
-            if is_node_for_simple_graph(entity):
-                # TODO: rename kwarg itm to ent
-                G.add_node(uri, itm=entity, is_literal=False)
-
-        all_rels = self.get_all_node_relations()
-        for uri_tup, rel_cont in all_rels.items():
-            uri1, uri2 = uri_tup
-            if uri1 in G.nodes and uri2.startswith(LITERAL_BASE_URI):
-                literal_value = self.literals.a[uri2]
-                G.add_node(uri2, is_literal=True, value=literal_value)
-                G.add_edge(*uri_tup, itm1=core.ds.get_entity_by_uri(uri1), itm2=literal_value, **rel_cont)
-            elif uri1 in G.nodes and uri2 in G.nodes:
-                G.add_edge(
-                    *uri_tup, itm1=core.ds.get_entity_by_uri(uri1), itm2=core.ds.get_entity_by_uri(uri2), **rel_cont
-                )
-            else:
-                pass
-                # uri1 belongs to an ignored item (eg from inside a scope)
-
-        return G
-
-    def get_all_node_relations(self) -> dict:
-        """
-        returns a dict of all graph-relevant relations {(uri1, uri2): Container(rel_uri=uri3), ...}
-        """
-
-        res = {}
-
-        # core.ds.statements
-        # {'erk:/builtins#R1': {'erk:/builtins#R1': [S(...), ...], ...}, ..., 'erk:/builtins#I1': {...}}
-        for subj_uri, stm_dict in core.ds.statements.items():
-            entity = core.ds.get_entity_by_uri(subj_uri, strict=False)
-            if not isinstance(entity, core.Entity):
-                # this omits all Qualifiers
-                continue
-
-            for rel_uri, stm_list in stm_dict.items():
-                for stm in stm_list:
-                    assert isinstance(stm, core.Statement)
-                    assert len(stm.relation_tuple) == 3
-
-                    rel_props = bi.get_relation_properties(stm.predicate)
-
-                    if stm.corresponding_entity is not None:
-                        # case 1: object is not a literal. must be an item (otherwise ignore)
-                        assert stm.corresponding_literal is None
-
-                        c = Container(rel_uri=rel_uri, rel_props=rel_props, rel_entity=stm.predicate)
-                        res[(subj_uri, stm.corresponding_entity.uri)] = c
-                        # TODO: support multiple relations in the graph (MultiDiGraph)
-                        break
-                    else:
-                        # case 2: object is a literal
-                        assert stm.corresponding_literal is not None
-                        assert stm.corresponding_entity is None
-                        c = Container(rel_uri=rel_uri, rel_props=rel_props, rel_entity=stm.predicate)
-                        literal_uri = self._make_literal(stm.corresponding_literal)
-
-                        res[(subj_uri, literal_uri)] = c
-
-        return res
-
-    def _make_literal(self, value) -> str:
-        """
-        create (if neccessary) and return an uri for an literal value
-        """
-
-        if uri:=self.literals.b.get(value):
-            return uri
-        i = len(self.literals.a)
-        uri = f"{LITERAL_BASE_URI}#{i}"
-        self.literals.add_pair(uri, value)
-
-        return uri
 
 
 wildcard_relation_uri = bi.R58["wildcard relation"].uri

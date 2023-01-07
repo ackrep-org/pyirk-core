@@ -1058,12 +1058,15 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
 
         ra = p.ruleengine.RuleApplicator(self.rule1)
 
-        self.assertEqual(len(ra.get_asserted_relation_templates()), 1)
+        self.assertEqual(len(ra.ra_workers), 1)
+        ra_worker = ra.ra_workers[0]
 
-        self.assertEqual(ra.P.number_of_nodes(), 3)
-        self.assertEqual(ra.P.number_of_edges(), 2)
+        self.assertEqual(len(ra_worker.get_asserted_relation_templates()), 1)
 
-        res_graph = ra.match_subgraph_P()
+        self.assertEqual(ra_worker.P.number_of_nodes(), 3)
+        self.assertEqual(ra_worker.P.number_of_edges(), 2)
+
+        res_graph = ra_worker.match_subgraph_P()
 
         # ensures that the rule does not match itself
         self.assertEqual(len(res_graph), 0)
@@ -1073,7 +1076,8 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
 
         # create a new RuleApplicator because the overal graph changed
         ra = p.ruleengine.RuleApplicator(self.rule1)
-        res_graph = ra.match_subgraph_P()
+        ra_worker = ra.ra_workers[0]
+        res_graph = ra_worker.match_subgraph_P()
         self.assertGreater(len(res_graph), 5)
 
     def test_c05__ruleengine04(self):
@@ -1798,11 +1802,10 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
             res = p.ruleengine.apply_semantic_rule(I703)
 
             self.assertEqual(I703.scp__premises.scp__OR.R4, p.I16["scope"])
-            # does not yet work
 
-            # self.assertEqual(x1.R302[-1], "good")
-            # self.assertEqual(x2.R302[-1], "good")
-            # self.assertNotEqual(x3.R302[-1], "good")
+            self.assertEqual(x1.R302[-1], "good")
+            self.assertEqual(x2.R302[-1], "good")
+            self.assertNotEqual(x3.R302[-1], "good")
 
 
     def test_e01__zebra_puzzle_stage02(self):

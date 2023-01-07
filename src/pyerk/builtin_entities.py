@@ -1918,7 +1918,7 @@ def reverse_statements(self, rel: Relation):
     return res
 
 
-def new_instance_as_object(self, subj, pred, obj_type, name_prefix=None):
+def new_instance_as_object(self, subj, pred, obj_type, placeholder=False, name_prefix=None):
     """
     Create a new instance of obj_type and then use this as the object in a new statement.
     """
@@ -1933,9 +1933,12 @@ def new_instance_as_object(self, subj, pred, obj_type, name_prefix=None):
     new_obj = instance_of(obj_type, r1=name)
 
     new_stm = subj.set_relation(pred, new_obj)
+    res.add_statement(new_stm)
+    res.add_entity(new_obj)
 
-    res.new_statements.append(new_stm)
-    res.new_entities.append(new_obj)
+    if placeholder:
+        new_stm2 = new_obj.set_relation(R57["is placeholder"], True)
+        res.add_statement(new_stm2)
     return res
 
 

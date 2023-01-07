@@ -224,7 +224,8 @@ with I750.scope("premises") as cm:
 
 with I750.scope("assertions") as cm:
     cm.new_consequent_func(
-        p.new_instance_as_object, cm.p1, zb.R9040["lives in numbered house"], zb.I8809["house number"]
+        # the last argument (True) specifies that the new entity will be a placeholder
+        p.new_instance_as_object, cm.p1, zb.R9040["lives in numbered house"], zb.I8809["house number"], True
     )
     # cm.new_rel(cm.h2, cm.rel2_not, cm.itm2)
     # zb.I8809["house number"]

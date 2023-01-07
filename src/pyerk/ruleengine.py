@@ -258,7 +258,14 @@ class RuleApplicator:
 
             call_args_list = []
             for node_tuple in cf_arg_nodes:
-                call_args_list.append((res_dict[node] for node in node_tuple))
+                tmp_args = []
+                for node in node_tuple:
+                    if isinstance(node, LiteralWrapper):
+                        # this occurs if a literal value is added to the argument tuple
+                        tmp_args.append(node.value)
+                    else:
+                        tmp_args.append(res_dict[node])
+                call_args_list.append(tmp_args)
 
             csq_fnc_results: List[core.RuleResult] = [
                 func(*call_args) for func, call_args in zip(consequent_functions, call_args_list)
@@ -366,8 +373,15 @@ class RuleApplicator:
             # now pepare the arguments
             arg_nodes = []
             for arg in call_args:
+                if isinstance(arg, p.allowed_literal_types):
+                    # allow literal arguments for consequent functions
+                    uri = self._make_literal(arg)
+                    self.extended_local_nodes.add_pair(uri, LiteralWrapper(arg))
+                else:
+                    uri = arg.uri
+
                 try:
-                    node = self.extended_local_nodes.a[arg.uri]
+                    node = self.extended_local_nodes.a[uri]
                 except KeyError:
                     msg = (
                         f"Entity {arg} is unknown in local nodes of rule {self.rule}. Possible reason: missing "

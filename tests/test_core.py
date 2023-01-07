@@ -1755,6 +1755,53 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
             self.assertEqual(x3.R302[-1], "good")
             self.assertEqual(x4.R302[-1], "good")
 
+    def test_d12__zebra_puzzle_stage02(self):
+        """
+        test OR and AND subscopes in premises
+        """
+
+        with p.uri_context(uri=TEST_BASE_URI):
+            R301 = p.create_relation(R1="semantic relation")
+            R302 = p.create_relation(R1="data attribute")
+
+            x1 = p.instance_of(p.I1["general item"])
+            x2 = p.instance_of(p.I1["general item"])
+            x3 = p.instance_of(p.I1["general item"])
+
+            x1.set_relation(R302, 10)
+            x2.set_relation(R302, 20)
+            x3.set_relation(R302, 30)
+
+            I703 = p.create_item(
+                R1__has_label="rule with subscope in premises",
+                R4__is_instance_of=p.I41["semantic rule"],
+            )
+
+            with I703.scope("context") as cm:
+                cm.new_var(var1=p.instance_of(p.I1["general item"]))
+
+                with self.assertRaises(p.aux.SemanticRuleError):
+                    # try to create a logical subscope but not in premise-scope -> error
+                    with cm.OR():
+                        pass
+
+            with I703.scope("premises") as cm:
+                with cm.OR() as cm_OR:
+                    cm.new_rel(cm.var1, R302, 10)
+                    cm.new_rel(cm.var1, R302, 20)
+
+            with I703.scope("assertions") as cm:
+                cm.new_rel(cm.var1, R302, "good")
+
+            res = p.ruleengine.apply_semantic_rule(I703)
+
+            # does not yet work
+
+            # self.assertEqual(x1.R302[-1], "good")
+            # self.assertEqual(x2.R302[-1], "good")
+            # self.assertNotEqual(x3.R302[-1], "good")
+
+
     def test_e01__zebra_puzzle_stage02(self):
         """
         apply zebra puzzle rules to zebra puzzle data and assess correctness of the result

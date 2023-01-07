@@ -273,7 +273,7 @@ qff_has_defining_scope = QualifierFactory(R20["has defining scope"], registry_na
 R21 = create_builtin_relation(
     key_str="R21",
     R1="is scope of",
-    R2="specifies that the subject of that relation is a scope-item of the object (statement-item)",
+    R2="specifies that the subject of that relation is a (sub) scope-item of the object (statement-item)",
     R18=(
         "This relation is used to bind scope items to its 'semantic parents'. "
         "This is *not* the inverse relation to R20. "
@@ -429,7 +429,7 @@ def _register_scope(self, name: str) -> (dict, "Item"):
 
     return ns, scope
 
-
+# every entity can have scopes
 Entity.add_method_to_class(_register_scope)
 
 
@@ -816,6 +816,27 @@ class _rule__CM(ScopingCM):
         for arg in args:
             # args are supposed to be variables created in the "setting"-scope
             self.new_rel(factory_anchor, R29["has argument"], arg, qualifiers=[qff_has_rule_ptg_mode(4)])
+
+    def OR(self):
+        """
+        Register a subscope for OR-connected Statements
+        """
+
+        if self.scope.R1 != "scp__premises":
+            msg = "logical subscope is only allowed inside 'premise'-scope"
+            raise core.aux.SemanticRuleError(msg)
+
+        namespace, scope = self.scope._register_scope("OR")
+
+        cm = RulePremiseSubScope(itm=self.item, namespace=namespace, scope=scope)
+        return cm
+
+
+class RulePremiseSubScope(ScopingCM):
+    """
+    Context Manager for logical subscopes (like OR and AND) in premises
+    """
+    pass
 
 
 def _rule__scope(self: Item, scope_name: str):

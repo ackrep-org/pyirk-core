@@ -187,38 +187,47 @@ class RuleApplicator:
         """
 
         if self.premise_type == PremiseType.GRAPH:
-            result_maps = self.match_subgraph_P()
-            # TODO: for debugging this the following things might be helpful:
-            # - a mapping like self.local_nodes.a but with labels instead of uris
-            # - a visualization of the prototype graph self.P
+            return self._apply_premise_branches()
+
         else:
-            where_clause = textwrap.dedent(self.sparql_src[0])
-            var_names = "?" + " ?".join(self.local_node_names.b.keys())  # -> e.g. "?ph1 ?ph2 ?some_itm ?rel1"
+            return self._apply_sparql_premise()
 
-            prefixes = []
-            for mod_uri, prefix in p.ds.uri_prefix_mapping.a.items():
-                if mod_uri == p.settings.BUILTINS_URI:
-                    prefix=""
-                prefixes.append(f"PREFIX {prefix}: <{mod_uri}#>")
+    def _apply_sparql_premise(self) -> core.RuleResult:
+        where_clause = textwrap.dedent(self.sparql_src[0])
+        var_names = "?" + " ?".join(self.local_node_names.b.keys())  # -> e.g. "?ph1 ?ph2 ?some_itm ?rel1"
 
-            prefix_block = "\n".join(prefixes)
-            qsrc = f"{prefix_block}\nSELECT {var_names}\n{where_clause}"
+        prefixes = []
+        for mod_uri, prefix in p.ds.uri_prefix_mapping.a.items():
+            if mod_uri == p.settings.BUILTINS_URI:
+                prefix=""
+            prefixes.append(f"PREFIX {prefix}: <{mod_uri}#>")
 
-            p.ds.rdfgraph = p.rdfstack.create_rdf_triples()
-            res = p.ds.rdfgraph.query(qsrc)
-            res2 = p.aux.apply_func_to_table_cells(p.rdfstack.convert_from_rdf_to_pyerk, res)
+        prefix_block = "\n".join(prefixes)
+        qsrc = f"{prefix_block}\nSELECT {var_names}\n{where_clause}"
 
-            result_maps = []
-            for row in res2:
-                res_map = {}
-                assert len(row) == len(self.vars)
-                for v, entity in zip(self.vars, row):
-                    node = self.local_nodes.a[v.uri]
-                    res_map[node] = entity
-                result_maps.append(res_map)
+        p.ds.rdfgraph = p.rdfstack.create_rdf_triples()
+        res = p.ds.rdfgraph.query(qsrc)
+        res2 = p.aux.apply_func_to_table_cells(p.rdfstack.convert_from_rdf_to_pyerk, res)
+
+        result_maps = []
+        for row in res2:
+            res_map = {}
+            assert len(row) == len(self.vars)
+            for v, entity in zip(self.vars, row):
+                node = self.local_nodes.a[v.uri]
+                res_map[node] = entity
+            result_maps.append(res_map)
 
         return self._process_result_map(result_maps)
 
+    def _apply_premise_branches(self) -> core.RuleResult:
+
+        result_maps = self.match_subgraph_P()
+        # TODO: for debugging the result_maps data structure the following things might be helpful:
+        # - a mapping like self.local_nodes.a but with labels instead of uris
+        # - a visualization of the prototype graph self.P
+        res = self._process_result_map(result_maps)
+        return res
 
     def _process_result_map(self, result_maps) -> core.RuleResult:
         """

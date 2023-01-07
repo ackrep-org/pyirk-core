@@ -543,7 +543,7 @@ class RuleApplicatorWorker():
                     node = self.extended_local_nodes.a[uri]
                 except KeyError:
                     msg = (
-                        f"Entity {arg} is unknown in local nodes of rule {self.rule}. Possible reason: missing "
+                        f"Entity {arg} is unknown in local nodes of rule {self.parent.rule}. Possible reason: missing "
                         "declaration in scope('setting')."
                     )
                     raise core.aux.SemanticRuleError(msg)
@@ -578,14 +578,14 @@ class RuleApplicatorWorker():
 
             if not sub.uri in self.extended_local_nodes.a:
                 msg = (
-                    f"unknown subject {sub} of rule {self.rule} (uri not in extended_local_nodes; "
+                    f"unknown subject {sub} of rule {self.parent.rule} (uri not in extended_local_nodes; "
                     "maybe missing (registration as external entity) in setting)"
                 )
                 raise ValueError(msg)
 
             if entity_obj_flag and not obj.uri in self.extended_local_nodes.a:
                 msg = (
-                    f"unknown object {obj} of rule {self.rule} (uri not in extended_local_nodes; "
+                    f"unknown object {obj} of rule {self.parent.rule} (uri not in extended_local_nodes; "
                     "maybe (registration as external entity) in setting)"
                 )
                 raise ValueError(msg)
@@ -846,7 +846,7 @@ class RuleApplicatorWorker():
                     i += 1
 
             else:
-                msg = f"While processing {self.rule}: unexpected type of obj: {type(obj)}"
+                msg = f"While processing {self.parent.rule}: unexpected type of obj: {type(obj)}"
                 raise TypeError(msg)
 
             if subjectivized_predicate:
@@ -864,7 +864,7 @@ class RuleApplicatorWorker():
 
         if len(cc.main_components) > 1:
             msg = (
-                f"unexpected number of components of prototype graph while applying rule {self.rule}."
+                f"unexpected number of components of prototype graph while applying rule {self.parent.rule}."
                 f"Expected: 1, but got ({len(cc.var_components)}). Possible reason: unused variables in the rules context."
             )
             raise core.aux.SemanticRuleError(msg)

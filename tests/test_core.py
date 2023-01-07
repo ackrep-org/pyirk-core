@@ -1824,7 +1824,7 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
 
         # apply next rule:
         res_I760 = res = p.ruleengine.apply_semantic_rule(
-             zp.zr.I760["rule: deduce impossible house numbers of neighbour"],
+             zp.zr.I760["rule: deduce impossible house indices of neighbour"],
              mod_context_uri=zp.__URI__
          )
 
@@ -1832,6 +1832,19 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         self.assertEqual(len(res.new_entities), 1)
         self.assertEqual(res.new_entities[0].R38__has_length, 4)
 
+        # apply next rule:
+        res_I770 = res = p.ruleengine.apply_semantic_rule(
+             zp.zr.I770["rule: deduce impossible house_number items from impossible indices"],
+             mod_context_uri=zp.__URI__
+         )
+        self.assertEqual(len(res.new_statements), 4)
+
+        expected_house_numbers = (zb.I6448["house 1"], zb.I4735["house 3"], zb.I4785["house 4"], zb.I1383["house 5"])
+
+        for stm in res.new_statements:
+            self.assertEqual(stm.subject.R4__is_instance_of, zb.I8809["house number"])
+            self.assertEqual(stm.predicate, p.R50["is different from"])
+            self.assertIn(stm.object, expected_house_numbers)
 
 class Test_Z_Core(HouskeeperMixin, unittest.TestCase):
     """

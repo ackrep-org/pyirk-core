@@ -234,7 +234,7 @@ with I750.scope("assertions") as cm:
 
 
 I760 = p.create_item(
-    R1__has_label="rule: deduce impossible house numbers of neighbour",
+    R1__has_label="rule: deduce impossible house indices of neighbour",
     R2__has_description=("next to house 1 is house 2"),
     R4__is_instance_of=p.I41["semantic rule"],
 )
@@ -279,6 +279,33 @@ def exclude_house_numbers_for_neighbour(self, nbr_hn: p.Item, primal_house_index
 
 with I760.scope("assertions") as cm:
     cm.new_consequent_func(exclude_house_numbers_for_neighbour, cm.hn2, cm.house_index1)
+
+# ###############################################################################
+
+
+I770 = p.create_item(
+    R1__has_label="rule: deduce impossible house_number items from impossible indices",
+    R2__has_description=("deduce impossible house_number items from impossible indices"),
+    R4__is_instance_of=p.I41["semantic rule"],
+)
+
+with I770.scope("context") as cm:
+    cm.new_var(hn1=p.instance_of(zb.I8809["house number"]))
+    cm.new_var(hn2=p.instance_of(zb.I8809["house number"]))
+    cm.new_var(imp_idcs_tup=p.instance_of(p.I33["tuple"]))
+    cm.new_variable_literal("index_val")
+
+    cm.uses_external_entities(zb.I8809["house number"])
+
+with I770.scope("premises") as cm:
+    cm.new_rel(cm.hn1, p.R4["is instance of"], zb.I8809["house number"], overwrite=True)
+    cm.new_rel(cm.hn2, p.R4["is instance of"], zb.I8809["house number"], overwrite=True)
+    cm.new_rel(cm.hn1, zb.R8139["has impossible indices"], cm.imp_idcs_tup)
+    cm.new_rel(cm.imp_idcs_tup, p.R39["has element"], cm.index_val)
+    cm.new_rel(cm.hn2, p.R40["has index"], cm.index_val)
+
+with I770.scope("assertions") as cm:
+    cm.new_rel(cm.hn1, p.R50["is different from"], cm.hn2)
 
 
 # ###############################################################################

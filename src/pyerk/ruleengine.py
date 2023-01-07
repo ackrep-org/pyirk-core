@@ -355,6 +355,9 @@ class RuleApplicatorWorker():
         # will be set when needed (holds the union of both previous structures)
         self.extended_local_nodes = None
 
+        # list of triples [(node1, <Relation>, node2), ...]
+        self.asserted_relation_templates: List[tuple]
+
         self.P: nx.DiGraph = None
         self.create_prototype_subgraph_from_rule()
 
@@ -405,7 +408,6 @@ class RuleApplicatorWorker():
         condition_functions, cond_func_arg_nodes = self.get_condition_funcs_and_args()
 
         consequent_functions, cf_arg_nodes, anchor_node_names = self.prepare_consequent_functions()
-        asserted_relation_templates = self.get_asserted_relation_templates()
 
         result = core.RuleResult()
 
@@ -463,7 +465,7 @@ class RuleApplicatorWorker():
             # augment the dict with entries like {"fiat0": <Item Ia6733["some item"]>}
             search_dict = {**res_dict, **dict(zip(anchor_node_names, asserted_new_items))}
 
-            for n1, rel, n2 in asserted_relation_templates:
+            for n1, rel, n2 in self.asserted_relation_templates:
 
                 # in most cases rel is an Relation, but it could also be a proxy-item for a relation
                 if isinstance(rel, p.Item):
@@ -613,6 +615,7 @@ class RuleApplicatorWorker():
 
             if entity_obj_flag:
                 final_obj = self.extended_local_nodes.a[obj.uri]
+                self.ensure_node_of_P(final_obj)
             else:
                 final_obj = obj  # the LiteralWrapper instance
 
@@ -762,7 +765,11 @@ class RuleApplicatorWorker():
 
         self._create_psg_nodes()
         if self.parent.premise_type == PremiseType.GRAPH:
+            # this might also add nodes
             self._create_psg_edges()
+
+            # this might also add nodes
+            self.asserted_relation_templates = self.get_asserted_relation_templates()
 
 
     def _create_psg_nodes(self) -> None:

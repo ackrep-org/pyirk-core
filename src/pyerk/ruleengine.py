@@ -131,7 +131,7 @@ class RuleApplicator:
         self.premises_stms = filter_relevant_stms(rule.scp__premises.get_inv_relations("R20"))
         self.sparql_src = rule.scp__premises.get_relations("R63__has_SPARQL_source", return_obj=True)
         self.assertions_stms = filter_relevant_stms(rule.scp__assertions.get_inv_relations("R20"))
-        self.literals = {}
+        self.literals = core.aux.OneToOneMapping()
 
         self.premise_type = self.get_premise_type()
 
@@ -316,6 +316,8 @@ class RuleApplicator:
     def get_condition_funcs_and_args(self) -> (List[callable], List[Tuple[int]]):
         """
         """
+        self._fill_extended_local_nodes()
+
         func_list = []
         args_node_list = []
 
@@ -331,7 +333,7 @@ class RuleApplicator:
             arg_nodes = []
             call_args = anchor_item.get_relations("R29__has_argument", return_obj=True)
             for arg in call_args:
-                node = self.local_nodes.a[arg.uri]
+                node = self.extended_local_nodes.a[arg.uri]
                 arg_nodes.append(node)
             args_node_list.append(tuple(arg_nodes))
 
@@ -475,7 +477,7 @@ class RuleApplicator:
         return literal or entity based on uri
         """
         if uri.startswith(LITERAL_BASE_URI):
-            return self.literals[uri]
+            return self.literals.a[uri]
         else:
             return core.ds.get_entity_by_uri(uri)
 
@@ -756,14 +758,17 @@ class RuleApplicator:
         all_rels = self.get_all_node_relations()
         for uri_tup, rel_cont in all_rels.items():
             uri1, uri2 = uri_tup
-            if uri1 in G.nodes and uri2 in G.nodes:
+            if uri1 in G.nodes and uri2.startswith(LITERAL_BASE_URI):
+                literal_value = self.literals.a[uri2]
+                G.add_node(uri2, is_literal=True, value=literal_value)
+                G.add_edge(*uri_tup, itm1=core.ds.get_entity_by_uri(uri1), itm2=literal_value, **rel_cont)
+            elif uri1 in G.nodes and uri2 in G.nodes:
                 G.add_edge(
                     *uri_tup, itm1=core.ds.get_entity_by_uri(uri1), itm2=core.ds.get_entity_by_uri(uri2), **rel_cont
                 )
-            elif uri1 in G.nodes and uri2.startswith(LITERAL_BASE_URI):
-                literal_value = self.literals[uri2]
-                G.add_node(uri2, is_literal=True, value=literal_value)
-                G.add_edge(*uri_tup, itm1=core.ds.get_entity_by_uri(uri1), itm2=literal_value, **rel_cont)
+            else:
+                pass
+                # uri1 belongs to an ignored item (eg from inside a scope)
 
         return G
 
@@ -810,12 +815,14 @@ class RuleApplicator:
 
     def _make_literal(self, value) -> str:
         """
-        create and return an uri for an literal value
+        create (if neccessary) and return an uri for an literal value
         """
 
-        i = len(self.literals)
+        if uri:=self.literals.b.get(value):
+            return uri
+        i = len(self.literals.a)
         uri = f"{LITERAL_BASE_URI}#{i}"
-        self.literals[uri] = value
+        self.literals.add_pair(uri, value)
 
         return uri
 

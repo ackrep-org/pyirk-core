@@ -1665,6 +1665,47 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
             self.assertEqual(x2.R302[-1], 42)
             self.assertEqual(z2.R302[-1], 3.1415)
 
+            # new rule: match on same literal value (for R303)
+
+            y1 = p.instance_of(p.I1["general item"])
+            y2 = p.instance_of(p.I1["general item"])
+
+            R303 = p.create_relation(R1="new data attribute")
+
+
+            x1.set_relation(R303, 210)
+            x2.set_relation(R303, 220)
+
+            y1.set_relation(R303, 210)  # same as x1
+            y2.set_relation(R303, 220)  # same as z1
+
+
+            I704 = p.create_item(
+                R1__has_label="rule: match items with same literal values",
+                R2__has_description=(
+                    "match items with same (a priori unknown) literal values"
+                ),
+                R4__is_instance_of=p.I41["semantic rule"],
+            )
+
+            with I704.scope("context") as cm:
+                cm.new_var(var1=p.instance_of(p.I1["general item"]))
+                cm.new_var(var2=p.instance_of(p.I1["general item"]))
+                cm.new_variable_literal("val1")
+
+            with I704.scope("premises") as cm:
+
+                cm.new_rel(cm.var1, R303["new data attribute"], cm.val1)
+                cm.new_rel(cm.var2, R303["new data attribute"], cm.val1)
+
+            with I704.scope("assertions") as cm:
+                cm.new_rel(cm.var1, R301, cm.var2)
+
+            res = p.ruleengine.apply_semantic_rule(I704)
+
+            self.assertEqual(len(res.new_statements), 4)
+            self.assertEqual(y1.R301[-1], x1)
+            self.assertEqual(y2.R301[-1], x2)
 
     def test_d11__zebra_puzzle_stage02(self):
         """

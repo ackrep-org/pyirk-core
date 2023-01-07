@@ -329,6 +329,12 @@ class RuleApplicatorWorker():
         # a: {var_uri1: P_node_index1, ...}, b: {P_node_index1: var_uri1, ...}
         self.local_nodes = core.aux.OneToOneMapping()
 
+        # {P_node_index: <node-data-dict1, ...}  # data for the P-graph, but not all these node might become
+        # P-graph-nodes (due to subscope-branching);
+        # this two-stage-approach prevents unconnected one-node-components from other branches
+        # (see  if len(cc.main_components) > 1 below
+        self.local_node_candidates = {}
+
         # a: {var_uri1: "imt1", ...}, b: ...
         self.local_node_names = core.aux.OneToOneMapping()
 
@@ -782,7 +788,8 @@ class RuleApplicatorWorker():
                 rel_statements: list = self.relation_statements[var.uri]
             else:
                 rel_statements = None
-            self.P.add_node(i, itm=c, entity=var, is_literal=False, rel_statements=rel_statements)
+            node_data = dict(i=i, itm=c, entity=var, is_literal=False, rel_statements=rel_statements)
+            self.local_node_candidates[i] = node_data
             self.local_nodes.add_pair(var.uri, i)
             if var not in self.parent.external_entities:
                 self.local_node_names.add_pair(var.uri, var.R23__has_name_in_scope)
@@ -826,6 +833,9 @@ class RuleApplicatorWorker():
 
             n1 = self.local_nodes.a[subj.uri]
 
+            self.ensure_node_of_P(n1)
+
+
             if isinstance(obj, core.Entity):
                 if obj.R59:
                     # handle variable_literal
@@ -833,6 +843,7 @@ class RuleApplicatorWorker():
                     self.P.add_node(n2, entity=obj, is_literal=False, is_variable_literal=True)
                 else:
                     n2 = self.local_nodes.a[obj.uri]
+                    self.ensure_node_of_P(n2)
             elif isinstance(obj, core.allowed_literal_types):
                 if subjectivized_predicate:
                     # Note: if subjectivized_predicate the literal should occur in the prototype graphe
@@ -865,9 +876,16 @@ class RuleApplicatorWorker():
         if len(cc.main_components) > 1:
             msg = (
                 f"unexpected number of components of prototype graph while applying rule {self.parent.rule}."
-                f"Expected: 1, but got ({len(cc.var_components)}). Possible reason: unused variables in the rules context."
+                f"Expected: 1, but got {len(cc.main_components)}. Possible reason: unused variables in the rules context."
             )
             raise core.aux.SemanticRuleError(msg)
+
+    def ensure_node_of_P(self, i):
+
+        if i not in self.P.nodes:
+            node_data = self.local_node_candidates[i]
+            self.P.add_node(i, **node_data)
+
 
     def _get_weakly_connected_components(self, P) -> Container:
         """

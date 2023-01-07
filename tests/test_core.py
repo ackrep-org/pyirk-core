@@ -1846,17 +1846,20 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
 
                 with cm.OR() as cm_OR:
                     # either (var1 == 0) or (var1 == 10) and (var1 R301-related to some var0)
-                    cm_OR.new_rel(cm.var1, R302, 0)
+                    cm_OR.new_rel(cm.var1, R302, 30)  # met by x4
                     with cm_OR.AND() as cm_AND:
+                        # met by x1
                         cm_AND.new_rel(cm.var1, R302, 10)
                         cm_AND.new_rel(cm.var1, R301, cm.var0)
 
             with I704.scope("assertions") as cm:
                 cm.new_rel(cm.var1, R302, "good2")
 
-            # does not yet work
+            res = p.ruleengine.apply_semantic_rule(I704)
+
+            self.assertEqual(x4.R302[-1], "good2")
             # IPS()
-            # res = p.ruleengine.apply_semantic_rule(I704)
+            # does not yet work
             # self.assertEqual(x1.R302[-1], "good2")
 
     def test_e01__zebra_puzzle_stage02(self):

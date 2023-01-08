@@ -118,8 +118,8 @@ with I720.scope("context") as cm:
     cm.uses_external_entities(p.R57["is placeholder"])
 
 with I720.scope("premises") as cm:
-    cm.new_rel(cm.itm1, p.R57["is placeholder"], True)
-    cm.new_rel(cm.itm1, p.R47["is same as"], cm.itm2)
+    cm.new_rel(cm.itm1, p.R47["is same as"], cm.itm2)  # itm1 should stay, itm2 will be replaced by it
+    cm.new_rel(cm.itm2, p.R57["is placeholder"], True)
 
     # ensure that item with the alphabetically bigger label will be replaced by the item with the lower label
     # e.g. person2 will be replaced by person1 etc.# the `self` is necessary because this function will become a method
@@ -127,22 +127,23 @@ with I720.scope("premises") as cm:
     # This is the desired premise which does not yet work (due to functionality (R22) of placeholder)
     with cm.OR() as cm_OR:
 
-        # case 1:
+        # case 1:  both are placeholders (- then itm1 must be alphabetically smaller)
         with cm_OR.AND() as cm_AND:
-            cm_AND.new_rel(cm.itm2, p.R57["is placeholder"], True)
+            cm_AND.new_rel(cm.itm1, p.R57["is placeholder"], True)
             cm_AND.new_condition_func(p.label_compare_method, cm.itm1, cm.itm2)
 
-        # case 2:
+        # case 2:  itm1 is not a placholder (no statement)
         with cm_OR.AND() as cm_AND:
-            cm_AND.new_condition_func(p.does_not_have_relation, cm.itm2, p.R57["is placeholder"])
+            cm_AND.new_condition_func(p.does_not_have_relation, cm.itm1, p.R57["is placeholder"])
 
-        # case 3:
-        cm_OR.new_rel(cm.itm2, p.R57["is placeholder"], False, qualifiers=[p.qff_allows_alt_functional_value(True)])
+        # case 3:  itm1 is not a placholder (explicit statement with object `False`)
+        cm_OR.new_rel(cm.itm1, p.R57["is placeholder"], False, qualifiers=[p.qff_allows_alt_functional_value(True)])
 
     # TODO: this blocks the second application because only one itm is placeholder -> introduce logical OR
     # cm.new_condition_func(p.label_compare_method, cm.itm1, cm.itm2)
 
 with I720.scope("assertions") as cm:
+    # replace the certain placeholder (itm2) by the other item
     cm.new_consequent_func(p.replacer_method, cm.itm2, cm.itm1)
 
 # ###############################################################################

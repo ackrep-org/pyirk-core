@@ -873,7 +873,7 @@ class _rule__CM(ScopingCM):
 
             name = f"{scope_type}{len(and_sub_scopes)}"
 
-        namespace, scope = self.scope._register_scope(name)
+        namespace, scope = self.scope._register_scope(name, scope_type)
 
         cm = RulePremiseSubScopeCM(itm=self.item, namespace=namespace, scope=scope, parent_scope_cm=self)
         return cm

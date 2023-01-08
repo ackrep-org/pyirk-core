@@ -389,8 +389,8 @@ class RuleApplicatorWorker:
         # will be set when needed (holds the union of both previous structures)
         self.extended_local_nodes = None
 
-        # list of triples [(node1, <Relation>, node2), ...]
-        self.asserted_relation_templates: List[tuple] = None
+        # list of Containers, containing triples like (node1, <Relation>, node2)
+        self.asserted_relation_templates: List[Container] = None
 
         self.P: nx.DiGraph = None
         self.create_prototype_subgraph_from_rule()
@@ -499,7 +499,9 @@ class RuleApplicatorWorker:
             # augment the dict with entries like {"fiat0": <Item Ia6733["some item"]>}
             search_dict = {**res_dict, **dict(zip(anchor_node_names, asserted_new_items))}
 
-            for n1, rel, n2 in self.asserted_relation_templates:
+            for cntnr in self.asserted_relation_templates:
+
+                n1, rel, n2 = cntnr.subject, cntnr.predicate, cntnr.object
 
                 # in most cases rel is an Relation, but it could also be a proxy-item for a relation
                 if isinstance(rel, p.Item):
@@ -526,6 +528,10 @@ class RuleApplicatorWorker:
                 else:
                     new_obj = search_dict[n2]
 
+                # check if relation already exists and should be ommitted
+                if cntnr.omit_if_existing:
+                    if new_obj in new_subj.get_relations(rel.uri, return_obj=True):
+                        continue
                 # TODO: add qualifiers
                 new_stm = new_subj.set_relation(rel, new_obj)
                 result.add_statement(new_stm)
@@ -656,7 +662,10 @@ class RuleApplicatorWorker:
             else:
                 final_obj = obj  # the LiteralWrapper instance
 
-            res.append((self.extended_local_nodes.a[sub.uri], pred, final_obj))
+            c = Container(subject=self.extended_local_nodes.a[sub.uri], predicate=pred, object=final_obj)
+            c.omit_if_existing = (stm.get_first_qualifier_obj_with_rel("R59__has_rule_prototype_graph_mode") == 5)
+
+            res.append(c)
 
         return res
 

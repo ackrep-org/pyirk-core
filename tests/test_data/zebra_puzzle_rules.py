@@ -179,7 +179,7 @@ with I730.scope("assertions") as cm:
 
 I740 = p.create_item(
     R1__has_label="rule: deduce more negative facts from negative facts",
-    R2__has_description=("deduce e.g. if h1 onws not dog, but dog owner drinks milk then h1 drinks not milk"),
+    R2__has_description=("deduce e.g. if h1 onws dog and h1 drinks milk and h2 owns zebra then h2 drinks not milk"),
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
@@ -188,6 +188,7 @@ with I740.scope("context") as cm:
     cm.new_var(h2=p.instance_of(zb.I7435["human"]))
     cm.new_var(itm1=p.instance_of(p.I1["general item"]))
     cm.new_var(itm2=p.instance_of(p.I1["general item"]))
+    cm.new_var(itm3=p.instance_of(p.I1["general item"]))
 
     cm.new_rel_var("rel1")
     cm.new_rel_var("rel2")
@@ -198,10 +199,15 @@ with I740.scope("premises") as cm:
     cm.set_sparql(
         """
         WHERE {
-            ?h1 ?rel1 ?itm1.
-            ?h1 ?rel2 ?itm2.
+            ?h1 ?rel1 ?itm1.          # e.g. h1 owns dog
+            ?h1 ?rel2 ?itm2.          # e.g. h1 drinks milk
+            ?h2 ?rel1 ?itm3.          # e.g. h2 owns zebra
+
             FILTER (?rel1 != ?rel2)
             FILTER (?itm1 != ?itm2)
+            FILTER (?itm1 != ?itm3)
+            FILTER (?h1 != ?h2)
+            FILTER (?itm2 != ?itm3)
 
             ?rel1 zb:R2850 true.     # R2850__is_functional_activity
             ?rel2 zb:R2850 true.     # R2850__is_functional_activity
@@ -209,16 +215,16 @@ with I740.scope("premises") as cm:
             ?rel1 :R43 ?rel1_not.        # R43__is_opposite_of
             ?rel2 :R43 ?rel2_not.        # R43__is_opposite_of
 
-            ?h2 ?rel1_not ?itm1.
+            ?h2 ?rel2_not ?itm2.
 
             # prevent the addition of already known relations
-            MINUS { ?h2 ?rel2_not ?itm2.}
+            # MINUS { ?h2 ?rel1_not ?itm1.}
         }
         """
     )
 
 with I740.scope("assertions") as cm:
-    cm.new_rel(cm.h2, cm.rel2_not, cm.itm2)
+    cm.new_rel(cm.h2, cm.rel2_not, cm.itm2, qualifiers=[p.qff_has_rule_ptg_mode(5)])
 
 # ###############################################################################
 

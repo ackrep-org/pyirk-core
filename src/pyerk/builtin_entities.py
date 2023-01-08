@@ -1831,7 +1831,8 @@ R59 = create_builtin_relation(
     R2__has_description=(
         "specifies that the subject should be threated according to the mode (int number) when constructing the "
         "prototype graph of an I41__semantic_rule; Modes: 0 -> normal; 1 -> ignore node, 2 -> relation statement, "
-        "3 -> variable literal, 4 -> function-anchor; currently '2' is not implemented.",
+        "3 -> variable literal, 4 -> function-anchor; 5 -> create_asserted_statement_only_if_new; "
+        "currently '2' is not implemented.",
     ),
     R8__has_domain_of_argument_1=I1["general item"],
     R11__has_range_of_result=int,

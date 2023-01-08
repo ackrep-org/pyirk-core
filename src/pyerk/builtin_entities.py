@@ -722,40 +722,7 @@ def _proposition__scope(self: Item, scope_name: str):
     return cm
 
 
-class SubScopeMixin:
-
-    def _create_subscope_cm(self, scope_type):
-
-        assert scope_type in ("OR", "AND")
-
-        if scope_type == "OR":
-            # currently we only allow one OR-subscope
-            name = scope_type
-        elif scope_type == "AND":
-            # we allow multiple AND-subscopes
-            all_sub_scopes = self.scope.get_inv_relations("R21__is_scope_of", return_subj=True)
-            and_sub_scopes = [scp for scp in all_sub_scopes if scp.R64__has_scope_type == "AND"]
-
-            name = f"scope_type{len(and_sub_scopes)}"
-
-        namespace, scope = self.scope._register_scope(name)
-
-        cm = RulePremiseSubScope(itm=self.item, namespace=namespace, scope=scope)
-        return cm
-
-    def OR(self):
-        """
-        Register a subscope for OR-connected statements
-        """
-
-        if self.scope.R64__has_scope_type not in  ("PREMISE", "AND"):
-            msg = "logical OR subscope is only allowed inside 'premise'-scope and AND-subscope"
-            raise core.aux.SemanticRuleError(msg)
-
-        return self._create_subscope_cm("OR")
-
-
-class _rule__CM(ScopingCM, SubScopeMixin):
+class _rule__CM(ScopingCM):
     def __init__(self, *args, **kwargs):
 
         self.anchor_item_counter = 0
@@ -789,8 +756,6 @@ class _rule__CM(ScopingCM, SubScopeMixin):
         )
 
         variable_object.set_relation(R59["has rule-prototype-graph-mode"], 3)
-
-
 
         return self._new_var(name, variable_object)
 
@@ -867,12 +832,42 @@ class _rule__CM(ScopingCM, SubScopeMixin):
             # args are supposed to be variables created in the "setting"-scope
             self.new_rel(factory_anchor, R29["has argument"], arg, qualifiers=[qff_has_rule_ptg_mode(4)])
 
+    def _create_subscope_cm(self, scope_type):
+
+        assert scope_type in ("OR", "AND")
+
+        if scope_type == "OR":
+            # currently we only allow one OR-subscope
+            name = scope_type
+        elif scope_type == "AND":
+            # we allow multiple AND-subscopes
+            all_sub_scopes = self.scope.get_inv_relations("R21__is_scope_of", return_subj=True)
+            and_sub_scopes = [scp for scp in all_sub_scopes if scp.R64__has_scope_type == "AND"]
+
+            name = f"scope_type{len(and_sub_scopes)}"
+
+        namespace, scope = self.scope._register_scope(name)
+
+        cm = RulePremiseSubScope(itm=self.item, namespace=namespace, scope=scope)
+        return cm
+
+    def OR(self):
+        """
+        Register a subscope for OR-connected statements
+        """
+
+        if self.scope.R64__has_scope_type not in  ("PREMISE", "AND"):
+            msg = "logical OR subscope is only allowed inside 'premise'-scope and AND-subscope"
+            raise core.aux.SemanticRuleError(msg)
+
+        return self._create_subscope_cm("OR")
+
     def AND(self):
         msg = "AND-logical subscope is only allowed inside a subscope of a 'premise'-scope"
         raise core.aux.SemanticRuleError(msg)
 
 
-class RulePremiseSubScope(ScopingCM, SubScopeMixin):
+class RulePremiseSubScope(_rule__CM):
     """
     Context Manager for logical subscopes (like OR and AND) in premises
     """

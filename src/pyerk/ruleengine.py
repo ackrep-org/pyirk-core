@@ -450,17 +450,18 @@ class RuleApplicatorWorker():
             #  }
 
             # see also builtin_items.py -> _rule__CM.new_condition_func()
-            continue_flag = False
+            skip_to_next_flag = False
             for cond_func, node_tuple in zip(condition_functions, cond_func_arg_nodes):
                 args = [res_dict[node] for node in node_tuple]
                 if not cond_func(*args):
-                    # if the condition function does not return True, we want to continue with the next res_dict
-                    continue_flag = True
+                    # if the condition function does not return True, we want to skip this res_dict
+                    # and continue with the next one
+                    skip_to_next_flag = True
                     break
 
-            if continue_flag:
+            if skip_to_next_flag:
                 # at least one of the condition function returned false -> the premises are not completely met
-                # despite we have a subgraph-monomorphism match
+                # despite we have a subgraph-monomorphism match -> we skip to the next res_dict
                 continue
 
             call_args_list = []

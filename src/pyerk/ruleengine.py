@@ -9,6 +9,7 @@ This module contains code to enable semantic inferences based on special items (
 from typing import List, Tuple, Optional
 from collections import defaultdict
 from enum import Enum
+import json
 import textwrap
 
 import networkx as nx
@@ -651,7 +652,15 @@ class RuleApplicatorWorker():
         # https://networkx.org/documentation/stable/reference/algorithms/isomorphism.vf2.html#subgraph-isomorphism
         # jupyter notebook subgraph-matching-problem
         res = list(GM.subgraph_monomorphisms_iter())
-        # res = list(GM.subgraph_isomorphisms_iter())
+        # res is a list of dicts like:[{'erk:/test/zebra02#Ia1158': 0, 'erk:/tmp/literals#0': 1}, ...]
+        # for some reason the order of that list is not stable accross multiple runs
+        # ensure stable order for stable test results; for comparing dicts they are converted to json-strings
+        res.sort(key=json.dumps)
+
+        # this temporarily serves to trigger a test fail which depends on a specific order
+        import random
+        random.seed(2)
+        random.shuffle(res)
 
         # invert the dicts (switching G and P does not work)
         # and introduce items for uris

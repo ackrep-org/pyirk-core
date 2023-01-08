@@ -686,11 +686,6 @@ class RuleApplicatorWorker():
         # ensure stable order for stable test results; for comparing dicts they are converted to json-strings
         res.sort(key=json.dumps)
 
-        # this temporarily serves to trigger a test fail which depends on a specific order
-        import random
-        random.seed(2)
-        random.shuffle(res)
-
         # invert the dicts (switching G and P does not work)
         # and introduce items for uris
 

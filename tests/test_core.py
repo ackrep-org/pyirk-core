@@ -1971,16 +1971,15 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         # [S8944(<Item Ia7903["house number of person12"]>, <Relation R47["is same as"]>, <Item I7582["house 2"]>)]
         self.assertEqual(len(res.new_statements), 1)
 
-
         # apply next rule:
-        res_I720b = res = p.ruleengine.apply_semantic_rules(
-            zp.zr.I702["rule: add reverse statement for symmetrical relations"],
-            # (This rule does not yet have any effect, see its comment)
-            # zp.zr.I720["rule: replace (some) same_as-items"],
+        h12 = zp.person12.zb__R9040__lives_in_numbered_house
+        res_I720b = res = p.ruleengine.apply_semantic_rule(
+            zp.zr.I720["rule: replace (some) same_as-items"],
             mod_context_uri=zp.__URI__
          )
 
-        # IPS()
+        self.assertEqual(res.replacements, [(h12, zp.zb.I7582["house 2"])])
+        self.assertEqual(zp.person12.zb__R9040__lives_in_numbered_house, zp.zb.I7582["house 2"])
 
 
 class Test_Z_Core(HouskeeperMixin, unittest.TestCase):

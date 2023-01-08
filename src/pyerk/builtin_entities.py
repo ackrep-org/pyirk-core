@@ -528,10 +528,11 @@ class ScopingCM:
     E.g. establishing a relationship between two items as part of the assertions of a theorem-item
     """
 
-    def __init__(self, itm: Item, namespace: dict, scope: Item):
+    def __init__(self, itm: Item, namespace: dict, scope: Item, parent_scope_cm=None):
         self.item = itm
         self.namespace = namespace
         self.scope = scope
+        self.parent_scope_cm = parent_scope_cm
 
     def __enter__(self):
         """
@@ -725,8 +726,32 @@ def _proposition__scope(self: Item, scope_name: str):
 class _rule__CM(ScopingCM):
     def __init__(self, *args, **kwargs):
 
-        self.anchor_item_counter = 0
+        self._anchor_item_counter = 0
         super().__init__(*args, **kwargs)
+
+    @property
+    def anchor_item_counter(self):
+        """
+        For subscopes we want to use the counter of the parent scope
+        """
+        if self.parent_scope_cm:
+            # using property here to support nesting
+            return self.parent_scope_cm.anchor_item_counter
+        else:
+            # using attribute here
+            return self._anchor_item_counter
+
+    @anchor_item_counter.setter
+    def anchor_item_counter(self, value):
+        """
+        For subscopes we want to use the counter of the parent scope
+        """
+        if self.parent_scope_cm:
+            # using property here to support nesting
+            self.parent_scope_cm.anchor_item_counter = value
+        else:
+            # using attribute here
+            self._anchor_item_counter = value
 
     def uses_external_entities(self, *args):
         """
@@ -790,6 +815,8 @@ class _rule__CM(ScopingCM):
 
     def _get_new_anchor_item(self, name):
 
+        # note `anchor_item_counter` is a property
+
         name = f"{name}{self.anchor_item_counter}"
         self.anchor_item_counter += 1
 
@@ -844,11 +871,11 @@ class _rule__CM(ScopingCM):
             all_sub_scopes = self.scope.get_inv_relations("R21__is_scope_of", return_subj=True)
             and_sub_scopes = [scp for scp in all_sub_scopes if scp.R64__has_scope_type == "AND"]
 
-            name = f"scope_type{len(and_sub_scopes)}"
+            name = f"{scope_type}{len(and_sub_scopes)}"
 
         namespace, scope = self.scope._register_scope(name)
 
-        cm = RulePremiseSubScope(itm=self.item, namespace=namespace, scope=scope)
+        cm = RulePremiseSubScopeCM(itm=self.item, namespace=namespace, scope=scope, parent_scope_cm=self)
         return cm
 
     def OR(self):
@@ -867,7 +894,7 @@ class _rule__CM(ScopingCM):
         raise core.aux.SemanticRuleError(msg)
 
 
-class RulePremiseSubScope(_rule__CM):
+class RulePremiseSubScopeCM(_rule__CM):
     """
     Context Manager for logical subscopes (like OR and AND) in premises
     """

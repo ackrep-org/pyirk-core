@@ -23,9 +23,7 @@ p.start_mod(__URI__)
 
 I701 = p.create_item(
     R1__has_label="rule: imply parent relation of a subrelation",
-    R2__has_description=(
-        "items which are related by a subrelation should also be related by the parent relation"
-    ),
+    R2__has_description=("items which are related by a subrelation should also be related by the parent relation"),
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
@@ -44,9 +42,7 @@ with I701.scope("assertions") as cm:
 
 I702 = p.create_item(
     R1__has_label="rule: add reverse statement for symmetrical relations",
-    R2__has_description=(
-        "given statement (s, p, o) where p.R42__is_symmetrical==True implies statement (o, p, s)"
-    ),
+    R2__has_description=("given statement (s, p, o) where p.R42__is_symmetrical==True implies statement (o, p, s)"),
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
@@ -90,7 +86,7 @@ with I710.scope("premises") as cm:
         }
         """
     )
-        # ?rel1 :zb__R2850__is_functional_activity True.
+    # ?rel1 :zb__R2850__is_functional_activity True.
     # cm.new_rel(cm.ph1, p.R57["is placeholder"], True)
     # cm.new_rel(cm.ph2, p.R57["is placeholder"], True)
 
@@ -244,7 +240,11 @@ with I750.scope("premises") as cm:
 with I750.scope("assertions") as cm:
     cm.new_consequent_func(
         # the last argument (True) specifies that the new entity will be a placeholder
-        p.new_instance_as_object, cm.p1, zb.R9040["lives in numbered house"], zb.I8809["house number"], True
+        p.new_instance_as_object,
+        cm.p1,
+        zb.R9040["lives in numbered house"],
+        zb.I8809["house number"],
+        True,
     )
     # cm.new_rel(cm.h2, cm.rel2_not, cm.itm2)
     # zb.I8809["house number"]
@@ -297,6 +297,7 @@ def exclude_house_numbers_for_neighbour(self, nbr_hn: p.Item, primal_house_index
     res.add_entity(imp_idcs_tup)
     return res
 
+
 with I760.scope("assertions") as cm:
     cm.new_consequent_func(exclude_house_numbers_for_neighbour, cm.hn2, cm.house_index1)
 
@@ -339,6 +340,7 @@ def create_none_of_tuple(self, hn_item, imp_idcs_tup):
     res.add_statement(stm)
 
     return res
+
 
 with I770.scope("assertions") as cm:
     cm.new_consequent_func(create_none_of_tuple, cm.hn1, cm.imp_idcs_tup)

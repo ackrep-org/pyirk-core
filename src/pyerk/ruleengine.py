@@ -45,6 +45,7 @@ def apply_all_semantic_rules(mod_context_uri=None) -> List[core.Statement]:
 
     return total_res
 
+
 def apply_semantic_rules(*rules: List, mod_context_uri: str = None) -> List[core.Statement]:
 
     total_res = core.RuleResult()
@@ -53,6 +54,7 @@ def apply_semantic_rules(*rules: List, mod_context_uri: str = None) -> List[core
         total_res.add_partial(res)
 
     return total_res
+
 
 def apply_semantic_rule(rule: core.Item, mod_context_uri: str = None) -> List[core.Statement]:
     """
@@ -96,6 +98,7 @@ def filter_relevant_stms(re_list: List[core.Statement], return_items=True) -> Li
     else:
         return res_statements
 
+
 class PremiseType(Enum):
     GRAPH = 0
     SPARQL = 1
@@ -132,9 +135,12 @@ class RuleApplicator:
         subjects = rule.scp__context.get_inv_relations("R20__has_defining_scope", return_subj=True)
 
         self.vars_for_literals = [
-            s for s in subjects if (
+            s
+            for s in subjects
+            if (
                 # TODO: fix dash-name problem for R59__has_rule_prototype_graph_mode and make R59 functional
-                getattr(s, "R4__is_instance_of", None) == p.I44["variable literal"] and s.R59 == [3]
+                getattr(s, "R4__is_instance_of", None) == p.I44["variable literal"]
+                and s.R59 == [3]
             )
         ]
 
@@ -177,7 +183,7 @@ class RuleApplicator:
 
         direct_stms, direct_items = filter_relevant_stms(
             self.rule.scp__premises.get_inv_relations("R20__has_defining_scope")
-            )
+        )
 
         if scope_OR := getattr(self.rule.scp__premises, "scp__OR", None):
             direct_OR_scope_stms, items = filter_relevant_stms(scope_OR.get_inv_relations("R20__has_defining_scope"))
@@ -200,7 +206,7 @@ class RuleApplicator:
 
                 direct_AND_scope_stms, AND_scope_items = filter_relevant_stms(
                     scope_item.get_inv_relations("R20__has_defining_scope")
-                    )
+                )
 
                 # those statements together form a new branch
                 premise_stm_lists.append([*direct_stms, *direct_AND_scope_stms])
@@ -211,7 +217,6 @@ class RuleApplicator:
             premise_item_lists.append(direct_items)
 
         return premise_stm_lists, premise_item_lists
-
 
     def apply(self) -> core.RuleResult:
         """
@@ -228,7 +233,6 @@ class RuleApplicator:
             with core.uri_context(self.mod_context_uri):
                 res = self._apply()
         return res
-
 
     def _apply(self) -> core.RuleResult:
         """
@@ -335,7 +339,7 @@ class RuleApplicator:
         create (if neccessary) and return an uri for an literal value
         """
 
-        if uri:=self.literals.b.get(value):
+        if uri := self.literals.b.get(value):
             return uri
         i = len(self.literals.a)
         uri = f"{LITERAL_BASE_URI}#{i}"
@@ -343,7 +347,8 @@ class RuleApplicator:
 
         return uri
 
-class RuleApplicatorWorker():
+
+class RuleApplicatorWorker:
 
     """
     Performs the application of one premise branch of a rule
@@ -390,7 +395,6 @@ class RuleApplicatorWorker():
         self.P: nx.DiGraph = None
         self.create_prototype_subgraph_from_rule()
 
-
     def apply_sparql_premise(self) -> core.RuleResult:
         where_clause = textwrap.dedent(self.sparql_src[0])
         var_names = "?" + " ?".join(self.local_node_names.b.keys())  # -> e.g. "?ph1 ?ph2 ?some_itm ?rel1"
@@ -398,7 +402,7 @@ class RuleApplicatorWorker():
         prefixes = []
         for mod_uri, prefix in p.ds.uri_prefix_mapping.a.items():
             if mod_uri == p.settings.BUILTINS_URI:
-                prefix=""
+                prefix = ""
             prefixes.append(f"PREFIX {prefix}: <{mod_uri}#>")
 
         prefix_block = "\n".join(prefixes)
@@ -431,7 +435,7 @@ class RuleApplicatorWorker():
 
     def _process_result_map(self, result_maps) -> core.RuleResult:
         """
-            - process the found subgraphs with the assertion
+        - process the found subgraphs with the assertion
         """
 
         condition_functions, cond_func_arg_nodes = self.get_condition_funcs_and_args()
@@ -529,8 +533,7 @@ class RuleApplicatorWorker():
         return result
 
     def get_condition_funcs_and_args(self) -> (List[callable], List[Tuple[int]]):
-        """
-        """
+        """ """
         self._fill_extended_local_nodes()
 
         func_list = []
@@ -639,7 +642,7 @@ class RuleApplicatorWorker():
                 )
                 raise ValueError(msg)
 
-            if proxy_item:=bi.get_proxy_item(stm, strict=False):
+            if proxy_item := bi.get_proxy_item(stm, strict=False):
                 if self._is_subjectivized_predicate(proxy_item):
                     pred = proxy_item
 
@@ -759,7 +762,7 @@ class RuleApplicatorWorker():
             # case 1: compare exact entities (nodes in graph)
             return e2 == e1
         elif rel_statements is not None:
-            #case 2: the node represents also a relation with some specific properties (specified via rel_statements)
+            # case 2: the node represents also a relation with some specific properties (specified via rel_statements)
             # I40["general relation"]; use the short syntax here for performance reasons
             assert e2.R4 == bi.I40
             if not isinstance(e1, core.Relation):
@@ -799,7 +802,6 @@ class RuleApplicatorWorker():
             return PremiseType.SPARQL
         else:
             return PremiseType.GRAPH
-
 
     def create_prototype_subgraph_from_rule(self) -> None:
         """
@@ -897,7 +899,6 @@ class RuleApplicatorWorker():
 
             self.ensure_node_of_P(n1)
 
-
             if isinstance(obj, core.Entity):
                 if obj.R59:
                     # handle variable_literal
@@ -950,7 +951,6 @@ class RuleApplicatorWorker():
         if i not in self.P.nodes:
             node_data = self.local_node_candidates[i]
             self.P.add_node(i, **node_data)
-
 
     def _get_weakly_connected_components(self, P) -> Container:
         """
@@ -1015,6 +1015,7 @@ def edge_matcher(e1d: dict, e2d: dict) -> bool:
         return False
 
     return True
+
 
 # Note this function will be called very often -> check for speedup possibilites
 def compare_relation_statements(rel1: core.Relation, stm_list: List[core.Statement]):

@@ -782,7 +782,7 @@ class DataStore:
         elif isinstance(stm_list, list):
             exception_flag = stm.get_first_qualifier_obj_with_rel(
                 "R65__allows_alternative_functional_value", tolerate_key_error=True
-                )
+            )
             if relation.R22 and not exception_flag:
                 # R22__is_functional, this means there can only be one value for this relation and this item
                 msg = (
@@ -1459,8 +1459,8 @@ class Statement:
         return res
 
     def _process_qualifiers(
-            self, qlist: Union[List[RawQualifier], List["QualifierStatement"]], scope: Optional["Entity"] = None
-        ) -> None:
+        self, qlist: Union[List[RawQualifier], List["QualifierStatement"]], scope: Optional["Entity"] = None
+    ) -> None:
 
         if not qlist:
             # nothing to do
@@ -1472,7 +1472,6 @@ class Statement:
             return
 
         for qf in qlist:
-
 
             if isinstance(qf.obj, Entity):
                 corresponding_entity = qf.obj
@@ -1527,9 +1526,6 @@ class Statement:
                 return qstm.object
 
         return None
-
-
-
 
     def unlink(self, *args) -> None:
         """
@@ -2159,6 +2155,7 @@ class RuleResult:
     def add_partial(self, part: "RuleResult"):
         self.extend(part)
         self.partial_results.append(part)
+
 
 def script_main(fpath):
     IPS()

@@ -485,7 +485,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
             itm1 = p.instance_of(p.I1["general item"])
 
             # this should cause no error (because of differnt language)
-            itm1.set_relation(p.R1["has label"], "neues Label"@p.de)
+            itm1.set_relation(p.R1["has label"], "neues Label" @ p.de)
 
             with self.assertRaises(p.aux.FunctionalRelationError):
                 itm1.set_relation(p.R1["has label"], "new label")
@@ -1495,7 +1495,6 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
 
             itm1.set_relation(R302["subrelation"], itm2)
 
-
             I701 = p.create_item(
                 R1__has_label="rule: imply parent relation of a subrelation ",
                 R2__has_description=(
@@ -1680,19 +1679,15 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
 
             R303 = p.create_relation(R1="new data attribute")
 
-
             x1.set_relation(R303, 210)
             x2.set_relation(R303, 220)
 
             y1.set_relation(R303, 210)  # same as x1
             y2.set_relation(R303, 220)  # same as z1
 
-
             I704 = p.create_item(
                 R1__has_label="rule: match items with same literal values",
-                R2__has_description=(
-                    "match items with same (a priori unknown) literal values"
-                ),
+                R2__has_description=("match items with same (a priori unknown) literal values"),
                 R4__is_instance_of=p.I41["semantic rule"],
             )
 
@@ -1740,9 +1735,7 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
             # try to find those items which have no R301 relation
             I703 = p.create_item(
                 R1__has_label="rule: match the nonexistence of some specific statements",
-                R2__has_description=(
-                    "match the nonexistence of some specific statements"
-                ),
+                R2__has_description=("match the nonexistence of some specific statements"),
                 R4__is_instance_of=p.I41["semantic rule"],
             )
 
@@ -1875,8 +1868,7 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
 
         # before loading the hint, we can already infer some new statements
         res = p.ruleengine.apply_semantic_rules(
-            zr.I702["rule: add reverse statement for symmetrical relations"],
-            mod_context_uri=zb.__URI__
+            zr.I702["rule: add reverse statement for symmetrical relations"], mod_context_uri=zb.__URI__
         )
 
         self.assertEqual(len(res.rel_map), 1)
@@ -1887,7 +1879,7 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         res = p.ruleengine.apply_semantic_rules(
             zp.zr.I701["rule: imply parent relation of a subrelation"],
             zp.zr.I702["rule: add reverse statement for symmetrical relations"],
-            mod_context_uri=zp.__URI__
+            mod_context_uri=zp.__URI__,
         )
 
         # only inferrence until now: 5 R3606["lives next to"]-statements
@@ -1898,12 +1890,11 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         res = p.ruleengine.apply_semantic_rules(
             zp.zr.I710["rule: identify same items via zb__R2850__is_functional_activity"],
             zp.zr.I720["rule: replace (some) same_as-items"],
-            mod_context_uri=zp.__URI__
+            mod_context_uri=zp.__URI__,
         )
 
         res_I730 = res = p.ruleengine.apply_semantic_rule(
-            zp.zr.I730["rule: deduce negative facts for neighbours"],
-            mod_context_uri=zp.__URI__
+            zp.zr.I730["rule: deduce negative facts for neighbours"], mod_context_uri=zp.__URI__
         )
 
         self.assertEqual(len(res.new_statements), 10)
@@ -1912,9 +1903,8 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         self.assertEqual(zb.I9848["Norwegian"].zb__R1055__has_not_house_color, [zb.I1497["blue"]])
 
         res_I740 = res = p.ruleengine.apply_semantic_rule(
-             zp.zr.I740["rule: deduce more negative facts from negative facts"],
-             mod_context_uri=zp.__URI__
-         )
+            zp.zr.I740["rule: deduce more negative facts from negative facts"], mod_context_uri=zp.__URI__
+        )
 
         self.assertEqual(len(res.new_statements), 0)
 
@@ -1923,22 +1913,20 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
 
         # apply next rule:
         res_I750 = res = p.ruleengine.apply_semantic_rule(
-             zp.zr.I750["rule: every human lives in one house"],
-             mod_context_uri=zp.__URI__
-         )
+            zp.zr.I750["rule: every human lives in one house"], mod_context_uri=zp.__URI__
+        )
 
         new_houses_nbr = len(res.new_entities)
         self.assertEqual(new_houses_nbr, 13)
-        self.assertEqual(len(res.new_statements), new_houses_nbr*2)  # including placeholder-statements
+        self.assertEqual(len(res.new_statements), new_houses_nbr * 2)  # including placeholder-statements
 
         # revist the  example from above
         self.assertNotEqual(zb.I4037["Englishman"].zb__R9040__lives_in_numbered_house, None)
 
         # apply next rule:
         res_I760 = res = p.ruleengine.apply_semantic_rule(
-             zp.zr.I760["rule: deduce impossible house indices of neighbour"],
-             mod_context_uri=zp.__URI__
-         )
+            zp.zr.I760["rule: deduce impossible house indices of neighbour"], mod_context_uri=zp.__URI__
+        )
 
         self.assertEqual(len(res.new_statements), 1)
         self.assertEqual(len(res.new_entities), 1)
@@ -1946,27 +1934,22 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
 
         # apply next rule:
         res_I770 = res = p.ruleengine.apply_semantic_rule(
-             zp.zr.I770["rule: deduce impossible house_number items from impossible indices"],
-             mod_context_uri=zp.__URI__
-         )
+            zp.zr.I770["rule: deduce impossible house_number items from impossible indices"], mod_context_uri=zp.__URI__
+        )
 
         #  [S6265(<Item Ia7903["house number of person12"]>, <Rel. R52["is none of"]>, <Item Ia5222["4-tuple: ..>)]
         self.assertEqual(len(res.new_statements), 1)
 
         # apply next rule:
-        res_I780 = res = p.ruleengine.apply_semantic_rule(
-             zp.zr.I780,
-             mod_context_uri=zp.__URI__
-         )
+        res_I780 = res = p.ruleengine.apply_semantic_rule(zp.zr.I780, mod_context_uri=zp.__URI__)
 
         # [S2144(<Item Ia7903["house number of person12"]>, <Relation R56["is one of"]>, <Item Ia8692["1-tuple: ...]>)]
         self.assertEqual(len(res.new_statements), 1)
 
         # apply next rule:
         res_I790 = res = p.ruleengine.apply_semantic_rule(
-             zp.zr.I790["rule: infere from 'is one of' -> 'is same as'"],
-             mod_context_uri=zp.__URI__
-         )
+            zp.zr.I790["rule: infere from 'is one of' -> 'is same as'"], mod_context_uri=zp.__URI__
+        )
 
         # [S8944(<Item Ia7903["house number of person12"]>, <Relation R47["is same as"]>, <Item I7582["house 2"]>)]
         self.assertEqual(len(res.new_statements), 1)
@@ -1974,9 +1957,8 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         # apply next rule:
         h12 = zp.person12.zb__R9040__lives_in_numbered_house
         res_I720b = res = p.ruleengine.apply_semantic_rule(
-            zp.zr.I720["rule: replace (some) same_as-items"],
-            mod_context_uri=zp.__URI__
-         )
+            zp.zr.I720["rule: replace (some) same_as-items"], mod_context_uri=zp.__URI__
+        )
 
         self.assertEqual(res.replacements, [(h12, zp.zb.I7582["house 2"])])
         self.assertEqual(zp.person12.zb__R9040__lives_in_numbered_house, zp.zb.I7582["house 2"])

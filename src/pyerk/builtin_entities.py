@@ -437,6 +437,7 @@ def _register_scope(self, name: str, scope_type: str = None) -> (dict, "Item"):
 
     return ns, scope
 
+
 # every entity can have scopes
 Entity.add_method_to_class(_register_scope)
 
@@ -776,9 +777,7 @@ class _rule__CM(ScopingCM):
         Because this item takes a special role it is marked with a qualifier.
         """
 
-        variable_object = instance_of(
-            I44["variable literal"], r1=f"{name} (I44__variable_literal)"
-        )
+        variable_object = instance_of(I44["variable literal"], r1=f"{name} (I44__variable_literal)")
 
         variable_object.set_relation(R59["has rule-prototype-graph-mode"], 3)
 
@@ -892,7 +891,7 @@ class _rule__CM(ScopingCM):
         Register a subscope for OR-connected statements
         """
 
-        if self.scope.R64__has_scope_type not in  ("PREMISE", "AND"):
+        if self.scope.R64__has_scope_type not in ("PREMISE", "AND"):
             msg = "logical OR subscope is only allowed inside 'premise'-scope and AND-subscope"
             raise core.aux.SemanticRuleError(msg)
 
@@ -913,7 +912,7 @@ class RulePremiseSubScopeCM(_rule__CM):
         Register a subscope for AND-connected statements
         """
 
-        if self.scope.R64__has_scope_type not in  ("OR",):
+        if self.scope.R64__has_scope_type not in ("OR",):
             msg = "logical AND-subscope is only allowed inside OR-subscope"
             raise core.aux.SemanticRuleError(msg)
 
@@ -1836,7 +1835,7 @@ R59 = create_builtin_relation(
     ),
     R8__has_domain_of_argument_1=I1["general item"],
     R11__has_range_of_result=int,
-    R18__has_usage_hint="used to adjust the meaning of a statement in the scopes of a I41__semantinc_rule"
+    R18__has_usage_hint="used to adjust the meaning of a statement in the scopes of a I41__semantinc_rule",
 )
 
 qff_has_rule_ptg_mode = QualifierFactory(R59["has rule-prototype-graph-mode"])
@@ -1862,7 +1861,6 @@ R62 = create_builtin_relation(
         "specifies that a relation is a 'relation property' (like R22_is_functional) and thus threated specially "
         "by edge matching."
     ),
-
     R8__has_domain_of_argument_1=I40["general relation"],
     R11__has_range_of_result=bool,
     R22__is_functional=True,
@@ -1874,6 +1872,7 @@ R53["is inverse functional"].set_relation(R62["is relation property"], True)
 R42["is symmetrical"].set_relation(R62["is relation property"], True)
 R60["is transitive"].set_relation(R62["is relation property"], True)
 R62["is relation property"].set_relation(R62["is relation property"], True)
+
 
 def get_relation_properties_uris():
 
@@ -1909,9 +1908,7 @@ def get_relation_properties(rel_entity: Entity) -> List[str]:
 R63 = create_builtin_relation(
     key_str="R63",
     R1__has_label="has SPARQL source",
-    R2__has_description=(
-        "specifies that the subject (a scope) is featured by some unique SPARQL source code"
-    ),
+    R2__has_description=("specifies that the subject (a scope) is featured by some unique SPARQL source code"),
     R8__has_domain_of_argument_1=I16["scope"],
     R11__has_range_of_result=str,
     R22__is_functional=True,
@@ -1930,9 +1927,7 @@ I44 = create_builtin_item(
 R64 = create_builtin_relation(
     key_str="R64",
     R1__has_label="has scope type",
-    R2__has_description=(
-        "specifies the subject (a scope) has a certain type (currently 'OR', 'AND')"
-    ),
+    R2__has_description=("specifies the subject (a scope) has a certain type (currently 'OR', 'AND')"),
     R8__has_domain_of_argument_1=I16["scope"],
     R11__has_range_of_result=str,
     R22__is_functional=True,
@@ -1957,6 +1952,7 @@ qff_allows_alt_functional_value = QualifierFactory(R65["allows alternative funct
 # ######################################################################################################################
 # condition functions (to be used in the premise scope of a rule)
 # ######################################################################################################################
+
 
 def label_compare_method(self, item1, item2) -> bool:
     """
@@ -1985,6 +1981,7 @@ def does_not_have_relation(self, item: Item, rel: Relation) -> bool:
 # ######################################################################################################################
 # consequent functions (to be used in the assertion scope of a rule)
 # ######################################################################################################################
+
 
 def replacer_method(self, old_item, new_item):
     """

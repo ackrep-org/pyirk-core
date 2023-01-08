@@ -343,7 +343,7 @@ R9803 = p.create_relation(
     R1__has_label="drinks not",
     R8__has_domain_of_argument_1=I7435["human"],
     R11__has_range_of_result=I6990["beverage"],
-    R43__is_opposite_of=R8216["drinks"]
+    R43__is_opposite_of=R8216["drinks"],
 )
 
 
@@ -351,35 +351,35 @@ R2835 = p.create_relation(
     R1__has_label="lives not in numbered house",
     R8__has_domain_of_argument_1=I7435["human"],
     R11__has_range_of_result=I8809["house number"],
-    R43__is_opposite_of=R9040["lives in numbered house"]
+    R43__is_opposite_of=R9040["lives in numbered house"],
 )
 
 R9122 = p.create_relation(
     R1__has_label="owns not",
     R8__has_domain_of_argument_1=I7435["human"],
     R11__has_range_of_result=I8139["pet"],
-    R43__is_opposite_of=R5611["owns"]
+    R43__is_opposite_of=R5611["owns"],
 )
 
 R1055 = p.create_relation(
     R1__has_label="has not house color",
     R8__has_domain_of_argument_1=I7435["human"],
     R11__has_range_of_result=I3896["house color"],
-    R43__is_opposite_of=R8098["has house color"]
+    R43__is_opposite_of=R8098["has house color"],
 )
 
 R5109 = p.create_relation(
     R1__has_label="smokes not",
     R8__has_domain_of_argument_1=I7435["human"],
     R11__has_range_of_result=I9803["cigarette brand"],
-    R43__is_opposite_of=R8592["smokes"]
+    R43__is_opposite_of=R8592["smokes"],
 )
 
 R4872 = p.create_relation(
     R1__has_label="lives not next to",
     R8__has_domain_of_argument_1=I7435["human"],
     R11__has_range_of_result=I7435["human"],
-    R43__is_opposite_of=R3606["lives next to"]
+    R43__is_opposite_of=R3606["lives next to"],
 )
 
 # auxiliary relations
@@ -442,4 +442,4 @@ def report():
         for stm in stms:
             if stm.predicate.zb__R2850__is_functional_activity or stm.predicate.R43__is_opposite_of:
                 print(f"  {stm.predicate.R1:>30}  {stm.object.R1}")
-        print("-"*40, "\n")
+        print("-" * 40, "\n")

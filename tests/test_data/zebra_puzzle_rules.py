@@ -125,12 +125,18 @@ with I720.scope("premises") as cm:
 
     # This is the desired premise which does not yet work (due to functionality (R22) of placeholder)
     with cm.OR() as cm_OR:
+
+        # case 1:
         with cm_OR.AND() as cm_AND:
             cm_AND.new_rel(cm.itm2, p.R57["is placeholder"], True)
             cm_AND.new_condition_func(p.label_compare_method, cm.itm1, cm.itm2)
 
+        # case 2:
+        with cm_OR.AND() as cm_AND:
+            cm_AND.new_condition_func(p.does_not_have_relation, cm.itm1, p.R57["is placeholder"])
+
+        # case 3:
         cm_OR.new_rel(cm.itm2, p.R57["is placeholder"], False, qualifiers=[p.qff_allows_alt_functional_value(True)])
-        cm_OR.new_condition_func(p.does_not_have_relation, cm.itm1, p.R57["is placeholder"])
 
     # TODO: this blocks the second application because only one itm is placeholder -> introduce logical OR
     # cm.new_condition_func(p.label_compare_method, cm.itm1, cm.itm2)

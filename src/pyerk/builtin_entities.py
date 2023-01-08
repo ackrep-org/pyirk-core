@@ -830,6 +830,15 @@ class _rule__CM(ScopingCM):
         considered to be fulfilled. This helps to model conditions on literals
         """
 
+        if self.scope.R64__has_scope_type == "OR":
+            # This is not allowed. Reason: this call might create multiple R29__has_argument statements.
+            # However every statement inside an OR-subscope is considered to be an alternative condition on its own
+            msg = (
+                "The creation of condition functions is not allowed in an OR-subscope. Wrap it in a nested "
+                "AND-subscope."
+            )
+            raise core.aux.SemanticRuleError(msg)
+
         if anchor_item is None:
             anchor_item = self._get_new_anchor_item(name="condition_anchor_item")
         else:

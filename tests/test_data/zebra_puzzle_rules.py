@@ -115,6 +115,7 @@ I720 = p.create_item(
 with I720.scope("context") as cm:
     cm.new_var(itm1=p.instance_of(p.I1["general item"]))
     cm.new_var(itm2=p.instance_of(p.I1["general item"]))
+    cm.uses_external_entities(p.R57["is placeholder"])
 
 with I720.scope("premises") as cm:
     cm.new_rel(cm.itm1, p.R57["is placeholder"], True)
@@ -133,7 +134,7 @@ with I720.scope("premises") as cm:
 
         # case 2:
         with cm_OR.AND() as cm_AND:
-            cm_AND.new_condition_func(p.does_not_have_relation, cm.itm1, p.R57["is placeholder"])
+            cm_AND.new_condition_func(p.does_not_have_relation, cm.itm2, p.R57["is placeholder"])
 
         # case 3:
         cm_OR.new_rel(cm.itm2, p.R57["is placeholder"], False, qualifiers=[p.qff_allows_alt_functional_value(True)])

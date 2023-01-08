@@ -1416,6 +1416,10 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
             zp.zr.I720["rule: replace (some) same_as-items"], mod_context_uri=zp.__URI__
         )
 
+        self.assertFalse(zp.person1._unlinked)
+
+        self.assertIn((zp.person9, zp.person5), res.replacements)
+        self.assertIn((zp.person2, zp.person1), res.replacements)
         neighbour_after = zp.person1.zb__R2353__lives_immediatly_right_of
         self.assertEqual(neighbour_after, zp.person3)
 

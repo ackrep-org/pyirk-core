@@ -2036,6 +2036,7 @@ def replace_and_unlink_entity(old_entity: Entity, new_entity: Entity):
 
     _unlink_entity(old_entity.uri, remove_from_mod=True)
     res.unlinked_entities.append(old_entity)
+    res.replacements.append((old_entity, new_entity))
 
     for relation_uri, stm_list in list(stm_dict1.items()) + list(stm_dict2.items()):
         for stm in stm_list:
@@ -2131,6 +2132,7 @@ class RuleResult:
         self.new_entities = []
         self.unlinked_entities = []
         self.partial_results = []
+        self.replacements = []
 
         # dict like {rel_uri1: [stm1, stm2, ...]}
         self.rel_map = defaultdict(list)
@@ -2152,6 +2154,7 @@ class RuleResult:
         self.add_statements(part.new_statements)
         self.new_entities.extend(part.new_entities)
         self.unlinked_entities.extend(part.unlinked_entities)
+        self.replacements.extend(part.replacements)
 
     def add_partial(self, part: "RuleResult"):
         self.extend(part)

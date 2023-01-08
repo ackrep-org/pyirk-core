@@ -918,7 +918,8 @@ class RuleApplicatorWorker():
                 else:
                     # normally handle the literal -> create a wrapper node
                     uri = self.parent._make_literal(obj)
-                    if n2 := self.local_nodes.a.get(uri) is None:
+                    n2 = self.local_nodes.a.get(uri)
+                    if n2 is None:
                         n2 = i
                         i += 1
                         self.local_nodes.add_pair(uri, n2)

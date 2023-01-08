@@ -675,6 +675,9 @@ class DataStore:
         # this list serves to keep track of nested scopes
         self.scope_stack = []
 
+        # store unlinked entities
+        self.unlinked_entities = {}
+
     def get_item_by_label(self, label) -> Entity:
         """
         Search over all item and return the first item which has the provided label.
@@ -1962,6 +1965,7 @@ def _unlink_entity(uri: str, remove_from_mod=False) -> None:
     entity: Entity = ds.get_entity_by_uri(uri)
     entity._label_after_unlink = f"!!unlinked: {entity.R1}"
     entity._unlinked = True
+    ds.unlinked_entities[uri] = entity
 
     if remove_from_mod:
         mod_uri = uri.split("#")[0]

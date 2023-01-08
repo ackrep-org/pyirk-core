@@ -100,6 +100,7 @@ class LiteralWrapper:
 class RuleApplicator:
     """
     Class to handle the application of a single semantic rule. Deploys several RuleApplicatorWorkers
+    (depending on the OR-subscopes)
 
     """
 
@@ -175,7 +176,6 @@ class RuleApplicator:
 
                 # those statements together form a new branch
                 premise_stm_lists.append([*direct_stms, *direct_AND_scope_stms])
-
         else:
             premise_stm_lists.append(direct_stms)
 
@@ -676,7 +676,13 @@ class RuleApplicatorWorker():
         if uri.startswith(LITERAL_BASE_URI):
             return self.parent.literals.a[uri]
         else:
-            return core.ds.get_entity_by_uri(uri)
+            try:
+                return core.ds.get_entity_by_uri(uri)
+            except p.aux.UnknownURIError:
+                if res := core.ds.unlinked_entities.get(uri):
+                    return res
+                else:
+                    raise
 
     def _node_matcher(self, n1d: dict, n2d: dict) -> bool:
         """

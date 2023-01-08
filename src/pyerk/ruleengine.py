@@ -71,7 +71,7 @@ def get_all_rules():
     return rule_instances
 
 
-def filter_relevant_stms(re_list: List[core.Statement]) -> List[core.Statement]:
+def filter_relevant_stms(re_list: List[core.Statement], return_items=True) -> List[core.Statement]:
     """
     From a list of Statement instances select only those which are qualifiers and whose subject is an
     RE with .role == SUBJECT.
@@ -81,12 +81,20 @@ def filter_relevant_stms(re_list: List[core.Statement]) -> List[core.Statement]:
     :return:
     """
 
-    res = []
+    res_statements = []
+    res_items = []
+
     for stm in re_list:
         assert isinstance(stm, core.Statement)
         if isinstance(stm.subject, core.Statement) and stm.subject.role == core.RelationRole.SUBJECT:
-            res.append(stm.subject)
-    return res
+            res_statements.append(stm.subject)
+        elif isinstance(stm.subject, core.Item):
+            res_items.append(stm.subject)
+
+    if return_items:
+        return res_statements, res_items
+    else:
+        return res_statements
 
 class PremiseType(Enum):
     GRAPH = 0
@@ -111,13 +119,17 @@ class RuleApplicator:
 
         self.literals = core.aux.OneToOneMapping()
 
-        self.premise_stm_lists = self.extract_premise_stm_lists()
+        self.premise_stm_lists, self.premise_item_lists = self.extract_premise_stm_lists()
+
+        # TODO: rename "scp__context" -> "setting"
+        self.setting_stms, self.vars = filter_relevant_stms(
+            rule.scp__context.get_inv_relations("R20__has_defining_scope")
+        )
+
+        self.external_entities = rule.scp__context.get_relations("R55__uses_as_external_entity", return_obj=True)
 
         # get all subjects (Entities or Statements of the setting-scope)
         subjects = rule.scp__context.get_inv_relations("R20__has_defining_scope", return_subj=True)
-
-        self.vars = [s for s in subjects if isinstance(s, core.Entity)]
-        self.external_entities = rule.scp__context.get_relations("R55__uses_as_external_entity", return_obj=True)
 
         self.vars_for_literals = [
             s for s in subjects if (
@@ -129,9 +141,6 @@ class RuleApplicator:
         # this are the variables created in the assertion scope
         subjects = rule.scp__assertions.get_inv_relations("R20__has_defining_scope", return_subj=True)
         self.fiat_prototype_vars = [s for s in subjects if isinstance(s, core.Entity)]
-
-        # TODO: rename "context" -> "setting"
-        self.setting_stms = filter_relevant_stms(rule.scp__context.get_inv_relations("R20"))
 
         # this structure holds the nodes corresponding to the fiat_prototypes
         self.asserted_nodes = core.aux.OneToOneMapping()
@@ -146,7 +155,10 @@ class RuleApplicator:
         self.create_prototypes_for_variable_literals()
 
         self.G: nx.DiGraph = self.create_simple_graph()
-        self.ra_workers = [RuleApplicatorWorker(self, premise_stms) for premise_stms in self.premise_stm_lists]
+
+        assert len(self.premise_item_lists) == len(self.premise_stm_lists)
+        pairs = zip(self.premise_stm_lists, self.premise_item_lists)
+        self.ra_workers = [RuleApplicatorWorker(self, stms, itms) for stms, itms in pairs]
 
     def get_premise_type(self) -> PremiseType:
 
@@ -161,26 +173,44 @@ class RuleApplicator:
     def extract_premise_stm_lists(self):
 
         premise_stm_lists = []
-        direct_stms = filter_relevant_stms(self.rule.scp__premises.get_inv_relations("R20__has_defining_scope"))
+        premise_item_lists = []
+
+        direct_stms, direct_items = filter_relevant_stms(
+            self.rule.scp__premises.get_inv_relations("R20__has_defining_scope")
+            )
 
         if scope_OR := getattr(self.rule.scp__premises, "scp__OR", None):
-            direct_OR_scope_stms = filter_relevant_stms(scope_OR.get_inv_relations("R20__has_defining_scope"))
+            direct_OR_scope_stms, items = filter_relevant_stms(scope_OR.get_inv_relations("R20__has_defining_scope"))
+            assert len(items) == 0, "msg creation of new items is now allowed in OR-subscopes"
 
             for stm in direct_OR_scope_stms:
                 # every such statements triggers a new branch
                 premise_stm_lists.append([*direct_stms, stm])
+                premise_item_lists.append([*direct_items])
 
             sub_scopes = scope_OR.get_inv_relations("R21__is_scope_of", return_subj=True)
 
             for scope_item in sub_scopes:
-                direct_AND_scope_stms = filter_relevant_stms(scope_item.get_inv_relations("R20__has_defining_scope"))
+                assert scope_item.R64__has_scope_type == "AND", "Only AND-subscopes are allowed here"
+
+                sub_scopes2 = scope_item.get_inv_relations("R21__is_scope_of", return_subj=True)
+                if len(sub_scopes2) > 0:
+                    msg = "Subscopes of AND-subscopes are not yet supported"
+                    raise NotImplementedError(msg)
+
+                direct_AND_scope_stms, AND_scope_items = filter_relevant_stms(
+                    scope_item.get_inv_relations("R20__has_defining_scope")
+                    )
 
                 # those statements together form a new branch
                 premise_stm_lists.append([*direct_stms, *direct_AND_scope_stms])
+                premise_item_lists.append([*direct_items, *AND_scope_items])
         else:
+            # there are no subscopes
             premise_stm_lists.append(direct_stms)
+            premise_item_lists.append(direct_items)
 
-        return premise_stm_lists
+        return premise_stm_lists, premise_item_lists
 
 
     def apply(self) -> core.RuleResult:
@@ -319,20 +349,18 @@ class RuleApplicatorWorker():
     Performs the application of one premise branch of a rule
     """
 
-    def __init__(self, parent: RuleApplicator, premise_stms: list):
+    def __init__(self, parent: RuleApplicator, premise_stms: List[core.Statement], premise_items: List[core.Item]):
         # get all subjects (Entities or Statements of the setting-scope)
 
         self.parent = parent
         self.premises_stms = premise_stms
-
         rule = parent.rule
 
         # this are the variables created in the premise scope
-        subjects = rule.scp__premises.get_inv_relations("R20__has_defining_scope", return_subj=True)
-        self.condition_func_anchor_items = [s for s in subjects if isinstance(s, core.Item)]
+        self.condition_func_anchor_items = premise_items
 
         self.sparql_src = rule.scp__premises.get_relations("R63__has_SPARQL_source", return_obj=True)
-        self.assertions_stms = filter_relevant_stms(rule.scp__assertions.get_inv_relations("R20"))
+        self.assertions_stms = filter_relevant_stms(rule.scp__assertions.get_inv_relations("R20"), return_items=False)
 
         # for every local node (integer key) store a list of relations like:
         # {<uri1>: S5971(<Item Ia5322["rel1 (I40__general_rel)"]>, <Relation R2850["is functional activity"]>, True)}

@@ -873,11 +873,13 @@ class RuleApplicatorWorker():
                     pass
                 else:
                     # normally handle the literal -> create a wrapper node
-                    self.P.add_node(i, value=obj, is_literal=True)
                     uri = self.parent._make_literal(obj)
-                    self.local_nodes.add_pair(uri, i)
-                    n2 = i
-                    i += 1
+                    if n2 := self.local_nodes.a.get(uri) is None:
+                        n2 = i
+                        i += 1
+                        self.local_nodes.add_pair(uri, n2)
+
+                    self.P.add_node(n2, value=obj, is_literal=True)
 
             else:
                 msg = f"While processing {self.parent.rule}: unexpected type of obj: {type(obj)}"

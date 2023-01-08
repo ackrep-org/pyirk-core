@@ -123,8 +123,17 @@ with I720.scope("premises") as cm:
     # ensure that item with the alphabetically bigger label will be replaced by the item with the lower label
     # e.g. person2 will be replaced by person1 etc.# the `self` is necessary because this function will become a method
 
+    # This is the desired premise which does not yet work (due to functionality (R22) of placeholder)
+    with cm.OR() as cm_OR:
+        with cm_OR.AND() as cm_AND:
+            cm_AND.new_rel(cm.itm2, p.R57["is placeholder"], True)
+            cm_AND.new_condition_func(p.label_compare_method, cm.itm1, cm.itm2)
+
+        cm_OR.new_rel(cm.itm2, p.R57["is placeholder"], False, qualifiers=[p.qff_allows_alt_functional_value(True)])
+        cm_OR.new_condition_func(p.does_not_have_relation, cm.itm1, p.R57["is placeholder"])
+
     # TODO: this blocks the second application because only one itm is placeholder -> introduce logical OR
-    cm.new_condition_func(p.label_compare_method, cm.itm1, cm.itm2)
+    # cm.new_condition_func(p.label_compare_method, cm.itm1, cm.itm2)
 
 with I720.scope("assertions") as cm:
     cm.new_consequent_func(p.replacer_method, cm.itm2, cm.itm1)

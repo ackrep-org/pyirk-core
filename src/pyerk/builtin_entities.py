@@ -1902,6 +1902,22 @@ R64 = create_builtin_relation(
     R22__is_functional=True,
 )
 
+
+R65 = create_builtin_relation(
+    key_str="R65",
+    R1__has_label="allows alternative functional value",
+    R2__has_description=(
+        "qualifier that specifies that the subject (a statement) might add an additional statement for a functional "
+        "relation."
+    ),
+    R8__has_domain_of_argument_1=I16["scope"],
+    R11__has_range_of_result=str,
+    R22__is_functional=True,
+    R18__has_usage_hint="used inside OR-subscopes of semantic rules",
+)
+
+qff_allows_alt_functional_value = QualifierFactory(R65["allows alternative functional value"])
+
 # ######################################################################################################################
 # condition functions (to be used in the premise scope of a rule)
 # ######################################################################################################################

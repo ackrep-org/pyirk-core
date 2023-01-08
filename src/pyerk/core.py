@@ -777,14 +777,17 @@ class DataStore:
             self.statements[subj_uri][rel_uri] = [stm]
 
         elif isinstance(stm_list, list):
-            # R22__is_functional, this means there can only be one value for this relation and this item
-            if relation.R22:
+            exception_flag = stm.get_first_qualifier_obj_with_rel(
+                "R65__allows_alternative_functional_value", tolerate_key_error=True
+                )
+            if relation.R22 and not exception_flag:
+                # R22__is_functional, this means there can only be one value for this relation and this item
                 msg = (
                     f"for subject {subj_uri} there already exists a statement for relation {stm.predicate}. "
                     f"This relation is functional (R22), thus another statement is not allowed."
                 )
                 raise aux.FunctionalRelationError(msg)
-            elif relation.R32:
+            elif relation.R32 and not exception_flag:
                 lang_list = [get_language_of_str_literal(s.object) for s in stm_list]
                 new_lang = get_language_of_str_literal(stm.object)
                 if new_lang in lang_list:
@@ -1503,11 +1506,18 @@ class Statement:
         # TODO: replace this by isinstance(stm, QualifierStatement)
         return isinstance(self.subject, Statement)
 
-    def get_first_qualifier_obj_with_rel(self, key=None, uri=None):
+    def get_first_qualifier_obj_with_rel(self, key=None, uri=None, tolerate_key_error=False):
         assert [key, uri].count(None) == 1, "exactly one of the arguments must be provided, not 0 not 2"
 
         if key:
-            uri = process_key_str(key).uri
+            try:
+                uri = process_key_str(key).uri
+            except KeyError:
+                if tolerate_key_error:
+                    # this allows to ask for qualifiers before they are created
+                    return None
+                else:
+                    raise
 
         for qstm in self.qualifiers:
             if qstm.predicate.uri == uri:

@@ -243,7 +243,7 @@ class RuleApplicator:
             total_res = p.RuleResult()
             for ra_worker in self.ra_workers:
                 res = ra_worker.apply_graph_premise()
-                total_res.extend(res)
+                total_res.add_partial(res)
             return total_res
 
         else:
@@ -442,7 +442,8 @@ class RuleApplicatorWorker:
 
         consequent_functions, cf_arg_nodes, anchor_node_names = self.prepare_consequent_functions()
 
-        result = core.RuleResult()
+        result = ReportingRuleResult(raworker=self)
+
 
         for res_dict in result_maps:
             # res_dict represents one situation where the assertions should be applied
@@ -534,7 +535,8 @@ class RuleApplicatorWorker:
                         continue
                 # TODO: add qualifiers
                 new_stm = new_subj.set_relation(rel, new_obj)
-                result.add_statement(new_stm)
+
+                result.add_statement(new_stm, res_dict)
 
         return result
 
@@ -1024,6 +1026,38 @@ def edge_matcher(e1d: dict, e2d: dict) -> bool:
         return False
 
     return True
+
+
+class ReportingRuleResult(core.RuleResult):
+
+    def __init__(self, raworker: RuleApplicatorWorker):
+        super().__init__()
+        self.raworker = raworker
+        self.statement_reports = []
+
+    def add_statement(self, stm: core.Statement, raw_binding_info: dict):
+        """
+        :param stm:
+        :param raw_binding_info:   dict like  {0: <Item Ia1555["x1"]>, 1: <Item Ia4365["x2"]>, 'vlit0': 42}
+
+        """
+
+        super().add_statement(stm)
+
+        bindinfo = []
+        for node, result_entity in raw_binding_info.items():
+            uri = self.raworker.extended_local_nodes.b.get(node)
+            IPS(uri is None)  # TODO: handle this case
+            assert uri
+            premise_entity = self.raworker._get_by_uri(uri)
+            bindinfo.append( (premise_entity, result_entity) )
+
+        c = Container(stm=stm, bindinfo=bindinfo)
+        self.statement_reports.append(c)
+
+    def report(self):
+        for c in self.statement_reports:
+            print(c.stm, "  because  ",  c.bindinfo)
 
 
 # Note this function will be called very often -> check for speedup possibilites

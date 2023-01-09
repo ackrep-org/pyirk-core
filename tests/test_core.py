@@ -1625,7 +1625,7 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
 
     def test_d10__zebra_puzzle_stage02(self):
         """
-        test to match variable literal values
+        test to match variable literal values (and result report)
         """
 
         with p.uri_context(uri=TEST_BASE_URI):
@@ -1709,6 +1709,10 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
             self.assertEqual(len(res.new_statements), 4)
             self.assertEqual(y1.R301[-1], x1)
             self.assertEqual(y2.R301[-1], x2)
+
+            # test the presence of the reporting data structures
+            self.assertEqual(len(res.partial_results[0].statement_reports), 4)
+
 
     def test_d11__zebra_puzzle_stage02(self):
         """

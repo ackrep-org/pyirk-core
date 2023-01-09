@@ -440,6 +440,10 @@ def report():
             stms.extend(v)
 
         for stm in stms:
-            if stm.predicate.zb__R2850__is_functional_activity or stm.predicate.R43__is_opposite_of:
+            if (
+                    stm.predicate.zb__R2850__is_functional_activity
+                    or stm.predicate.R43__is_opposite_of
+                    or stm.predicate == p.R50["is different from"]
+            ):
                 print(f"  {stm.predicate.R1:>30}  {stm.object.R1}")
         print("-" * 40, "\n")

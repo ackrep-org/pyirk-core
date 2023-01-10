@@ -1,4 +1,4 @@
-from typing import List, Union, Optional
+from typing import List, Union, Optional, Any
 
 from ipydex import IPS  # noqa
 
@@ -1751,6 +1751,20 @@ def close_class_with_R51(cls_item: Item):
     cls_item.set_relation("R51__instances_are_from", tpl)
 
     return tpl
+
+def set_multiple_statements(subjects: Union[list, tuple], predicate: Relation, object: Any, qualifiers=None):
+    """
+    For every element of subjects, create a statement with predicate and object
+    """
+
+    res = []
+    for sub in subjects:
+        assert isinstance(sub, Entity)
+        stm = sub.set_relation(predicate, object, qualifiers=qualifiers)
+        res.append(stm)
+
+    return res
+
 
 
 R52 = create_builtin_relation(

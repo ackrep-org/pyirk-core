@@ -974,6 +974,33 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
 
         self.assertNotEqual(scp1, scp2)
 
+    def test_d10__set_multiple_statements(self):
+
+        with p.uri_context(uri=TEST_BASE_URI, prefix="ut"):
+
+            itm1 = p.instance_of(p.I1["general item"])
+            itm2 = p.instance_of(p.I1["general item"])
+            itm3 = p.instance_of(p.I1["general item"])
+
+            x = p.instance_of(p.I1["general item"])
+
+            self.assertEquals(itm1.R57__is_placeholder, None)
+            self.assertEquals(itm2.R57__is_placeholder, None)
+
+            stms = p.set_multiple_statements((itm1, itm2), p.R57["is placeholder"], True)
+            self.assertEquals(len(stms), 2)
+            self.assertEquals(itm1.R57__is_placeholder, True)
+            self.assertEquals(itm2.R57__is_placeholder, True)
+
+            tup = p.new_tuple(itm1, itm2, itm3)
+            stms = p.set_multiple_statements(tup.R39__has_element, p.R31["is in mathematical relation with"], x)
+
+            self.assertEquals(len(stms), 3)
+
+            self.assertEquals(itm1.R31__is_in_mathematical_relation_with, [x])
+            self.assertEquals(itm2.R31__is_in_mathematical_relation_with, [x])
+            self.assertEquals(itm3.R31__is_in_mathematical_relation_with, [x])
+
 
 class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
     def setUp(self):

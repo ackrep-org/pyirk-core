@@ -487,7 +487,7 @@ class RuleApplicatorWorker:
             asserted_new_items = []
             for cfr in csq_fnc_results:
                 assert isinstance(cfr, core.RuleResult)
-                result.extend(cfr)
+                result.extend_with_binding_info(cfr, res_dict)
                 if ne := cfr.new_entities:
                     assert len(ne) == 1
                     asserted_new_items.append(ne[0])
@@ -536,7 +536,7 @@ class RuleApplicatorWorker:
                 # TODO: add qualifiers
                 new_stm = new_subj.set_relation(rel, new_obj)
 
-                result.add_statement(new_stm, res_dict)
+                result.add_bound_statement(new_stm, res_dict)
 
         return result
 
@@ -671,11 +671,11 @@ class RuleApplicatorWorker:
 
         return res
 
-    def _fill_extended_local_nodes(self):
+    def _fill_extended_local_nodes(self, force=False):
         """
         join local_nodes + asserted_nodes + parent.literal_variable_nodes
         """
-        if self.extended_local_nodes is not None:
+        if self.extended_local_nodes is not None and not force:
             return
 
         self.extended_local_nodes = core.aux.OneToOneMapping(**self.local_nodes.a)
@@ -825,6 +825,9 @@ class RuleApplicatorWorker:
 
             # this call might also add further nodes
             self._create_psg_edges()
+
+        # ensure completeness (local nodes might have gotten new nodes for literals)
+        self._fill_extended_local_nodes(force=True)
 
     def _create_psg_nodes(self) -> None:
         """
@@ -1035,19 +1038,20 @@ class ReportingRuleResult(core.RuleResult):
         self.raworker = raworker
         self.statement_reports = []
 
-    def add_statement(self, stm: core.Statement, raw_binding_info: dict):
+    def add_bound_statement(self, stm: core.Statement, raw_binding_info: dict):
         """
         :param stm:
         :param raw_binding_info:   dict like  {0: <Item Ia1555["x1"]>, 1: <Item Ia4365["x2"]>, 'vlit0': 42}
 
         """
 
-        super().add_statement(stm)
+        self.add_statement(stm)
+        self._add_statement_report(stm, raw_binding_info)
 
+    def _add_statement_report(self, stm: core.Statement, raw_binding_info: dict):
         bindinfo = []
         for node, result_entity in raw_binding_info.items():
             uri = self.raworker.extended_local_nodes.b.get(node)
-            IPS(uri is None)  # TODO: handle this case
             assert uri
             premise_entity = self.raworker._get_by_uri(uri)
             bindinfo.append( (premise_entity, result_entity) )
@@ -1055,9 +1059,18 @@ class ReportingRuleResult(core.RuleResult):
         c = Container(stm=stm, bindinfo=bindinfo)
         self.statement_reports.append(c)
 
-    def report(self):
-        for c in self.statement_reports:
-            print(c.stm, "  because  ",  c.bindinfo)
+    def extend_with_binding_info(self, part: core.RuleResult, raw_binding_info: dict):
+        super().extend(part)
+
+        # this has to be done separately because that data structure does not exist in the base class
+        for stm in part.new_statements:
+            self._add_statement_report(stm, raw_binding_info)
+
+    def report(self, max=None, sep=""):
+        for i, c in enumerate(self.statement_reports):
+            print(c.stm, "  because  ",  c.bindinfo, sep)
+            if i >= max:
+                break
 
 
 # Note this function will be called very often -> check for speedup possibilites

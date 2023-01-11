@@ -259,16 +259,39 @@ R19 = create_builtin_relation(
     # R10__has_range_of_result=callable !!
 )
 
+
+I40 = create_builtin_item(
+    key_str="I40",
+    R1__has_label="general relation",
+    R2__has_description="proxy item for a relation",
+    R18__has_usage_hint=(
+        "This item (which is in no relation to I1__general_item) can be used as a placeholder for any relation. "
+        "In other words: this can be interpreted as the common superclass for all relations"
+    ),
+)
+
+
+R68 = create_builtin_relation(
+    key_str="R68",
+    R1="is inverse of",
+    R2="specifies that the subject is the inverse relation of the object",
+    R8__has_domain_of_argument_1=I40["general relation"],
+    R11__has_range_of_result=I40["general relation"],
+    R22__is_functional=True,
+)
+
+
 R20 = create_builtin_relation(
     key_str="R20",
     R1="has defining scope",
     R2="specifies the scope in which an entity or relation edge is defined (e.g. the premise of a theorem)",
     R18="Note: one Entity can be parent of multiple scopes, (e.g. a theorem has 'context', 'premises', 'assertions')",
     R22__is_functional=True,
-    # R43__is_opposite_of=R21["is scope of"],  # defined later for dependency reasons
+    # R68__is_inverse_of=R21["is scope of"],  # defined later for dependency reasons
 )
 
 qff_has_defining_scope = QualifierFactory(R20["has defining scope"], registry_name="qff_has_defining_scope")
+
 
 R21 = create_builtin_relation(
     key_str="R21",
@@ -280,7 +303,10 @@ R21 = create_builtin_relation(
         "This is not to be confused with R45__has_subscope."
     ),
     R22__is_functional=True,
+    R68__is_inverse_of=R20["has defining scope"],
 )
+
+R20["has defining scope"].set_relation("R68__is_inverse_of", R21["is scope of"])
 
 
 R23 = create_builtin_relation(
@@ -1474,15 +1500,29 @@ R37 = create_builtin_relation(
     key_str="R37",
     R1__has_label="has definition",
     R2__has_description="specifies a formal definition of the item",
-    # R8__has_domain_of_argument_1= <mathematical object> (will be defined in other module)
+    R8__has_domain_of_argument_1=I12["mathematical object"],
     R11__has_range_of_result=I20["mathematical definition"],
+    R22__is_functional=True,
 )
+
+R67 = create_builtin_relation(
+    key_str="R67",
+    R1__has_label="is definition of",
+    R2__has_description="specifies that the subject is the formal definition of the object",
+    R8__has_domain_of_argument_1=I20["mathematical definition"],
+    R11__has_range_of_result=I12["mathematical object"],
+    R22__is_functional=True,
+    R68__is_inverse_of=R37["has definition"],
+)
+
+R37["has definition"].set_relation("R68__is_inverse_of", R67["is definition of"])
+
 
 R38 = create_builtin_relation(
     key_str="R38",
     R1__has_label="has length",
     R2__has_description="specifies the length of a finite sequence",
-    # R8__has_domain_of_argument_1= <mathematical object> (will be defined in other module)
+    R8__has_domain_of_argument_1=I12["mathematical object"],
     R11__has_range_of_result=I38["non-negative integer"],
     R22__is_functional=True,
 )
@@ -1501,22 +1541,13 @@ R40 = create_builtin_relation(
     key_str="R40",
     R1__has_label="has index",
     R2__has_description="qualifier; specifies the index (starting at 0) of an R39__has_element relation edge of a tuple",
-    # R8__has_domain_of_argument_1= <Relation Edge> # TODO: specify
+    # R8__has_domain_of_argument_1= <Statement> # TODO: specify
     R9__has_domain_of_argument_2=I38["non-negative integer"],
     R18__has_usage_hint="This relation should be used as qualifier for R39__has_element",
 )
 
 has_index = QualifierFactory(R40["has index"])
 
-I40 = create_builtin_item(
-    key_str="I40",
-    R1__has_label="general relation",
-    R2__has_description="proxy item for a relation",
-    R18__has_usage_hint=(
-        "This item (which is in no relation to I1__general_item) can be used as a placeholder for any relation. "
-        "In other words: this can be interpreted as the common superclass for all relations"
-    ),
-)
 
 R41 = create_builtin_relation(
     key_str="R41",
@@ -1550,7 +1581,8 @@ R43 = create_builtin_relation(
     R9__has_domain_of_argument_2=I40["general relation"],
 )
 
-R20["has defining scope"].set_relation("R43__is_opposite_of", R21["is scope of"])
+
+# I40 defined above
 
 I41 = create_builtin_item(
     key_str="I41",
@@ -1984,7 +2016,7 @@ R65 = create_builtin_relation(
 qff_allows_alt_functional_value = QualifierFactory(R65["allows alternative functional value"])
 
 
-# R66 is used above
+# R66 - R68 are defined above to keep dependencies simple
 
 # ######################################################################################################################
 # condition functions (to be used in the premise scope of a rule)

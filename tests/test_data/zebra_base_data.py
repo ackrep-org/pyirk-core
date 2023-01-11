@@ -58,7 +58,7 @@ I5931 = p.create_item(
 
 all_humans_tuple = p.close_class_with_R51(I7435["human"])
 
-# ###############################################################################
+# ######################################################################################################################
 
 
 I6990 = p.create_item(
@@ -96,7 +96,7 @@ I6014 = p.create_item(
 # R51__instances_are_from
 all_beverage_tuple = p.close_class_with_R51(I6990["beverage"])
 
-# ###############################################################################
+# ######################################################################################################################
 
 
 I3896 = p.create_item(
@@ -134,8 +134,7 @@ I8065 = p.create_item(
 # R51__instances_are_from
 all_colors_tuple = p.close_class_with_R51(I3896["house color"])
 
-
-# ###############################################################################
+# ######################################################################################################################
 
 
 I9803 = p.create_item(
@@ -172,8 +171,7 @@ I4872 = p.create_item(
 # R51__instances_are_from
 all_cigerette_brands_tuple = p.close_class_with_R51(I9803["cigarette brand"])
 
-
-# ###############################################################################
+# ######################################################################################################################
 
 
 I8809 = p.create_item(
@@ -214,8 +212,7 @@ I1383 = p.create_item(
 
 all_house_number_tuple = p.close_class_with_R51(I8809["house number"])
 
-
-# ###############################################################################
+# ######################################################################################################################
 
 
 I8139 = p.create_item(
@@ -252,8 +249,8 @@ I1437 = p.create_item(
 # R51__instances_are_from
 all_pets_tuple = p.close_class_with_R51(I8139["pet"])
 
+# ######################################################################################################################
 
-# ###############################################################################
 
 # Relations
 
@@ -396,6 +393,15 @@ R8139 = p.create_relation(
 possible_house_indices = p.new_tuple(1, 2, 3, 4, 5)
 
 
+p.set_multiple_statements(all_humans_tuple.R39__has_element, p.R57["is placeholder"], False)
+p.set_multiple_statements(all_beverage_tuple.R39__has_element, p.R57["is placeholder"], False)
+p.set_multiple_statements(all_pets_tuple.R39__has_element, p.R57["is placeholder"], False)
+p.set_multiple_statements(all_colors_tuple.R39__has_element, p.R57["is placeholder"], False)
+p.set_multiple_statements(all_cigerette_brands_tuple.R39__has_element, p.R57["is placeholder"], False)
+p.set_multiple_statements(all_house_number_tuple.R39__has_element, p.R57["is placeholder"], False)
+
+
+
 # ###############################################################################
 
 """
@@ -425,15 +431,20 @@ All Hints (from https://en.wikipedia.org/wiki/Zebra_Puzzle):
 p.end_mod()
 
 
-def report():
+def report(display=True, title=""):
 
     all_humans = I7435["human"].get_inv_relations("R4", return_subj=True)
+
+    res = []
+
+    log = res.append
+    log(title)
 
     for h in all_humans:
         if h.R20__has_defining_scope:
             continue
 
-        print(f"{h.R1}\n")
+        log(f"{h.R1}\n")
         stm_dict = h.get_relations()
         stms = []
         for v in stm_dict.values():
@@ -445,5 +456,11 @@ def report():
                     or stm.predicate.R43__is_opposite_of
                     or stm.predicate == p.R50["is different from"]
             ):
-                print(f"  {stm.predicate.R1:>30}  {stm.object.R1}")
-        print("-" * 40, "\n")
+                log(f"  {stm.predicate.R1:>30}  {stm.object.R1}")
+        log(f'{"-" * 40}\n')
+
+    res_str = "\n".join(res)
+    if display:
+        print(res_str)
+    else:
+        return res_str

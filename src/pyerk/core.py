@@ -1152,7 +1152,8 @@ class Item(Entity):
         super().__init__(base_uri=base_uri)
 
         res = process_key_str(key_str, check=False, resolve_prefix=False)
-        assert res.etype == EType.ITEM
+        msg = f"invalid entity type deduced from key string: {key_str}: expected {EType.ITEM} but got {res.etype}."
+        assert res.etype == EType.ITEM, msg
 
         self.short_key = res.short_key
         self.uri = aux.make_uri(self.base_uri, self.short_key)

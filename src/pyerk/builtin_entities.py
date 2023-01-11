@@ -1168,32 +1168,31 @@ def create_evaluated_mapping(mapping: Item, *args) -> Item:
 
     args_repr = ", ".join(arg_repr_list)
 
-    # achieve determinism: if this mapping-item was already evaluated with the same args we want to return
-    # the same evaluated-mapping-item again
-
-    i32_instance_rels = I32["evaluated mapping"].get_inv_relations("R4__is_instance_of")
-
-    # Note: this could be speed up by caching, however it is unclear where the cache should live
-    # and how it relates to RDF representation
-    # thus we iterate over all instances of I32["evaluated mapping"]
-
-    for i32_inst_rel in i32_instance_rels:
-        assert isinstance(i32_inst_rel, Statement)
-        i32_instance = i32_inst_rel.relation_tuple[0]
-
-        if i32_instance.R35__is_applied_mapping_of == mapping:
-            old_arg_tup = i32_instance.R36__has_argument_tuple
-            if tuple(old_arg_tup.R39__has_element) == args:
-                return i32_instance
-
     target_class = mapping.R11__has_range_of_result
-
     # TODO: this should be ensured by consistency check: for operatators R11 should be functional
     if target_class:
         assert len(target_class) == 1
         target_class = target_class[0]
     else:
         target_class = I32["evaluated mapping"]
+
+    # achieve determinism: if this mapping-item was already evaluated with the same args we want to return
+    # the same evaluated-mapping-item again
+
+    target_class_instance_stms = target_class.get_inv_relations("R4__is_instance_of")
+
+    # Note: this could be speed up by caching, however it is unclear where the cache should live
+    # and how it relates to RDF representation
+    # thus we iterate over all instances of I32["evaluated mapping"]
+
+    for tci_stm in target_class_instance_stms:
+        assert isinstance(tci_stm, Statement)
+        tci = tci_stm.subject
+
+        if tci.R35__is_applied_mapping_of == mapping:
+            old_arg_tup = tci.R36__has_argument_tuple
+            if tuple(old_arg_tup.R39__has_element) == args:
+                return tci
 
     r1 = f"{target_class.R1}: {mapping.R1}({args_repr})"
     # for loop finished regularly -> the application `mapping(arg)` has not been created before -> create new item

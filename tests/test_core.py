@@ -513,12 +513,12 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         res = p.ds.statements.get("S6229")
         self.assertIsNone(res)
 
-        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
+        ct = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
         with p.uri_context(uri=TEST_BASE_URI):
-            poly1 = p.instance_of(mod1.I4239["monovariate polynomial"])
+            poly1 = p.instance_of(ct.I4239["monovariate polynomial"])
 
         # test that an arbitrary item is *not* callable
-        self.assertRaises(TypeError, mod1.ma.I2738["field of complex numbers"], 0)
+        self.assertRaises(TypeError, ct.ma.I2738["field of complex numbers"], 0)
 
         # test that some special items are callable (note that its parent class is a subclass of one which has
         # a _custom_call-method defined)
@@ -527,6 +527,13 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
             res = poly1(0)
 
         self.assertEqual(res.R4__is_instance_of, p.I32["evaluated mapping"])
+
+        with p.uri_context(uri=TEST_BASE_URI):
+            x = p.instance_of(p.I35["real number"])
+            s1 = ct.ma.I5807["sign"](x)
+            s2 = ct.ma.I5807["sign"](x)
+            self.assertTrue(s1 is s2)
+
 
     def test_c05__evaluated_mapping2(self):
         mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")

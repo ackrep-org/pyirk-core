@@ -573,8 +573,8 @@ class ScopingCM:
         assert self.namespace is not None
         assert self.scope is not None
 
-        # for now we only accept on kwarg per call
-        assert len(kwargs) == 1
+        msg = "the `new_var` method of a scope-context accepts exactly one keyword argument"
+        assert len(kwargs) == 1, msg
 
         variable_name, variable_object = list(kwargs.items())[0]
 
@@ -1580,7 +1580,10 @@ R44 = create_builtin_relation(
     ),
     R8__has_domain_of_argument_1=I1["general item"],
     R11__has_range_of_result=bool,
-    R18__has_usage_hint="should be used as qualifier to specify the free variables in theorems and similar statements",
+    R18__has_usage_hint=(
+        "should be used as qualifier to specify the free variables in theorems and similar statements; "
+        "See also R66__is_existantially_quantified"
+    ),
 )
 
 
@@ -1616,6 +1619,23 @@ def uq_instance_of(type_entity: Item, r1: str = None, r2: str = None) -> Item:
     # TODO: This should be used as a qualifier
     instance.set_relation(R44["is universally quantified"], True)
     return instance
+
+# placed here for its obvious relation to universal quantification
+R66 = create_builtin_relation(
+    key_str="R66",
+    R1__has_label="is existantially quantified",
+    R2__has_description=(
+        "specifies that the subject represents an existentially quantified variable (usually denoted by '∃')"
+    ),
+    R8__has_domain_of_argument_1=I1["general item"],
+    R11__has_range_of_result=bool,
+    R18__has_usage_hint=(
+        "should be used as qualifier to specify the free variables in theorems and similar statements; "
+        "See also R44__is_universally_quantified"
+    ),
+)
+
+exis_quant = QualifierFactory(R66["is existantially quantified"])
 
 
 R45 = create_builtin_relation(
@@ -1963,6 +1983,9 @@ R65 = create_builtin_relation(
 )
 
 qff_allows_alt_functional_value = QualifierFactory(R65["allows alternative functional value"])
+
+
+# R66 is used above
 
 # ######################################################################################################################
 # condition functions (to be used in the premise scope of a rule)

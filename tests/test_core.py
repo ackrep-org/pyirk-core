@@ -65,6 +65,9 @@ TEST_ACKREP_DATA_FOR_UT_PATH = pjoin(ERK_ROOT_DIR, "..", "ackrep", "ackrep_data_
 
 os.environ["UNITTEST"] = "True"
 
+# this flag controls some printing behavior (it is usually true on the developer machine but false on the CI machine)
+USING_NOSE = "nose" in sys.modules
+
 __URI__ = TEST_BASE_URI = "erk:/local/unittest"
 
 
@@ -84,8 +87,9 @@ class HouskeeperMixin:
         self.register_this_module()
 
     def tearDown(self) -> None:
-        if not self._outcome.errors:
-            # keep the mods loaded for easier interactive debugging
+        if not self.had_error() or not USING_NOSE:
+            # keep the mods loaded on error for easier interactive debugging
+            # but only if not using nose (-> always unload mods on CI)
             self.unload_all_mods()
         self.print_methodnames()
 
@@ -109,10 +113,19 @@ class HouskeeperMixin:
             method_repr = f"{cls.__module__}:{cls.__qualname__}.{self._testMethodName}"
             method_repr = f"{method_repr:<85}"
 
-            if self._outcome.errors:
+            if self.had_error():
                 print(method_repr, p.aux.bred("failed"))
             else:
                 print(method_repr, p.aux.bgreen("passed"))
+
+    def had_error(self):
+
+        if USING_NOSE:
+            # this will be an flat list (empty on no errors)
+            return bool(self._outcome.errors)
+        else:
+            error_list = [b for (a, b) in self._outcome.errors if b is not None]
+            return bool(error_list)
 
 
 class Test_00_Core(HouskeeperMixin, unittest.TestCase):
@@ -180,7 +193,6 @@ class Test_00_Core(HouskeeperMixin, unittest.TestCase):
         Test defined behavior of errors occur in uri_context
         :return:
         """
-
         self.assertEqual(len(p.core._uri_stack), 0)
         try:
             with p.uri_context(uri=TEST_BASE_URI):

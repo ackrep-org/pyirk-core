@@ -425,4 +425,58 @@ with I790.scope("assertions") as cm:
 
 # ###############################################################################
 
+
+# ###############################################################################
+
+I741 = p.create_item(
+    R1__has_label="rule: deduce more negative facts from negative facts",
+    R2__has_description=("deduce e.g. if h1 onws dog and h1 drinks milk and h2 owns zebra then h2 drinks not milk"),
+    R4__is_instance_of=p.I41["semantic rule"],
+)
+
+with I741.scope("context") as cm:
+    cm.new_var(h1=p.instance_of(zb.I7435["human"]))
+    cm.new_var(h2=p.instance_of(zb.I7435["human"]))
+    cm.new_var(itm1a=p.instance_of(p.I1["general item"]))
+    cm.new_var(itm1b=p.instance_of(p.I1["general item"]))
+    cm.new_var(itm2=p.instance_of(p.I1["general item"]))
+
+    cm.new_rel_var("rel1")
+    cm.new_rel_var("rel2")
+    # cm.new_rel_var("rel1_not")
+    cm.new_rel_var("rel2_not")
+
+with I741.scope("premises") as cm:
+    cm.set_sparql(
+        """
+        WHERE {
+            ?h1 ?rel1 ?itm1a.          # e.g. h1 owns dog
+            ?h1 ?rel2 ?itm1b.          # e.g. h1 drinks milk
+            ?h2 ?rel1 ?itm2.          # e.g. h2 owns zebra
+
+            ?itm1a :R57 false.        # itm1 is no placeholder
+
+            FILTER (?rel1 != ?rel2)
+            FILTER (?itm1a != ?itm1b)
+            FILTER (?itm1a != ?itm2)
+            FILTER (?h1 != ?h2)
+            FILTER (?itm1b != ?itm2)
+
+            ?rel1 zb:R2850 true.     # R2850__is_functional_activity
+            ?rel2 zb:R2850 true.     # R2850__is_functional_activity
+
+            # ?rel1 :R43 ?rel1_not.        # R43__is_opposite_of
+            ?rel2 :R43 ?rel2_not.        # R43__is_opposite_of
+
+            # prevent the addition of statements on placeholder persons (not sure yet)
+
+            MINUS { ?h1 :R57 true.}
+        }
+        """
+    )
+
+with I741.scope("assertions") as cm:
+    cm.new_rel(cm.h2, cm.rel2_not, cm.itm1b, qualifiers=[p.qff_has_rule_ptg_mode(5)])
+
+
 p.end_mod()

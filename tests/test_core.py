@@ -2030,6 +2030,9 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         apply zebra puzzle rules to zebra puzzle data and assess correctness of the result
         """
 
+        reports = []
+        result_history = []
+
         zb = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA_BASE_DATA, prefix="zb")
         zr = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA_RULES, prefix="zr", reuse_loaded=True)
 
@@ -2038,31 +2041,40 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
             zr.I702["rule: add reverse statement for symmetrical relations"], mod_context_uri=zb.__URI__
         )
 
+        reports.append(zb.report(display=False, title="I702"))
+        result_history.append(res)
+
         self.assertEqual(len(res.rel_map), 1)
         self.assertIn(p.R43["is opposite of"].uri, res.rel_map)
 
         # load the hints and perform basic inferrence
         zp = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA02, prefix="zp")
-        res = p.ruleengine.apply_semantic_rules(
+        res_I702 = res = p.ruleengine.apply_semantic_rules(
             zp.zr.I701["rule: imply parent relation of a subrelation"],
             zp.zr.I702["rule: add reverse statement for symmetrical relations"],
             mod_context_uri=zp.__URI__,
         )
+        result_history.append(res)
 
         # only inferrence until now: 5 R3606["lives next to"]-statements
         self.assertEqual(len(res.new_statements), 5)
         self.assertEqual(len(res.rel_map), 1)
         self.assertIn(zp.zb.R3606["lives next to"].uri, res.rel_map)
 
-        res = p.ruleengine.apply_semantic_rules(
+        res_I720 = res = p.ruleengine.apply_semantic_rules(
             zp.zr.I710["rule: identify same items via zb__R2850__is_functional_activity"],
             zp.zr.I720["rule: replace (some) same_as-items"],
             mod_context_uri=zp.__URI__,
         )
 
+        reports.append(zb.report(display=False, title="I720"))
+        result_history.append(res)
+
         res_I730 = res = p.ruleengine.apply_semantic_rule(
             zp.zr.I730["rule: deduce negative facts for neighbours"], mod_context_uri=zp.__URI__
         )
+        reports.append(zb.report(display=False, title="I730"))
+        result_history.append(res)
 
         self.assertEqual(len(res.new_statements), 10)
 
@@ -2072,6 +2084,8 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         res_I740 = res = p.ruleengine.apply_semantic_rule(
             zp.zr.I740["rule: deduce more negative facts from negative facts"], mod_context_uri=zp.__URI__
         )
+        reports.append(zb.report(display=False, title="I740"))
+        result_history.append(res)
 
         self.assertEqual(len(res.new_statements), 0)
 
@@ -2082,6 +2096,8 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         res_I750 = res = p.ruleengine.apply_semantic_rule(
             zp.zr.I750["rule: every human lives in one house"], mod_context_uri=zp.__URI__
         )
+        reports.append(zb.report(display=False, title="I750"))
+        result_history.append(res)
 
         new_houses_nbr = len(res.new_entities)
         self.assertEqual(new_houses_nbr, 13)
@@ -2094,6 +2110,8 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         res_I760 = res = p.ruleengine.apply_semantic_rule(
             zp.zr.I760["rule: deduce impossible house indices of neighbour"], mod_context_uri=zp.__URI__
         )
+        reports.append(zb.report(display=False, title="I760"))
+        result_history.append(res)
 
         self.assertEqual(len(res.new_statements), 1)
         self.assertEqual(len(res.new_entities), 1)
@@ -2103,12 +2121,16 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         res_I770 = res = p.ruleengine.apply_semantic_rule(
             zp.zr.I770["rule: deduce impossible house_number items from impossible indices"], mod_context_uri=zp.__URI__
         )
+        reports.append(zb.report(display=False, title="I770"))
+        result_history.append(res)
 
         #  [S6265(<Item Ia7903["house number of person12"]>, <Rel. R52["is none of"]>, <Item Ia5222["4-tuple: ..>)]
         self.assertEqual(len(res.new_statements), 1)
 
         # apply next rule:
         res_I780 = res = p.ruleengine.apply_semantic_rule(zp.zr.I780, mod_context_uri=zp.__URI__)
+        reports.append(zb.report(display=False, title="I780"))
+        result_history.append(res)
 
         # [S2144(<Item Ia7903["house number of person12"]>, <Relation R56["is one of"]>, <Item Ia8692["1-tuple: ...]>)]
         self.assertEqual(len(res.new_statements), 1)
@@ -2117,6 +2139,8 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         res_I790 = res = p.ruleengine.apply_semantic_rule(
             zp.zr.I790["rule: infere from 'is one of' -> 'is same as'"], mod_context_uri=zp.__URI__
         )
+        reports.append(zb.report(display=False, title="I790"))
+        result_history.append(res)
 
         # [S8944(<Item Ia7903["house number of person12"]>, <Relation R47["is same as"]>, <Item I7582["house 2"]>)]
         self.assertEqual(len(res.new_statements), 1)
@@ -2126,9 +2150,26 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         res_I720b = res = p.ruleengine.apply_semantic_rule(
             zp.zr.I720["rule: replace (some) same_as-items"], mod_context_uri=zp.__URI__
         )
+        reports.append(zb.report(display=False, title="I720b"))
+        result_history.append(res)
 
         self.assertEqual(res.replacements, [(h12, zp.zb.I7582["house 2"])])
         self.assertEqual(zp.person12.zb__R9040__lives_in_numbered_house, zp.zb.I7582["house 2"])
+
+        res_I741 = res = p.ruleengine.apply_semantic_rule(
+            zp.zr.I741["rule: deduce more negative facts from negative facts"], mod_context_uri=zp.__URI__
+        )
+        reports.append(zb.report(display=False, title="I741"))
+        result_history.append(res)
+        # IPS()
+
+        # res_I795 = res = p.ruleengine.apply_semantic_rule(
+        #     zp.zr.I795, mod_context_uri=zp.__URI__
+        # )
+        # reports.append(zb.report(display=False, title="I795"))
+        # result_history.append(res)
+        # IPS()
+
 
 
 class Test_Z_Core(HouskeeperMixin, unittest.TestCase):

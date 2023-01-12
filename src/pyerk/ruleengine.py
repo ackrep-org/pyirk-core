@@ -1067,10 +1067,22 @@ class ReportingRuleResult(core.RuleResult):
             self._add_statement_report(stm, raw_binding_info)
 
     def report(self, max=None, sep=""):
+        print(self.report_str(max=max, sep=sep))
+
+    def report_str(self, max=None, sep=""):
+
+        res = []
         for i, c in enumerate(self.statement_reports):
-            print(c.stm, "  because  ",  c.bindinfo, sep)
+            stm_str = f"[{c.stm.subject.R1} | {c.stm.predicate.R1} | {c.stm.object.R1}]"
+            bindinfo_str = " ".join([f"({a.R1}: {b.R1})" for a, b in c.bindinfo])
+            bindinfo_str = bindinfo_str.replace(" (I40__general_relation)", "")
+
+            res.append(f"{stm_str}  because  {bindinfo_str}{sep}")
             if i >= max:
                 break
+
+        return "\n".join(res)
+
 
 
 # Note this function will be called very often -> check for speedup possibilites

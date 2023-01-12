@@ -455,6 +455,8 @@ with I741.scope("premises") as cm:
             ?h2 ?rel1 ?itm2.          # e.g. h2 owns zebra
 
             ?itm1a :R57 false.        # itm1 is no placeholder
+            ?itm1b :R57 false.        # itm1 is no placeholder
+            # ?itm2 :R57 false.        # itm1 is no placeholder
 
             FILTER (?rel1 != ?rel2)
             FILTER (?itm1a != ?itm1b)
@@ -470,16 +472,62 @@ with I741.scope("premises") as cm:
 
             # prevent the addition of statements on placeholder persons (not sure yet)
 
-            MINUS { ?h1 :R57 true.}
+            # MINUS { ?h1 :R57 true.}
+            MINUS { ?itm2 :R57 true.}
         }
         """
     )
 
 with I741.scope("assertions") as cm:
+    # qualifier means: 5 -> create_asserted_statement_only_if_new
     cm.new_rel(cm.h2, cm.rel2_not, cm.itm1b, qualifiers=[p.qff_has_rule_ptg_mode(5)])
 
 txt = r"{h1} {rel1} {itm1a}  AND  {rel2} {itm1b}. HOWEVER {h2} {rel1} {itm2}."
 
 I741.set_relation(p.R69["has explanation text template"], txt)
+
+# ###############################################################################
+
+I792 = p.create_item(
+    R1__has_label="rule: deduce different-from-facts from negative facts",
+    R2__has_description=("deduce e.g. if h1 not onws dog and h2 onws dog then h2 different from h1 and vice versa."),
+    R4__is_instance_of=p.I41["semantic rule"],
+)
+
+with I792.scope("context") as cm:
+    cm.new_var(h1=p.instance_of(zb.I7435["human"]))
+    cm.new_var(h2=p.instance_of(zb.I7435["human"]))
+    cm.new_var(itm1a=p.instance_of(p.I1["general item"]))
+    cm.uses_external_entities(p.R50["is different from"])
+
+    cm.new_rel_var("rel1")
+    cm.new_rel_var("rel1_not")
+
+with I792.scope("premises") as cm:
+    cm.set_sparql(
+        """
+        WHERE {
+            ?h1 ?rel1 ?itm1a.          # e.g. h1 owns dog
+            ?h2 ?rel1_not ?itm1a.      # e.g. h2 not_owns dog
+
+            ?h1 :R4 zb:I7435.          # h1 is human
+            ?h2 :R4 zb:I7435.          # h2 is human
+
+            ?itm1a :R57 false.        # itm1 is no placeholder
+            ?rel1 zb:R2850 true.      # R2850__is_functional_activity
+            ?rel1 :R43 ?rel1_not.        # R43__is_opposite_of
+
+        }
+        """
+    )
+
+with I792.scope("assertions") as cm:
+    # qualifier means: 5 -> create_asserted_statement_only_if_new
+    cm.new_rel(cm.h1, p.R50["is different from"], cm.h2, qualifiers=[p.qff_has_rule_ptg_mode(5)])
+    cm.new_rel(cm.h2, p.R50["is different from"], cm.h1, qualifiers=[p.qff_has_rule_ptg_mode(5)])
+
+txt = r"{h1} {rel1} {itm1a}  AND  {h2} {rel1_not} {itm1a}."
+
+I792.set_relation(p.R69["has explanation text template"], txt)
 
 p.end_mod()

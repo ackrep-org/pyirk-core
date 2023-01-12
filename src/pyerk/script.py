@@ -8,6 +8,7 @@ from . import visualization
 from . import reportgenerator
 from . import auxiliary as aux
 from . import settings
+from . import release
 
 from ipydex import IPS, activate_ips_on_exception
 
@@ -106,6 +107,12 @@ def create_parser():
 
     parser.add_argument("--dbg", help="start debug routine", default=None, action="store_true")
 
+    parser.add_argument(
+        "--version",
+        help="print the version and exit",
+        action="store_true",
+    )
+
     return parser
 
 
@@ -115,6 +122,10 @@ def main():
 
     if args.dbg:
         debug()
+        exit()
+
+    if args.version:
+        print(release.__version__)
         exit()
 
     if args.load_mod is not None:

@@ -2146,6 +2146,19 @@ qff_allows_alt_functional_value = QualifierFactory(R65["allows alternative funct
 
 # R66 - R68 are defined above to keep dependencies simple
 
+
+R69 = create_builtin_relation(
+    key_str="R69",
+    R1__has_label="has explanation text template",
+    R2__has_description=(
+        "associates a template text to the subject (a rule), which can be processed by the ruleengine."
+    ),
+    R8__has_domain_of_argument_1=I41["semantic rule"],
+    R11__has_range_of_result=str,
+    R32__is_functional_for_each_language=True,
+    R18__has_usage_hint="used to generate explaining reports of rule results",
+)
+
 # ######################################################################################################################
 # condition functions (to be used in the premise scope of a rule)
 # ######################################################################################################################

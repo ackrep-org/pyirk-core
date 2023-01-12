@@ -478,5 +478,8 @@ with I741.scope("premises") as cm:
 with I741.scope("assertions") as cm:
     cm.new_rel(cm.h2, cm.rel2_not, cm.itm1b, qualifiers=[p.qff_has_rule_ptg_mode(5)])
 
+txt = r"{h1} {rel1} {itm1a}  AND  {rel2} {itm1b}. HOWEVER {h2} {rel1} {itm2}."
+
+I741.set_relation(p.R69["has explanation text template"], txt)
 
 p.end_mod()

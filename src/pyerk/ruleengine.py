@@ -1037,6 +1037,8 @@ class ReportingRuleResult(core.RuleResult):
         super().__init__()
         self.raworker = raworker
         self.statement_reports = []
+        self.rule = self.raworker.parent.rule
+        self.explanation_text_template = self.rule.R69__has_explanation_text_template
 
     def add_bound_statement(self, stm: core.Statement, raw_binding_info: dict):
         """
@@ -1074,14 +1076,33 @@ class ReportingRuleResult(core.RuleResult):
         res = []
         for i, c in enumerate(self.statement_reports):
             stm_str = f"[{c.stm.subject.R1} | {c.stm.predicate.R1} | {c.stm.object.R1}]"
-            bindinfo_str = " ".join([f"({a.R1}: {b.R1})" for a, b in c.bindinfo])
-            bindinfo_str = bindinfo_str.replace(" (I40__general_relation)", "")
+            explanation_text = self.get_explanation(c.bindinfo)
 
-            res.append(f"{stm_str}  because  {bindinfo_str}{sep}")
+            res.append(f"{stm_str}  because  {explanation_text}{sep}")
             if i >= max:
                 break
 
         return "\n".join(res)
+
+    def get_explanation(self, bindinfo: List[Tuple[p.Entity]]):
+        """
+        :param bindinfo:    list of 2-tuples like [(<Item Ia7458["h2"]>, <Item Ia1158["person1"]>),...]
+        """
+        if self.explanation_text_template:
+            format_kwargs = {}
+            for a, b in bindinfo:
+                a_name = a.R23__has_name_in_scope
+                format_kwargs[a_name] = b.R1
+
+            return self.explanation_text_template.format(**format_kwargs)
+
+        else:
+
+            explanation_text = " ".join([f"({a.R1}: {b.R1})" for a, b in bindinfo])
+            explanation_text = explanation_text.replace(" (I40__general_relation)", "")
+
+        return explanation_text
+
 
 
 

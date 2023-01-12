@@ -1574,12 +1574,16 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
             R301 = p.create_relation(R1="relation1", R42__is_symmetrical=True)
             R302 = p.create_relation(R1="relation2")
 
+            R303 = p.create_relation(R1="relation3")
+            R304 = p.create_relation(R1="relation3", R68__is_inverse_of=R303)
+
             itm1 = p.instance_of(p.I1["general item"])
             itm2 = p.instance_of(p.I1["general item"])
             itm3 = p.instance_of(p.I1["general item"])
 
             itm4 = p.instance_of(p.I1["general item"])
             itm5 = p.instance_of(p.I1["general item"])
+            itm6 = p.instance_of(p.I1["general item"])
 
             itm1.set_relation(R301["relation1"], itm2)  # this should entail the reversed statement
             itm1.set_relation(R302["relation2"], itm3)  # this should entail nothing
@@ -1587,6 +1591,8 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
             # this should remain unchanged because, the symmetrically associated statement does already exist
             itm4.set_relation(R301["relation1"], itm5)
             itm5.set_relation(R301["relation1"], itm4)
+
+            itm6.set_relation(p.R43["is opposite of"], itm4)
 
             I701 = p.create_item(
                 R1__has_label="rule: imply parent relation of a subrelation ",
@@ -1608,8 +1614,10 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
             self.assertEqual(itm2.R301, [])
             res = p.ruleengine.apply_semantic_rule(I701)
 
-            # at time of writing: one new statement is caused already by a symmetrical relation from builtin_entities
-            self.assertGreaterEqual(len(res.new_statements), 2)
+            # at time of writing: two new statement are caused already by symmetrical relations from builtin_entities
+            # R43["is opposite of"] and R68["is inverse of"]
+            # thus we expect 3 here (or more if builtin_entities got more symmetrical relations, which are also applied)
+            self.assertGreaterEqual(len(res.new_statements), 3)
             self.assertEqual(itm1.R301, [itm2])
             self.assertEqual(itm3.R302, [])
             self.assertEqual(itm4.R301, [itm5])

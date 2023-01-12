@@ -1572,13 +1572,17 @@ R42 = create_builtin_relation(
     R22__is_functional=True,
 )
 
+
+R68["is inverse of"].set_relation(R42["is symmetrical"], True)
+
+
 R43 = create_builtin_relation(
     key_str="R43",
     R1__has_label="is opposite of",
     R2__has_description="specifies that the subject is the oposite of the object.",
     R42__is_symmetrical=True,
-    R8__has_domain_of_argument_1=I40["general relation"],
-    R9__has_domain_of_argument_2=I40["general relation"],
+    R8__has_domain_of_argument_1=I1["general item"],
+    R9__has_domain_of_argument_2=I1["general item"],
 )
 
 

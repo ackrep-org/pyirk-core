@@ -785,7 +785,7 @@ class _proposition__CM(AbstractMathRelatedScopeCM):
 
     valid_subscope_types = {"UNIV_QUANT": float("inf"), "EXIS_QUANT": float("inf")}
 
-    def univ_quant_conditions(self) -> ScopingCM:
+    def universally_quantified(self) -> ScopingCM:
         """
         Create a new subscope of type "UNIV_QUANT", which can hold arbitrary statements. That subscope will contain
         another subscope ("CONDITIONS") whose statements are considered as universally quantified condition-statements.
@@ -796,7 +796,7 @@ class _proposition__CM(AbstractMathRelatedScopeCM):
         cm = self._create_subscope_cm(scope_type="UNIV_QUANT", cls=QuantifiedSubScopeCM)
         return cm
 
-    def exis_quant_conditions(self) -> ScopingCM:
+    def existentially_quantified(self) -> ScopingCM:
         """
         Create a new subscope of type "EXIS_QUANT", which can hold arbitrary statements. That subscope will contain
         another subscope ("CONDITIONS") whose statements are considered as existentially quantified condition-statements.
@@ -832,13 +832,21 @@ class QuantifiedSubScopeCM(AbstractMathRelatedScopeCM):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.internal_cm = self._create_subscope_cm("CONDITION", SubScopeConditionCM)
+        self.condition_cm = self._create_subscope_cm("CONDITION", SubScopeConditionCM)
 
     def add_condition_statement(self, subj, pred, obj, qualifiers=None):
 
-        with self.internal_cm:
-            self.internal_cm.new_rel(subj, pred, obj, qualifiers=qualifiers)
+        with self.condition_cm:
+            self.condition_cm.new_rel(subj, pred, obj, qualifiers=qualifiers)
 
+    def add_condition_math_relation(self, *args, **kwargs):
+
+        with self.condition_cm:
+            self.condition_cm.new_math_relation(*args, **kwargs)
+
+    def new_condition_var(self, **kwargs):
+        with self.condition_cm:
+            return self.condition_cm.new_var(**kwargs)
 
 class SubScopeConditionCM(AbstractMathRelatedScopeCM):
     """
@@ -1064,6 +1072,17 @@ def _get_statements_for_scope(self):
     return [s for s in subjects if isinstance(s, Statement)]
 
 I16["scope"].add_method(_get_statements_for_scope, name="get_statements_for_scope")
+
+def _get_items_for_scope(self):
+    """
+    Convenience method for scope items to allow easy access to the items created in that scope
+    """
+    subjects = self.get_inv_relations("R20__has_defining_scope", return_subj=True)
+
+    # return all items where which have self as R20 qualifier
+    return [s for s in subjects if isinstance(s, Item)]
+
+I16["scope"].add_method(_get_items_for_scope, name="get_items_for_scope")
 
 
 I17 = create_builtin_item(

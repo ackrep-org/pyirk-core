@@ -598,7 +598,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
                 y = cm.new_var(y=p.instance_of(p.I39["positive integer"]))
 
             with I7324["definition of something"].scope("premise") as cm:
-                with cm.univ_quant_conditions() as cm2:
+                with cm.universally_quantified() as cm2:
                     cm2.add_condition_statement(cm.x, p.R15["is element of"], my_set)
                     cm2.add_condition_statement(cm.y, p.R15["is element of"], my_set)
 
@@ -610,8 +610,15 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
                 cm.new_rel(cm.y, p.R16["has property"], my_prop)
 
                 # also pointless direct meaning, only to test contexts
-                # with cm.exis_quant_conditions() as cm2:
-                #     cm2.new_var(z=p.instance_of(p.I39["positive integer"]))
+                with cm.existentially_quantified() as cm2:
+                    z = cm2.new_condition_var(z=p.instance_of(p.I39["positive integer"]))
+                    cm2.add_condition_statement(cm2.z, p.R15["is element of"], my_set)
+                    cm2.add_condition_statement(cm.y, p.R15["is element of"], my_set)
+                    cm2.add_condition_math_relation(cm2.z, "<", cm.x)
+
+                    cm2.new_math_relation(cm2.z, ">", cm.y)
+
+            # universally quantified scope
 
             scp_prem = I7324.get_subscopes()[1]
             prem_sub_scopes = scp_prem.get_subscopes()
@@ -636,6 +643,49 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
             proxy_item = stm1.get_first_qualifier_obj_with_rel("R34__has_proxy_item")
             self.assertEqual(proxy_item.R4__is_instance_of, p.I23["equation"])
             self.assertEqual(proxy_item.R26__has_lhs, x)
+            self.assertEqual(proxy_item.R27__has_rhs, y)
+
+            # existentially quantified scope
+
+            scp_asstn = I7324.get_subscopes()[2]
+            self.assertEqual(len(scp_asstn.get_subscopes()), 1)
+            ex_scp = scp_asstn.get_subscopes()[0]
+            self.assertEqual(ex_scp.R64__has_scope_type, "EXIS_QUANT")
+
+            # check the conditions
+            cond_sc = ex_scp.get_subscopes()[0]
+            cond_itms = cond_sc.get_items_for_scope()
+            self.assertEqual(len(cond_itms), 2)
+            self.assertIn(z, cond_itms)
+            # apart from z there is also the cond_proxy_item, see below
+
+            cond_stms = cond_sc.get_statements_for_scope()
+            self.assertEqual(len(cond_stms), 3)
+            stm1: p.Statement = cond_stms[0]
+            self.assertEqual(stm1.subject, z)
+            self.assertEqual(stm1.predicate, p.R15["is element of"])
+            self.assertEqual(stm1.object, my_set)
+
+            stm3: p.Statement = cond_stms[2]
+            self.assertEqual(stm3.subject, z)
+            self.assertEqual(stm3.predicate, p.R31["is in mathematical relation with"])
+            self.assertEqual(stm3.object, x)
+
+            cond_proxy_item = stm3.get_first_qualifier_obj_with_rel("R34__has_proxy_item")
+            self.assertIn(cond_proxy_item, cond_itms)
+            self.assertEqual(cond_proxy_item.R4__is_instance_of, p.I29["less-than-relation"])
+            self.assertEqual(cond_proxy_item.R26__has_lhs, z)
+            self.assertEqual(cond_proxy_item.R27__has_rhs, x)
+
+            # check the actual statement (which is an equation)
+            stm1, = ex_scp.get_statements_for_scope()
+            self.assertEqual(stm1.subject, z)
+            self.assertEqual(stm1.predicate, p.R31["is in mathematical relation with"])
+            self.assertEqual(stm1.object, y)
+
+            proxy_item = stm1.get_first_qualifier_obj_with_rel("R34__has_proxy_item")
+            self.assertEqual(proxy_item.R4__is_instance_of, p.I28["greater-than-relation"])
+            self.assertEqual(proxy_item.R26__has_lhs, z)
             self.assertEqual(proxy_item.R27__has_rhs, y)
 
     def test_c08__relations_with_sequence_as_argument(self):

@@ -139,6 +139,10 @@ class InvalidScopeNameError(PyERKError):
     pass
 
 
+class InvalidScopeTypeError(PyERKError):
+    pass
+
+
 class ModuleAlreadyLoadedError(PyERKError):
     pass
 

@@ -555,7 +555,13 @@ class ScopingCM:
     E.g. establishing a relationship between two items as part of the assertions of a theorem-item
     """
 
+    valid_subscope_types = None
+
     def __init__(self, itm: Item, namespace: dict, scope: Item, parent_scope_cm=None):
+
+        # prevent the accidental instantiation of abstract subclasses
+        assert not __class__.__name__.lower().startswith("abstract")
+
         self.item = itm
         self.namespace = namespace
         self.scope = scope
@@ -694,10 +700,48 @@ class ScopingCM:
             msg = f"Unexpected active scope: ({active_scope}). Expected: {self.scope}"
             raise core.aux.InvalidScopeNameError(msg)
 
+    def _create_subscope_cm(self, scope_type: str, cls: type):
+        """
+        :param scope_type:     a str like "AND" or "OR"
+        :param cls:            the class to instantiate, e.g. RulePremiseSubScopeCM
 
-class _proposition__CM(ScopingCM):
+        """
+
+        if isinstance(self.valid_subscope_types, dict):
+            # assume that this is a dict mapping types to maximum number of such subscopes
+            try:
+                max_subscopes_of_this_type = self.valid_subscope_types[scope_type]
+            except KeyError:
+                msg = f"subscope of {scope_type} is not allowed in scope {self.scope}"
+                raise core.aux.InvalidScopeTypeError(msg)
+
+        all_sub_scopes = self.scope.get_inv_relations("R21__is_scope_of", return_subj=True)
+        matching_type_sub_scopes = [scp for scp in all_sub_scopes if scp.R64__has_scope_type == scope_type]
+
+        n = len(matching_type_sub_scopes)
+        if n >= max_subscopes_of_this_type:
+            msg = (
+                f"There already exists {n} subscope(s) of type {scope_type} for scope {self.scope}. "
+                "More are not allowed."
+            )
+            raise core.aux.InvalidScopeTypeError(msg)
+
+
+        if max_subscopes_of_this_type == 1:
+            name = scope_type
+        else:
+            # e.g. we allow multiple AND-subscopes
+            name = f"{scope_type}{n}"
+
+        namespace, scope = self.scope._register_scope(name, scope_type)
+
+        cm = cls(itm=self.item, namespace=namespace, scope=scope, parent_scope_cm=self)
+        return cm
+
+
+class AbstractMathRelatedScopeCM(ScopingCM):
     """
-    Context manager taylored for mathematical theorems and definitions
+    Context manager containing methods which are math-related
     """
 
     def new_equation(self, lhs: Item, rhs: Item) -> Item:
@@ -734,6 +778,36 @@ class _proposition__CM(ScopingCM):
         return rel
 
 
+class _proposition__CM(AbstractMathRelatedScopeCM):
+    """
+    Context manager taylored for mathematical theorems and definitions
+    """
+
+    valid_subscope_types = {"UNIV_QUANT": float("inf"), "EXIS_QUANT": float("inf")}
+
+    def univ_quant_conditions(self) -> ScopingCM:
+        """
+        Create a new subscope of type "UNIV_QUANT", which can hold arbitrary statements. That subscope will contain
+        another subscope ("CONDITIONS") whose statements are considered as universally quantified condition-statements.
+        """
+
+        # create a new context manager (which implicitly creates a new scope-item), where the user can add statements
+        # note: this also creates an internal "CONDITION" subscope
+        cm = self._create_subscope_cm(scope_type="UNIV_QUANT", cls=QuantifiedSubScopeCM)
+        return cm
+
+    def exis_quant_conditions(self) -> ScopingCM:
+        """
+        Create a new subscope of type "EXIS_QUANT", which can hold arbitrary statements. That subscope will contain
+        another subscope ("CONDITIONS") whose statements are considered as existentially quantified condition-statements.
+        """
+
+        # create a new context manager (which implicitly creates a new scope-item), where the user can add statements
+        # note: this also creates an internal "CONDITION" subscope
+        cm = self._create_subscope_cm(scope_type="EXIS_QUANT", cls=QuantifiedSubScopeCM)
+        return cm
+
+
 def _proposition__scope(self: Item, scope_name: str):
     """
     This function will be used as a method for proposition-Items. It will return a __proposition__CM instance.
@@ -750,7 +824,33 @@ def _proposition__scope(self: Item, scope_name: str):
     return cm
 
 
+class QuantifiedSubScopeCM(AbstractMathRelatedScopeCM):
+    """
+    A scoping context manager for universally or existentially quantified statements
+    """
+    valid_subscope_types = {"CONDITION": 1}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.internal_cm = self._create_subscope_cm("CONDITION", SubScopeConditionCM)
+
+    def add_condition_statement(self, subj, pred, obj, qualifiers=None):
+
+        with self.internal_cm:
+            self.internal_cm.new_rel(subj, pred, obj, qualifiers=qualifiers)
+
+
+class SubScopeConditionCM(AbstractMathRelatedScopeCM):
+    """
+    A scoping context manager to specify the condition of another scope
+    """
+    valid_subscope_types = {}
+
+
 class _rule__CM(ScopingCM):
+
+    valid_subscope_types = {"AND": float("inf"), "OR": 1}
+
     def __init__(self, *args, **kwargs):
 
         self._anchor_item_counter = 0
@@ -893,25 +993,6 @@ class _rule__CM(ScopingCM):
             # args are supposed to be variables created in the "setting"-scope
             self.new_rel(factory_anchor, R29["has argument"], arg, qualifiers=[qff_has_rule_ptg_mode(4)])
 
-    def _create_subscope_cm(self, scope_type):
-
-        assert scope_type in ("OR", "AND")
-
-        if scope_type == "OR":
-            # currently we only allow one OR-subscope
-            name = scope_type
-        elif scope_type == "AND":
-            # we allow multiple AND-subscopes
-            all_sub_scopes = self.scope.get_inv_relations("R21__is_scope_of", return_subj=True)
-            and_sub_scopes = [scp for scp in all_sub_scopes if scp.R64__has_scope_type == "AND"]
-
-            name = f"{scope_type}{len(and_sub_scopes)}"
-
-        namespace, scope = self.scope._register_scope(name, scope_type)
-
-        cm = RulePremiseSubScopeCM(itm=self.item, namespace=namespace, scope=scope, parent_scope_cm=self)
-        return cm
-
     def OR(self):
         """
         Register a subscope for OR-connected statements
@@ -921,7 +1002,7 @@ class _rule__CM(ScopingCM):
             msg = "logical OR subscope is only allowed inside 'premise'-scope and AND-subscope"
             raise core.aux.SemanticRuleError(msg)
 
-        return self._create_subscope_cm("OR")
+        return self._create_subscope_cm(scope_type="OR", cls=RulePremiseSubScopeCM)
 
     def AND(self):
         msg = "AND-logical subscope is only allowed inside a subscope of a 'premise'-scope"
@@ -942,7 +1023,7 @@ class RulePremiseSubScopeCM(_rule__CM):
             msg = "logical AND-subscope is only allowed inside OR-subscope"
             raise core.aux.SemanticRuleError(msg)
 
-        return self._create_subscope_cm("AND")
+        return self._create_subscope_cm(scope_type="AND", cls=RulePremiseSubScopeCM)
 
 
 def _rule__scope(self: Item, scope_name: str):
@@ -962,6 +1043,27 @@ def _rule__scope(self: Item, scope_name: str):
 
 
 I15["implication proposition"].add_method(_proposition__scope, name="scope")
+
+
+def _get_subscopes(self):
+    """
+    Convenience method for items which usually have scopes: allow easy access to subscopes
+    """
+    return self.get_inv_relations("R21__is_scope_of", return_subj=True)
+
+I15["implication proposition"].add_method(_get_subscopes, name="get_subscopes")
+I16["scope"].add_method(_get_subscopes, name="get_subscopes")
+
+def _get_statements_for_scope(self):
+    """
+    Convenience method for scope items to allow easy access to the statements made in that scope
+    """
+    subjects = self.get_inv_relations("R20__has_defining_scope", return_subj=True)
+
+    # return all statements where which have self as R20 qualifier
+    return [s for s in subjects if isinstance(s, Statement)]
+
+I16["scope"].add_method(_get_statements_for_scope, name="get_statements_for_scope")
 
 
 I17 = create_builtin_item(
@@ -1044,7 +1146,10 @@ I20 = create_builtin_item(
     ),
 )
 
+# TODO: add these methods via inheritance
 I20["mathematical definition"].add_method(_proposition__scope, name="scope")
+I20["mathematical definition"].add_method(_get_subscopes, name="get_subscopes")
+
 
 I21 = create_builtin_item(
     key_str="I21",

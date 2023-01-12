@@ -579,6 +579,65 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         matrix_instance = def_itm.M
         self.assertEqual(matrix_instance.R1, "M")
 
+    def test_c07b__nested_scopes_of_propositions(self):
+        """
+        Test existentially and universally quantified conditions as nested scopes in scopes of propositions/definitions
+        """
+        ##!
+        with p.uri_context(uri=TEST_BASE_URI):
+            I7324 = p.create_item(
+                R1__has_label = "definition of something",
+                R4__is_instance_of =p.I20["mathematical definition"],
+            )
+
+            my_set = p.instance_of(p.I13["mathematical set"])
+            my_prop = p.instance_of(p.I11["mathematical property"])
+
+            with I7324["definition of something"].scope("setting") as cm:
+                x = cm.new_var(x=p.instance_of(p.I39["positive integer"]))
+                y = cm.new_var(y=p.instance_of(p.I39["positive integer"]))
+
+            with I7324["definition of something"].scope("premise") as cm:
+                with cm.univ_quant_conditions() as cm2:
+                    cm2.add_condition_statement(cm.x, p.R15["is element of"], my_set)
+                    cm2.add_condition_statement(cm.y, p.R15["is element of"], my_set)
+
+                    # note: the meaning of this equation is pointless, we just test the implementation of subscopes
+                    cm2.new_equation(lhs=cm.x, rhs=cm.y)
+
+            with I7324["definition of something"].scope("assertion") as cm:
+                cm.new_rel(cm.x, p.R16["has property"], my_prop)
+                cm.new_rel(cm.y, p.R16["has property"], my_prop)
+
+                # also pointless direct meaning, only to test contexts
+                # with cm.exis_quant_conditions() as cm2:
+                #     cm2.new_var(z=p.instance_of(p.I39["positive integer"]))
+
+            scp_prem = I7324.get_subscopes()[1]
+            prem_sub_scopes = scp_prem.get_subscopes()
+            self.assertEqual(len(prem_sub_scopes), 1)
+            uq_scp = prem_sub_scopes[0]
+            self.assertEqual(uq_scp.R64__has_scope_type, "UNIV_QUANT")
+
+            # check the condition
+            cond_sc = uq_scp.get_subscopes()[0]
+            cond_stms = cond_sc.get_statements_for_scope()
+            stm1: p.Statement = cond_stms[0]
+            self.assertEqual(stm1.subject, x)
+            self.assertEqual(stm1.predicate, p.R15["is element of"])
+            self.assertEqual(stm1.object, my_set)
+
+            # check the actual statement (which is an equation)
+            stm1, = uq_scp.get_statements_for_scope()
+            self.assertEqual(stm1.subject, x)
+            self.assertEqual(stm1.predicate, p.R31["is in mathematical relation with"])
+            self.assertEqual(stm1.object, y)
+
+            proxy_item = stm1.get_first_qualifier_obj_with_rel("R34__has_proxy_item")
+            self.assertEqual(proxy_item.R4__is_instance_of, p.I23["equation"])
+            self.assertEqual(proxy_item.R26__has_lhs, x)
+            self.assertEqual(proxy_item.R27__has_rhs, y)
+
     def test_c08__relations_with_sequence_as_argument(self):
         with p.uri_context(uri=TEST_BASE_URI):
             Ia001 = p.create_item(R1__has_label="test item")

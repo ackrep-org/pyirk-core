@@ -530,7 +530,7 @@ class RuleApplicatorWorker:
                 else:
                     new_obj = search_dict[n2]
 
-                if new_subj.R20__has_defining_scope or new_obj.R20__has_defining_scope:
+                if new_subj.R20__has_defining_scope or getattr(new_obj, "R20__has_defining_scope", None):
                     # rules should not affect items inside scopes (maybe this will be more precise in the future)
                     continue
 

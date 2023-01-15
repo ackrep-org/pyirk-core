@@ -694,7 +694,7 @@ class RuleApplicatorWorker:
 
         # restrictions for matching nodes: none
         # ... for matching edges: relation-uri must match
-        GM = nxiso.DiGraphMatcher(self.parent.G, self.P, node_match=self._node_matcher, edge_match=edge_matcher)
+        GM = nxiso.MultiDiGraphMatcher(self.parent.G, self.P, node_match=self._node_matcher, edge_match=edge_matcher)
 
         # for the difference between subgraph monomorphisms and isomorphisms see:
         # https://networkx.org/documentation/stable/reference/algorithms/isomorphism.vf2.html#subgraph-isomorphism
@@ -994,7 +994,7 @@ class RuleApplicatorWorker:
 
         for component in components:
             for node in component:
-                uri = self.local_nodes.b[node]
+                uri = self.extended_local_nodes.b[node]
                 if uri in var_uris:
                     if uri in self.subjectivized_predicates.a:
                         # this kind of nodes is allowed to form disconnected components

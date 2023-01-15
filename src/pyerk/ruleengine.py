@@ -924,7 +924,14 @@ class RuleApplicatorWorker:
                     n2 = self.parent.literal_variable_nodes.a[obj.uri]
                     self.P.add_node(n2, entity=obj, is_literal=False, is_variable_literal=True)
                 else:
-                    n2 = self.local_nodes.a[obj.uri]
+                    try:
+                        n2 = self.local_nodes.a[obj.uri]
+                    except KeyError:
+                        msg = (
+                            f"unknown object {obj} of rule {self.parent.rule} (uri not in local_nodes; "
+                            "maybe missing (registration as external entity) in setting)"
+                        )
+                        raise ValueError(msg)
                     self.ensure_node_of_P(n2)
             elif isinstance(obj, core.allowed_literal_types):
                 if subjectivized_predicate:

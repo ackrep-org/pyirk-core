@@ -1139,7 +1139,10 @@ class ReportingRuleResult(core.RuleResult):
             format_kwargs = {}
             for a, b in bindinfo:
                 a_name = a.R23__has_name_in_scope
-                format_kwargs[a_name] = b.R1
+                if isinstance(b, core.Entity):
+                    format_kwargs[a_name] = b.R1
+                else:
+                    format_kwargs[a_name] = repr(b)
 
             return self.explanation_text_template.format(**format_kwargs)
 

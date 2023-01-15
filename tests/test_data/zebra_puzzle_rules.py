@@ -628,6 +628,7 @@ with I794.scope("assertions") as cm:
     cm.new_rel(cm.p1, p.R50["is different from"], cm.p2, qualifiers=[p.qff_has_rule_ptg_mode(5)])
     cm.new_rel(cm.p2, p.R50["is different from"], cm.p1, qualifiers=[p.qff_has_rule_ptg_mode(5)])
 
-# I794.set_relation(p.R69["has explanation text template"], txt)
+txt = "{p1} lives in {hn1} (with index {house_index1}) and {p2} lives in {hn2} (with index {house_index2})"
+I794.set_relation(p.R69["has explanation text template"], txt)
 
 p.end_mod()

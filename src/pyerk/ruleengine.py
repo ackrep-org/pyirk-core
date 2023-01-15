@@ -525,21 +525,20 @@ class RuleApplicatorWorker:
                 assert isinstance(rel, core.Relation)
                 assert isinstance(new_subj, core.Entity)
 
-                if new_subj.R20__has_defining_scope:
-                    # rules should not affect items inside scopes (maybe this will be more precise in the future)
-                    continue
-
                 if isinstance(n2, LiteralWrapper):
                     new_obj = n2.value
                 else:
                     new_obj = search_dict[n2]
+
+                if new_subj.R20__has_defining_scope or new_obj.R20__has_defining_scope:
+                    # rules should not affect items inside scopes (maybe this will be more precise in the future)
+                    continue
 
                 # check if relation already exists and should be ommitted
                 if cntnr.omit_if_existing:
                     if new_obj in new_subj.get_relations(rel.uri, return_obj=True):
                         continue
                 # TODO: add qualifiers
-                IPS(new_subj.R1 == "p1")
                 new_stm = new_subj.set_relation(rel, new_obj)
 
                 result.add_bound_statement(new_stm, res_dict)

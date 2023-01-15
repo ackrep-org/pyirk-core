@@ -2132,6 +2132,7 @@ class RuleResult:
         self.replacements = []
 
         # dict like {rel_uri1: [stm1, stm2, ...]}
+        # maps a relation uri to a list of statements which have this relation as predicate
         self.rel_map = defaultdict(list)
 
     def add_statement(self, stm: Statement):

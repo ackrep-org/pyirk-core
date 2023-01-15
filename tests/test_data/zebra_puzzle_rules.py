@@ -144,6 +144,41 @@ with I720.scope("assertions") as cm:
 
 # ###############################################################################
 
+I725 = p.create_item(
+    R1__has_label="rule: deduce facts from inverse relations",
+    R2__has_description=("deduce facts from inverse relations e.g. if p1 lives right of p2 then p2 lives left of p1"),
+    R4__is_instance_of=p.I41["semantic rule"],
+)
+
+with I725.scope("context") as cm:
+    cm.new_var(h1=p.instance_of(zb.I7435["human"]))
+    cm.new_var(h2=p.instance_of(zb.I7435["human"]))
+    cm.new_var(itm1=p.instance_of(p.I1["general item"]))
+
+    cm.new_rel_var("rel1")
+    cm.new_rel_var("rel2")
+
+with I725.scope("premises") as cm:
+    cm.set_sparql(
+        """
+        WHERE {
+            ?h1 ?rel1 ?h2.        # R3606["lives next to"]
+
+            ?rel1 zb:R2850 true.     # R2850__is_functional_activity
+            ?rel1 :R68 ?rel2.        # R68__is_inverse_of
+        }
+        """
+    )
+
+with I725.scope("assertions") as cm:
+    cm.new_rel(cm.h2, cm.rel2, cm.h1)
+
+txt = r"{h1} {rel1} {h2}  AND  {rel21 R68__is_invsere_of {rel2}."
+
+I725.set_relation(p.R69["has explanation text template"], txt)
+
+# ###############################################################################
+
 I730 = p.create_item(
     R1__has_label="rule: deduce negative facts for neighbours",
     R2__has_description=("deduce some negative facts e.g. which pet a person does not own"),

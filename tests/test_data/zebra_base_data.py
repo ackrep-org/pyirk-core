@@ -323,13 +323,24 @@ R3606 = p.create_relation(
 )
 
 R2353 = p.create_relation(
-    R1__has_label="lives immediatly right of",
+    R1__has_label="lives immediately right of",
     R2__has_description="specifies that the house index of the subject equals the house index of the object plus one",
     R8__has_domain_of_argument_1=I7435["human"],
     R11__has_range_of_result=I7435["human"],
     R22__is_functional=True,
     R17__is_subproperty_of=R3606["lives next to"],
     R2850__is_functional_activity=True,
+)
+
+R8768 = p.create_relation(
+    R1__has_label="lives immediately left of",
+    R2__has_description="specifies that the house index of the subject equals the house index of the object minus one",
+    R8__has_domain_of_argument_1=I7435["human"],
+    R11__has_range_of_result=I7435["human"],
+    R22__is_functional=True,
+    R17__is_subproperty_of=R3606["lives next to"],
+    R2850__is_functional_activity=True,
+    R68__is_inverse_of=R2353["lives immediately right of"]
 )
 
 

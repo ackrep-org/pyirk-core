@@ -1342,7 +1342,7 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
 
         zp = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA02, prefix="zp")
 
-        neighbour = zp.person1.zb__R2353__lives_immediatly_right_of
+        neighbour = zp.person1.zb__R2353__lives_immediately_right_of
         self.assertIsNone(neighbour)
 
         res = p.ruleengine.apply_semantic_rule(zp.zr.I710, mod_context_uri=zp.__URI__)
@@ -1367,7 +1367,7 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         with p.uri_context(uri=TEST_BASE_URI):
             p.replace_and_unlink_entity(zp.person2, zp.person1)
 
-        neighbour = zp.person1.zb__R2353__lives_immediatly_right_of
+        neighbour = zp.person1.zb__R2353__lives_immediately_right_of
         self.assertEqual(neighbour, zp.person3)
 
     def test_d03__zebra_puzzle_stage02(self):
@@ -1559,7 +1559,7 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
 
         zp = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA02, prefix="zp")
 
-        neighbour_before = zp.person1.zb__R2353__lives_immediatly_right_of
+        neighbour_before = zp.person1.zb__R2353__lives_immediately_right_of
         self.assertEqual(neighbour_before, None)
 
         res = p.ruleengine.apply_semantic_rule(
@@ -1575,7 +1575,7 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
 
         self.assertIn((zp.person9, zp.person5), res.replacements)
         self.assertIn((zp.person2, zp.person1), res.replacements)
-        neighbour_after = zp.person1.zb__R2353__lives_immediatly_right_of
+        neighbour_after = zp.person1.zb__R2353__lives_immediately_right_of
         self.assertEqual(neighbour_after, zp.person3)
 
     def test_d06__zebra_puzzle_stage02(self):
@@ -2044,8 +2044,9 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         reports.append(zb.report(display=False, title="I702"))
         result_history.append(res)
 
-        self.assertEqual(len(res.rel_map), 1)
+        self.assertEqual(len(res.rel_map), 2)
         self.assertIn(p.R43["is opposite of"].uri, res.rel_map)
+        self.assertIn(p.R68["is inverse of"].uri, res.rel_map)
 
         # load the hints and perform basic inferrence
         zp = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA02, prefix="zp")
@@ -2069,6 +2070,18 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
 
         reports.append(zb.report(display=False, title="I720"))
         result_history.append(res)
+
+        res_I725 = res = p.ruleengine.apply_semantic_rules(
+            zp.zr.I725["rule: deduce facts from inverse relations"],
+            mod_context_uri=zp.__URI__,
+        )
+
+        reports.append(zb.report(display=False, title="I725"))
+        result_history.append(res)
+
+        self.assertEqual(len(res.new_statements), 1)
+        self.assertEqual(len(res.rel_map), 1)
+        self.assertIn(zb.R8768["lives immediately left of"].uri, res.rel_map)
 
         res_I730 = res = p.ruleengine.apply_semantic_rule(
             zp.zr.I730["rule: deduce negative facts for neighbours"], mod_context_uri=zp.__URI__

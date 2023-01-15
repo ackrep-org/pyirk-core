@@ -79,7 +79,7 @@ person3 = p.instance_of(zb.I7435["human"])
 person3.set_relation("R57__is_placeholder", True)
 person3.set_relation("zb__R8098__has_house_color", zb.I7612["ivory"])
 
-person2.set_relation("zb__R2353__lives_immediatly_right_of", person3)
+person2.set_relation("zb__R2353__lives_immediately_right_of", person3)
 
 # 7. The Old Gold smoker owns snails.
 
@@ -170,7 +170,7 @@ supposed keys:
 
 
 
-I8768
+
 I6020
 I2693
 I2183

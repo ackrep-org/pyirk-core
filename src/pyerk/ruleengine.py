@@ -480,9 +480,11 @@ class RuleApplicatorWorker:
                         tmp_args.append(res_dict[node])
                 call_args_list.append(tmp_args)
 
-            csq_fnc_results: List[core.RuleResult] = [
-                func(*call_args) for func, call_args in zip(consequent_functions, call_args_list)
-            ]
+            csq_fnc_results: List[core.RuleResult] = []
+            for func, call_args in zip(consequent_functions, call_args_list):
+                res = func(*call_args)
+                self.unlink_unwanted_statements(res.new_statements)
+                csq_fnc_results.append(res)
 
             asserted_new_items = []
             for cfr in csq_fnc_results:
@@ -534,6 +536,7 @@ class RuleApplicatorWorker:
                     if new_obj in new_subj.get_relations(rel.uri, return_obj=True):
                         continue
                 # TODO: add qualifiers
+                IPS(new_subj.R1 == "p1")
                 new_stm = new_subj.set_relation(rel, new_obj)
 
                 result.add_bound_statement(new_stm, res_dict)
@@ -998,6 +1001,21 @@ class RuleApplicatorWorker:
                 res.ee_components.append(component)
 
         return res
+
+    def unlink_unwanted_statements(self, stm_list: List[core.Statement]):
+        """
+        During the application of consequent functions unwanted statements might be created. This method serves to
+        delete them. Unwanted statements are e.g. statements about items which are defined in scopes of rules.
+        """
+        pop_indices = []
+        for idx, stm in enumerate(stm_list):
+            if stm.subject.R20__has_defining_scope:
+                stm.unlink()
+                pop_indices.append(idx)
+
+        # iterate from behind to leave lower indices unchanged by popping elements
+        for idx in reversed(pop_indices):
+            stm_list.pop(idx)
 
 
 wildcard_relation_uri = bi.R58["wildcard relation"].uri

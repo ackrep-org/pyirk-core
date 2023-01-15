@@ -1585,7 +1585,7 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         with p.uri_context(uri=TEST_BASE_URI):
 
             R301 = p.create_relation(R1="parent relation")
-            R302 = p.create_relation(R1="sub relation", R17__is_subproperty_of=R301)
+            R302 = p.create_relation(R1="subrelation", R17__is_subproperty_of=R301)
 
             I701 = p.create_item(
                 R1__has_label="rule: just match subproperties",
@@ -1667,6 +1667,20 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
 
             with I701.scope("assertions") as cm:
                 cm.new_consequent_func(p.copy_statements, cm.rel1, cm.rel2)
+
+            # define another (incomplete) rule which is never applied
+            # ensure that above rule is not applied to the items defined in the scope of this rule
+            I763 = p.create_item(
+                R1__has_label="test rule",
+                R4__is_instance_of=p.I41["semantic rule"],
+            )
+
+            with I763.scope("context") as cm:
+                cm.new_var(p1=p.instance_of(p.I1["general item"]))
+                cm.new_var(p2=p.instance_of(p.I1["general item"]))
+
+            with I763.scope("premises") as cm:
+                cm.new_rel(cm.p1, R302["subrelation"], cm.p2)
 
             self.assertEqual(itm1.R301__parent_relation, [])
             res = p.ruleengine.apply_semantic_rule(I701)

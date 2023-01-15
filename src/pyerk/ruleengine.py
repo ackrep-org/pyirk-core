@@ -958,10 +958,17 @@ class RuleApplicatorWorker:
         if len(cc.main_components) == 0:
             raise core.aux.SemanticRuleError("empty prototype graph")
 
-        if len(cc.main_components) > 1:
+        expected_main_component_number = getattr(self.parent.rule, "R70__has_number_of_prototype_graph_components")
+        if expected_main_component_number is None:
+            expected_main_component_number = 1
+
+        if len(cc.main_components) != expected_main_component_number:
+            # usually this is triggered by a bug in the rule. However, there are some cases where multiple components
+            # are needed. Then R70__has_number_of_prototype_graph_components can be used.
             msg = (
                 f"unexpected number of components of prototype graph while applying rule {self.parent.rule}."
-                f"Expected: 1, but got {len(cc.main_components)}. Possible reason: unused variables in the rules context."
+                f"Expected: {expected_main_component_number}, but got {len(cc.main_components)}. "
+                "Possible reason: unused variables in the rules context."
             )
             raise core.aux.SemanticRuleError(msg)
 

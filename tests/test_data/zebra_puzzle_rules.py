@@ -589,4 +589,45 @@ txt = r"{h1} {rel1} {itm1a}  AND  {h2} {rel1_not} {itm1a}."
 
 I792.set_relation(p.R69["has explanation text template"], txt)
 
+# ###############################################################################
+
+
+I794 = p.create_item(
+    R1__has_label="rule: deduce neighbour-facts from house indices",
+    R4__is_instance_of=p.I41["semantic rule"],
+)
+
+with I794.scope("context") as cm:
+    # persons
+    cm.new_var(p1=p.instance_of(zb.I7435["human"]))
+    cm.new_var(p2=p.instance_of(zb.I7435["human"]))
+
+    # house numbers
+    cm.new_var(hn1=p.instance_of(p.I1["general item"]))
+    cm.new_var(hn2=p.instance_of(p.I1["general item"]))
+
+    # house number indices
+    cm.new_variable_literal("house_index1")
+    cm.new_variable_literal("house_index2")
+
+
+with I794.scope("premises") as cm:
+    cm.new_rel(cm.p1, zb.R9040["lives in numbered house"], cm.hn1)
+    cm.new_rel(cm.p2, zb.R9040["lives in numbered house"], cm.hn2)
+
+    cm.new_rel(cm.hn1, p.R40["has index"], cm.house_index1)
+    cm.new_rel(cm.hn2, p.R40["has index"], cm.house_index2)
+
+    cm.new_condition_func(lambda self, x, y: y == x+1, cm.house_index1, cm.house_index2)
+
+I794.set_relation(p.R70["has number of prototype-graph-components"], 2)
+
+with I794.scope("assertions") as cm:
+    # qualifier means: 5 -> create_asserted_statement_only_if_new
+    cm.new_rel(cm.p2, zb.R2353["lives immediately right of"], cm.p1, qualifiers=[p.qff_has_rule_ptg_mode(5)])
+    cm.new_rel(cm.p1, p.R50["is different from"], cm.p2, qualifiers=[p.qff_has_rule_ptg_mode(5)])
+    cm.new_rel(cm.p2, p.R50["is different from"], cm.p1, qualifiers=[p.qff_has_rule_ptg_mode(5)])
+
+# I794.set_relation(p.R69["has explanation text template"], txt)
+
 p.end_mod()

@@ -2159,6 +2159,18 @@ R69 = create_builtin_relation(
     R18__has_usage_hint="used to generate explaining reports of rule results",
 )
 
+
+R70 = create_builtin_relation(
+    key_str="R70",
+    R1__has_label="has number of prototype-graph-components",
+    R2__has_description=(
+        "specifies the number of weakly connected 'main components' of the prototype graph of a semantic rule"
+    ),
+    R8__has_domain_of_argument_1=I41["semantic rule"],
+    R11__has_range_of_result=int,
+    R22__is_functional=True,
+)
+
 # ######################################################################################################################
 # condition functions (to be used in the premise scope of a rule)
 # ######################################################################################################################

@@ -344,6 +344,30 @@ with I760.scope("assertions") as cm:
 
 # ###############################################################################
 
+I763 = p.create_item(
+    R1__has_label="rule: deduce impossible house index for lieft-right neighbours",
+    R2__has_description=("deduce impossible house indices for right neighbour"),
+    R4__is_instance_of=p.I41["semantic rule"],
+)
+
+with I763.scope("context") as cm:
+    # persons
+    cm.new_var(p1=p.instance_of(zb.I7435["human"]))
+    cm.new_var(p2=p.instance_of(zb.I7435["human"]))
+    cm.uses_external_entities(zb.I6448["house 1"], zb.I1383["house 5"])
+
+with I763.scope("premises") as cm:
+    cm.new_rel(cm.p1, zb.R2353["lives immediately right of"], cm.p2)
+
+
+with I763.scope("assertions") as cm:
+    cm.new_rel(cm.p1, zb.R2835["lives not in numbered house"], zb.I6448["house 1"])
+    cm.new_rel(cm.p2, zb.R2835["lives not in numbered house"], zb.I1383["house 5"])
+
+
+
+# ###############################################################################
+
 
 I770 = p.create_item(
     R1__has_label="rule: deduce impossible house_number items from impossible indices",

@@ -356,6 +356,8 @@ class RuleApplicatorWorker:
     Performs the application of one premise branch of a rule
     """
 
+    # useful for debugging: IPS(self.parent.rule.short_key=="I763")
+
     def __init__(self, parent: RuleApplicator, premise_stms: List[core.Statement], premise_items: List[core.Item]):
         # get all subjects (Entities or Statements of the setting-scope)
 

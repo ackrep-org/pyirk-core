@@ -631,4 +631,41 @@ with I794.scope("assertions") as cm:
 txt = "{p1} lives in {hn1} (with index {house_index1}) and {p2} lives in {hn2} (with index {house_index2})"
 I794.set_relation(p.R69["has explanation text template"], txt)
 
+# ###############################################################################
+
+
+I796 = p.create_item(
+    R1__has_label="rule: deduce different-from facts for neighbour-pairs",
+    R4__is_instance_of=p.I41["semantic rule"],
+)
+
+with I796.scope("context") as cm:
+    # persons
+    cm.new_var(p1=p.instance_of(p.I1["general item"]))
+    cm.new_var(p2=p.instance_of(p.I1["general item"]))
+    cm.new_var(p3=p.instance_of(p.I1["general item"]))
+    cm.new_var(p4=p.instance_of(p.I1["general item"]))
+    cm.uses_external_entities(zb.I7435["human"])
+
+with I796.scope("premises") as cm:
+    # this serves to speed up the rule (for being more specific)
+    cm.new_rel(cm.p1, p.R4["is instance of"], zb.I7435["human"], overwrite=True)
+    cm.new_rel(cm.p2, p.R4["is instance of"], zb.I7435["human"], overwrite=True)
+    cm.new_rel(cm.p3, p.R4["is instance of"], zb.I7435["human"], overwrite=True)
+    cm.new_rel(cm.p4, p.R4["is instance of"], zb.I7435["human"], overwrite=True)
+
+    cm.new_rel(cm.p1, zb.R2353["lives immediately right of"], cm.p2)
+    cm.new_rel(cm.p3, zb.R2353["lives immediately right of"], cm.p4)
+    cm.new_rel(cm.p1, p.R50["is different from"], cm.p3)
+
+
+# I798.set_relation(p.R70["has number of prototype-graph-components"], 2)
+
+with I796.scope("assertions") as cm:
+    # qualifier means: 5 -> create_asserted_statement_only_if_new
+    cm.new_rel(cm.p2, p.R50["is different from"], cm.p4, qualifiers=[p.qff_has_rule_ptg_mode(5)])
+    cm.new_rel(cm.p4, p.R50["is different from"], cm.p2, qualifiers=[p.qff_has_rule_ptg_mode(5)])
+
+# ###############################################################################
+
 p.end_mod()

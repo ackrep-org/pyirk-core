@@ -2249,13 +2249,14 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         )
         reports.append(zb.report(display=False, title="I794"))
         result_history.append(res)
-        # IPS()
+        self.assertGreaterEqual(len(res.new_statements), 2)
 
-        # res_I795 = res = p.ruleengine.apply_semantic_rule(
-        #     zp.zr.I795, mod_context_uri=zp.__URI__
-        # )
-        # reports.append(zb.report(display=False, title="I795"))
-        # result_history.append(res)
+        res_I796 = res = p.ruleengine.apply_semantic_rule(
+            zp.zr.I796, mod_context_uri=zp.__URI__
+        )
+        reports.append(zb.report(display=False, title="I796"))
+        result_history.append(res)
+        self.assertGreaterEqual(len(res.new_statements), 2)
         # IPS()
 
 

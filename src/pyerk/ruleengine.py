@@ -1037,8 +1037,8 @@ class ReportingRuleResult(core.RuleResult):
         super().__init__()
         self.raworker = raworker
         self.statement_reports = []
-        self.rule = self.raworker.parent.rule
-        self.explanation_text_template = self.rule.R69__has_explanation_text_template
+        self._rule = self.raworker.parent.rule
+        self.explanation_text_template = self._rule.R69__has_explanation_text_template
 
     def add_bound_statement(self, stm: core.Statement, raw_binding_info: dict):
         """

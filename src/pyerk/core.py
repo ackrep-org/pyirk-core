@@ -2130,6 +2130,7 @@ class RuleResult:
         self.unlinked_entities = []
         self.partial_results = []
         self.replacements = []
+        self._rule = None
 
         # dict like {rel_uri1: [stm1, stm2, ...]}
         # maps a relation uri to a list of statements which have this relation as predicate
@@ -2157,6 +2158,17 @@ class RuleResult:
     def add_partial(self, part: "RuleResult"):
         self.extend(part)
         self.partial_results.append(part)
+
+    @property
+    def rule(self):
+        """
+        Convenience property for easy access to the corresponding rule
+        """
+        if self._rule is None:
+            if self.partial_results:
+                return self.partial_results[0].rule
+
+        return self._rule
 
 
 def script_main(fpath):

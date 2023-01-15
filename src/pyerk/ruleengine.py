@@ -6,7 +6,7 @@ This module contains code to enable semantic inferences based on special items (
 
 """
 
-from typing import List, Tuple, Optional
+from typing import Dict, List, Tuple, Optional
 from collections import defaultdict
 from enum import Enum
 import json
@@ -267,7 +267,7 @@ class RuleApplicator:
 
         :return:
         """
-        G = nx.DiGraph()
+        G = nx.MultiDiGraph()
 
         for uri, entity in list(core.ds.items.items()) + list(core.ds.relations.items()):
 
@@ -276,29 +276,33 @@ class RuleApplicator:
                 # TODO: rename kwarg itm to ent
                 G.add_node(uri, itm=entity, is_literal=False)
 
-        all_rels = self.get_all_node_relations()
-        for uri_tup, rel_cont in all_rels.items():
+        all_rels: Dict[Tuple, List] = self.get_all_node_relations()
+        for uri_tup, rel_cont_list in all_rels.items():
+            rel_cont_list: List[Container]  # a list of statement-describing Containers
             uri1, uri2 = uri_tup
-            if uri1 in G.nodes and uri2.startswith(LITERAL_BASE_URI):
-                literal_value = self.literals.a[uri2]
-                G.add_node(uri2, is_literal=True, value=literal_value)
-                G.add_edge(*uri_tup, itm1=core.ds.get_entity_by_uri(uri1), itm2=literal_value, **rel_cont)
-            elif uri1 in G.nodes and uri2 in G.nodes:
-                G.add_edge(
-                    *uri_tup, itm1=core.ds.get_entity_by_uri(uri1), itm2=core.ds.get_entity_by_uri(uri2), **rel_cont
-                )
-            else:
-                pass
-                # uri1 belongs to an ignored item (eg from inside a scope)
+            for rel_cont in rel_cont_list:
+                if uri1 in G.nodes and uri2.startswith(LITERAL_BASE_URI):
+                    literal_value = self.literals.a[uri2]
+                    G.add_node(uri2, is_literal=True, value=literal_value)
+                    G.add_edge(*uri_tup, itm1=core.ds.get_entity_by_uri(uri1), itm2=literal_value, **rel_cont)
+                elif uri1 in G.nodes and uri2 in G.nodes:
+                    G.add_edge(
+                        *uri_tup, itm1=core.ds.get_entity_by_uri(uri1), itm2=core.ds.get_entity_by_uri(uri2), **rel_cont
+                    )
+                else:
+                    pass
+                    # uri1 belongs to an ignored item (eg from inside a scope)
 
         return G
 
     def get_all_node_relations(self) -> dict:
         """
-        returns a dict of all graph-relevant relations {(uri1, uri2): Container(rel_uri=uri3), ...}
+        returns a dict of all graph-relevant relations {(uri1, uri2): [Container(rel_uri=uri3), ...], ....}.
+        Keys: 2-tuples of uris.
+        Values: Lists of Containers (due to multi-edges)
         """
 
-        res = {}
+        res = defaultdict(list)
 
         # core.ds.statements
         # {'erk:/builtins#R1': {'erk:/builtins#R1': [S(...), ...], ...}, ..., 'erk:/builtins#I1': {...}}
@@ -320,9 +324,7 @@ class RuleApplicator:
                         assert stm.corresponding_literal is None
 
                         c = Container(rel_uri=rel_uri, rel_props=rel_props, rel_entity=stm.predicate)
-                        res[(subj_uri, stm.corresponding_entity.uri)] = c
-                        # TODO: support multiple relations in the graph (MultiDiGraph)
-                        break
+                        res[(subj_uri, stm.corresponding_entity.uri)].append(c)
                     else:
                         # case 2: object is a literal
                         assert stm.corresponding_literal is not None
@@ -330,7 +332,7 @@ class RuleApplicator:
                         c = Container(rel_uri=rel_uri, rel_props=rel_props, rel_entity=stm.predicate)
                         literal_uri = self._make_literal(stm.corresponding_literal)
 
-                        res[(subj_uri, literal_uri)] = c
+                        res[(subj_uri, literal_uri)].append(c)
 
         return res
 
@@ -392,7 +394,7 @@ class RuleApplicatorWorker:
         # list of Containers, containing triples like (node1, <Relation>, node2)
         self.asserted_relation_templates: List[Container] = None
 
-        self.P: nx.DiGraph = None
+        self.P: nx.MultiDiGraph = None
         self.create_prototype_subgraph_from_rule()
 
     def apply_sparql_premise(self) -> core.RuleResult:
@@ -443,7 +445,6 @@ class RuleApplicatorWorker:
         consequent_functions, cf_arg_nodes, anchor_node_names = self.prepare_consequent_functions()
 
         result = ReportingRuleResult(raworker=self)
-
 
         for res_dict in result_maps:
             # res_dict represents one situation where the assertions should be applied
@@ -838,7 +839,7 @@ class RuleApplicatorWorker:
         the statements, see _create_psg_edges)
         """
 
-        self.P = nx.DiGraph()
+        self.P = nx.MultiDiGraph()
 
         # counter for node-values
         i = 0
@@ -1021,11 +1022,22 @@ class RuleApplicatorWorker:
 wildcard_relation_uri = bi.R58["wildcard relation"].uri
 
 
-def edge_matcher(e1d: dict, e2d: dict) -> bool:
+AtlasView = nx.coreviews.AtlasView
+def edge_matcher(e1d: AtlasView, e2d: AtlasView) -> bool:
     """
 
-    :param e1d:     attribute data of edge from "main graph" (see RuleApplicator)
-    :param e2d:     attribute data of edge from "prototype graph" (see RuleApplicator)
+    :param e1d:     attribute data of edgees from "main graph" (see RuleApplicator)
+    :param e2d:     attribute data of edgees from "prototype graph" (see RuleApplicator)
+
+    because we compare MultiDigraphs we get `AtlasView`-instances, i.e. read-only dicts like
+    AtlasView({0: inner_dict0, 1: inner_dict1, ...}). Keys are edge-indices for that 'multi-edge', values are like
+    inner_dict0 = {
+        'itm1': <Relation R64["has scope type"]>,
+        'itm2': <Item I16["scope"]>,
+        'rel_uri': 'erk:/builtins#R8',
+        'rel_entity': <Relation R8["has domain of argument 1"]>
+    }
+
 
     :return:        boolean matching result
 
@@ -1035,18 +1047,27 @@ def edge_matcher(e1d: dict, e2d: dict) -> bool:
 
     """
 
+    msg = "multi-edges in prototype-graph not yet supported, use SPARQL premise"
+    assert len(e2d) == 1, msg
+
+    e2d = e2d[0]
+
     if e2d["rel_uri"] == wildcard_relation_uri:
         # wildcard relations matches any relation which has the required relation properties
 
-        return compare_relation_statements(e1d["rel_entity"], e2d["rel_statements"])
+        # iterate over all edges of this multiedge
+        for inner_dict1 in e1d.values():
+            res: bool = compare_relation_statements(inner_dict1["rel_entity"], e2d["rel_statements"])
+            if res:
+                break
+        return res
 
-        # if set(e2d["rel_props"]).issubset(e1d["rel_props"]):
-        #     return True
+    # iterate over all edges of this multiedge
+    for inner_dict1 in e1d.values():
+        if inner_dict1["rel_uri"] == e2d["rel_uri"]:
+            return True
 
-    if e1d["rel_uri"] != e2d["rel_uri"]:
-        return False
-
-    return True
+    return False
 
 
 class ReportingRuleResult(core.RuleResult):

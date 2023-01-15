@@ -1194,7 +1194,8 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         all_rels = ra.get_all_node_relations()
         self.assertGreater(len(all_rels), 30)
         key = (p.I2.uri, p.I1.uri)
-        value_container: p.ruleengine.Container = all_rels[key]
+        value_container_list = all_rels[key]
+        value_container: p.ruleengine.Container = value_container_list[0]
 
         self.assertEqual(value_container.rel_uri, p.R3.uri)
 
@@ -1243,10 +1244,8 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         ra = p.ruleengine.RuleApplicator(self.rule1, mod_context_uri=TEST_BASE_URI)
         res = ra.apply()
 
-        # ensure that after rule application there is at least one new relation
-        self.assertEqual(len(mod1.I9642["local exponential stability"].get_relations("R17__is_subproperty_of")), 2)
-        for r in res.new_statements:
-            print(r)
+        # ensure that after rule application there new relations
+        self.assertEqual(len(mod1.I9642["local exponential stability"].get_relations("R17__is_subproperty_of")), 3)
 
     def test_c06__ruleengine05(self):
         self.setup_data1()
@@ -2038,6 +2037,44 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
             self.assertEqual(len(res.new_statements), 2)
             self.assertEqual(x4.R302[-1], "good2")
             self.assertEqual(x1.R302[-1], "good2")
+
+    def test_d13__zebra_puzzle_stage02(self):
+        """
+        match nodes with multiple edges between them
+        """
+
+        with p.uri_context(uri=TEST_BASE_URI):
+            R301 = p.create_relation(R1="relation1")
+            R302 = p.create_relation(R1="relation2")
+
+            x0 = p.instance_of(p.I35["real number"])
+            x1 = p.instance_of(p.I35["real number"])
+            x2 = p.instance_of(p.I35["real number"])
+
+            x0.set_relation(R301, x1)
+            x0.set_relation(R302, x1)
+            x1.set_relation(R302, x2)
+
+
+            I601 = p.create_item(
+                R1__has_label="simple rule",
+                R4__is_instance_of=p.I41["semantic rule"],
+            )
+
+            with I601.scope("context") as cm:
+                cm.new_var(itm1=p.instance_of(p.I1["general item"]))
+                cm.new_var(itm2=p.instance_of(p.I1["general item"]))
+
+            with I601.scope("premises") as cm:
+                cm.new_rel(cm.itm1, R301, cm.itm2)
+
+            with I601.scope("assertions") as cm:
+                cm.new_rel(cm.itm1, R302, "good")
+
+            res = p.ruleengine.apply_semantic_rule(I601)
+
+            self.assertEqual(len(res.new_statements), 1)
+            self.assertEqual(x0.R302, [x1, "good"])
 
     def test_e01__zebra_puzzle_stage02(self):
         """

@@ -444,12 +444,22 @@ p.end_mod()
 
 def report(display=True, title=""):
 
-    all_humans = I7435["human"].get_inv_relations("R4", return_subj=True)
+    # all_humans = I7435["human"].get_inv_relations("R4", return_subj=True)
+
+    # this makes this function paste-able
+    human = p.ds.get_entity_by_uri(f"erk:/ocse/0.2/zebra_base_data#I7435")
+    all_humans = human.get_inv_relations("R4", return_subj=True)
 
     res = []
+    res_negative = []
+    res_diff = []
 
     log = res.append
+    log_neg = res_negative.append
+    log_diff = res_diff.append
     log(title)
+    green = p.aux.bgreen
+    yellow = p.aux.byellow
 
     for h in all_humans:
         if h.R20__has_defining_scope:
@@ -462,12 +472,33 @@ def report(display=True, title=""):
             stms.extend(v)
 
         for stm in stms:
-            if (
-                    stm.predicate.zb__R2850__is_functional_activity
-                    or stm.predicate.R43__is_opposite_of
-                    or stm.predicate == p.R50["is different from"]
-            ):
-                log(f"  {stm.predicate.R1:>30}  {stm.object.R1}")
+            if (stm.predicate.zb__R2850__is_functional_activity):
+                if stm.object.R57__is_placeholder:
+                    log(f"  {stm.predicate.R1:>30}  {stm.object.R1}")
+                else:
+                    log(f"  {stm.predicate.R1:>30}  {green(stm.object.R1)}")
+
+            elif stm.predicate == p.R50["is different from"]:
+                if stm.object.R57__is_placeholder:
+                    log_diff(f"  {stm.predicate.R1:>30}  {stm.object.R1}")
+                else:
+                    log_diff(f"  {stm.predicate.R1:>30}  {yellow(stm.object.R1)}")
+
+            elif oppo := stm.predicate.R43__is_opposite_of:
+                stm2 = stm.subject.get_relations(oppo[0].uri)
+                if stm2 and not stm2[0].object.R57__is_placeholder:
+                    # the primal statement is known (X drinks Y) -> no need to print the opposite (X drinks not Z)
+                    pass
+                    # log(f"  {stm.predicate.R1:>26}  {stm.object.R1}")
+                else:
+                    log_neg(f"  {stm.predicate.R1:>30}  {stm.object.R1}")
+
+        # add the negative facts at the end
+        res.extend(res_diff)
+        res_diff.clear()
+        res.extend(res_negative)
+        res_negative.clear()
+
         log(f'{"-" * 40}\n')
 
     res_str = "\n".join(res)

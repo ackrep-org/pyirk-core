@@ -2257,6 +2257,10 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         reports.append(zb.report(display=False, title="I796"))
         result_history.append(res)
         self.assertGreaterEqual(len(res.new_statements), 2)
+
+        apply_times = [(round(r.apply_time, 3), r.rule) for r in result_history]
+        apply_times.sort(reverse=True)
+        print(apply_times[:4])
         # IPS()
 
 

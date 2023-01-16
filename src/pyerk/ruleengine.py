@@ -11,6 +11,7 @@ from collections import defaultdict
 from enum import Enum
 import json
 import textwrap
+import time
 
 import networkx as nx
 from networkx.algorithms import isomorphism as nxiso
@@ -400,6 +401,7 @@ class RuleApplicatorWorker:
         self.create_prototype_subgraph_from_rule()
 
     def apply_sparql_premise(self) -> core.RuleResult:
+        t0 = time.time()
         where_clause = textwrap.dedent(self.sparql_src[0])
         var_names = "?" + " ?".join(self.local_node_names.b.keys())  # -> e.g. "?ph1 ?ph2 ?some_itm ?rel1"
 
@@ -425,15 +427,19 @@ class RuleApplicatorWorker:
                 res_map[node] = entity
             result_maps.append(res_map)
 
-        return self._process_result_map(result_maps)
+        res = self._process_result_map(result_maps)
+        res.apply_time = time.time() - t0
+        return res
 
     def apply_graph_premise(self) -> core.RuleResult:
 
+        t0 = time.time()
         result_maps = self.match_subgraph_P()
         # TODO: for debugging the result_maps data structure the following things might be helpful:
         # - a mapping like self.local_nodes.a but with labels instead of uris
         # - a visualization of the prototype graph self.P
         res = self._process_result_map(result_maps)
+        res.apply_time = time.time() - t0
 
         return res
 

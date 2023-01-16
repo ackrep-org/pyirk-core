@@ -2113,6 +2113,14 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         self.assertEqual(len(res.rel_map), 1)
         self.assertIn(zp.zb.R3606["lives next to"].uri, res.rel_map)
 
+        res_I705 = res = p.ruleengine.apply_semantic_rule(
+            zp.zr.I705["rule: deduce trivial different-from-facts"],
+            mod_context_uri=zp.__URI__,
+        )
+        reports.append(zb.report(display=False, title="I705"))
+        result_history.append(res)
+        self.assertEqual(len(res.new_statements), 20)
+
         res_I720 = res = p.ruleengine.apply_semantic_rules(
             zp.zr.I710["rule: identify same items via zb__R2850__is_functional_activity"],
             zp.zr.I720["rule: replace (some) same_as-items"],
@@ -2258,11 +2266,15 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         result_history.append(res)
         self.assertGreaterEqual(len(res.new_statements), 2)
 
+        res_I798 = res = p.ruleengine.apply_semantic_rule(
+            zp.zr.I798, mod_context_uri=zp.__URI__
+        )
+        reports.append(zb.report(display=False, title="I798"))
+        result_history.append(res)
         apply_times = [(round(r.apply_time, 3), r.rule) for r in result_history]
         apply_times.sort(reverse=True)
-        print(apply_times[:4])
+        # print(apply_times[:4])
         # IPS()
-
 
 
 class Test_Z_Core(HouskeeperMixin, unittest.TestCase):

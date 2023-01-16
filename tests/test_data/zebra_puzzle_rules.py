@@ -58,6 +58,34 @@ with I702.scope("assertions") as cm:
 # ###############################################################################
 
 
+I705 = p.create_item(
+    R1__has_label="rule: deduce trivial different-from-facts",
+    R2__has_description=("deduce trivial different-from-facts like Norwegian is different from Englishman"),
+    R4__is_instance_of=p.I41["semantic rule"],
+)
+
+with I705.scope("context") as cm:
+    cm.new_var(p1=p.instance_of(zb.I7435["human"]))
+    cm.new_var(p2=p.instance_of(zb.I7435["human"]))
+    cm.uses_external_entities(zb.I7435["human"])
+
+
+with I705.scope("premises") as cm:
+    cm.new_rel(cm.p1, p.R4["is instance of"], zb.I7435["human"], overwrite=True)
+    cm.new_rel(cm.p2, p.R4["is instance of"], zb.I7435["human"], overwrite=True)
+
+    cm.new_rel(cm.p1, p.R57["is placeholder"], False)
+    cm.new_rel(cm.p2, p.R57["is placeholder"], False)
+
+
+with I705.scope("assertions") as cm:
+    cm.new_rel(cm.p1, p.R50["is different from"], cm.p2, qualifiers=[p.qff_has_rule_ptg_mode(5)])
+    cm.new_rel(cm.p2, p.R50["is different from"], cm.p1, qualifiers=[p.qff_has_rule_ptg_mode(5)])
+
+
+# ###############################################################################
+
+
 I710 = p.create_item(
     R1__has_label="rule: identify same items via zb__R2850__is_functional_activity",
     R2__has_description=(
@@ -667,5 +695,42 @@ with I796.scope("assertions") as cm:
     cm.new_rel(cm.p4, p.R50["is different from"], cm.p2, qualifiers=[p.qff_has_rule_ptg_mode(5)])
 
 # ###############################################################################
+
+
+# TODO: merge this with I730
+I798 = p.create_item(
+    R1__has_label="rule: deduce negative facts from different-from-facts",
+    R2__has_description=("deduce negative facts from different-from-facts"),
+    R4__is_instance_of=p.I41["semantic rule"],
+)
+
+with I798.scope("context") as cm:
+    cm.new_var(p1=p.instance_of(zb.I7435["human"]))
+    cm.new_var(p2=p.instance_of(zb.I7435["human"]))
+    cm.new_var(itm1=p.instance_of(p.I1["general item"]))
+
+    cm.new_rel_var("rel1")
+    cm.new_rel_var("rel2")
+
+with I798.scope("premises") as cm:
+    cm.set_sparql(
+        """
+        WHERE {
+            ?p1 :R50 ?p2.        # R50["is different from"]
+
+            ?rel1 zb:R2850 true.     # R2850__is_functional_activity
+            ?rel1 :R43 ?rel2.        # R43__is_opposite_of
+
+            ?p1 ?rel1 ?itm1.
+        }
+        """
+    )
+
+with I798.scope("assertions") as cm:
+    cm.new_rel(cm.p2, cm.rel2, cm.itm1, qualifiers=[p.qff_has_rule_ptg_mode(5)])
+
+# ###############################################################################
+
+
 
 p.end_mod()

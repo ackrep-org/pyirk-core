@@ -729,8 +729,108 @@ with I798.scope("premises") as cm:
 with I798.scope("assertions") as cm:
     cm.new_rel(cm.p2, cm.rel2, cm.itm1, qualifiers=[p.qff_has_rule_ptg_mode(5)])
 
+
 # ###############################################################################
 
 
+# ###############################################################################
+
+
+I800 = p.create_item(
+    R1__has_label="rule: deduce positive fact from 4 negative facts",
+    R2__has_description=("deduce positive fact from 4 negative facts (graph version)"),
+    R4__is_instance_of=p.I41["semantic rule"],
+)
+
+with I800.scope("context") as cm:
+    cm.new_var(p1=p.instance_of(zb.I7435["human"]))
+    cm.new_var(itm1=p.instance_of(p.I1["general item"]))
+    cm.new_var(itm2=p.instance_of(p.I1["general item"]))
+    cm.new_var(itm3=p.instance_of(p.I1["general item"]))
+    cm.new_var(itm4=p.instance_of(p.I1["general item"]))
+
+    cm.new_var(itm_type=p.instance_of(p.I1["general item"]))
+
+    # cm.new_rel_var("rel1")
+    cm.new_rel_var("rel1_not")
+    cm.uses_external_entities(zb.I7435["human"])
+
+
+def is_opposite_of_functional_activity(self, rel) -> bool:
+    assert isinstance (rel, p.Relation)
+    if oppo_rels := rel.R43__is_opposite_of:
+        if oppo_rels[0].zb__R2850__is_functional_activity:
+            return True
+
+    return False
+
+
+with I800.scope("premises") as cm:
+    cm.new_rel(cm.p1, p.R4["is instance of"], zb.I7435["human"], overwrite=True)
+
+    cm.new_rel(cm.p1, cm.rel1_not, cm.itm1)
+    cm.new_rel(cm.p1, cm.rel1_not, cm.itm2)
+    cm.new_rel(cm.p1, cm.rel1_not, cm.itm3)
+    cm.new_rel(cm.p1, cm.rel1_not, cm.itm4)
+
+    # TODO: bisher werden in den result_maps nur die knoten aufeinander abgebildet.
+    # ich könnte manuell noch die kanten hinzufügen (Kartesisches Produkt)
+    # dann werden die nicht passenden Kanten-Kombinationen rausgefiltert. dazu condition function für relationen
+    # anlegen
+
+    # Alternative: zweistufiges vorgehen: Regel 1: relevante Relationen markieren.
+    # 2. Regel: nur markierte Relationen als prädikate verwenden.
+    # -> ich muss trotzdem sicherstellen, dass rel1 überall identisch ist und nicht nur die gleiche Markierung hat.
+    #-> diese Alternative ist nicht sinnvoll.
+
+
+
+    cm.new_rel(cm.itm1, p.R4["is instance of"], cm.itm_type, overwrite=True)
+    cm.new_rel(cm.itm2, p.R4["is instance of"], cm.itm_type, overwrite=True)
+    cm.new_rel(cm.itm3, p.R4["is instance of"], cm.itm_type, overwrite=True)
+    cm.new_rel(cm.itm4, p.R4["is instance of"], cm.itm_type, overwrite=True)
+
+    cm.new_condition_func(p.label_compare_method, cm.itm1, cm.itm2)
+    cm.new_condition_func(p.label_compare_method, cm.itm2, cm.itm3)
+    cm.new_condition_func(p.label_compare_method, cm.itm3, cm.itm4)
+
+    cm.new_condition_func(is_opposite_of_functional_activity, cm.rel1_not)
+
+
+def add_stm_by_exclusion(self, p1, oppo_rel, not_itm1, not_itm2, not_itm3, not_itm4):
+    """
+    Assume that four negative facts are known and add the corresponding positive fact
+    """
+
+    itm_type = not_itm1.R4__is_instance_of
+    assert itm_type == not_itm2.R4__is_instance_of
+    assert itm_type == not_itm3.R4__is_instance_of
+    assert itm_type == not_itm4.R4__is_instance_of
+
+    all_itms = itm_type.get_inv_relations("R4__is_instance_of", return_subj=True)
+
+    all_itms_map = dict([(itm.uri, itm) for itm in all_itms if not itm.R57__is_placeholder])
+    all_itms_set = set(all_itms_map.keys())
+
+    assert len(all_itms_set) == 5
+    rest_uris = list(all_itms_set.difference((not_itm1.uri, not_itm2.uri, not_itm3.uri, not_itm4.uri)))
+    assert len(rest_uris) == 1
+    rest = all_itms_map[rest_uris[0]]
+
+    rel1 = oppo_rel.R43__is_opposite_of[0]
+    res = p.RuleResult()
+    if not p1.get_relations(rel1.uri):
+        stm = p1.set_relation(rel1, rest)
+        res.add_statement(stm)
+    return res
+
+
+with I800.scope("assertions") as cm:
+    cm.new_consequent_func(add_stm_by_exclusion, cm.p1, cm.rel1_not, cm.itm1, cm.itm2, cm.itm3, cm.itm4)
+# continue with: 4 opposite_statements -> 1 primal statement
+# identify persons by functional activity
+
+# ###############################################################################
+# ###############################################################################
 
 p.end_mod()

@@ -150,6 +150,9 @@ class ModuleAlreadyLoadedError(PyERKError):
 class SemanticRuleError(PyERKError):
     pass
 
+class InconsistentEdgeRelations(SemanticRuleError):
+    pass
+
 
 class MissingQualifierError(PyERKError):
     pass

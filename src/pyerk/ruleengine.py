@@ -391,6 +391,10 @@ class RuleApplicatorWorker:
         # store I40["general relation"] instances which might serve as subject
         self.subjectivized_predicates = core.aux.OneToOneMapping()
 
+        # store those node-tuples which correspond to a R58["wildcard relation"]-statement
+        # (which has an associated proxy-item). This is used in self.get_extended_result_map
+        self.stms_associated_to_proxy_items = defaultdict(list)
+
         # will be set when needed (holds the union of both previous structures)
         self.extended_local_nodes = None
 
@@ -454,7 +458,7 @@ class RuleApplicatorWorker:
 
         result = ReportingRuleResult(raworker=self)
 
-        for res_dict in result_maps:
+        for res_dict0 in result_maps:
             # res_dict represents one situation where the assertions should be applied
             # it's a dict {<node-number>: <item>, ...} like
             # {
@@ -462,6 +466,14 @@ class RuleApplicatorWorker:
             #       1: <Item I4900["local asymtotical stability"]>,
             #       2: <Item I9642["local exponential stability"]>
             #  }
+
+            try:
+                res_dict = self.get_extended_result_map(res_dict0)
+            except p.aux.InconsistentEdgeRelations:
+                # this might happen as a consequence of "naive subgraph matching" which cannot decide if
+                # two edges correspond to the same relation or not
+                # -> we ignore those matching results
+                continue
 
             # see also builtin_items.py -> _rule__CM.new_condition_func()
             skip_to_next_flag = False
@@ -550,6 +562,66 @@ class RuleApplicatorWorker:
                 result.add_bound_statement(new_stm, res_dict)
 
         return result
+
+    def get_extended_result_map(self, result_map: dict) -> dict:
+        """
+        This function create a dict which contains every entry of `result_map` + mappings from subjectivized predicates.
+
+        :param result_map:   mapping from P-node to G-node-item (as returned by self.match_subgraph_P)
+        """
+
+        if self.parent.premise_type == PremiseType.SPARQL:
+            return result_map
+
+        extended_result_map = {**result_map}
+
+        for node, uri in self.subjectivized_predicates.b.items():
+            pred_proxy_item = p.ds.get_entity_by_uri(uri)
+            assert pred_proxy_item.R4__is_instance_of == p.I40["general relation"]
+
+            P_edge_list = self.stms_associated_to_proxy_items[pred_proxy_item.uri]
+
+            # use dict to store the found relations (this prevents double counting of the same relations)
+            uri_relations_map = {}
+            for n1, n2 in P_edge_list:
+                itm1 = result_map[n1]
+                itm2 = result_map[n2]
+
+                rel = self._get_all_edge_predicate_relations(itm1.uri, itm2.uri, ensure_length1=True)[0]
+                assert isinstance(rel, p.Relation)
+                uri_relations_map[rel.uri] = rel
+            if len(uri_relations_map) > 1:
+                # this might happen as a consequence of "naive subgraph matching" which cannot decide if
+                # two edges correspond to the same relation or not
+                raise p.aux.InconsistentEdgeRelations()
+            if len(uri_relations_map) == 0:
+                msg = (
+                    f"Unexpectedly found no relation associated to proxy item {pred_proxy_item} in {self.parent.rule}."
+                )
+                raise ValueError(msg)
+
+            rel_entity = list(uri_relations_map.values())[0]
+
+            # this is for safety. however, it would be faster to put a similar check at the beginning of the loop
+            if rel_entity2 := extended_result_map.get(node):
+                assert rel_entity == rel_entity2
+            extended_result_map[node] = rel_entity
+
+        return extended_result_map
+
+    def _get_all_edge_predicate_relations(self, uri1, uri2, ensure_length1=False):
+
+        relations = []
+        edge_dicts: Dict[dict] = self.parent.G.get_edge_data(uri1, uri2)
+
+        # because G is a MultiDiGraph this has the structure {0: <edge_dict1>, ...}
+        if ensure_length1:
+            assert len(edge_dicts) == 1
+
+        for idx, edge_dict in edge_dicts.items():
+            relations.append(edge_dict["rel_entity"])
+
+        return relations
 
     def get_condition_funcs_and_args(self) -> (List[callable], List[Tuple[int]]):
         """ """
@@ -919,6 +991,7 @@ class RuleApplicatorWorker:
 
                 # TODO drop rel_props
                 rel_props = []
+                proxy_item = None
 
             n1 = self.local_nodes.a[subj.uri]
 
@@ -964,6 +1037,9 @@ class RuleApplicatorWorker:
             else:
                 # todo: merge rel_props with rel_statements
                 self.P.add_edge(n1, n2, rel_uri=pred.uri, rel_props=rel_props, rel_statements=rel_statements)
+
+                if proxy_item:
+                    self.stms_associated_to_proxy_items[proxy_item.uri].append((n1, n2))
 
         # components_container
         cc = self._get_weakly_connected_components(self.P)
@@ -1167,8 +1243,6 @@ class ReportingRuleResult(core.RuleResult):
         return explanation_text
 
 
-
-
 # Note this function will be called very often -> check for speedup possibilites
 def compare_relation_statements(rel1: core.Relation, stm_list: List[core.Statement]):
     """
@@ -1179,6 +1253,12 @@ def compare_relation_statements(rel1: core.Relation, stm_list: List[core.Stateme
         raw_res = rel1.get_relations(stm.predicate.uri, return_obj=True)
         if raw_res == []:
             return False
+        # omit labels for performance: R4__is_instance_of; I40__general_relation
+        if getattr(stm.object, "R4", None) == p.I40:
+
+            # Note: this might be too general, but false positives will be filtered out in the postprocessing
+            return isinstance(raw_res[0], core.Relation)
+
         if raw_res[0] != stm.object:
             return False
 

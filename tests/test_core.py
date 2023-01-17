@@ -2076,6 +2076,30 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
             self.assertEqual(len(res.new_statements), 1)
             self.assertEqual(x0.R302, [x1, "good"])
 
+    def test_d14__zebra_puzzle_stage02(self):
+        """
+        match persons which have four negative statements of the same kind (test statement relations)
+        """
+        zb = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA_BASE_DATA, prefix="zb")
+        zr = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA_RULES, prefix="zr", reuse_loaded=True)
+        zp = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA02, prefix="zp")
+
+        with p.uri_context(uri=TEST_BASE_URI):
+
+            res_702 = res = p.ruleengine.apply_semantic_rule(
+                zr.I702["rule: add reverse statement for symmetrical relations"], mod_context_uri=zb.__URI__
+            )
+
+            zb.I9848["Norwegian"].set_relation(zb.R1055["has not house color"], zb.I5209["red"])
+            zb.I9848["Norwegian"].set_relation(zb.R1055["has not house color"], zb.I1497["blue"])
+            zb.I9848["Norwegian"].set_relation(zb.R1055["has not house color"], zb.I8065["green"])
+            zb.I9848["Norwegian"].set_relation(zb.R1055["has not house color"], zb.I7612["ivory"])
+
+            res_800 = res = p.ruleengine.apply_semantic_rules(
+                zr.I800["rule: deduce positive fact from 4 negative facts"], mod_context_uri=zb.__URI__
+            )
+        self.assertEqual(zb.I9848["Norwegian"].zb__R8098__has_house_color, zb.I4118["yellow"])
+
     def test_e01__zebra_puzzle_stage02(self):
         """
         apply zebra puzzle rules to zebra puzzle data and assess correctness of the result
@@ -2271,10 +2295,42 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         )
         reports.append(zb.report(display=False, title="I798"))
         result_history.append(res)
+
+        res_I800 = res = p.ruleengine.apply_semantic_rule(
+            zp.zr.I800, mod_context_uri=zp.__URI__
+        )
+        reports.append(zb.report(display=False, title="I800"))
+        result_history.append(res)
+
         apply_times = [(round(r.apply_time, 3), r.rule) for r in result_history]
         apply_times.sort(reverse=True)
         # print(apply_times[:4])
-        # IPS()
+        IPS()
+
+# with p.uri_context(uri=TEST_BASE_URI):
+
+#     I705 = p.create_item(
+#         R1__has_label="rule: deduce trivial different-from-facts",
+#         R2__has_description=("deduce trivial different-from-facts like Norwegian is different from Englishman"),
+#         R4__is_instance_of=p.I41["semantic rule"],
+#     )
+
+#     with I705.scope("context") as cm:
+#         cm.new_var(p1=p.instance_of(zb.I7435["human"]))
+#         cm.new_var(p2=p.instance_of(zb.I7435["human"]))
+#         cm.uses_external_entities(zb.I7435["human"])
+
+#     with I705.scope("premises") as cm:
+#         cm.new_rel(cm.p1, p.R4["is instance of"], zb.I7435["human"], overwrite=True)
+#         cm.new_rel(cm.p2, p.R4["is instance of"], zb.I7435["human"], overwrite=True)
+
+#         cm.new_rel(cm.p1, p.R57["is placeholder"], False)
+#         cm.new_rel(cm.p2, p.R57["is placeholder"], False)
+
+
+#     with I705.scope("assertions") as cm:
+#         cm.new_rel(cm.p1, p.R50["is different from"], cm.p2, qualifiers=[p.qff_has_rule_ptg_mode(5)])
+#         cm.new_rel(cm.p2, p.R50["is different from"], cm.p1, qualifiers=[p.qff_has_rule_ptg_mode(5)])
 
 
 class Test_Z_Core(HouskeeperMixin, unittest.TestCase):

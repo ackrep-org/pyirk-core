@@ -169,7 +169,7 @@ class FunctionalRelationError(PyERKError):
 def ensure_valid_short_key(txt: str, strict: bool = True) -> bool:
     conds = [isinstance(txt, str)]
 
-    re_short_key = regex.compile(r"^((Ia?)|(Ra?)|(RE))(\d+)$")
+    re_short_key = regex.compile(r"^((Ia?)|(Ra?)|(S))(\d+)$")
     # produces 5 groups: [{outer-parenthesis}, {inner-p1}, {inner-p2}, {inner-p3}, {last-p}]
     # first (index: 1) and last are the only relevant groups
 
@@ -207,6 +207,26 @@ def ensure_valid_uri(txt: str, strict: bool = True) -> bool:
         raise InvalidURIError(msg)
 
     return cond
+
+
+def ensure_valid_relation_uri(txt: str, strict=True):
+    conds = [ensure_valid_uri(txt, strict)]
+    conds.append(txt.split("#")[1].startswith("R"))
+
+    cond = all(conds)
+    if not cond and strict:
+        msg = f"This is not a valid relation URI: {txt}. Condition protocoll: {conds}"
+        raise InvalidURIError(msg)
+
+
+def ensure_valid_item_uri(txt: str, strict=True):
+    conds = [ensure_valid_uri(txt, strict)]
+    conds.append(txt.split("#")[1].startswith("I"))
+
+    cond = all(conds)
+    if not cond and strict:
+        msg = f"This is not a valid item URI: {txt}. Condition protocoll: {conds}"
+        raise InvalidURIError(msg)
 
 
 def ensure_valid_prefix(txt: str, strict: bool = True) -> bool:

@@ -10,6 +10,7 @@ import rdflib
 from ipydex import IPS, activate_ips_on_exception, set_trace  # noqa
 import pyerk as p
 import pyerk.visualization as visualization
+import pyerk.io
 import git
 from addict import Addict as Container
 import pyerk.reportgenerator as rgen
@@ -583,7 +584,6 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         """
         Test existentially and universally quantified conditions as nested scopes in scopes of propositions/definitions
         """
-        ##!
         with p.uri_context(uri=TEST_BASE_URI):
             I7324 = p.create_item(
                 R1__has_label = "definition of something",
@@ -2486,3 +2486,28 @@ class Test_06_reportgenerator(HouskeeperMixin, unittest.TestCase):
         self.assertTrue(os.path.exists(reporttex_path1))
 
         self.assertEqual(len(rg.authors), 2)
+
+
+class Test_07_import_export(HouskeeperMixin, unittest.TestCase):
+
+    def test_b01__rdf_export(self):
+
+        with p.uri_context(uri=TEST_BASE_URI):
+            R301 = p.create_relation(R1="relation1")
+            R302 = p.create_relation(R1="test qualifier")
+
+            QF_R302 = p.QualifierFactory(R302["test qualifier"])
+
+            x0 = p.instance_of(p.I35["real number"])
+            x1 = p.instance_of(p.I35["real number"])
+            x2 = p.instance_of(p.I35["real number"])
+
+            # create two qualifiers (one with a literal object-value and one with x2 as object-value)
+            x0.set_relation(R301, x1, qualifiers=[QF_R302(True), QF_R302(x2)])
+
+        fname = "tmp_test.nt"
+        p.io.export_rdf_triples(fname, add_qualifiers=True,  modfilter=TEST_BASE_URI)
+        g = p.io.import_rdf_triples(fname)
+        os.unlink(fname)
+
+        self.assertGreater(len(g), 40)

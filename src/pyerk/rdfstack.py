@@ -7,35 +7,142 @@ from . import core as pyerk, auxiliary as aux
 
 # noinspection PyUnresolvedReferences
 from ipydex import IPS
-from rdflib import Graph, Literal, URIRef
+import rdflib
+from rdflib import Literal, URIRef
 from rdflib.plugins.sparql.processor import SPARQLResult
 from rdflib.query import Result
 
 
 # noinspection PyUnresolvedReferences
 # (imported here to be used in gui-view)
-from pyparsing import ParseException
+from pyparsing import ParseException  # noqa
 
 
 ERK_URI = f"{pyerk.settings.BUILTINS_URI}{pyerk.settings.URI_SEP}"
 
 
-def create_rdf_triples() -> Graph:
+# the following suffixes for base URIs are used for predicates to RDF-encode qualifiers (statements about statements)
+# strongly inspired by https://en.wikibooks.org/wiki/SPARQL/WIKIDATA_Qualifiers,_References_and_Ranks#Qualifiers
+
+# corresponds to `p` ("http://www.wikidata.org/prop/") -> links to statement nodes
+STATEMENTS_URI_PART = "/STATEMENTS"
+
+# corresponds to `ps` ("http://www.wikidata.org/prop/schema/".") -> links to main object
+PREDICATES_URI_PART = "/PREDICATES"
+
+# corresponds to `pq` ("http://www.wikidata.org/property_qualifier/" ?) -> used for qualifying pred-obj-tuples
+QUALIFIERS_URI_PART = "/QUALIFIERS"
+
+
+def _make_rel_uri_with_suffix(rel_uri: str, suffix: str):
+    pyerk.aux.ensure_valid_relation_uri(rel_uri)
+    new_uri = rel_uri.replace("#", f"{suffix}#")
+    assert len(new_uri) == len(rel_uri) + len(suffix)
+    return new_uri
+
+
+def make_statement_uri(rel_uri: str):
+    return _make_rel_uri_with_suffix(rel_uri, STATEMENTS_URI_PART)
+
+
+def make_predicate_uri(rel_uri: str):
+    return _make_rel_uri_with_suffix(rel_uri, PREDICATES_URI_PART)
+
+
+def make_qualifier_uri(rel_uri: str):
+    return _make_rel_uri_with_suffix(rel_uri, QUALIFIERS_URI_PART)
+
+
+def serialize_object(obj):
+    if isinstance(obj, pyerk.Entity):
+        return URIRef(f"{obj.uri}")
+
+    else:
+        assert isinstance(obj, pyerk.allowed_literal_types)
+        # no entity but a literal value
+        return Literal(obj)
+
+
+def get_statement_rows(stm: pyerk.Statement):
+    row1 = [URIRef(stm.subject.uri), URIRef(make_statement_uri(stm.predicate.uri)), URIRef(stm.uri)]
+    row2 = [URIRef(stm.uri), URIRef(make_predicate_uri(stm.predicate.uri)), serialize_object(stm.object)]
+
+    return row1, row2
+
+
+def create_rdf_triples(add_qualifiers=False, add_statements=False, modfilter=None) -> rdflib.Graph:
+    """
+    :param add_qualifiers:     bool; implies add_statements
+    :param add_statements:     bool;
+    """
 
     # based on https://rdflib.readthedocs.io/en/stable/gettingstarted.html
-    g = Graph()
+    g = rdflib.Graph()
 
-    for re_uri, re in pyerk.ds.statement_uri_map.items():
+    processed_statements = {}
+    qualifier_statements = []
+
+    if isinstance(modfilter, str):
+        modfilter = set([modfilter])
+
+    for stm_uri, stm in pyerk.ds.statement_uri_map.items():
+        if not check_uri_in_modfilter(stm.uri, modfilter):
+            continue
+
         row = []
-        for entity in re.relation_tuple:
-            if isinstance(entity, pyerk.Entity):
-                row.append(URIRef(f"{entity.uri}"))
-            else:
-                # no entity but a literal value
-                row.append(Literal(entity))
+        for i, entity in enumerate(stm.relation_tuple):
+            if isinstance(entity, pyerk.Statement):
+                # stm is a qualifier-statement which has another statement as subject
+                assert i == 0
+                qualifier_statements.append(stm)
+                break
+            row.append(serialize_object(entity))
+
         # noinspection PyTypeChecker
-        g.add(row)
+        if row:
+            g.add(row)
+
+        if add_statements or add_qualifiers:
+            row1, row2 = get_statement_rows(stm)
+            g.add(row1)
+            g.add(row2)
+            processed_statements[stm.uri] = stm
+
+    if add_qualifiers:
+        # this is strongly inspired by
+        # https://en.wikibooks.org/wiki/SPARQL/WIKIDATA_Qualifiers,_References_and_Ranks#Qualifiers
+        for qstm in qualifier_statements:
+            if not check_uri_in_modfilter(qstm.uri, modfilter):
+                continue
+
+            qstm: pyerk.Statement
+            subj_stm, pred, obj = qstm.relation_tuple
+
+            if qstm.uri not in processed_statements:
+                # create the row for the statement node
+                row1, row2 = get_statement_rows(qstm)
+                g.add(row1)
+                g.add(row2)
+                processed_statements[qstm.uri] = qstm
+
+            # add the actual qualifier information
+            g.add([URIRef(subj_stm.uri), URIRef(make_qualifier_uri(pred.uri)), serialize_object(obj)])
     return g
+
+
+def check_uri_in_modfilter(uri, modfilter):
+    if modfilter is None:
+        return True
+    part0: str = uri.split("#")[0]
+
+    if part0.endswith(STATEMENTS_URI_PART):
+        part0 = part0[:-len(STATEMENTS_URI_PART)]
+        IPS()
+    elif part0.endswith(QUALIFIERS_URI_PART):
+        part0 = part0[:-len(QUALIFIERS_URI_PART)]
+        IPS()
+
+    return part0 in modfilter
 
 
 def check_subclass(entity, class_item):

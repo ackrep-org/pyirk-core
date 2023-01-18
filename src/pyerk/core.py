@@ -1513,17 +1513,11 @@ class Statement:
             )
             self.qualifiers.append(qf_stm)
 
-            # save the qualifier statement (and its inverse) in the appropriate data structures
-
-            # this is the Statement from the original Statement instance to the object (thus role=SUBJECT)
+            # save the qualifier statement in the appropriate data structures
             ds.set_statement(stm=qf_stm)
 
-            # TODO: Why is this neccessary?
-            # also create the dual statement
             if isinstance(qf.obj, Entity):
-                # add inverse relation
-                dual_qf_stm = qf_stm.create_dual()
-                ds.inv_statements[qf.obj.uri][qf.rel.uri].append(dual_qf_stm)
+                ds.inv_statements[qf.obj.uri][qf.rel.uri].append(qf_stm)
 
     def is_qualifier(self):
         # TODO: replace this by isinstance(stm, QualifierStatement)
@@ -1619,35 +1613,6 @@ class QualifierStatement(Statement):
         # self.dual_qualifier = None
         super().__init__(*args, **kwargs)
         self.short_key = f"Q{self.short_key}"
-
-    def create_dual(self):
-        if self.role == RelationRole.SUBJECT:
-            new_role = RelationRole.OBJECT
-        elif self.role == RelationRole.OBJECT:
-            new_role = RelationRole.SUBJECT
-        else:
-            msg = (
-                f"Unexpected value for `self.role`: {self.role}. Expected either `RelationRole.SUBJECT` or "
-                "`RelationRole.OBJECT`"
-            )
-            raise ValueError(msg)
-
-        cls = type(self)
-        dual_stm = cls(
-            relation=self.relation,
-            relation_tuple=self.relation_tuple,
-            role=new_role,
-            corresponding_entity=self.corresponding_entity,
-            scope=self.scope,
-            qualifiers=self.qualifiers,
-            proxyitem=self.proxyitem,
-        )
-
-        # establish interconnection
-        dual_stm.dual_statement = self
-        self.dual_statement = dual_stm
-
-        return dual_stm
 
 
 def tolerant_removal(sequence, element):

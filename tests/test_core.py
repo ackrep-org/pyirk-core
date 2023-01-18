@@ -2508,7 +2508,10 @@ class Test_07_import_export(HouskeeperMixin, unittest.TestCase):
             x2 = p.instance_of(p.I35["real number"])
 
             # create two qualifiers (one with a literal object-value and one with x2 as object-value)
-            x0.set_relation(R301, x1, qualifiers=[QF_R302(True), QF_R302(x2)])
+            stm = x0.set_relation(R301, x1, qualifiers=[QF_R302(True), QF_R302(x2)])
+
+        q_stms = [v for v in p.ds.stms_created_in_mod[TEST_BASE_URI].values() if v.is_qualifier()]
+        self.assertEquals(len(q_stms), 2)
 
         fname = "tmp_test.nt"
         p.io.export_rdf_triples(fname, add_qualifiers=True,  modfilter=TEST_BASE_URI)

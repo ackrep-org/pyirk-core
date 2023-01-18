@@ -85,6 +85,9 @@ class HouskeeperMixin:
     """
 
     def setUp(self):
+        cls = self.__class__
+        method_repr = f"{cls.__module__}:{cls.__qualname__}.{self._testMethodName}"
+        os.environ["UNITTEST_METHOD_NAME"] = method_repr
         self.register_this_module()
 
     def tearDown(self) -> None:
@@ -93,6 +96,7 @@ class HouskeeperMixin:
             # but only if not using nose (-> always unload mods on CI)
             self.unload_all_mods()
         self.print_methodnames()
+        os.environ.pop("UNITTEST_METHOD_NAME", None)
 
     @staticmethod
     def unload_all_mods():

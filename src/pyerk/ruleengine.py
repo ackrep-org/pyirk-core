@@ -357,6 +357,8 @@ class RuleApplicatorWorker:
     Performs the application of one premise branch of a rule
     """
 
+    max_subgraph_monomorphisms = 100
+
     # useful for debugging: IPS(self.parent.rule.short_key=="I763")
 
     def __init__(self, parent: RuleApplicator, premise_stms: List[core.Statement], premise_items: List[core.Item]):
@@ -437,6 +439,7 @@ class RuleApplicatorWorker:
 
     def apply_graph_premise(self) -> core.RuleResult:
 
+
         t0 = time.time()
         result_maps = self.match_subgraph_P()
         # TODO: for debugging the result_maps data structure the following things might be helpful:
@@ -456,7 +459,7 @@ class RuleApplicatorWorker:
 
         consequent_functions, cf_arg_nodes, anchor_node_names = self.prepare_consequent_functions()
 
-        result = ReportingRuleResult(raworker=self)
+        result = ReportingRuleResult(raworker=self, raw_result_count=len(result_maps))
 
         for res_dict0 in result_maps:
             # res_dict represents one situation where the assertions should be applied
@@ -777,7 +780,14 @@ class RuleApplicatorWorker:
         # for the difference between subgraph monomorphisms and isomorphisms see:
         # https://networkx.org/documentation/stable/reference/algorithms/isomorphism.vf2.html#subgraph-isomorphism
         # jupyter notebook subgraph-matching-problem
-        res = list(GM.subgraph_monomorphisms_iter())
+        res = []
+        i = 0
+        for r in GM.subgraph_monomorphisms_iter():
+            print(i)
+            i += 1
+            res.append(r)
+            if i >= self.max_subgraph_monomorphisms:
+                break
         # res is a list of dicts like:[{'erk:/test/zebra02#Ia1158': 0, 'erk:/tmp/literals#0': 1}, ...]
         # for some reason the order of that list is not stable accross multiple runs
         # ensure stable order for stable test results; for comparing dicts they are converted to json-strings
@@ -1169,12 +1179,13 @@ def edge_matcher(e1d: AtlasView, e2d: AtlasView) -> bool:
 
 class ReportingRuleResult(core.RuleResult):
 
-    def __init__(self, raworker: RuleApplicatorWorker):
+    def __init__(self, raworker: RuleApplicatorWorker, raw_result_count: int = None):
         super().__init__()
         self.raworker = raworker
         self.statement_reports = []
         self._rule = self.raworker.parent.rule
         self.explanation_text_template = self._rule.R69__has_explanation_text_template
+        self.raw_result_count = raw_result_count
 
     def add_bound_statement(self, stm: core.Statement, raw_binding_info: dict):
         """

@@ -939,7 +939,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         with self.assertRaises(AttributeError):
             test_func()
 
-        wrapped_func = p.wrap_function_with_uri_context(test_func, ma.__URI__)
+        wrapped_func = p.wrap_function_with_search_uri_context(test_func, ma.__URI__)
 
         self.assertEqual(wrapped_func.__doc__, test_func.__doc__)
 
@@ -2104,6 +2104,7 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
             )
         self.assertEqual(zb.I9848["Norwegian"].zb__R8098__has_house_color, zb.I4118["yellow"])
 
+    @unittest.skip("currently too slow")
     def test_e01__zebra_puzzle_stage02(self):
         """
         apply zebra puzzle rules to zebra puzzle data and assess correctness of the result

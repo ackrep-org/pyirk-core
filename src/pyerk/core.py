@@ -322,8 +322,10 @@ class Entity(abc.ABC):
 
         caller_frame = get_caller_frame(1)
 
+        # TODO: the mod_uri should be taken from the frame where func is defined and not where add_method is called
+        # currently this works because they are usually the same
         if mod_uri := caller_frame.f_locals.get("__URI__"):
-            func = wrap_function_with_uri_context(func, mod_uri)
+            func = wrap_function_with_search_uri_context(func, mod_uri)
 
         # ensure that the func object has a `.given_name` attribute
         func.given_name = name
@@ -606,10 +608,10 @@ class Entity(abc.ABC):
         return self.set_relation(rel, new_obj, qualifiers=qualifiers)
 
 
-def wrap_function_with_uri_context(func, uri):
+def wrap_function_with_search_uri_context(func, uri):
     @functools.wraps(func)
     def wrapped_func(*args, **kwargs):
-        with uri_context(uri=uri):
+        with search_uri_context(uri=uri):
             return func(*args, **kwargs)
 
     return wrapped_func
@@ -1046,9 +1048,13 @@ def _resolve_prefix(pr_key: ProcessedStmtKey, passed_mod_uri: str = None) -> Non
     get uri from prefix or from passed argument or from active module
     """
     active_mod_uri = get_active_mod_uri(strict=False)
+    if _search_uri_stack:
+        search_uri = _search_uri_stack[-1]
+    else:
+        search_uri = None
 
     if pr_key.prefix is None:
-        if active_mod_uri is None:
+        if active_mod_uri is None and search_uri is None:
             if passed_mod_uri:
                 mod_uri = passed_mod_uri
             else:
@@ -1056,25 +1062,39 @@ def _resolve_prefix(pr_key: ProcessedStmtKey, passed_mod_uri: str = None) -> Non
                 mod_uri = settings.BUILTINS_URI
         else:
             # Situation: create_item(..., R321="some value") within an active module
-            # (no prefix). short_key R321 could refer to active module or to builtin_entities -> search in this order
+            # (no prefix). short_key R321 could refer to
+            # a) the module where the function is defined which performs this call (search_uri)),
+            # b) the active module or c) builtin_entities -> search in this order
 
             # 1. check that passed_mod_uri does not contradict
-            if passed_mod_uri and (passed_mod_uri != active_mod_uri):
+            if passed_mod_uri and (passed_mod_uri not in (active_mod_uri, search_uri)):
                 msg = (
-                    f"encountered inconsistent uris for object with key_str {pr_key.original_key_str}. "
-                    f"from active mod: '{active_mod_uri}' vs explicitly passed: '{passed_mod_uri}'."
+                    f"Encountered inconsistent uris for object with key_str {pr_key.original_key_str}. "
+                    f"Explicitly passed: '{passed_mod_uri}'."
+                    f"expected one of: '{active_mod_uri}' (active mod) or '{search_uri}' (search_uri)."
                 )
                 raise aux.InvalidURIError(msg)
 
-            # 2. check active mod
-            candidate_uri = aux.make_uri(active_mod_uri, pr_key.short_key)
-            res_entity = ds.get_entity_by_uri(candidate_uri, strict=False)
+            # 2a) check search_uri context
+            if search_uri:
 
-            if res_entity is not None:
-                pr_key.uri = candidate_uri
-                return
+                candidate_uri = aux.make_uri(search_uri, pr_key.short_key)
+                res_entity = ds.get_entity_by_uri(candidate_uri, strict=False)
 
-            # try builtin_entities as fallback
+                if res_entity is not None:
+                    pr_key.uri = candidate_uri
+                    return
+
+            # 2b) check active mod
+            if active_mod_uri:
+                candidate_uri = aux.make_uri(active_mod_uri, pr_key.short_key)
+                res_entity = ds.get_entity_by_uri(candidate_uri, strict=False)
+
+                if res_entity is not None:
+                    pr_key.uri = candidate_uri
+                    return
+
+            # 2c) try builtin_entities as fallback
             candidate_uri = aux.make_uri(settings.BUILTINS_URI, pr_key.short_key)
             res_entity = ds.get_entity_by_uri(candidate_uri, strict=False)
 
@@ -1848,14 +1868,12 @@ class Context:
 
 
 _uri_stack = []
+_search_uri_stack = []
 
 
-class uri_context:
-    """
-    Context manager for creating entities with a given uri
-    """
-
-    def __init__(self, uri: str, prefix: str = None):
+class abstract_uri_context:
+    def __init__(self, uri_stack: list, uri: str, prefix: str = None):
+        self.uri_stack = uri_stack
         self.uri = uri
         self.prefix = prefix
 
@@ -1864,7 +1882,7 @@ class uri_context:
         implicitly called in the head of the with statemet
         :return:
         """
-        _uri_stack.append(self.uri)
+        self.uri_stack.append(self.uri)
 
         if self.prefix:
             ds.uri_prefix_mapping.add_pair(self.uri, self.prefix)
@@ -1873,10 +1891,26 @@ class uri_context:
     def __exit__(self, exc_type, exc_val, exc_tb):
         # this is the place to handle exceptions
 
-        res = _uri_stack.pop()
+        res = self.uri_stack.pop()
         assert res == self.uri
         if self.prefix:
             ds.uri_prefix_mapping.remove_pair(self.uri, self.prefix)
+
+
+class uri_context(abstract_uri_context):
+    """
+    Context manager for creating entities with a given uri
+    """
+    def __init__(self, uri: str, prefix: str = None):
+        super().__init__(_uri_stack, uri, prefix)
+
+
+class search_uri_context(abstract_uri_context):
+    """
+    uri Context manager for searching for entities with a given key
+    """
+    def __init__(self, uri: str, prefix: str = None):
+        super().__init__(_search_uri_stack, uri, prefix)
 
 
 def unload_mod(mod_uri: str, strict=True) -> None:
@@ -1960,7 +1994,8 @@ def _unlink_entity(uri: str, remove_from_mod=False) -> None:
     assert isinstance(uri, str)
     aux.ensure_valid_uri(uri)
     entity: Entity = ds.get_entity_by_uri(uri)
-    entity._label_after_unlink = f"!!unlinked: {entity.R1}"
+    r1 = getattr(entity, "R1", "<unknown entity>")
+    entity._label_after_unlink = f"!!unlinked: {r1}"
     entity._unlinked = True
     ds.unlinked_entities[uri] = entity
 

@@ -2539,3 +2539,20 @@ class Test_07_import_export(HouskeeperMixin, unittest.TestCase):
 
             # test that a statement has been created
             self.assertEqual(x0.R301__relation1, [x1])
+
+    def test_b03__zebra_puzzle_import(self):
+        """
+        match persons which have four negative statements of the same kind (test statement relations)
+        """
+        zb = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA_BASE_DATA, prefix="zb")
+
+        self.assertEqual(zb.I9848["Norwegian"].zb__R8098__has_house_color, None)
+        self.assertEqual(zb.I9848["Norwegian"].zb__R1055__has_not_house_color, [])
+
+        # test to load facts
+
+        fpath = pjoin(TEST_DATA_DIR1, "test_zebra_triples1.nt")
+        with p.uri_context(uri=TEST_BASE_URI):
+            c = p.io.import_stms_from_rdf_triples(fpath)  #noqa
+        self.assertEqual(zb.I9848["Norwegian"].zb__R8098__has_house_color, zb.I4118["yellow"])
+        self.assertEqual(len(zb.I9848["Norwegian"].zb__R1055__has_not_house_color), 4)

@@ -4,6 +4,7 @@ This module serves to perform integrity checks on the knowledge base
 from typing import Union
 
 from . import core as pyerk, auxiliary as aux
+from . auxiliary import STATEMENTS_URI_PART, PREDICATES_URI_PART, QUALIFIERS_URI_PART
 
 # noinspection PyUnresolvedReferences
 from ipydex import IPS
@@ -19,19 +20,6 @@ from pyparsing import ParseException  # noqa
 
 
 ERK_URI = f"{pyerk.settings.BUILTINS_URI}{pyerk.settings.URI_SEP}"
-
-
-# the following suffixes for base URIs are used for predicates to RDF-encode qualifiers (statements about statements)
-# strongly inspired by https://en.wikibooks.org/wiki/SPARQL/WIKIDATA_Qualifiers,_References_and_Ranks#Qualifiers
-
-# corresponds to `p` ("http://www.wikidata.org/prop/") -> links to statement nodes
-STATEMENTS_URI_PART = "/STATEMENTS"
-
-# corresponds to `ps` ("http://www.wikidata.org/prop/schema/".") -> links to main object
-PREDICATES_URI_PART = "/PREDICATES"
-
-# corresponds to `pq` ("http://www.wikidata.org/property_qualifier/" ?) -> used for qualifying pred-obj-tuples
-QUALIFIERS_URI_PART = "/QUALIFIERS"
 
 
 def _make_rel_uri_with_suffix(rel_uri: str, suffix: str):

@@ -2508,14 +2508,34 @@ class Test_07_import_export(HouskeeperMixin, unittest.TestCase):
             x2 = p.instance_of(p.I35["real number"])
 
             # create two qualifiers (one with a literal object-value and one with x2 as object-value)
-            stm = x0.set_relation(R301, x1, qualifiers=[QF_R302(True), QF_R302(x2)])
+            stm = x0.set_relation(R301, x1, qualifiers=[QF_R302(True), QF_R302(x2)])  # noqa
 
         q_stms = [v for v in p.ds.stms_created_in_mod[TEST_BASE_URI].values() if v.is_qualifier()]
         self.assertEquals(len(q_stms), 2)
 
-        fname = "tmp_test.nt"
-        p.io.export_rdf_triples(fname, add_qualifiers=True,  modfilter=TEST_BASE_URI)
-        g = p.io.import_rdf_triples(fname)
-        os.unlink(fname)
+        fpath = pjoin(TEST_DATA_DIR1, "tmp_test.nt")
+        p.io.export_rdf_triples(fpath, add_qualifiers=True,  modfilter=TEST_BASE_URI)
+        g = p.io.import_raw_rdf_triples(fpath)
+        os.unlink(fpath)
 
         self.assertGreater(len(g), 40)
+
+    def test_b02__rdf_import(self):
+
+        fpath = pjoin(TEST_DATA_DIR1, "test_triples1.nt")
+
+        with p.uri_context(uri=TEST_BASE_URI):
+            # the labels will be overwritten
+            R301 = p.create_relation(R1="__foo__ relation1")
+            R302 = p.create_relation(R1="__foo__ test qualifier")  # noqa
+
+            c = p.io.import_stms_from_rdf_triples(fpath)
+
+            c.new_items.sort(key=lambda itm: itm.R1__has_label)
+
+            x0, x1, x2 = c.new_items
+            # test that overwriting worked
+            self.assertEqual(R301.R1__has_label, "relation1")
+
+            # test that a statement has been created
+            self.assertEqual(x0.R301__relation1, [x1])

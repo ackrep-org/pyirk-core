@@ -4,6 +4,7 @@ import re as regex
 from typing import Iterable, Union, Dict, Any
 from rdflib import Literal
 from colorama import Style, Fore
+from addict import Addict as Container
 from . import settings
 
 """
@@ -11,6 +12,19 @@ Some auxiliary classes and functions for pyerk.
 """
 
 startup_workdir = os.path.abspath(os.getcwd())
+
+
+# the following suffixes for base URIs are used for predicates to RDF-encode qualifiers (statements about statements)
+# strongly inspired by https://en.wikibooks.org/wiki/SPARQL/WIKIDATA_Qualifiers,_References_and_Ranks#Qualifiers
+
+# corresponds to `p` ("http://www.wikidata.org/prop/") -> links to statement nodes
+STATEMENTS_URI_PART = "/STATEMENTS"
+
+# corresponds to `ps` ("http://www.wikidata.org/prop/schema/".") -> links to main object
+PREDICATES_URI_PART = "/PREDICATES"
+
+# corresponds to `pq` ("http://www.wikidata.org/property_qualifier/" ?) -> used for qualifying pred-obj-tuples
+QUALIFIERS_URI_PART = "/QUALIFIERS"
 
 
 class NotYetFinishedError(NotImplementedError):
@@ -249,6 +263,20 @@ def ensure_valid_prefix(txt: str, strict: bool = True) -> bool:
         raise InvalidPrefixError(msg)
 
     return cond
+
+
+def parse_uri(txt: str) -> Container:
+    res = Container(full_uri=txt)
+    res.base_uri, res.short_key = txt.split("#")
+
+    for uri_part in (STATEMENTS_URI_PART, PREDICATES_URI_PART, QUALIFIERS_URI_PART):
+        if res.base_uri.endswith(uri_part):
+            res.sub_ns = uri_part
+            break
+    else:
+        res.sub_ns = None
+
+    return res
 
 
 def ensure_valid_baseuri(txt: str, strict: bool = True) -> bool:

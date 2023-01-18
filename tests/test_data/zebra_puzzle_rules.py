@@ -735,14 +735,47 @@ with I798.scope("assertions") as cm:
 
 # ###############################################################################
 
+R6020 = p.create_relation(
+    R1__has_label="is opposite of functional activity",
+    R2__has_description=(
+        "specifies that the subject (a relation) is the opposite of a relation with R2850__is_functional_activity=True"
+    ),
+    R8__has_domain_of_argument_1=p.I40["general relation"],
+    R11__has_range_of_result=bool,
+    R22__is_functional=True,
+    R62__is_relation_property=True,
+)
+
 
 I800 = p.create_item(
+    R1__has_label="rule: mark relations which are opposite of functional activities",
+    R4__is_instance_of=p.I41["semantic rule"],
+)
+
+with I800.scope("context") as cm:
+
+    cm.new_var(rel1=p.instance_of(p.I40["general relation"]))
+    cm.new_var(rel1_not=p.instance_of(p.I40["general relation"]))
+
+with I800.scope("premises") as cm:
+    cm.new_rel(cm.rel1_not, p.R43["is opposite of"], cm.rel1)
+    cm.new_rel(cm.rel1, zb.R2850["is functional activity"], True)
+
+with I800.scope("assertions") as cm:
+    cm.new_rel(cm.rel1_not, R6020["is opposite of functional activity"], True)
+
+
+
+
+# This rule takes too long:
+
+I810 = p.create_item(
     R1__has_label="rule: deduce positive fact from 4 negative facts",
     R2__has_description=("deduce positive fact from 4 negative facts (graph version)"),
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
-with I800.scope("context") as cm:
+with I810.scope("context") as cm:
     cm.new_var(p1=p.instance_of(zb.I7435["human"]))
     cm.new_var(itm1=p.instance_of(p.I1["general item"]))
     cm.new_var(itm2=p.instance_of(p.I1["general item"]))
@@ -765,7 +798,7 @@ def is_opposite_of_functional_activity(self, rel) -> bool:
     return False
 
 
-with I800.scope("premises") as cm:
+with I810.scope("premises") as cm:
     cm.new_rel(cm.p1, p.R4["is instance of"], zb.I7435["human"], overwrite=True)
 
     cm.new_rel(cm.p1, cm.rel1_not, cm.itm1)
@@ -825,7 +858,7 @@ def add_stm_by_exclusion(self, p1, oppo_rel, not_itm1, not_itm2, not_itm3, not_i
     return res
 
 
-with I800.scope("assertions") as cm:
+with I810.scope("assertions") as cm:
     cm.new_consequent_func(add_stm_by_exclusion, cm.p1, cm.rel1_not, cm.itm1, cm.itm2, cm.itm3, cm.itm4)
 # continue with: 4 opposite_statements -> 1 primal statement
 # identify persons by functional activity

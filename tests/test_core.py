@@ -2104,7 +2104,7 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
             )
         self.assertEqual(zb.I9848["Norwegian"].zb__R8098__has_house_color, zb.I4118["yellow"])
 
-    @unittest.skip("currently too slow")
+    # @unittest.skip("currently too slow")
     def test_e01__zebra_puzzle_stage02(self):
         """
         apply zebra puzzle rules to zebra puzzle data and assess correctness of the result
@@ -2133,7 +2133,7 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         res_I702 = res = p.ruleengine.apply_semantic_rules(
             zp.zr.I701["rule: imply parent relation of a subrelation"],
             zp.zr.I702["rule: add reverse statement for symmetrical relations"],
-            mod_context_uri=zp.__URI__,
+            mod_context_uri=TEST_BASE_URI,
         )
         result_history.append(res)
 
@@ -2144,7 +2144,7 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
 
         res_I705 = res = p.ruleengine.apply_semantic_rule(
             zp.zr.I705["rule: deduce trivial different-from-facts"],
-            mod_context_uri=zp.__URI__,
+            mod_context_uri=TEST_BASE_URI,
         )
         reports.append(zb.report(display=False, title="I705"))
         result_history.append(res)
@@ -2153,7 +2153,7 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         res_I720 = res = p.ruleengine.apply_semantic_rules(
             zp.zr.I710["rule: identify same items via zb__R2850__is_functional_activity"],
             zp.zr.I720["rule: replace (some) same_as-items"],
-            mod_context_uri=zp.__URI__,
+            mod_context_uri=TEST_BASE_URI,
         )
 
         reports.append(zb.report(display=False, title="I720"))
@@ -2161,7 +2161,7 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
 
         res_I725 = res = p.ruleengine.apply_semantic_rules(
             zp.zr.I725["rule: deduce facts from inverse relations"],
-            mod_context_uri=zp.__URI__,
+            mod_context_uri=TEST_BASE_URI,
         )
 
         reports.append(zb.report(display=False, title="I725"))
@@ -2172,7 +2172,7 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         self.assertIn(zb.R8768["lives immediately left of"].uri, res.rel_map)
 
         res_I730 = res = p.ruleengine.apply_semantic_rule(
-            zp.zr.I730["rule: deduce negative facts for neighbours"], mod_context_uri=zp.__URI__
+            zp.zr.I730["rule: deduce negative facts for neighbours"], mod_context_uri=TEST_BASE_URI
         )
         reports.append(zb.report(display=False, title="I730"))
         result_history.append(res)
@@ -2183,7 +2183,7 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         self.assertEqual(zb.I9848["Norwegian"].zb__R1055__has_not_house_color, [zb.I1497["blue"]])
 
         res_I740 = res = p.ruleengine.apply_semantic_rule(
-            zp.zr.I740["rule: deduce more negative facts from negative facts"], mod_context_uri=zp.__URI__
+            zp.zr.I740["rule: deduce more negative facts from negative facts"], mod_context_uri=TEST_BASE_URI
         )
         reports.append(zb.report(display=False, title="I740"))
         result_history.append(res)
@@ -2195,7 +2195,7 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
 
         # apply next rule:
         res_I750 = res = p.ruleengine.apply_semantic_rule(
-            zp.zr.I750["rule: every human lives in one house"], mod_context_uri=zp.__URI__
+            zp.zr.I750["rule: every human lives in one house"], mod_context_uri=TEST_BASE_URI
         )
         reports.append(zb.report(display=False, title="I750"))
         result_history.append(res)
@@ -2209,7 +2209,7 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
 
         # apply next rule:
         res_I760 = res = p.ruleengine.apply_semantic_rule(
-            zp.zr.I760["rule: deduce impossible house indices of neighbour"], mod_context_uri=zp.__URI__
+            zp.zr.I760["rule: deduce impossible house indices of neighbour"], mod_context_uri=TEST_BASE_URI
         )
         reports.append(zb.report(display=False, title="I760"))
         result_history.append(res)
@@ -2220,7 +2220,7 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
 
         # apply next rule:
         res_I763 = res = p.ruleengine.apply_semantic_rule(
-            zp.zr.I763["rule: deduce impossible house index for lieft-right neighbours"], mod_context_uri=zp.__URI__
+            zp.zr.I763["rule: deduce impossible house index for lieft-right neighbours"], mod_context_uri=TEST_BASE_URI
         )
         reports.append(zb.report(display=False, title="I763"))
         result_history.append(res)
@@ -2231,7 +2231,8 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
 
         # apply next rule:
         res_I770 = res = p.ruleengine.apply_semantic_rule(
-            zp.zr.I770["rule: deduce impossible house_number items from impossible indices"], mod_context_uri=zp.__URI__
+            zp.zr.I770["rule: deduce impossible house_number items from impossible indices"],
+            mod_context_uri=TEST_BASE_URI
         )
         reports.append(zb.report(display=False, title="I770"))
         result_history.append(res)
@@ -2240,7 +2241,7 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         self.assertEqual(len(res.new_statements), 1)
 
         # apply next rule:
-        res_I780 = res = p.ruleengine.apply_semantic_rule(zp.zr.I780, mod_context_uri=zp.__URI__)
+        res_I780 = res = p.ruleengine.apply_semantic_rule(zp.zr.I780, mod_context_uri=TEST_BASE_URI)
         reports.append(zb.report(display=False, title="I780"))
         result_history.append(res)
 
@@ -2249,7 +2250,7 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
 
         # apply next rule:
         res_I790 = res = p.ruleengine.apply_semantic_rule(
-            zp.zr.I790["rule: infere from 'is one of' -> 'is same as'"], mod_context_uri=zp.__URI__
+            zp.zr.I790["rule: infere from 'is one of' -> 'is same as'"], mod_context_uri=TEST_BASE_URI
         )
         reports.append(zb.report(display=False, title="I790"))
         result_history.append(res)
@@ -2260,7 +2261,7 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         # apply next rule:
         h12 = zp.person12.zb__R9040__lives_in_numbered_house
         res_I720b = res = p.ruleengine.apply_semantic_rule(
-            zp.zr.I720["rule: replace (some) same_as-items"], mod_context_uri=zp.__URI__
+            zp.zr.I720["rule: replace (some) same_as-items"], mod_context_uri=TEST_BASE_URI
         )
         reports.append(zb.report(display=False, title="I720b"))
         result_history.append(res)
@@ -2269,40 +2270,47 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         self.assertEqual(zp.person12.zb__R9040__lives_in_numbered_house, zp.zb.I7582["house 2"])
 
         res_I741 = res = p.ruleengine.apply_semantic_rule(
-            zp.zr.I741["rule: deduce more negative facts from negative facts"], mod_context_uri=zp.__URI__
+            zp.zr.I741["rule: deduce more negative facts from negative facts"], mod_context_uri=TEST_BASE_URI
         )
         reports.append(zb.report(display=False, title="I741"))
         result_history.append(res)
 
         res_I792 = res = p.ruleengine.apply_semantic_rule(
-            zp.zr.I792, mod_context_uri=zp.__URI__
+            zp.zr.I792, mod_context_uri=TEST_BASE_URI
         )
         reports.append(zb.report(display=False, title="I792"))
         result_history.append(res)
         self.assertGreaterEqual(len(res.new_statements), 65)
 
         res_I794 = res = p.ruleengine.apply_semantic_rule(
-            zp.zr.I794, mod_context_uri=zp.__URI__
+            zp.zr.I794, mod_context_uri=TEST_BASE_URI
         )
         reports.append(zb.report(display=False, title="I794"))
         result_history.append(res)
         self.assertGreaterEqual(len(res.new_statements), 2)
 
         res_I796 = res = p.ruleengine.apply_semantic_rule(
-            zp.zr.I796, mod_context_uri=zp.__URI__
+            zp.zr.I796, mod_context_uri=TEST_BASE_URI
         )
         reports.append(zb.report(display=False, title="I796"))
         result_history.append(res)
         self.assertGreaterEqual(len(res.new_statements), 2)
 
         res_I798 = res = p.ruleengine.apply_semantic_rule(
-            zp.zr.I798, mod_context_uri=zp.__URI__
+            zp.zr.I798, mod_context_uri=TEST_BASE_URI
         )
         reports.append(zb.report(display=False, title="I798"))
         result_history.append(res)
 
+        if 0:
+            # save the current knowledge state
+            fpath = pjoin(TEST_DATA_DIR1, "test_zebra_triples2.nt")
+            p.io.export_rdf_triples(fpath, add_qualifiers=True,  modfilter=TEST_BASE_URI)
+
+        IPS()
+
         res_I800 = res = p.ruleengine.apply_semantic_rule(
-            zp.zr.I800, mod_context_uri=zp.__URI__
+            zp.zr.I800, mod_context_uri=TEST_BASE_URI
         )
         reports.append(zb.report(display=False, title="I800"))
         result_history.append(res)
@@ -2310,6 +2318,31 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         apply_times = [(round(r.apply_time, 3), r.rule) for r in result_history]
         apply_times.sort(reverse=True)
         # print(apply_times[:4])
+        IPS()
+
+    def test_e02__zebra_puzzle_stage02(self):
+
+        reports = []
+        result_history = []
+
+        zb = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA_BASE_DATA, prefix="zb")
+        zr = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA_RULES, prefix="zr", reuse_loaded=True)
+        zp = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA02, prefix="zp")
+
+        fpath = pjoin(TEST_DATA_DIR1, "test_zebra_triples2.nt")
+        with p.uri_context(uri=TEST_BASE_URI):
+            c = p.io.import_stms_from_rdf_triples(fpath)  #noqa
+
+        res_I800 = res = p.ruleengine.apply_semantic_rule(
+            zp.zr.I800["rule: mark relations which are opposite of functional activities"],
+            mod_context_uri=TEST_BASE_URI
+        )
+
+        reports.append(zb.report(display=False, title="I800"))
+        result_history.append(res)
+
+        self.assertEqual(len(res.new_statements), 5)
+
         IPS()
 
 # with p.uri_context(uri=TEST_BASE_URI):

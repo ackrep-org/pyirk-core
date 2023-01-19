@@ -400,9 +400,20 @@ R8139 = p.create_relation(
 )
 
 
+R6020 = p.create_relation(
+    R1__has_label="is opposite of functional activity",
+    R2__has_description=(
+        "specifies that the subject (a relation) is the opposite of a relation with R2850__is_functional_activity=True"
+    ),
+    R8__has_domain_of_argument_1=p.I40["general relation"],
+    R11__has_range_of_result=bool,
+    R22__is_functional=True,
+    R62__is_relation_property=True,
+)
+
+
 # further information:
 possible_house_indices = p.new_tuple(1, 2, 3, 4, 5)
-
 
 p.set_multiple_statements(all_humans_tuple.R39__has_element, p.R57["is placeholder"], False)
 p.set_multiple_statements(all_beverage_tuple.R39__has_element, p.R57["is placeholder"], False)

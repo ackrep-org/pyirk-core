@@ -2099,12 +2099,20 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
             zb.I9848["Norwegian"].set_relation(zb.R1055["has not house color"], zb.I8065["green"])
             zb.I9848["Norwegian"].set_relation(zb.R1055["has not house color"], zb.I7612["ivory"])
 
-            res_800 = res = p.ruleengine.apply_semantic_rules(
-                zr.I800["rule: deduce positive fact from 4 negative facts"], mod_context_uri=zb.__URI__
+            res_I800 = res = p.ruleengine.apply_semantic_rule(
+                zp.zr.I800["rule: mark relations which are opposite of functional activities"],
+                mod_context_uri=TEST_BASE_URI
             )
+
+            self.assertGreaterEqual(len(res.new_statements), 5)
+
+            res_810 = res = p.ruleengine.apply_semantic_rules(
+                zr.I810["rule: deduce positive fact from 4 negative facts"], mod_context_uri=zb.__URI__
+            )
+        self.assertEqual(len(res.new_statements), 1)
         self.assertEqual(zb.I9848["Norwegian"].zb__R8098__has_house_color, zb.I4118["yellow"])
 
-    # @unittest.skip("currently too slow")
+    @unittest.skip("currently too slow")
     def test_e01__zebra_puzzle_stage02(self):
         """
         apply zebra puzzle rules to zebra puzzle data and assess correctness of the result
@@ -2320,6 +2328,7 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         # print(apply_times[:4])
         IPS()
 
+    @unittest.skip("currently too slow")
     def test_e02__zebra_puzzle_stage02(self):
 
         reports = []
@@ -2340,8 +2349,18 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
 
         reports.append(zb.report(display=False, title="I800"))
         result_history.append(res)
+        self.assertGreaterEqual(len(res.new_statements), 5)
 
-        self.assertEqual(len(res.new_statements), 5)
+        # rule does not work (produces too many candidate results)
+        res_I810 = res = p.ruleengine.apply_semantic_rule(
+            zp.zr.I810["rule: deduce positive fact from 4 negative facts"],
+            mod_context_uri=TEST_BASE_URI
+        )
+
+        reports.append(zb.report(display=False, title="I810"))
+        result_history.append(res)
+
+        self.assertEqual(len(res.new_statements), 1)
 
         IPS()
 

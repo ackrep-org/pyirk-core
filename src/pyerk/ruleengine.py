@@ -357,7 +357,7 @@ class RuleApplicatorWorker:
     Performs the application of one premise branch of a rule
     """
 
-    max_subgraph_monomorphisms = 100
+    max_subgraph_monomorphisms = 3000
 
     # useful for debugging: IPS(self.parent.rule.short_key=="I763")
 
@@ -579,6 +579,10 @@ class RuleApplicatorWorker:
         extended_result_map = {**result_map}
 
         for node, uri in self.subjectivized_predicates.b.items():
+            if rel_entity2 := extended_result_map.get(node):
+                # no need to add something
+                continue
+
             pred_proxy_item = p.ds.get_entity_by_uri(uri)
             assert pred_proxy_item.R4__is_instance_of == p.I40["general relation"]
 
@@ -1164,7 +1168,8 @@ def edge_matcher(e1d: AtlasView, e2d: AtlasView) -> bool:
 
         # iterate over all edges of this multiedge
         for inner_dict1 in e1d.values():
-            res: bool = compare_relation_statements(inner_dict1["rel_entity"], e2d["rel_statements"])
+            stm_data = Container(subject=inner_dict1["itm1"], object=inner_dict1["itm2"])
+            res: bool = compare_relation_statements(inner_dict1["rel_entity"], e2d["rel_statements"], stm_data=stm_data)
             if res:
                 break
         return res
@@ -1255,7 +1260,7 @@ class ReportingRuleResult(core.RuleResult):
 
 
 # Note this function will be called very often -> check for speedup possibilites
-def compare_relation_statements(rel1: core.Relation, stm_list: List[core.Statement]):
+def compare_relation_statements(rel1: core.Relation, stm_list: List[core.Statement], stm_data: Container = None):
     """
     decide whether a given relation fulfills all given statements
     """
@@ -1269,8 +1274,22 @@ def compare_relation_statements(rel1: core.Relation, stm_list: List[core.Stateme
 
             # Note: this might be too general, but false positives will be filtered out in the postprocessing
             return isinstance(raw_res[0], core.Relation)
+        # builtin: p.R71__enforce_matching_result_type
+        elif stm.predicate == p.R71 and stm.object:
+            if stm_data is None:
+                # we are in node-compare mode -> ignore this statement
+                continue
 
-        if raw_res[0] != stm.object:
+            rel1_result_type = getattr(rel1, "R11", [None])[0]
+            if rel1_result_type is None:
+                return False
+
+            actual_res_type = getattr(stm_data.object, "R4", None)
+            if rel1_result_type != actual_res_type:
+                return False
+
+        elif raw_res[0] != stm.object:
+            # no special handling of relation statement
             return False
 
     # all statements have matched

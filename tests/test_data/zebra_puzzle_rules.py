@@ -735,17 +735,6 @@ with I798.scope("assertions") as cm:
 
 # ###############################################################################
 
-R6020 = p.create_relation(
-    R1__has_label="is opposite of functional activity",
-    R2__has_description=(
-        "specifies that the subject (a relation) is the opposite of a relation with R2850__is_functional_activity=True"
-    ),
-    R8__has_domain_of_argument_1=p.I40["general relation"],
-    R11__has_range_of_result=bool,
-    R22__is_functional=True,
-    R62__is_relation_property=True,
-)
-
 
 I800 = p.create_item(
     R1__has_label="rule: mark relations which are opposite of functional activities",
@@ -762,7 +751,8 @@ with I800.scope("premises") as cm:
     cm.new_rel(cm.rel1, zb.R2850["is functional activity"], True)
 
 with I800.scope("assertions") as cm:
-    cm.new_rel(cm.rel1_not, R6020["is opposite of functional activity"], True)
+    cm.new_rel(cm.rel1_not, zb.R6020["is opposite of functional activity"], True)
+    cm.new_rel(cm.rel1_not, p.R71["enforce matching result type"], True)
 
 
 
@@ -787,16 +777,6 @@ with I810.scope("context") as cm:
     # cm.new_rel_var("rel1")
     cm.new_rel_var("rel1_not")
     cm.uses_external_entities(zb.I7435["human"])
-
-
-def is_opposite_of_functional_activity(self, rel) -> bool:
-    assert isinstance (rel, p.Relation)
-    if oppo_rels := rel.R43__is_opposite_of:
-        if oppo_rels[0].zb__R2850__is_functional_activity:
-            return True
-
-    return False
-
 
 with I810.scope("premises") as cm:
     cm.new_rel(cm.p1, p.R4["is instance of"], zb.I7435["human"], overwrite=True)
@@ -827,7 +807,10 @@ with I810.scope("premises") as cm:
     cm.new_condition_func(p.label_compare_method, cm.itm2, cm.itm3)
     cm.new_condition_func(p.label_compare_method, cm.itm3, cm.itm4)
 
-    cm.new_condition_func(is_opposite_of_functional_activity, cm.rel1_not)
+    cm.new_rel(cm.rel1_not, zb.R6020["is opposite of functional activity"], True)
+
+    cm.new_rel(cm.rel1_not, p.R71["enforce matching result type"], True)
+    cm.new_condition_func(lambda self, rel, type_entity: rel.R11[0] == type_entity, cm.rel1_not, cm.itm_type)
 
 
 def add_stm_by_exclusion(self, p1, oppo_rel, not_itm1, not_itm2, not_itm3, not_itm4):

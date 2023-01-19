@@ -2171,6 +2171,19 @@ R70 = create_builtin_relation(
     R22__is_functional=True,
 )
 
+R71 = create_builtin_relation(
+    key_str="R71",
+    R1__has_label="enforce matching result type",
+    R2__has_description=(
+        "specifies that the subject (a relation) should be used in a statement where the object is an instance (R4) "
+        "of the subjects (first) R11-value; to be used in rules"
+    ),
+    R8__has_domain_of_argument_1=I40["general relation"],
+    R11__has_range_of_result=bool,
+    R18__has_usage_hint="used to to control the behavior of rules with subjectivized predicates",
+    R22__is_functional=True,
+)
+
 # ######################################################################################################################
 # condition functions (to be used in the premise scope of a rule)
 # ######################################################################################################################

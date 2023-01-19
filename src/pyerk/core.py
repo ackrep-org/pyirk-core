@@ -737,6 +737,21 @@ class DataStore:
 
         return res
 
+    def get_subjects_for_relation(self, rel_uri: str, filter=None):
+
+        stm_list: List[Statement] = self.relation_statements[rel_uri]
+
+        res = []
+        if isinstance(filter, allowed_literal_types):
+            cond_func = lambda obj: obj == filter
+        else:
+            cond_func = lambda obj: True
+        for stm in stm_list:
+            if cond_func(stm.object):
+                res.append(stm.subject)
+
+        return res
+
     def get_statements(self, entity_uri: str, rel_uri: str) -> List["Statement"]:
         """
         self.statements maps an entity_key to an inner_dict.

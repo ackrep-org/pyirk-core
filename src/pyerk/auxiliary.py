@@ -350,6 +350,15 @@ def clean_dict(dikt: Dict[Any, Union[list, dict]]) -> Dict[Any, Union[list, dict
     return dikt
 
 
+def uri_set(*args):
+
+    res = []
+    for arg in args:
+        res.append(arg.uri)
+    return set(res)
+
+
+
 def bright(txt):
     return f"{Style.BRIGHT}{txt}{Style.RESET_ALL}"
 

@@ -11,6 +11,7 @@ from ipydex import IPS, activate_ips_on_exception, set_trace  # noqa
 import pyerk as p
 import pyerk.visualization as visualization
 import pyerk.io
+from pyerk.auxiliary import uri_set
 import git
 from addict import Addict as Container
 import pyerk.reportgenerator as rgen
@@ -1132,6 +1133,31 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
             self.assertEquals(itm1.R31__is_in_mathematical_relation_with, [x])
             self.assertEquals(itm2.R31__is_in_mathematical_relation_with, [x])
             self.assertEquals(itm3.R31__is_in_mathematical_relation_with, [x])
+
+    def test_d11__get_subjects_for_relation(self):
+
+        with p.uri_context(uri=TEST_BASE_URI, prefix="ut"):
+
+            itm1 = p.instance_of(p.I1["general item"])
+            itm2 = p.instance_of(p.I1["general item"])
+            itm3 = p.instance_of(p.I1["general item"])
+            itm4 = p.instance_of(p.I1["general item"])
+
+            R301 = p.create_relation(R1="test relation")
+
+            itm1.set_relation(R301, True)
+            itm2.set_relation(R301, False)
+            itm3.set_relation(R301, 15)
+
+            subj_list = p.ds.get_subjects_for_relation(R301.uri)
+
+            self.assertEqual(uri_set(*subj_list), uri_set(itm1, itm2, itm3))
+
+            itm1.set_relation(R301, 15)
+            itm4.set_relation(R301, 15)
+
+            subj_list = p.ds.get_subjects_for_relation(R301.uri, filter=15)
+            self.assertEqual(uri_set(*subj_list), uri_set(itm1, itm3, itm4))
 
 
 class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):

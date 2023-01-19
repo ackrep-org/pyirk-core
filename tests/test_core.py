@@ -2106,11 +2106,17 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
 
             self.assertGreaterEqual(len(res.new_statements), 5)
 
-            res_810 = res = p.ruleengine.apply_semantic_rules(
-                zr.I810["rule: deduce positive fact from 4 negative facts"], mod_context_uri=zb.__URI__
+            # res_810 = res = p.ruleengine.apply_semantic_rules(
+            #     zr.I810["rule: deduce positive fact from 4 negative facts"], mod_context_uri=zb.__URI__
+            # )
+
+            res = p.ruleengine.apply_semantic_rules(
+                zr.I815["rule: deduce positive fact from 4 negative facts via SPARQL"], mod_context_uri=zb.__URI__
             )
+
         self.assertEqual(len(res.new_statements), 1)
         self.assertEqual(zb.I9848["Norwegian"].zb__R8098__has_house_color, zb.I4118["yellow"])
+        IPS()
 
     @unittest.skip("currently too slow")
     def test_e01__zebra_puzzle_stage02(self):

@@ -421,7 +421,19 @@ class RuleApplicatorWorker:
         qsrc = f"{prefix_block}\nSELECT {var_names}\n{where_clause}"
 
         p.ds.rdfgraph = p.rdfstack.create_rdf_triples()
-        res = p.ds.rdfgraph.query(qsrc)
+        try:
+            res = p.ds.rdfgraph.query(qsrc)
+        except p.rdfstack.rdflib.plugins.sparql.parser.ParseException as e:
+            # prepend the qsrc with linenumbers via regex, see: https://stackoverflow.com/a/64621297/333403
+            def repl(m):
+                repl.cnt += 1
+                return f'{repl.cnt:03d}: '
+
+            repl.cnt = 0
+            import re
+            print(re.sub(r'(?m)^', repl, qsrc))
+            raise
+
         res2 = p.aux.apply_func_to_table_cells(p.rdfstack.convert_from_rdf_to_pyerk, res)
 
         result_maps = []

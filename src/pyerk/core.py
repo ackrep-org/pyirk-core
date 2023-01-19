@@ -737,6 +737,14 @@ class DataStore:
 
         return res
 
+    @staticmethod
+    def _default_subject_filter(entity):
+        """
+        used to prevent items from scopes showing up inside the results of `get_subjects_for_relation`.
+        """
+        # R20["has defining scope"]>
+        return getattr(entity, "R20") is None
+
     def get_subjects_for_relation(self, rel_uri: str, filter=None):
 
         stm_list: List[Statement] = self.relation_statements[rel_uri]
@@ -747,7 +755,7 @@ class DataStore:
         else:
             cond_func = lambda obj: True
         for stm in stm_list:
-            if cond_func(stm.object):
+            if cond_func(stm.object) and self._default_subject_filter(stm.subject):
                 res.append(stm.subject)
 
         return res

@@ -813,10 +813,19 @@ with I810.scope("premises") as cm:
     cm.new_condition_func(lambda self, rel, type_entity: rel.R11[0] == type_entity, cm.rel1_not, cm.itm_type)
 
 
+def is_relevant_item(itm):
+    return not itm.R57__is_placeholder and not itm.R20__has_defining_scope
+
+
 def add_stm_by_exclusion(self, p1, oppo_rel, not_itm1, not_itm2, not_itm3, not_itm4):
     """
     Assume that four negative facts are known and add the corresponding positive fact
     """
+
+    # check arguments:
+    args = [elt for elt in (not_itm1, not_itm2, not_itm3, not_itm4) if is_relevant_item(elt)]
+    if not len(args) == 4:
+        return p.RuleResult()
 
     itm_type = not_itm1.R4__is_instance_of
     assert itm_type == not_itm2.R4__is_instance_of
@@ -825,7 +834,9 @@ def add_stm_by_exclusion(self, p1, oppo_rel, not_itm1, not_itm2, not_itm3, not_i
 
     all_itms = itm_type.get_inv_relations("R4__is_instance_of", return_subj=True)
 
-    all_itms_map = dict([(itm.uri, itm) for itm in all_itms if not itm.R57__is_placeholder])
+    all_itms_map = dict(
+        [(itm.uri, itm) for itm in all_itms if is_relevant_item(itm)]
+    )
     all_itms_set = set(all_itms_map.keys())
 
     assert len(all_itms_set) == 5

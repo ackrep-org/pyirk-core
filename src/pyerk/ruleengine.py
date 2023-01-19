@@ -799,7 +799,6 @@ class RuleApplicatorWorker:
         res = []
         i = 0
         for r in GM.subgraph_monomorphisms_iter():
-            print(i)
             i += 1
             res.append(r)
             if i >= self.max_subgraph_monomorphisms:
@@ -1346,3 +1345,38 @@ def get_simple_properties(item: core.Item) -> dict:
                 break
 
     return res
+
+class AlgorithmicRuleApplicationWorker:
+    """
+    This class executes algorithmic rules.
+    """
+    def __init__(self):
+        # simple hack
+        self.parent = Container(rule=None)
+
+    def experiment(self, zb, consequent_function: callable):
+
+        # in the future this logic will be parsed from the graph
+        h_list = p.get_instances_of(zb.I7435["human"])
+        rel_list = p.ds.get_subjects_for_relation(zb.R6020["is opposite of functional activity"].uri)
+        result_conditions = [lambda res: len(res) == 4]
+
+        import itertools as it
+        result_list = []
+        for subj, pred in it.product(h_list, rel_list):
+            tmp_res_list = subj.get_relations(pred.uri, return_obj=True)
+            for cond_func in result_conditions:
+                if not cond_func(tmp_res_list):
+                    break
+            else:
+                # all conditions are met
+                result_list.append((subj, pred, *tmp_res_list))
+
+        # raworker=self, raw_result_count=len(result_list)
+        final_result = p.core.RuleResult()
+        for args in result_list:
+            tmp_res = consequent_function(None, *args)
+
+            # TODO: add result.extend_with_binding_info(cfr, res_dict), see above
+            final_result.extend(tmp_res)
+        return final_result

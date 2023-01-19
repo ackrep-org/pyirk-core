@@ -2132,16 +2132,19 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
 
             self.assertGreaterEqual(len(res.new_statements), 5)
 
-            res_810 = res = p.ruleengine.apply_semantic_rules(
-                zr.I810["rule: deduce positive fact from 4 negative facts"], mod_context_uri=zb.__URI__
-            )
+            # res_810 = res = p.ruleengine.apply_semantic_rules(
+            #     zr.I810["rule: deduce positive fact from 4 negative facts"], mod_context_uri=zb.__URI__
+            # )
+
+            araw = p.ruleengine.AlgorithmicRuleApplicationWorker()
+            res = araw.experiment(zb, zr.add_stm_by_exclusion)
 
 
         self.assertEqual(len(res.new_statements), 1)
         self.assertEqual(zb.I9848["Norwegian"].zb__R8098__has_house_color, zb.I4118["yellow"])
         # IPS()
 
-    @unittest.skip("currently too slow")
+    # @unittest.skip("currently too slow")
     def test_e01__zebra_puzzle_stage02(self):
         """
         apply zebra puzzle rules to zebra puzzle data and assess correctness of the result
@@ -2344,8 +2347,6 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
             fpath = pjoin(TEST_DATA_DIR1, "test_zebra_triples2.nt")
             p.io.export_rdf_triples(fpath, add_qualifiers=True,  modfilter=TEST_BASE_URI)
 
-        IPS()
-
         res_I800 = res = p.ruleengine.apply_semantic_rule(
             zp.zr.I800, mod_context_uri=TEST_BASE_URI
         )
@@ -2353,11 +2354,8 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         result_history.append(res)
 
         apply_times = [(round(r.apply_time, 3), r.rule) for r in result_history]
-        apply_times.sort(reverse=True)
-        # print(apply_times[:4])
-        IPS()
+        apply_times.sort(key=lambda t: t[0], reverse=True)
 
-    @unittest.skip("currently too slow")
     def test_e02__zebra_puzzle_stage02(self):
 
         reports = []
@@ -2380,43 +2378,25 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         result_history.append(res)
         self.assertGreaterEqual(len(res.new_statements), 5)
 
-        # rule does not work (produces too many candidate results)
-        res_I810 = res = p.ruleengine.apply_semantic_rule(
-            zp.zr.I810["rule: deduce positive fact from 4 negative facts"],
-            mod_context_uri=TEST_BASE_URI
-        )
+        araw = p.ruleengine.AlgorithmicRuleApplicationWorker()
+        with p.uri_context(uri=TEST_BASE_URI):
+            # because with traditional rules it seems to be difficult to efficiently deduce positive fact from
+            # 4 negative facts, this is an algorithmic approach
+            res = araw.experiment(zb, zr.add_stm_by_exclusion)
 
-        reports.append(zb.report(display=False, title="I810"))
+        reports.append(zb.report(display=False, title="I810_experiment"))
         result_history.append(res)
 
         self.assertEqual(len(res.new_statements), 1)
+        self.assertEqual(zb.I9848["Norwegian"].zb__R8098__has_house_color, zb.I4118["yellow"])
 
-        IPS()
+        # does not yet work as expexted:
+        # res = p.ruleengine.apply_semantic_rule(
+        #     zp.zr.I710["rule: identify same items via zb__R2850__is_functional_activity"],
+        #     mod_context_uri=TEST_BASE_URI
+        # )
 
-# with p.uri_context(uri=TEST_BASE_URI):
-
-#     I705 = p.create_item(
-#         R1__has_label="rule: deduce trivial different-from-facts",
-#         R2__has_description=("deduce trivial different-from-facts like Norwegian is different from Englishman"),
-#         R4__is_instance_of=p.I41["semantic rule"],
-#     )
-
-#     with I705.scope("context") as cm:
-#         cm.new_var(p1=p.instance_of(zb.I7435["human"]))
-#         cm.new_var(p2=p.instance_of(zb.I7435["human"]))
-#         cm.uses_external_entities(zb.I7435["human"])
-
-#     with I705.scope("premises") as cm:
-#         cm.new_rel(cm.p1, p.R4["is instance of"], zb.I7435["human"], overwrite=True)
-#         cm.new_rel(cm.p2, p.R4["is instance of"], zb.I7435["human"], overwrite=True)
-
-#         cm.new_rel(cm.p1, p.R57["is placeholder"], False)
-#         cm.new_rel(cm.p2, p.R57["is placeholder"], False)
-
-
-#     with I705.scope("assertions") as cm:
-#         cm.new_rel(cm.p1, p.R50["is different from"], cm.p2, qualifiers=[p.qff_has_rule_ptg_mode(5)])
-#         cm.new_rel(cm.p2, p.R50["is different from"], cm.p1, qualifiers=[p.qff_has_rule_ptg_mode(5)])
+        # IPS()
 
 
 class Test_Z_Core(HouskeeperMixin, unittest.TestCase):

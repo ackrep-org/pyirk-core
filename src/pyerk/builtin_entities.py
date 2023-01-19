@@ -1911,6 +1911,11 @@ R51 = create_builtin_relation(
     # TODO: model that this is (probably) equivalent to "owl:oneOf"
 )
 
+def get_instances_of(cls_item: Item) -> List[Item]:
+    assert allows_instantiation(cls_item)
+    instances = cls_item.get_inv_relations("R4__is_instance_of", return_subj=True)
+    return instances
+
 
 def close_class_with_R51(cls_item: Item):
     """
@@ -1922,9 +1927,7 @@ def close_class_with_R51(cls_item: Item):
     :returns:   tuple-item containing all instances
     """
 
-    assert allows_instantiation(cls_item)
-
-    instances = cls_item.get_inv_relations("R4__is_instance_of", return_subj=True)
+    instances = get_instances_of(cls_item)
     tpl = new_tuple(*instances)
 
     cls_item.set_relation("R51__instances_are_from", tpl)

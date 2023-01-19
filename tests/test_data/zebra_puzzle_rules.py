@@ -846,67 +846,6 @@ with I810.scope("assertions") as cm:
 # continue with: 4 opposite_statements -> 1 primal statement
 # identify persons by functional activity
 
-# ###############################################################################
-
-
-    I815 = p.create_item(
-        R1__has_label="rule: deduce positive fact from 4 negative facts via SPARQL",
-        R2__has_description=("deduce positive fact from 4 negative facts"),
-        R4__is_instance_of=p.I41["semantic rule"],
-    )
-
-    with I815.scope("context") as cm:
-        cm.new_var(p1=p.instance_of(zb.I7435["human"]))
-        cm.new_var(itm1=p.instance_of(p.I1["general item"]))
-        cm.new_var(itm2=p.instance_of(p.I1["general item"]))
-        cm.new_var(itm3=p.instance_of(p.I1["general item"]))
-        cm.new_var(itm4=p.instance_of(p.I1["general item"]))
-
-        cm.new_var(itm_type=p.instance_of(p.I1["general item"]))
-
-        # cm.new_rel_var("rel1")
-        cm.new_rel_var("rel1_not")
-
-    with I815.scope("premises") as cm:
-        cm.set_sparql(
-            """
-            WHERE {
-                ?p1 :R4 zb:I7435.        # p1 is_instance_of zb:I7435__human
-
-                ?rel1_not zb:R6020 true.        # R6020["is opposite of functional activity"]
-                ?rel1_not :R11 ?itm_type.        # R11["has range of result"]
-
-                ?p1 ?rel1_not ?itm1.
-                ?p1 ?rel1_not ?itm2.
-                ?p1 ?rel1_not ?itm3.
-                ?p1 ?rel1_not ?itm4.
-
-                ?itm1 :R57 false.  # R57__is_placeholder
-                ?itm2 :R57 false.  # R57__is_placeholder
-                ?itm3 :R57 false.  # R57__is_placeholder
-                ?itm4 :R57 false.  # R57__is_placeholder
-
-                ?itm1 :R4 ?itm_type. # R4__is_instance_of
-                ?itm2 :R4 ?itm_type. # R4__is_instance_of
-                ?itm3 :R4 ?itm_type. # R4__is_instance_of
-                ?itm4 :R4 ?itm_type. # R4__is_instance_of
-
-                # TODO: achieve distinctness more elegantly
-                FILTER (?itm1 != ?itm2)
-                FILTER (?itm1 != ?itm3)
-                FILTER (?itm1 != ?itm4)
-                FILTER (?itm2 != ?itm3)
-                FILTER (?itm2 != ?itm4)
-                FILTER (?itm3 != ?itm4)
-            }
-            """
-        )
-
-
-    with I815.scope("assertions") as cm:
-        pass
-        # cm.new_consequent_func(add_stm_by_exclusion, cm.p1, cm.rel1, cm.itm1, cm.itm2, cm.itm3, cm.itm4)
-
 
 # ###############################################################################
 # ###############################################################################

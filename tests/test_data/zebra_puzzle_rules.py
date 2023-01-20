@@ -89,14 +89,14 @@ with I705.scope("assertions") as cm:
 I710 = p.create_item(
     R1__has_label="rule: identify same items via zb__R2850__is_functional_activity",
     R2__has_description=(
-        "match two placeholders which are relate by a functional activity (R2850) with the same other items"
+        "match two persons which are relate by a functional activity (R2850) with the same other items"
     ),
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
 with I710.scope("context") as cm:
-    cm.new_var(ph1=p.instance_of(p.I1["general item"]))
-    cm.new_var(ph2=p.instance_of(p.I1["general item"]))
+    cm.new_var(p1=p.instance_of(p.I1["general item"]))
+    cm.new_var(p2=p.instance_of(p.I1["general item"]))
     cm.new_var(some_itm=p.instance_of(p.I1["general item"]))
     cm.new_rel_var("rel1")  # -> p.instance_of(p.I40["general relation"]))
 
@@ -104,13 +104,11 @@ with I710.scope("premises") as cm:
     cm.set_sparql(
         """
         WHERE {
-        ?ph1 :R57 true.
-        ?ph2 :R57 true.
-        ?ph1 ?rel1 ?some_itm.
-        ?ph2 ?rel1 ?some_itm.
+        ?p1 ?rel1 ?some_itm.
+        ?p2 ?rel1 ?some_itm.
 
-        ?rel1 zb:R2850 true.
-        FILTER (?ph1 != ?ph2)
+        ?rel1 zb:R2850 true.      # R2850__is_functional_activity
+        FILTER (?p1 != ?p2)
         }
         """
     )
@@ -125,7 +123,7 @@ with I710.scope("premises") as cm:
     # cm.new_rel(cm.rel1, zb.R2850["is functional activity"], True)
 
 with I710.scope("assertions") as cm:
-    cm.new_rel(cm.ph1, p.R47["is same as"], cm.ph2)
+    cm.new_rel(cm.p1, p.R47["is same as"], cm.p2, qualifiers=[p.qff_has_rule_ptg_mode(5)])
 
 # ###############################################################################
 

@@ -2195,6 +2195,8 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
             zp.zr.I720["rule: replace (some) same_as-items"],
             mod_context_uri=TEST_BASE_URI,
         )
+        self.assertEqual(len(res.new_statements), 7)
+        self.assertEqual(len(res.unlinked_entities), 2)
 
         reports.append(zb.report(display=False, title="I720"))
         result_history.append(res)
@@ -2369,6 +2371,10 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         with p.uri_context(uri=TEST_BASE_URI):
             c = p.io.import_stms_from_rdf_triples(fpath)  #noqa
 
+            # these two entities had been replaced by rule I720["rule: replace (some) same_as-items"]
+            p.core._unlink_entity(zp.person9.uri, remove_from_mod=True)
+            p.core._unlink_entity(zp.person2.uri, remove_from_mod=True)
+
         res_I800 = res = p.ruleengine.apply_semantic_rule(
             zp.zr.I800["rule: mark relations which are opposite of functional activities"],
             mod_context_uri=TEST_BASE_URI
@@ -2390,13 +2396,12 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         self.assertEqual(len(res.new_statements), 1)
         self.assertEqual(zb.I9848["Norwegian"].zb__R8098__has_house_color, zb.I4118["yellow"])
 
-        # does not yet work as expexted:
-        # res = p.ruleengine.apply_semantic_rule(
-        #     zp.zr.I710["rule: identify same items via zb__R2850__is_functional_activity"],
-        #     mod_context_uri=TEST_BASE_URI
-        # )
-
-        # IPS()
+        res = p.ruleengine.apply_semantic_rule(
+            zp.zr.I710["rule: identify same items via zb__R2850__is_functional_activity"],
+            mod_context_uri=TEST_BASE_URI
+        )
+        self.assertEqual(len(res.new_statements), 2)
+        self.assertEqual(zb.I9848["Norwegian"].R47__is_same_as, [zp.person5])
 
 
 class Test_Z_Core(HouskeeperMixin, unittest.TestCase):

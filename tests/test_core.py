@@ -2449,7 +2449,26 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         reports.append(zb.report(display=False, title="I798_(2)"))
         result_history.append(res)
 
-        # IPS()
+        res = p.ruleengine.apply_semantic_rule(
+            zp.zr.I760["rule: deduce impossible house indices of neighbour"], mod_context_uri=TEST_BASE_URI
+        )
+
+        # contains 2 trivial facts of non-placeholder houses, but on good fact
+
+        reports.append(zb.report(display=False, title="I760_(2)"))
+        result_history.append(res)
+
+
+        res = p.ruleengine.apply_semantic_rule(
+            zp.zr.I770["rule: deduce impossible house_number items from impossible indices"],
+            mod_context_uri=TEST_BASE_URI
+        )
+
+        # contains 3 trivial facts of non-placeholder houses, but on good fact
+        reports.append(zb.report(display=False, title="I770_(2)"))
+        result_history.append(res)
+
+        IPS()
 
 
 class Test_Z_Core(HouskeeperMixin, unittest.TestCase):

@@ -2318,28 +2318,28 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         result_history.append(res)
 
         res_I792 = res = p.ruleengine.apply_semantic_rule(
-            zp.zr.I792, mod_context_uri=TEST_BASE_URI
+            zp.zr.I792["rule: deduce different-from-facts from negative facts"], mod_context_uri=TEST_BASE_URI
         )
         reports.append(zb.report(display=False, title="I792"))
         result_history.append(res)
         self.assertGreaterEqual(len(res.new_statements), 65)
 
         res_I794 = res = p.ruleengine.apply_semantic_rule(
-            zp.zr.I794, mod_context_uri=TEST_BASE_URI
+            zp.zr.I794["rule: deduce neighbour-facts from house indices"], mod_context_uri=TEST_BASE_URI
         )
         reports.append(zb.report(display=False, title="I794"))
         result_history.append(res)
         self.assertGreaterEqual(len(res.new_statements), 2)
 
         res_I796 = res = p.ruleengine.apply_semantic_rule(
-            zp.zr.I796, mod_context_uri=TEST_BASE_URI
+            zp.zr.I796["rule: deduce different-from facts for neighbour-pairs"], mod_context_uri=TEST_BASE_URI
         )
         reports.append(zb.report(display=False, title="I796"))
         result_history.append(res)
         self.assertGreaterEqual(len(res.new_statements), 2)
 
         res_I798 = res = p.ruleengine.apply_semantic_rule(
-            zp.zr.I798, mod_context_uri=TEST_BASE_URI
+            zp.zr.I798["rule: deduce negative facts from different-from-facts"], mod_context_uri=TEST_BASE_URI
         )
         reports.append(zb.report(display=False, title="I798"))
         result_history.append(res)
@@ -2350,7 +2350,8 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
             p.io.export_rdf_triples(fpath, add_qualifiers=True,  modfilter=TEST_BASE_URI)
 
         res_I800 = res = p.ruleengine.apply_semantic_rule(
-            zp.zr.I800, mod_context_uri=TEST_BASE_URI
+            zp.zr.I800["rule: mark relations which are opposite of functional activities"],
+            mod_context_uri=TEST_BASE_URI
         )
         reports.append(zb.report(display=False, title="I800"))
         result_history.append(res)
@@ -2406,7 +2407,6 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         self.assertEqual(len(res.new_statements), 2)
         self.assertEqual(zb.I9848["Norwegian"].R47__is_same_as, [zp.person5])
 
-
         # next (old) rule
         self.assertEqual(len(zb.I9848["Norwegian"].zb__R9803__drinks_not), 3)
         res = p.ruleengine.apply_semantic_rule(
@@ -2419,6 +2419,35 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         self.assertEqual(res.unlinked_entities, [zp.person5])
         self.assertGreaterEqual(len(res.new_statements), 10)
         self.assertEqual(len(zb.I9848["Norwegian"].zb__R9803__drinks_not), 4)
+
+        with p.uri_context(uri=TEST_BASE_URI):
+            # because with traditional rules it seems to be difficult to efficiently deduce positive fact from
+            # 4 negative facts, this is an algorithmic approach
+            res = araw.experiment(zb, zr.add_stm_by_exclusion)
+
+        reports.append(zb.report(display=False, title="I810_experiment_(2)"))
+        result_history.append(res)
+
+        self.assertEqual(len(res.new_statements), 1)
+        self.assertEqual(zb.I9848["Norwegian"].zb__R8216__drinks, zb.I7509["water"])
+
+        res = p.ruleengine.apply_semantic_rule(
+            zr.I702["rule: add reverse statement for symmetrical relations"], mod_context_uri=zb.__URI__
+        )
+
+        reports.append(zb.report(display=False, title="I702_(2)"))
+        result_history.append(res)
+
+        # this contains one statement about unlinked person5 TODO: fixme
+        self.assertEqual(len(res.new_statements), 8)
+
+        res = p.ruleengine.apply_semantic_rule(
+            zp.zr.I798["rule: deduce negative facts from different-from-facts"], mod_context_uri=TEST_BASE_URI
+        )
+        self.assertEqual(len(res.new_statements), 22)
+
+        reports.append(zb.report(display=False, title="I798_(2)"))
+        result_history.append(res)
 
         # IPS()
 

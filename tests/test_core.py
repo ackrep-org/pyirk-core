@@ -1159,6 +1159,21 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
             subj_list = p.ds.get_subjects_for_relation(R301.uri, filter=15)
             self.assertEqual(uri_set(*subj_list), uri_set(itm1, itm3, itm4))
 
+    def test_d12__prevent_duplicates(self):
+
+        with p.uri_context(uri=TEST_BASE_URI, prefix="ut"):
+
+            itm1 = p.instance_of(p.I1["general item"])
+            R301 = p.create_relation(R1="test relation")
+
+            itm1.set_relation(R301, True)
+            itm1.set_relation(R301, True)
+
+            self.assertEqual(len(itm1.R301), 2)
+            itm1.set_relation(R301, True, prevent_duplicate=True)
+            self.assertEqual(len(itm1.R301), 2)
+
+
 
 class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
     def setUp(self):

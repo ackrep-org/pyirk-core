@@ -369,7 +369,8 @@ class Entity(abc.ABC):
         scope: "Entity" = None,
         proxyitem: Optional["Item"] = None,
         qualifiers: Optional[List["RawQualifier"]] = None,
-    ) -> "Statement":
+        prevent_duplicate=False,
+    ) -> Optional["Statement"]:
         """
         Allows to add a relation after the item was created.
 
@@ -378,6 +379,8 @@ class Entity(abc.ABC):
         :param scope:       Entity for the scope in which the relation is defined
         :param proxyitem:   optional item to which the Statement is associated (e.g. an equation-instance)
         :param qualifiers:  optional list of RawQualifiers (see docstring of this class)
+        :param prevent_duplicate
+                            bool; prevent the creation of a statement which already exists.
         :return:
         """
 
@@ -387,6 +390,11 @@ class Entity(abc.ABC):
             else:
                 # assume we got the short key of the relation
                 relation = ds.get_entity_by_key_str(relation)
+
+        if prevent_duplicate:
+            existing_objects = self.get_relations(relation.uri, return_obj=True)
+            if obj in existing_objects:
+                return None
 
         if isinstance(relation, Relation):
 
@@ -2193,6 +2201,8 @@ class RuleResult:
         self.rel_map = defaultdict(list)
 
     def add_statement(self, stm: Statement):
+        if stm is None:
+            return
         assert stm not in self.new_statements
         self.new_statements.append(stm)
         self.rel_map[stm.predicate.uri].append(stm)

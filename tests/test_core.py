@@ -2298,7 +2298,9 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         self.assertEqual(len(res.new_statements), 1)
 
         # apply next rule:
-        res_I780 = res = p.ruleengine.apply_semantic_rule(zp.zr.I780, mod_context_uri=TEST_BASE_URI)
+        res_I780 = res = p.ruleengine.apply_semantic_rule(
+            zp.zr.I780["rule: infere from 'is none of' -> 'is one of'"], mod_context_uri=TEST_BASE_URI
+        )
         reports.append(zb.report(display=False, title="I780"))
         result_history.append(res)
 
@@ -2482,6 +2484,50 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         # contains 3 trivial facts of non-placeholder houses, but on good fact
         reports.append(zb.report(display=False, title="I770_(2)"))
         result_history.append(res)
+
+        res = p.ruleengine.apply_semantic_rule(
+            zp.zr.I780["rule: infere from 'is none of' -> 'is one of'"], mod_context_uri=TEST_BASE_URI
+        )
+        reports.append(zb.report(display=False, title="I780_(2)"))
+        result_history.append(res)
+
+        res = p.ruleengine.apply_semantic_rule(
+            zp.zr.I790["rule: infere from 'is one of' -> 'is same as'"], mod_context_uri=TEST_BASE_URI
+        )
+        reports.append(zb.report(display=False, title="I790_(2)"))
+        result_history.append(res)
+        self.assertEqual(len(res.new_statements), 1)
+
+        res = p.ruleengine.apply_semantic_rule(
+            zp.zr.I720["rule: replace (some) same_as-items"], mod_context_uri=TEST_BASE_URI
+        )
+        self.assertEqual(zp.person10.zb__R9040__lives_in_numbered_house, zb.I7582["house 2"])
+        reports.append(zb.report(display=False, title="I720_(3"))
+        result_history.append(res)
+
+        res = p.ruleengine.apply_semantic_rule(
+            zp.zr.I710["rule: identify same items via zb__R2850__is_functional_activity"],
+            mod_context_uri=TEST_BASE_URI
+        )
+
+        reports.append(zb.report(display=False, title="I710_(3)"))
+        result_history.append(res)
+        self.assertEqual(len(res.new_statements), 2)
+
+        res = p.ruleengine.apply_semantic_rule(
+            zp.zr.I720["rule: replace (some) same_as-items"], mod_context_uri=TEST_BASE_URI
+        )
+        reports.append(zb.report(display=False, title="I720_(4"))
+        result_history.append(res)
+        self.assertEqual(len(res.new_statements), 21)
+
+        res = p.ruleengine.apply_semantic_rule(zp.zr.I701, mod_context_uri=TEST_BASE_URI)
+        res = p.ruleengine.apply_semantic_rule(zp.zr.I702, mod_context_uri=TEST_BASE_URI)
+        res = p.ruleengine.apply_semantic_rule(zp.zr.I730, mod_context_uri=TEST_BASE_URI)
+        res = p.ruleengine.apply_semantic_rule(zp.zr.I725, mod_context_uri=TEST_BASE_URI)
+        res = p.ruleengine.apply_semantic_rule(zp.zr.I741, mod_context_uri=TEST_BASE_URI)
+        res = p.ruleengine.apply_semantic_rule(zp.zr.I792, mod_context_uri=TEST_BASE_URI)
+        res = p.ruleengine.apply_semantic_rule(zp.zr.I798, mod_context_uri=TEST_BASE_URI)
 
         IPS()
 

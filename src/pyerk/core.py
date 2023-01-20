@@ -2075,6 +2075,7 @@ def replace_and_unlink_entity(old_entity: Entity, new_entity: Entity):
 
     for relation_uri, stm_list in list(stm_dict1.items()) + list(stm_dict2.items()):
         for stm in stm_list:
+            new_stm = None
             stm: Statement
             subject, predicate, obj = stm.relation_tuple
             if predicate.uri in omit_uris:
@@ -2083,7 +2084,9 @@ def replace_and_unlink_entity(old_entity: Entity, new_entity: Entity):
             qlf = stm.qualifiers
             if obj == old_entity:
                 # case1: old_entity was object, subject stays the same
-                new_stm = subject.set_relation(predicate, new_entity, qualifiers=qlf)
+                new_stm = subject.set_relation(predicate, new_entity, qualifiers=qlf, prevent_duplicate=True)
+                res.add_statement(new_stm)
+                continue
             else:
                 # case2: old_entity was subject, subject must be new_entity
                 assert subject == old_entity
@@ -2105,15 +2108,22 @@ def replace_and_unlink_entity(old_entity: Entity, new_entity: Entity):
                                 f"objects: {obj} (of old_entity)  and {existing_obj} of new_entity, while replacing"
                                 f"{old_entity} (old) with {new_entity} (new)."
                             )
-                            aux.FunctionalRelationError(msg)
+                            raise aux.FunctionalRelationError(msg)
                         else:
                             assert existing_obj.R57__is_placeholder and not obj.R57__is_placeholder
                             # replace the placeholder with the non-placeholder information
-                            new_entity.overwrite_statement(predicate.uri, obj, qualifiers=qlf)
+                            chgd_stm = new_entity.overwrite_statement(predicate.uri, obj, qualifiers=qlf)
+                            res.changed_statements.append(chgd_stm)
+                            continue
                     else:
                         # no replacement has to be made
                         new_stm = new_entity.set_relation(predicate, obj, qualifiers=qlf)
-                    res.add_statement(new_stm)
+                        res.add_statement(new_stm)
+                        continue
+                else:
+                    assert obj in existing_objs
+                    # no new information available -> continue with next statement
+                    continue
 
     return res
 
@@ -2189,6 +2199,7 @@ de = LangaguageCode("de")
 class RuleResult:
     def __init__(self):
         self.new_statements = []
+        self.changed_statements = []
         self.new_entities = []
         self.unlinked_entities = []
         self.partial_results = []

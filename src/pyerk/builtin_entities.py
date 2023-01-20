@@ -2242,9 +2242,9 @@ def copy_statements(self, rel1: Relation, rel2: Relation):
     res = RuleResult()
     for stm in ds.relation_statements[rel1.uri]:
         stm: Statement
-        # TODO: handle qualifiers
-        new_stm = stm.subject.set_relation(rel2, stm.object)
-        res.new_statements.append(new_stm)
+    #    TODO: handle qualifiers
+        new_stm = stm.subject.set_relation(rel2, stm.object, prevent_duplicate=True)
+        res.add_statement(new_stm)
 
     # this function intentially does not return a new item; only called for its side-effects
     return res
@@ -2277,8 +2277,8 @@ def reverse_statements(self, rel: Relation):
         if continue_flag:
             continue
 
-        new_stm = stm.object.set_relation(rel, stm.subject)
-        res.new_statements.append(new_stm)
+        new_stm = stm.object.set_relation(rel, stm.subject, prevent_duplicate=True)
+        res.add_statement(new_stm)
 
     return res
 

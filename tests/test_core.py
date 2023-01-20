@@ -2400,8 +2400,27 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
             zp.zr.I710["rule: identify same items via zb__R2850__is_functional_activity"],
             mod_context_uri=TEST_BASE_URI
         )
+
+        reports.append(zb.report(display=False, title="I710_(2)"))
+        result_history.append(res)
         self.assertEqual(len(res.new_statements), 2)
         self.assertEqual(zb.I9848["Norwegian"].R47__is_same_as, [zp.person5])
+
+
+        # next (old) rule
+        self.assertEqual(len(zb.I9848["Norwegian"].zb__R9803__drinks_not), 3)
+        res = p.ruleengine.apply_semantic_rule(
+            zp.zr.I720["rule: replace (some) same_as-items"],
+            mod_context_uri=TEST_BASE_URI
+        )
+
+        reports.append(zb.report(display=False, title="I720_(2)"))
+        result_history.append(res)
+        self.assertEqual(res.unlinked_entities, [zp.person5])
+        self.assertGreaterEqual(len(res.new_statements), 10)
+        self.assertEqual(len(zb.I9848["Norwegian"].zb__R9803__drinks_not), 4)
+
+        # IPS()
 
 
 class Test_Z_Core(HouskeeperMixin, unittest.TestCase):

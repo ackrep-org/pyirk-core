@@ -2047,6 +2047,13 @@ def replace_and_unlink_entity(old_entity: Entity, new_entity: Entity):
 
     res = RuleResult()
 
+    from pyerk import builtin_entities as bi
+
+    # these predicates should not be replaced
+    omit_uris = aux.uri_set(
+        bi.R1["has label"], bi.R2["has description"], bi.R4["is instance of"], bi.R57["is placeholder"]
+    )
+
     # ensure both entities exist (raise UnknownURIError otherwise):
     ds.get_entity_by_uri(old_entity.uri)
     ds.get_entity_by_uri(new_entity.uri)
@@ -2062,6 +2069,8 @@ def replace_and_unlink_entity(old_entity: Entity, new_entity: Entity):
         for stm in stm_list:
             stm: Statement
             subject, predicate, obj = stm.relation_tuple
+            if predicate.uri in omit_uris:
+                continue
             subject: Item
             qlf = stm.qualifiers
             if obj == old_entity:
@@ -2070,9 +2079,32 @@ def replace_and_unlink_entity(old_entity: Entity, new_entity: Entity):
             else:
                 # case2: old_entity was subject, subject must be new_entity
                 assert subject == old_entity
-                if not new_entity.get_relations(predicate.uri):
-                    # prevent the creation of a duplicated statement
-                    new_stm = new_entity.set_relation(predicate, obj, qualifiers=qlf)
+
+                # prevent the creation of a duplicated statement
+                existing_objs = new_entity.get_relations(predicate.uri, return_obj=True)
+                if not obj in existing_objs:
+
+                    # it is possible that predicate is functional and new_entitiy.predicate has a value
+                    # different from obj. this is OK if one of them is a placeholder
+                    if len(existing_objs) == 1 and predicate.R22__is_functional:
+                        existing_obj = existing_objs[0]
+                        if obj.R57__is_placeholder:
+                            # ignore it -> continue with next statement
+                            continue
+                        elif not existing_obj.R57__is_placeholder and not obj.R57__is_placeholder:
+                            msg = (
+                                f"confilicting statement for functional predicate {predicate} and non-placeholder "
+                                f"objects: {obj} (of old_entity)  and {existing_obj} of new_entity, while replacing"
+                                f"{old_entity} (old) with {new_entity} (new)."
+                            )
+                            aux.FunctionalRelationError(msg)
+                        else:
+                            assert existing_obj.R57__is_placeholder and not obj.R57__is_placeholder
+                            # replace the placeholder with the non-placeholder information
+                            new_entity.overwrite_statement(predicate.uri, obj, qualifiers=qlf)
+                    else:
+                        # no replacement has to be made
+                        new_stm = new_entity.set_relation(predicate, obj, qualifiers=qlf)
                     res.add_statement(new_stm)
 
     return res

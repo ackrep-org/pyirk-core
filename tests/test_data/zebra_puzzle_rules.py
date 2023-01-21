@@ -758,6 +758,51 @@ with I800.scope("assertions") as cm:
 
 
 
+# ###############################################################################
+
+
+I803 = p.create_item(
+    R1__has_label="rule: deduce different-from-facts from functional activities",
+    R4__is_instance_of=p.I41["semantic rule"],
+)
+
+with I803.scope("context") as cm:
+
+    cm.new_var(p1=p.instance_of(p.I1["general item"]))
+    cm.new_var(itm1=p.instance_of(p.I1["general item"]))
+    cm.new_var(itm2=p.instance_of(p.I1["general item"]))
+    cm.new_var(type_of_itm1=p.instance_of(p.I1["general item"]))
+
+    cm.new_rel_var("rel1")
+    cm.new_rel_var("rel1_not")
+
+with I803.scope("premises") as cm:
+    cm.set_sparql(
+        """
+        WHERE {
+            ?rel1 zb:R2850 true.     # R2850__is_functional_activity
+            ?rel1_not :R43 ?rel1.        # R43__is_opposite_of
+            ?p1 ?rel1 ?itm1.
+            ?itm1 :R4 ?type_of_itm1.   # R4__is_instance_of
+            ?type_of_itm1 :R51 ?tuple.  # R51__instances_are_from
+            ?tuple :R39 ?itm2.           # R39__has_element
+            ?itm1 :R57 false.          # R57__is_placeholder
+            ?itm2 :R57 false.
+
+            FILTER (?itm1 != ?itm2)
+
+        }
+        """
+    )
+
+with I803.scope("assertions") as cm:
+    cm.new_rel(cm.p1, cm.rel1_not, cm.itm2, qualifiers=[p.qff_has_rule_ptg_mode(5)])
+
+
+# ###############################################################################
+
+
+
 
 # This rule takes too long:
 

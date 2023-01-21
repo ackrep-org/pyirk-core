@@ -2154,10 +2154,23 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
             araw = p.ruleengine.AlgorithmicRuleApplicationWorker()
             res = araw.experiment(zb, zr.add_stm_by_exclusion)
 
-
         self.assertEqual(len(res.new_statements), 1)
         self.assertEqual(zb.I9848["Norwegian"].zb__R8098__has_house_color, zb.I4118["yellow"])
-        # IPS()
+
+    def test_d15__zebra_puzzle_stage02(self):
+
+        zb = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA_BASE_DATA, prefix="zb")
+        zr = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA_RULES, prefix="zr", reuse_loaded=True)
+        zp = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA02, prefix="zp")
+
+        # this will change soon
+        self.assertNotIn(zb.I5209["red"], zp.person3.zb__R1055__has_not_house_color)
+
+        res = p.ruleengine.apply_semantic_rules(
+            zr.I803, mod_context_uri=zb.__URI__
+        )
+        self.assertEqual(len(res.new_statements), 88)
+        self.assertIn(zb.I5209["red"], zp.person3.zb__R1055__has_not_house_color)
 
     # @unittest.skip("currently too slow")
     def test_e01__zebra_puzzle_stage02(self):
@@ -2517,19 +2530,46 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         res = p.ruleengine.apply_semantic_rule(
             zp.zr.I720["rule: replace (some) same_as-items"], mod_context_uri=TEST_BASE_URI
         )
-        reports.append(zb.report(display=False, title="I720_(4"))
+        reports.append(zb.report(display=False, title=res.rule.short_key))
         result_history.append(res)
         self.assertEqual(len(res.new_statements), 21)
 
         res = p.ruleengine.apply_semantic_rule(zp.zr.I701, mod_context_uri=TEST_BASE_URI)
-        res = p.ruleengine.apply_semantic_rule(zp.zr.I702, mod_context_uri=TEST_BASE_URI)
-        res = p.ruleengine.apply_semantic_rule(zp.zr.I730, mod_context_uri=TEST_BASE_URI)
-        res = p.ruleengine.apply_semantic_rule(zp.zr.I725, mod_context_uri=TEST_BASE_URI)
-        res = p.ruleengine.apply_semantic_rule(zp.zr.I741, mod_context_uri=TEST_BASE_URI)
-        res = p.ruleengine.apply_semantic_rule(zp.zr.I792, mod_context_uri=TEST_BASE_URI)
-        res = p.ruleengine.apply_semantic_rule(zp.zr.I798, mod_context_uri=TEST_BASE_URI)
+        reports.append(zb.report(display=False, title=res.rule.short_key))
+        result_history.append(res)
 
-        IPS()
+        res = p.ruleengine.apply_semantic_rule(zp.zr.I702, mod_context_uri=TEST_BASE_URI)
+        reports.append(zb.report(display=False, title=res.rule.short_key))
+        result_history.append(res)
+
+        res = p.ruleengine.apply_semantic_rule(zp.zr.I730, mod_context_uri=TEST_BASE_URI)
+        reports.append(zb.report(display=False, title=res.rule.short_key))
+        result_history.append(res)
+
+        res = p.ruleengine.apply_semantic_rule(zp.zr.I725, mod_context_uri=TEST_BASE_URI)
+        reports.append(zb.report(display=False, title=res.rule.short_key))
+        result_history.append(res)
+
+        res = p.ruleengine.apply_semantic_rule(zp.zr.I741, mod_context_uri=TEST_BASE_URI)
+        reports.append(zb.report(display=False, title=res.rule.short_key))
+        result_history.append(res)
+
+        #
+        res = p.ruleengine.apply_semantic_rules(zr.I803, mod_context_uri=zb.__URI__)
+        reports.append(zb.report(display=False, title=res.rule.short_key))
+        result_history.append(res)
+
+        res = p.ruleengine.apply_semantic_rule(zp.zr.I792, mod_context_uri=TEST_BASE_URI)
+        reports.append(zb.report(display=False, title=res.rule.short_key))
+        result_history.append(res)
+
+        res = p.ruleengine.apply_semantic_rule(zp.zr.I798, mod_context_uri=TEST_BASE_URI)
+        reports.append(zb.report(display=False, title=res.rule.short_key))
+        result_history.append(res)
+
+        self.assertEqual(len(res.new_statements), 8)
+
+        # IPS()
 
 
 class Test_Z_Core(HouskeeperMixin, unittest.TestCase):

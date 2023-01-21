@@ -2240,6 +2240,16 @@ class RuleResult:
         self.extend(part)
         self.partial_results.append(part)
 
+    def __repr__(self):
+        if self.apply_time is None:
+            aplt = "? s"
+        else:
+            aplt = f"{round(self.apply_time, 3)} s"
+        res = (
+            f"{type(self).__name__} ({aplt}): new_stms: {len(self.new_statements)}, parts: {len(self.partial_results)}"
+        )
+        return res
+
     @property
     def rule(self):
         """

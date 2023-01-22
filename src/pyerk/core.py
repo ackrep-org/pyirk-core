@@ -15,6 +15,7 @@ import re as regex
 from addict import Dict as attr_dict
 from typing import Dict, Union, List, Iterable, Optional
 from rdflib import Literal
+import pydantic
 import re
 
 from pyerk import auxiliary as aux
@@ -70,6 +71,48 @@ if os.environ.get("IPYDEX_AIOE") == "true":
 """
 
 allowed_literal_types = (str, bool, float, int, complex)
+
+
+# copied from yamlpyowl project
+def check_type(obj, expected_type, strict=True):
+    """
+    Use the pydantic package to check for (complex) types from the typing module.
+    If type checking passes returns `True`. This allows to use `assert check_type(...)` which allows to omit those
+    type checks (together with other assertions) for performance reasons, e.g. with `python -O ...` .
+    :param obj:             the object to check
+    :param expected_type:   primitive or complex type (like typing.List[dict])
+    :return:                True (or raise an TypeError)
+    """
+
+    class Model(pydantic.BaseModel):
+        data: expected_type
+
+        class Config:
+            # necessary because https://github.com/samuelcolvin/pydantic/issues/182
+            # otherwise check_type raises() an error for types as Dict[str, owl2.Thing]
+            arbitrary_types_allowed = True
+            smart_union=True  # seems to be necessary to respect the ordering of types inside a unioin
+
+    # convert ValidationError to TypeError if the obj does not match the expected type
+    try:
+        mod = Model(data=obj)
+    except pydantic.ValidationError as ve:
+        if not strict:
+            return False
+        msg = (
+            f"Unexpected type. Got: {type(obj)}. Expected: {expected_type}. "
+            f"Further Information:\n {str(ve.errors())}"
+        )
+        raise TypeError(msg)
+
+    if not mod.data == obj:
+        if not strict:
+            return False
+        msg = (
+            f"While type-checking: Unexpected inner structure of parsed model. Expected: {expected_type}"
+        )
+        raise TypeError(msg)
+    return True
 
 
 class Entity(abc.ABC):

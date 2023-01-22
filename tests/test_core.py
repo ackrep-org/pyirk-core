@@ -3,6 +3,7 @@ import sys
 import os
 from os.path import join as pjoin
 import random
+from typing import Dict, List, Tuple, Union
 
 import rdflib
 
@@ -1173,6 +1174,42 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
             itm1.set_relation(R301, True, prevent_duplicate=True)
             self.assertEqual(len(itm1.R301), 2)
 
+    def test_d13__check_type(self):
+
+        import json
+
+        # created with json.dumps and textwrap.fill(json_str, width=100)
+        raw_data = """
+        {"erk:/ocse/0.2/zebra_base_data#R8216": [[5, "erk:/ocse/0.2/zebra_base_data#I4037"], [5,
+        "erk:/ocse/0.2/zebra_base_data#I9848"], [5, "erk:/ocse/0.2/zebra_base_data#I3132"], [5,
+        "erk:/ocse/0.2/zebra_base_data#I2552"], [5, "erk:/ocse/0.2/zebra_base_data#I5931"]],
+        "erk:/ocse/0.2/zebra_base_data#R9040": [[5, "erk:/ocse/0.2/zebra_base_data#I4037"], [5,
+        "erk:/ocse/0.2/zebra_base_data#I9848"], [5, "erk:/ocse/0.2/zebra_base_data#I3132"], [5,
+        "erk:/ocse/0.2/zebra_base_data#I2552"], [5, "erk:/ocse/0.2/zebra_base_data#I5931"]],
+        "erk:/ocse/0.2/zebra_base_data#R5611": [[5, "erk:/ocse/0.2/zebra_base_data#I4037"], [5,
+        "erk:/ocse/0.2/zebra_base_data#I9848"], [5, "erk:/ocse/0.2/zebra_base_data#I3132"], [5,
+        "erk:/ocse/0.2/zebra_base_data#I2552"], [5, "erk:/ocse/0.2/zebra_base_data#I5931"]],
+        "erk:/ocse/0.2/zebra_base_data#R8098": [[5, "erk:/ocse/0.2/zebra_base_data#I4037"], [5,
+        "erk:/ocse/0.2/zebra_base_data#I9848"], [5, "erk:/ocse/0.2/zebra_base_data#I3132"], [5,
+        "erk:/ocse/0.2/zebra_base_data#I2552"], [5, "erk:/ocse/0.2/zebra_base_data#I5931"]],
+        "erk:/ocse/0.2/zebra_base_data#R8592": [[5, "erk:/ocse/0.2/zebra_base_data#I4037"], [5,
+        "erk:/ocse/0.2/zebra_base_data#I9848"], [5, "erk:/ocse/0.2/zebra_base_data#I3132"], [5,
+        "erk:/ocse/0.2/zebra_base_data#I2552"], [5, "erk:/ocse/0.2/zebra_base_data#I5931"]]}
+        """.replace("\n","")
+        data = json.loads(raw_data)
+
+        self.assertFalse(p.check_type(data, Dict[str, int], strict=False))
+        self.assertFalse(p.check_type(data, Dict[str, dict], strict=False))
+        self.assertFalse(p.check_type(data, Dict[str, Dict], strict=False))
+        self.assertFalse(p.check_type(data, Dict[str, List[int]], strict=False))
+        self.assertFalse(p.check_type(data, Dict[str, List[List[int]]], strict=False))
+
+        # pydantic has nontrivial behavior abour Unions. This requires smart_unions=True
+        q = [5, 'erk:/ocse/0.2/zebra_base_data#I9848']
+        p.check_type(q, List[Union[int, str]])
+
+        # this is what we actually want to test (note that the inner list could be specified more precisely)
+        self.assertTrue(p.check_type(data, Dict[str, List[List[Union[int, str]]]], strict=False))
 
 
 class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):

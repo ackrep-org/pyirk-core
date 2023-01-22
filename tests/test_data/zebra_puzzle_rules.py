@@ -354,14 +354,19 @@ def exclude_house_numbers_for_neighbour(self, nbr_hn: p.Item, primal_house_index
 
     res = p.RuleResult()
 
+    if nbr_hn.R40__has_index:
+        # the index of this house is already known -> no further information required
+        return res
+
     possible_indices = {primal_house_index - 1, primal_house_index + 1}
     impossible_indices = set(zb.possible_house_indices.R39__has_element).difference(possible_indices)
 
     imp_idcs_tup = p.new_tuple(*impossible_indices)
 
-    stm = nbr_hn.set_relation(zb.R8139["has impossible indices"], imp_idcs_tup)
-    res.add_statement(stm)
-    res.add_entity(imp_idcs_tup)
+    stm = nbr_hn.set_relation(zb.R8139["has impossible indices"], imp_idcs_tup, prevent_duplicate=True)
+    if stm:
+        res.add_statement(stm)
+        res.add_entity(imp_idcs_tup)
     return res
 
 
@@ -384,7 +389,6 @@ with I763.scope("context") as cm:
 
 with I763.scope("premises") as cm:
     cm.new_rel(cm.p1, zb.R2353["lives immediately right of"], cm.p2)
-
 
 with I763.scope("assertions") as cm:
     cm.new_rel(
@@ -420,6 +424,10 @@ def create_none_of_tuple(self, hn_item, imp_idcs_tup):
 
     res = p.RuleResult()
 
+    if hn_item.R40__has_index:
+        # the index of this house is already known -> no further information required
+        return res
+
     all_house_numbers: list = zb.all_house_number_tuple.R39__has_element
 
     # tuple-item -> list
@@ -427,6 +435,7 @@ def create_none_of_tuple(self, hn_item, imp_idcs_tup):
 
     impossible_house_numbers = [h for h in all_house_numbers if getattr(h, "R40__has_index")[0] in imp_idcs]
 
+    # possible problem: this creates a new tuple whose key might have been used during loading rdf data
     imp_hn_tup = p.new_tuple(*impossible_house_numbers)
 
     stm = hn_item.set_relation(p.R52["is none of"], imp_hn_tup)
@@ -488,7 +497,7 @@ with I780.scope("assertions") as cm:
 
     cm.new_consequent_func(tuple_difference_factory, cm.tup1, cm.tup2, anchor_item=cm.tup_diff)
 
-    cm.new_rel(cm.itm1, p.R56["is one of"], cm.tup_diff)
+    cm.new_rel(cm.itm1, p.R56["is one of"], cm.tup_diff, qualifiers=[p.qff_has_rule_ptg_mode(5)])
 
 # ###############################################################################
 
@@ -753,8 +762,8 @@ with I800.scope("premises") as cm:
     cm.new_rel(cm.rel1, zb.R2850["is functional activity"], True)
 
 with I800.scope("assertions") as cm:
-    cm.new_rel(cm.rel1_not, zb.R6020["is opposite of functional activity"], True)
-    cm.new_rel(cm.rel1_not, p.R71["enforce matching result type"], True)
+    cm.new_rel(cm.rel1_not, zb.R6020["is opposite of functional activity"], True, qualifiers=[p.qff_has_rule_ptg_mode(5)])
+    cm.new_rel(cm.rel1_not, p.R71["enforce matching result type"], True, qualifiers=[p.qff_has_rule_ptg_mode(5)])
 
 
 

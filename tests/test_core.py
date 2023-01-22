@@ -2252,7 +2252,6 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
             msg = '<Item Ia1158["person1"]> has too many `R50__is_differnt_from` statements'
             self.assertEqual(err.exception.args[0], msg)
 
-
     # @unittest.skip("currently too slow")
     def test_e01__zebra_puzzle_stage02(self):
         """
@@ -2657,10 +2656,61 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         araw = p.ruleengine.AlgorithmicRuleApplicationWorker()
         pred_report = araw.get_predicates_report(zb)
 
-        # IPS()
         with p.uri_context(uri=TEST_BASE_URI):
             res = araw.experiment(zb, zr.add_stm_by_exclusion)
-        # IPS()
+
+        # for performance reasons we continue with a test_e03
+
+    def test_e03__zebra_puzzle_stage02(self):
+
+        zb = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA_BASE_DATA, prefix="zb")
+        zr = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA_RULES, prefix="zr", reuse_loaded=True)
+        zp = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA02, prefix="zp")
+
+        fpath = pjoin(TEST_DATA_DIR1, "test_zebra_triples3.nt")
+        with p.uri_context(uri=TEST_BASE_URI):
+            c = p.io.import_stms_from_rdf_triples(fpath)  #noqa
+
+            # these entities had been replaced by rule I720["rule: replace (some) same_as-items"]
+            p.core._unlink_entity(zp.person9.uri, remove_from_mod=True)
+            p.core._unlink_entity(zp.person2.uri, remove_from_mod=True)
+            p.core._unlink_entity(zp.person5.uri, remove_from_mod=True)
+            p.core._unlink_entity(zp.person12.uri, remove_from_mod=True)
+
+        all_relevant_rules = [
+            # zr.I701["rule: imply parent relation of a subrelation"],
+            zr.I702["rule: add reverse statement for symmetrical relations"],
+            zr.I705["rule: deduce trivial different-from-facts"],
+            zr.I710["rule: identify same items via zb__R2850__is_functional_activity"],
+            zr.I720["rule: replace (some) same_as-items"],
+            zr.I725["rule: deduce facts from inverse relations"],
+            zr.I730["rule: deduce negative facts for neighbours"],
+            zr.I740["rule: deduce more negative facts from negative facts"],
+            zr.I741["rule: deduce more negative facts from negative facts"],
+            zr.I750["rule: every human lives in one house"],
+            zr.I760["rule: deduce impossible house indices of neighbour"],
+            zr.I763["rule: deduce impossible house index for left-right neighbours"],
+            zr.I770["rule: deduce impossible house_number items from impossible indices"],
+            # zr.I780["rule: infere from 'is none of' -> 'is one of'"],  # not useful for iterating
+            zr.I790["rule: infere from 'is one of' -> 'is same as'"],
+            #  zr.I792["rule: deduce different-from-facts from negative facts"],  # slow
+            zr.I794["rule: deduce neighbour-facts from house indices"],
+            zr.I796["rule: deduce different-from facts for neighbour-pairs"],
+            zr.I798["rule: deduce negative facts from different-from-facts"],
+            zr.I800["rule: mark relations which are opposite of functional activities"],
+            zr.I820["rule: deduce personhood by exclusion"],
+            zr.I830["rule: ensure absence of contradictions (5 different-from statements)"],
+        ]
+
+        araw = p.ruleengine.AlgorithmicRuleApplicationWorker()
+        p.ruleengine.VERBOSITY = True
+
+        with p.uri_context(uri=TEST_BASE_URI):
+            # res = p.ruleengine.apply_semantic_rules(*all_relevant_rules)
+            res2 = araw.experiment(zb, zr.add_stm_by_exclusion)
+            pred_report = araw.get_predicates_report(zb)
+
+        # IPS() # WIP
 
 
 class Test_Z_Core(HouskeeperMixin, unittest.TestCase):

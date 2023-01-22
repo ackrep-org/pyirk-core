@@ -458,7 +458,7 @@ def report(display=True, title=""):
     # all_humans = I7435["human"].get_inv_relations("R4", return_subj=True)
 
     # this makes this function paste-able
-    human = p.ds.get_entity_by_uri(f"erk:/ocse/0.2/zebra_base_data#I7435")
+    human = p.ds.get_entity_by_uri("erk:/ocse/0.2/zebra_base_data#I7435")
     all_humans = human.get_inv_relations("R4", return_subj=True)
 
     res = []

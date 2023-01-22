@@ -840,6 +840,11 @@ class DataStore:
         """
 
         subj_uri = stm.relation_tuple[0].uri
+        try:
+            subj_label = str(stm.relation_tuple[0].R1)
+        except:
+            subj_label = "<unknown label>"
+
         rel_uri = stm.relation_tuple[1].uri
         aux.ensure_valid_uri(subj_uri)
         aux.ensure_valid_uri(rel_uri)
@@ -873,9 +878,9 @@ class DataStore:
                 new_lang = get_language_of_str_literal(stm.object)
                 if new_lang in lang_list:
                     msg = (
-                        f"for subject {subj_uri} there already exists statements for relation {stm.predicate} with "
-                        f"the object languages {lang_list}. This relation is functional for each language (R32). "
-                        f"Thus another statemen with language `{new_lang}` is not allowed."
+                        f"for subject {subj_uri} ({subj_label}) there already exists statements for relation "
+                        f"{stm.predicate} with the object languages {lang_list}. This relation is functional for "
+                        f"each language (R32). Thus another statement with language `{new_lang}` is not allowed."
                     )
                     raise aux.FunctionalRelationError(msg)
             stm_list.append(stm)
@@ -1253,6 +1258,9 @@ class Item(Entity):
 
         self.short_key = res.short_key
         self.uri = aux.make_uri(self.base_uri, self.short_key)
+
+        assert self.uri not in ds.items, f"{self.uri} is already occupied. Cannot create new item."
+
         self._set_relations_from_init_kwargs(**kwargs)
 
         self.__post_init__()
@@ -1421,7 +1429,7 @@ def pop_uri_based_key(prefix: Optional[str] = None, prefix2: str = "") -> Union[
     """
 
     active_mod_uri = get_active_mod_uri()
-    km = ds.uri_keymanager_dict[active_mod_uri]
+    km: KeyManager = ds.uri_keymanager_dict[active_mod_uri]
     num_key = km.pop()
     if prefix is None:
         assert not prefix2

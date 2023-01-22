@@ -870,7 +870,7 @@ with I810.scope("assertions") as cm:
     pass
 
 # this is a temporary solution until the AlgorithmicRuleApplicationWorker is implemented
-I810.cheat = [p.ruleengine.AlgorithmicRuleApplicationWorker.experiment, zb, add_stm_by_exclusion]
+I810.cheat = [p.ruleengine.AlgorithmicRuleApplicationWorker.hardcoded_I810, zb, add_stm_by_exclusion]
 
 with I820.scope("context") as cm:
 
@@ -919,6 +919,14 @@ I830 = p.create_item(
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
+I830.cheat = [
+    p.ruleengine.AlgorithmicRuleApplicationWorker.hardcoded_I830,
+    zb, p.raise_contradiction,
+    "{} has too many `R50__is_differnt_from` statements"
+]
+
+
+# currently obsolete because of hardcoded cheat
 with I830.scope("context") as cm:
 
     cm.new_var(p0=p.instance_of(p.I1["general item"]))

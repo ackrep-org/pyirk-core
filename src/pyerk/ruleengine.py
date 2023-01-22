@@ -1377,7 +1377,10 @@ class AlgorithmicRuleApplicationWorker:
         self.parent = Container(rule=None)
 
     @staticmethod
-    def experiment(zb, consequent_function: callable):
+    def hardcoded_I810(zb, consequent_function: callable):
+        """
+        Convert 4 negative facts into one positive fact
+        """
         t0 = time.time()
 
         # in the future this logic will be parsed from the graph
@@ -1403,6 +1406,47 @@ class AlgorithmicRuleApplicationWorker:
 
             # TODO: add result.extend_with_binding_info(cfr, res_dict), see above
             final_result.extend(tmp_res)
+        return final_result
+
+    @staticmethod
+    def hardcoded_I830(zb, consequent_function: callable, *args):
+        """
+        Raise exception if one person is different from more than 4 non-placeholder persons
+        """
+        t0 = time.time()
+
+        # in the future this logic will be parsed from the graph
+        h_list = p.get_instances_of(zb.I7435["human"], filter=lambda itm: not itm.R20__has_defining_scope)
+        rel_list = [p.R50["is different from"]]
+        final_result = p.core.RuleResult()
+        final_result.apply_time = time.time() - t0
+
+        # filter out R57__is_placeholder items
+        result_filters = [p.is_relevant_item]
+        result_conditions = [lambda res: len(res) > 4]
+
+        result_list = []
+        for subj, pred in it.product(h_list, rel_list):
+            tmp_res_list = subj.get_relations(pred.uri, return_obj=True)
+
+            for rf in result_filters:
+                tmp_res_list = [res for res in tmp_res_list if rf(res)]
+
+            for cond_func in result_conditions:
+                if not cond_func(tmp_res_list):
+                    break
+            else:
+                # all conditions are met
+                result_list.append((subj, pred, *tmp_res_list))
+
+        for result_args in result_list:
+
+            assert len(args) == 1  # this is like ("{} has too many `R50__is_differnt_from` statements",)
+            tmp_res = consequent_function(None, *args, result_args[0])
+
+            # TODO: add result.extend_with_binding_info(cfr, res_dict), see above
+            final_result.extend(tmp_res)
+
         return final_result
 
     def get_single_predicate_report(self, pred):

@@ -2233,10 +2233,17 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
 
         # get all non-placeholder etc humans
         h_list = p.get_instances_of(zb.I7435["human"], filter=p.is_relevant_item)
+        # get all placeholder humans
+
+        ph_list = p.get_instances_of(zb.I7435["human"], filter=lambda itm: itm.R57__is_placeholder)
+
         self.assertEqual(len(h_list), 5)
 
         with p.uri_context(uri=TEST_BASE_URI):
 
+            zp.person1.set_mutliple_relations(p.R50["is different from"], ph_list)
+
+            # this does nothing because we only have 'meaningless' R50-statements
             res = p.ruleengine.apply_semantic_rules(
                 zr.I830["rule: ensure absence of contradictions (5 different-from statements)"]
             )

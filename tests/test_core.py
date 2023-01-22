@@ -2621,7 +2621,17 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
 
         self.assertEqual(len(res.new_statements), 8)
 
-        # IPS()
+        res = p.ruleengine.apply_semantic_rule(zp.zr.I820, mod_context_uri=TEST_BASE_URI)
+        reports.append(zb.report(display=False, title=res.rule.short_key))
+        result_history.append(res)
+
+        araw = p.ruleengine.AlgorithmicRuleApplicationWorker()
+        pred_report = araw.get_predicates_report(zb)
+
+        IPS()
+        with p.uri_context(uri=TEST_BASE_URI):
+            res = araw.experiment(zb, zr.add_stm_by_exclusion)
+        IPS()
 
 
 class Test_Z_Core(HouskeeperMixin, unittest.TestCase):

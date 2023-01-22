@@ -802,6 +802,53 @@ with I803.scope("assertions") as cm:
 # ###############################################################################
 
 
+I820 = p.create_item(
+    R1__has_label="rule: deduce personhood by exclusion",
+    R4__is_instance_of=p.I41["semantic rule"],
+)
+
+with I820.scope("context") as cm:
+
+    cm.new_var(p0=p.instance_of(p.I1["general item"]))
+
+    cm.new_var(p1=p.instance_of(p.I1["general item"]))
+    cm.new_var(p2=p.instance_of(p.I1["general item"]))
+    cm.new_var(p3=p.instance_of(p.I1["general item"]))
+    cm.new_var(p4=p.instance_of(p.I1["general item"]))
+    cm.new_var(p5=p.instance_of(p.I1["general item"]))
+
+    cm.uses_external_entities(zb.I7435["human"])
+
+
+with I820.scope("premises") as cm:
+    cm.new_rel(cm.p0, p.R4["is instance of"], zb.I7435["human"], overwrite=True)
+
+    cm.new_rel(cm.p1, p.R4["is instance of"], zb.I7435["human"], overwrite=True)
+    cm.new_rel(cm.p2, p.R4["is instance of"], zb.I7435["human"], overwrite=True)
+    cm.new_rel(cm.p3, p.R4["is instance of"], zb.I7435["human"], overwrite=True)
+    cm.new_rel(cm.p4, p.R4["is instance of"], zb.I7435["human"], overwrite=True)
+    cm.new_rel(cm.p5, p.R4["is instance of"], zb.I7435["human"], overwrite=True)
+
+    cm.new_rel(cm.p0, p.R50["is different from"], cm.p1)
+    cm.new_rel(cm.p0, p.R50["is different from"], cm.p2)
+    cm.new_rel(cm.p0, p.R50["is different from"], cm.p3)
+    cm.new_rel(cm.p0, p.R50["is different from"], cm.p4)
+
+    cm.new_rel(cm.p0, p.R57["is placeholder"], True)
+
+    cm.new_rel(cm.p1, p.R57["is placeholder"], False)
+    cm.new_rel(cm.p2, p.R57["is placeholder"], False)
+    cm.new_rel(cm.p3, p.R57["is placeholder"], False)
+    cm.new_rel(cm.p4, p.R57["is placeholder"], False)
+    cm.new_rel(cm.p5, p.R57["is placeholder"], False)
+
+with I820.scope("assertions") as cm:
+    cm.new_rel(cm.p0, p.R47["is same as"], cm.p5, qualifiers=[p.qff_has_rule_ptg_mode(5)])
+
+
+# ###############################################################################
+
+
 
 
 # This rule takes too long:

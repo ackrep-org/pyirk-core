@@ -2628,10 +2628,10 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         araw = p.ruleengine.AlgorithmicRuleApplicationWorker()
         pred_report = araw.get_predicates_report(zb)
 
-        IPS()
+        # IPS()
         with p.uri_context(uri=TEST_BASE_URI):
             res = araw.experiment(zb, zr.add_stm_by_exclusion)
-        IPS()
+        # IPS()
 
 
 class Test_Z_Core(HouskeeperMixin, unittest.TestCase):

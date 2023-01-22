@@ -801,6 +801,48 @@ with I803.scope("assertions") as cm:
 
 # ###############################################################################
 
+# these functions are needed by ruleengine.AlgorithmicRuleApplicationWorker.experiment
+
+def is_relevant_item(itm):
+    return not itm.R57__is_placeholder and not itm.R20__has_defining_scope
+
+
+def add_stm_by_exclusion(self, p1, oppo_rel, not_itm1, not_itm2, not_itm3, not_itm4):
+    """
+    Assume that four negative facts are known and add the corresponding positive fact
+    """
+
+    # check arguments:
+    args = [elt for elt in (not_itm1, not_itm2, not_itm3, not_itm4) if is_relevant_item(elt)]
+    if not len(args) == 4:
+        return p.RuleResult()
+
+    itm_type = not_itm1.R4__is_instance_of
+    assert itm_type == not_itm2.R4__is_instance_of
+    assert itm_type == not_itm3.R4__is_instance_of
+    assert itm_type == not_itm4.R4__is_instance_of
+
+    all_itms = itm_type.get_inv_relations("R4__is_instance_of", return_subj=True)
+
+    all_itms_map = dict(
+        [(itm.uri, itm) for itm in all_itms if is_relevant_item(itm)]
+    )
+    all_itms_set = set(all_itms_map.keys())
+
+    assert len(all_itms_set) == 5
+    rest_uris = list(all_itms_set.difference((not_itm1.uri, not_itm2.uri, not_itm3.uri, not_itm4.uri)))
+    assert len(rest_uris) == 1
+    rest = all_itms_map[rest_uris[0]]
+
+    rel1 = oppo_rel.R43__is_opposite_of[0]
+    res = p.RuleResult()
+    if not p1.get_relations(rel1.uri):
+        stm = p1.set_relation(rel1, rest)
+        res.add_statement(stm)
+    return res
+
+# ###############################################################################
+
 
 I820 = p.create_item(
     R1__has_label="rule: deduce personhood by exclusion",
@@ -849,107 +891,6 @@ with I820.scope("assertions") as cm:
 # ###############################################################################
 
 
-
-
-# This rule takes too long:
-
-I810 = p.create_item(
-    R1__has_label="rule: deduce positive fact from 4 negative facts",
-    R2__has_description=("deduce positive fact from 4 negative facts (graph version)"),
-    R4__is_instance_of=p.I41["semantic rule"],
-)
-
-with I810.scope("context") as cm:
-    cm.new_var(p1=p.instance_of(zb.I7435["human"]))
-    cm.new_var(itm1=p.instance_of(p.I1["general item"]))
-    cm.new_var(itm2=p.instance_of(p.I1["general item"]))
-    cm.new_var(itm3=p.instance_of(p.I1["general item"]))
-    cm.new_var(itm4=p.instance_of(p.I1["general item"]))
-
-    cm.new_var(itm_type=p.instance_of(p.I1["general item"]))
-
-    # cm.new_rel_var("rel1")
-    cm.new_rel_var("rel1_not")
-    cm.uses_external_entities(zb.I7435["human"])
-
-with I810.scope("premises") as cm:
-    cm.new_rel(cm.p1, p.R4["is instance of"], zb.I7435["human"], overwrite=True)
-
-    cm.new_rel(cm.p1, cm.rel1_not, cm.itm1)
-    cm.new_rel(cm.p1, cm.rel1_not, cm.itm2)
-    cm.new_rel(cm.p1, cm.rel1_not, cm.itm3)
-    cm.new_rel(cm.p1, cm.rel1_not, cm.itm4)
-
-    # TODO: bisher werden in den result_maps nur die knoten aufeinander abgebildet.
-    # ich könnte manuell noch die kanten hinzufügen (Kartesisches Produkt)
-    # dann werden die nicht passenden Kanten-Kombinationen rausgefiltert. dazu condition function für relationen
-    # anlegen
-
-    # Alternative: zweistufiges vorgehen: Regel 1: relevante Relationen markieren.
-    # 2. Regel: nur markierte Relationen als prädikate verwenden.
-    # -> ich muss trotzdem sicherstellen, dass rel1 überall identisch ist und nicht nur die gleiche Markierung hat.
-    #-> diese Alternative ist nicht sinnvoll.
-
-
-
-    cm.new_rel(cm.itm1, p.R4["is instance of"], cm.itm_type, overwrite=True)
-    cm.new_rel(cm.itm2, p.R4["is instance of"], cm.itm_type, overwrite=True)
-    cm.new_rel(cm.itm3, p.R4["is instance of"], cm.itm_type, overwrite=True)
-    cm.new_rel(cm.itm4, p.R4["is instance of"], cm.itm_type, overwrite=True)
-
-    cm.new_condition_func(p.label_compare_method, cm.itm1, cm.itm2)
-    cm.new_condition_func(p.label_compare_method, cm.itm2, cm.itm3)
-    cm.new_condition_func(p.label_compare_method, cm.itm3, cm.itm4)
-
-    cm.new_rel(cm.rel1_not, zb.R6020["is opposite of functional activity"], True)
-
-    cm.new_rel(cm.rel1_not, p.R71["enforce matching result type"], True)
-    cm.new_condition_func(lambda self, rel, type_entity: rel.R11[0] == type_entity, cm.rel1_not, cm.itm_type)
-
-
-def is_relevant_item(itm):
-    return not itm.R57__is_placeholder and not itm.R20__has_defining_scope
-
-
-def add_stm_by_exclusion(self, p1, oppo_rel, not_itm1, not_itm2, not_itm3, not_itm4):
-    """
-    Assume that four negative facts are known and add the corresponding positive fact
-    """
-
-    # check arguments:
-    args = [elt for elt in (not_itm1, not_itm2, not_itm3, not_itm4) if is_relevant_item(elt)]
-    if not len(args) == 4:
-        return p.RuleResult()
-
-    itm_type = not_itm1.R4__is_instance_of
-    assert itm_type == not_itm2.R4__is_instance_of
-    assert itm_type == not_itm3.R4__is_instance_of
-    assert itm_type == not_itm4.R4__is_instance_of
-
-    all_itms = itm_type.get_inv_relations("R4__is_instance_of", return_subj=True)
-
-    all_itms_map = dict(
-        [(itm.uri, itm) for itm in all_itms if is_relevant_item(itm)]
-    )
-    all_itms_set = set(all_itms_map.keys())
-
-    assert len(all_itms_set) == 5
-    rest_uris = list(all_itms_set.difference((not_itm1.uri, not_itm2.uri, not_itm3.uri, not_itm4.uri)))
-    assert len(rest_uris) == 1
-    rest = all_itms_map[rest_uris[0]]
-
-    rel1 = oppo_rel.R43__is_opposite_of[0]
-    res = p.RuleResult()
-    if not p1.get_relations(rel1.uri):
-        stm = p1.set_relation(rel1, rest)
-        res.add_statement(stm)
-    return res
-
-
-with I810.scope("assertions") as cm:
-    cm.new_consequent_func(add_stm_by_exclusion, cm.p1, cm.rel1_not, cm.itm1, cm.itm2, cm.itm3, cm.itm4)
-# continue with: 4 opposite_statements -> 1 primal statement
-# identify persons by functional activity
 
 
 # ###############################################################################

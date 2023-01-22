@@ -56,6 +56,8 @@ def apply_semantic_rules(*rules: List, mod_context_uri: str = None) -> List[core
     for rule in rules:
         res = apply_semantic_rule(rule, mod_context_uri)
         total_res.add_partial(res)
+        if res.exception:
+             break
 
     return total_res
 
@@ -69,7 +71,12 @@ def apply_semantic_rule(rule: core.Item, mod_context_uri: str = None) -> List[co
     if VERBOSITY:
         print("applying", rule)
     ra = RuleApplicator(rule, mod_context_uri=mod_context_uri)
-    res = ra.apply()
+    try:
+        res = ra.apply()
+    except core.aux.RuleTermination as ex:
+        res = core.RuleResult()
+        res._rule = rule
+        res.exception = ex
 
     if VERBOSITY:
         print("  ", res, "\n")
@@ -1450,6 +1457,7 @@ class AlgorithmicRuleApplicationWorker:
         final_result.apply_time = time.time() - t0
         return final_result
 
+    @staticmethod
     def hardcoded_I840(zb, consequent_function: callable, *args):
         t0 = time.time()
 
@@ -1479,6 +1487,7 @@ class AlgorithmicRuleApplicationWorker:
 
         final_result = p.core.RuleResult()
         final_result.apply_time = time.time() - t0
+        final_result.dbg = result_list
 
         return final_result
 
@@ -1512,12 +1521,12 @@ class AlgorithmicRuleApplicationWorker:
 
         return possible_combination_tuples
 
-    def get_predicates_report(self, zb):
+    def get_predicates_report(self, predicate_list):
         """
         Gather data for each relevant predicate how many possibilities of subject-object-pairs exisit, which do
         not contradict an `oppo_pred`-statement, where `oppo_pred` is 'R43__is_opposite_of' the considered predicate.
         """
-        func_act_list = p.ds.get_subjects_for_relation(zb.R2850["is functional activity"].uri, filter=True)
+
 
         pred_report = Container()
         pred_report.counters = []
@@ -1525,7 +1534,8 @@ class AlgorithmicRuleApplicationWorker:
         pred_report.total_prod = 1
         pred_report.predicates = []
         pred_report.stable_candidates = Container()
-        for pred in func_act_list:
+        pred_report.hypothesis_candidates = []
+        for pred in predicate_list:
             possible_combination_tuples = self.get_single_predicate_report(pred)
             if len(possible_combination_tuples) == 0:
                 continue
@@ -1547,4 +1557,72 @@ class AlgorithmicRuleApplicationWorker:
             for sub_uri, obj_dict in tmp_def_dict.items():
                 pred_report.stable_candidates[pred.uri].append((len(obj_dict), sub_uri))
 
+                # store a list which allows easy access to remaining possibilities
+                tmp_list = [len(obj_dict), Container(pred=pred.uri, subj=sub_uri, objs=tuple(obj_dict.keys()))]
+                pred_report.hypothesis_candidates.append(tmp_list)
+
+        pred_report.hypothesis_candidates.sort(key=lambda elt: elt[0])
         return pred_report
+
+class HypothesisReasoner:
+
+    uri_suffix = "HYPOTHESIS"
+
+    def __init__(self, zb, base_uri):
+        self.zb = zb  # the base module (currently zebra-puzzle base data)
+        self.base_uri = base_uri
+        self.contex_uri = f"{base_uri}/{self.uri_suffix}"
+
+    def register_module(self):
+        keymanager = p.KeyManager()
+        p.register_mod(self.contex_uri, keymanager, check_uri=False)
+
+    def hypothesis_reasoning_step(self, rule_list):
+
+        # generate hypothesis
+        araw = AlgorithmicRuleApplicationWorker()
+        func_act_list = p.ds.get_subjects_for_relation(self.zb.R2850["is functional activity"].uri, filter=True)
+        pred_report = araw.get_predicates_report(predicate_list=func_act_list)
+
+        for pos_count, hypo_container in pred_report.hypothesis_candidates:
+             if pos_count == 1:
+                 # this information is already fixed. there is only this one possibility
+                 continue
+
+             subj = p.ds.get_entity_by_uri(hypo_container.subj)
+             pred = p.ds.get_entity_by_uri(hypo_container.pred)
+             objs = [p.ds.get_entity_by_uri(uri) for uri in hypo_container.objs]
+             break
+        else:
+            msg = "Unexpectedly only trivial remaining possibilities have been found."
+            raise NotImplementedError(msg)
+
+        result = Container()
+        result.stm_triples = [(subj, pred, obj) for obj in objs]
+        result.reasoning_results = []
+
+        for subj, pred, obj in result.stm_triples:
+
+            # test the consequences of an hypothesis inside an isolated module (which can be deleted if it failed)
+            self.register_module()
+            with p.uri_context(uri=self.contex_uri):
+                stm = subj.set_relation(pred, obj)
+                if VERBOSITY:
+                    print("\n"*2, "    Assuming", stm, "and testing\n\n")
+                while True:
+                    res = apply_semantic_rules(*rule_list)
+                    if res.exception or not res.new_statements:
+                        break
+                    IPS()
+                if isinstance(res.exception, p.core.aux.ReasoningGoalReached):
+                    print(p.aux.bgreen("puzzle solved"))
+                    result.reasoning_results.append(res)
+                    break  # break the for loop
+
+            if isinstance(res.exception, p.core.aux.LogicalContradiction):
+                print(p.aux.byellow("This hypothesis led to a contradiction:"), stm)
+
+                # delete all statements from this context
+                p.unload_mod(self.contex_uri)
+
+        IPS()

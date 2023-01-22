@@ -180,11 +180,15 @@ class FunctionalRelationError(PyERKError):
     pass
 
 
-class LogicalContradiction(PyERKError):
+class RuleTermination(PyERKError):
     pass
 
 
-class ReasoningGoalReached(PyERKError):
+class LogicalContradiction(RuleTermination):
+    pass
+
+
+class ReasoningGoalReached(RuleTermination):
     pass
 
 

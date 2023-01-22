@@ -2259,6 +2259,7 @@ class RuleResult:
         self.replacements = []
         self._rule = None
         self.apply_time = None
+        self.exception = None
 
         # dict like {rel_uri1: [stm1, stm2, ...]}
         # maps a relation uri to a list of statements which have this relation as predicate
@@ -2284,6 +2285,8 @@ class RuleResult:
         self.new_entities.extend(part.new_entities)
         self.unlinked_entities.extend(part.unlinked_entities)
         self.replacements.extend(part.replacements)
+        if part.exception:
+            self.exception = part.exception
 
     def add_partial(self, part: "RuleResult"):
         if self.apply_time is None:

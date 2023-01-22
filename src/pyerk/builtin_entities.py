@@ -2326,6 +2326,11 @@ def raise_contradiction(self, msg_template, *args):
     raise core.aux.LogicalContradiction(msg)
 
 
+def raise_reasoning_goal_reached(self, msg_template, *args):
+    msg = msg_template.format(*args)
+    raise core.aux.ReasoningGoalReached(msg)
+
+
 # ######################################################################################################################
 # Testing and debugging entities
 

@@ -915,7 +915,7 @@ with I820.scope("assertions") as cm:
 
 
 I830 = p.create_item(
-    R1__has_label="rule: ensure absence of contradictions (5 different-from statements)",
+    R1__has_label="rule: ensure absence of contradictions (5 different-from statements) (hardcoded cheat)",
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
@@ -964,9 +964,29 @@ with I830.scope("premises") as cm:
 with I830.scope("assertions") as cm:
     cm.new_consequent_func(p.raise_contradiction, "{} has too many `R50__is_differnt_from` statements", cm.p0)
 
-
-
 # ###############################################################################
+
+
+I840 = p.create_item(
+    R1__has_label="rule: detect if puzzle is solved (hardcoded cheat)",
+    R4__is_instance_of=p.I41["semantic rule"],
+)
+
+I840.cheat = [
+    p.ruleengine.AlgorithmicRuleApplicationWorker.hardcoded_I840,
+    zb, p.raise_reasoning_goal_reached,
+    "puzzle solved"
+]
+
+with I840.scope("context") as cm:
+    pass
+
+with I840.scope("premises") as cm:
+    pass
+
+with I840.scope("assertions") as cm:
+    pass
+
 # ###############################################################################
 
 p.end_mod()

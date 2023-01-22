@@ -2881,3 +2881,35 @@ class Test_07_import_export(HouskeeperMixin, unittest.TestCase):
             c = p.io.import_stms_from_rdf_triples(fpath)  #noqa
         self.assertEqual(zb.I9848["Norwegian"].zb__R8098__has_house_color, zb.I4118["yellow"])
         self.assertEqual(len(zb.I9848["Norwegian"].zb__R1055__has_not_house_color), 4)
+
+    def test_b04__zebra_puzzle_unlinked_items(self):
+        zb = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA_BASE_DATA, prefix="zb")
+        zp = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA02, prefix="zp")
+
+        # persons1 ... person12 exists -> if they are unlinked within a module this is not yet reflected in the
+        # rdf-data -> TODO: introduce a "Housekeeping" item for every module
+
+        # this tests ensures that at least the unlinked item is not present in the rdfgrap
+
+        with p.uri_context(uri=TEST_BASE_URI):
+            zp.person10.set_relation(zb.R8098["has house color"], zb.I7612["ivory"])
+            zp.person11.set_relation(zb.R8098["has house color"], zb.I4118["yellow"])
+            zp.person10.set_relation(zb.R3606["lives next to"], zp.person11)
+
+
+        fpath = pjoin(TEST_DATA_DIR1, "tmp_test.nt")
+        p.io.export_rdf_triples(fpath, add_qualifiers=True,  modfilter=TEST_BASE_URI)
+        g = p.io.import_raw_rdf_triples(fpath)
+
+        self.assertTrue(rdflib.URIRef(zp.person11.uri) in g.subjects())
+        self.assertTrue(rdflib.URIRef(zp.person11.uri) in g.objects())
+
+        p.core._unlink_entity(zp.person11.uri, remove_from_mod=True)
+
+        p.io.export_rdf_triples(fpath, add_qualifiers=True,  modfilter=TEST_BASE_URI)
+        g = p.io.import_raw_rdf_triples(fpath)
+
+        self.assertFalse(rdflib.URIRef(zp.person11.uri) in g.subjects())
+        self.assertFalse(rdflib.URIRef(zp.person11.uri) in g.objects())
+
+        os.unlink(fpath)

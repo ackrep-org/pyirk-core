@@ -1537,7 +1537,7 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
 
             self.assertEqual(itm1.R31__is_in_mathematical_relation_with, [itm3])
 
-            itm2.set_relation(p.R47["is same as"], itm3)
+            itm2.set_relation(p.R47["is same as"], itm3)  # itm3 will be replaced by the rule
 
             I704 = p.create_item(
                 R1__has_label="test rule",
@@ -1550,21 +1550,22 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
             with I704.scope("context") as cm:
                 cm.new_var(x=p.instance_of(p.I1["general item"]))
                 cm.new_var(y=p.instance_of(p.I1["general item"]))
-                cm.uses_external_entities(I704)
+                cm.uses_external_entities(p.I36['rational number'])
 
             with I704.scope("premises") as cm:
+                cm.new_rel(cm.x, p.R4["is instance of"], p.I36['rational number'], overwrite=True)
                 cm.new_rel(cm.x, p.R47["is same as"], cm.y)
 
             with I704.scope("assertions") as cm:
-                cm.new_rel(cm.x, p.R54["is matched by rule"], I704)
                 cm.new_consequent_func(p.replacer_method, cm.y, cm.x)
 
             res = p.ruleengine.apply_semantic_rule(I704)
 
-        self.assertEqual(len(res.new_statements), 1)
+        self.assertEqual(len(res.new_statements), 2)
 
         # confirm the replacement
         self.assertEqual(itm1.R31__is_in_mathematical_relation_with, [itm2])
+        self.assertTrue(itm3._unlinked, True)
 
     def test_d04__overwrite_stm_inside_rule_scope(self):
 
@@ -2275,7 +2276,7 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
             zp.zr.I720["rule: replace (some) same_as-items"],
             mod_context_uri=TEST_BASE_URI,
         )
-        self.assertEqual(len(res.new_statements), 7)
+        self.assertEqual(len(res.new_statements), 11)
         self.assertEqual(len(res.unlinked_entities), 2)
 
         reports.append(zb.report(display=False, title="I720"))
@@ -2342,7 +2343,7 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
 
         # apply next rule:
         res_I763 = res = p.ruleengine.apply_semantic_rule(
-            zp.zr.I763["rule: deduce impossible house index for lieft-right neighbours"], mod_context_uri=TEST_BASE_URI
+            zp.zr.I763["rule: deduce impossible house index for left-right neighbours"], mod_context_uri=TEST_BASE_URI
         )
         reports.append(zb.report(display=False, title="I763"))
         result_history.append(res)

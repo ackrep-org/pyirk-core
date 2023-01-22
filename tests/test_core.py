@@ -2225,6 +2225,34 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         self.assertEqual(pred_report.total_prod, 24883200000)
         self.assertTrue(p.check_type(pred_report.stable_candidates, Dict[str, List[Tuple[int, str]]]))
 
+    def test_d17__zebra_puzzle_stage02(self):
+
+        zb = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA_BASE_DATA, prefix="zb")
+        zr = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA_RULES, prefix="zr", reuse_loaded=True)
+        zp = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA02, prefix="zp")
+
+        # get all non-placeholder etc humans
+        h_list = p.get_instances_of(zb.I7435["human"], filter=p.is_relevant_item)
+        self.assertEqual(len(h_list), 5)
+
+        with p.uri_context(uri=TEST_BASE_URI):
+
+            res = p.ruleengine.apply_semantic_rules(
+                zr.I830["rule: ensure absence of contradictions (5 different-from statements)"]
+            )
+            self.assertEqual(len(res.new_statements), 0)
+
+            zp.person1.set_mutliple_relations(p.R50["is different from"], h_list)
+
+            with self.assertRaises(p.aux.LogicalContradiction) as err:
+                res = p.ruleengine.apply_semantic_rules(
+                    zr.I830["rule: ensure absence of contradictions (5 different-from statements)"]
+                )
+
+            msg = '<Item Ia1158["person1"]> has too many `R50__is_differnt_from` statements'
+            self.assertEqual(err.exception.args[0], msg)
+
+
     # @unittest.skip("currently too slow")
     def test_e01__zebra_puzzle_stage02(self):
         """

@@ -180,6 +180,10 @@ class FunctionalRelationError(PyERKError):
     pass
 
 
+class LogicalContradiction(PyERKError):
+    pass
+
+
 def ensure_valid_short_key(txt: str, strict: bool = True) -> bool:
     conds = [isinstance(txt, str)]
 

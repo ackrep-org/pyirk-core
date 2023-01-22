@@ -400,6 +400,8 @@ class Entity(abc.ABC):
         Convenience function to create multiple Statements at once
         """
         res_list = []
+
+        assert isinstance(obj_seq, (tuple, list))
         for obj in obj_seq:
             res_list.append(self.set_relation(relation, obj, *args, **kwargs))
 

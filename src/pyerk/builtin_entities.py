@@ -1911,10 +1911,21 @@ R51 = create_builtin_relation(
     # TODO: model that this is (probably) equivalent to "owl:oneOf"
 )
 
-def get_instances_of(cls_item: Item) -> List[Item]:
+
+def is_relevant_item(itm):
+    return not itm.R57__is_placeholder and not itm.R20__has_defining_scope
+
+
+def get_instances_of(cls_item: Item, filter=None) -> List[Item]:
     assert allows_instantiation(cls_item)
-    instances = cls_item.get_inv_relations("R4__is_instance_of", return_subj=True)
-    return instances
+
+    if filter is None:
+        filter = lambda obj: True
+    assert callable(filter)
+
+    all_instances = cls_item.get_inv_relations("R4__is_instance_of", return_subj=True)
+    res = [elt for elt in all_instances if filter(elt)]
+    return res
 
 
 def close_class_with_R51(cls_item: Item):
@@ -2307,7 +2318,9 @@ def new_instance_as_object(self, subj, pred, obj_type, placeholder=False, name_p
     return res
 
 
-# testing
+def raise_contradiction(self, msg_template, *args):
+    msg = msg_template.format(*args)
+    raise core.aux.LogicalContradiction(msg)
 
 
 # ######################################################################################################################

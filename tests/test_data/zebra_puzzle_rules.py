@@ -801,11 +801,7 @@ with I803.scope("assertions") as cm:
 
 # ###############################################################################
 
-# these functions are needed by ruleengine.AlgorithmicRuleApplicationWorker.experiment
-
-def is_relevant_item(itm):
-    return not itm.R57__is_placeholder and not itm.R20__has_defining_scope
-
+# this function is needed by ruleengine.AlgorithmicRuleApplicationWorker.experiment
 
 def add_stm_by_exclusion(self, p1, oppo_rel, not_itm1, not_itm2, not_itm3, not_itm4):
     """
@@ -813,7 +809,7 @@ def add_stm_by_exclusion(self, p1, oppo_rel, not_itm1, not_itm2, not_itm3, not_i
     """
 
     # check arguments:
-    args = [elt for elt in (not_itm1, not_itm2, not_itm3, not_itm4) if is_relevant_item(elt)]
+    args = [elt for elt in (not_itm1, not_itm2, not_itm3, not_itm4) if p.is_relevant_item(elt)]
     if not len(args) == 4:
         return p.RuleResult()
 
@@ -825,7 +821,7 @@ def add_stm_by_exclusion(self, p1, oppo_rel, not_itm1, not_itm2, not_itm3, not_i
     all_itms = itm_type.get_inv_relations("R4__is_instance_of", return_subj=True)
 
     all_itms_map = dict(
-        [(itm.uri, itm) for itm in all_itms if is_relevant_item(itm)]
+        [(itm.uri, itm) for itm in all_itms if p.is_relevant_item(itm)]
     )
     all_itms_set = set(all_itms_map.keys())
 
@@ -890,6 +886,48 @@ with I820.scope("assertions") as cm:
 
 # ###############################################################################
 
+
+I830 = p.create_item(
+    R1__has_label="rule: ensure absence of contradictions (5 different-from statements)",
+    R4__is_instance_of=p.I41["semantic rule"],
+)
+
+with I830.scope("context") as cm:
+
+    cm.new_var(p0=p.instance_of(p.I1["general item"]))
+
+    cm.new_var(p1=p.instance_of(p.I1["general item"]))
+    cm.new_var(p2=p.instance_of(p.I1["general item"]))
+    cm.new_var(p3=p.instance_of(p.I1["general item"]))
+    cm.new_var(p4=p.instance_of(p.I1["general item"]))
+    cm.new_var(p5=p.instance_of(p.I1["general item"]))
+
+    cm.uses_external_entities(zb.I7435["human"])
+
+
+with I830.scope("premises") as cm:
+    cm.new_rel(cm.p0, p.R4["is instance of"], zb.I7435["human"], overwrite=True)
+
+    cm.new_rel(cm.p1, p.R4["is instance of"], zb.I7435["human"], overwrite=True)
+    cm.new_rel(cm.p2, p.R4["is instance of"], zb.I7435["human"], overwrite=True)
+    cm.new_rel(cm.p3, p.R4["is instance of"], zb.I7435["human"], overwrite=True)
+    cm.new_rel(cm.p4, p.R4["is instance of"], zb.I7435["human"], overwrite=True)
+    cm.new_rel(cm.p5, p.R4["is instance of"], zb.I7435["human"], overwrite=True)
+
+    cm.new_rel(cm.p0, p.R50["is different from"], cm.p1)
+    cm.new_rel(cm.p0, p.R50["is different from"], cm.p2)
+    cm.new_rel(cm.p0, p.R50["is different from"], cm.p3)
+    cm.new_rel(cm.p0, p.R50["is different from"], cm.p4)
+    cm.new_rel(cm.p0, p.R50["is different from"], cm.p5)
+
+    cm.new_rel(cm.p1, p.R57["is placeholder"], False)
+    cm.new_rel(cm.p2, p.R57["is placeholder"], False)
+    cm.new_rel(cm.p3, p.R57["is placeholder"], False)
+    cm.new_rel(cm.p4, p.R57["is placeholder"], False)
+    cm.new_rel(cm.p5, p.R57["is placeholder"], False)
+
+with I830.scope("assertions") as cm:
+    cm.new_consequent_func(p.raise_contradiction, "{} has too many `R50__is_differnt_from` statements", cm.p0)
 
 
 

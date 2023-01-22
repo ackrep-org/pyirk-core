@@ -249,6 +249,13 @@ class RuleApplicator:
         Perform the actual application of the rule (either via aubgraph monomorphism or via SPARQL query)
         """
 
+        # TODO: remove this when implementing the AlgorithmicRuleApplicationWorker
+        if getattr(self.rule, "cheat", None):
+            func = self.rule.cheat[0]
+            args = self.rule.cheat[1:]
+            return func(*args)
+        # end of cheat (hardcoded experimental query)
+
         if self.premise_type == PremiseType.GRAPH:
             total_res = p.RuleResult()
             for ra_worker in self.ra_workers:
@@ -1079,6 +1086,12 @@ class RuleApplicatorWorker:
         cc = self._get_weakly_connected_components(self.P)
 
         if len(cc.main_components) == 0:
+
+            # TODO: remove this when implementing the AlgorithmicRuleApplicationWorker
+            if getattr(self.parent.rule, "cheat", None):
+                return
+            # end of cheat (hardcoded experimental query)
+
             raise core.aux.SemanticRuleError("empty prototype graph")
 
         expected_main_component_number = getattr(self.parent.rule, "R70__has_number_of_prototype_graph_components")
@@ -1363,7 +1376,9 @@ class AlgorithmicRuleApplicationWorker:
         # simple hack
         self.parent = Container(rule=None)
 
-    def experiment(self, zb, consequent_function: callable):
+    @staticmethod
+    def experiment(zb, consequent_function: callable):
+        t0 = time.time()
 
         # in the future this logic will be parsed from the graph
         h_list = p.get_instances_of(zb.I7435["human"])
@@ -1382,6 +1397,7 @@ class AlgorithmicRuleApplicationWorker:
 
         # raworker=self, raw_result_count=len(result_list)
         final_result = p.core.RuleResult()
+        final_result.apply_time = time.time() - t0
         for args in result_list:
             tmp_res = consequent_function(None, *args)
 

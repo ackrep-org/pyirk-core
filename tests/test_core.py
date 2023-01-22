@@ -2698,6 +2698,7 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
             zr.I796["rule: deduce different-from facts for neighbour-pairs"],
             zr.I798["rule: deduce negative facts from different-from-facts"],
             zr.I800["rule: mark relations which are opposite of functional activities"],
+            zr.I810["rule: deduce positive fact from 4 negative facts (hardcoded cheat)"],
             zr.I820["rule: deduce personhood by exclusion"],
             zr.I830["rule: ensure absence of contradictions (5 different-from statements)"],
         ]
@@ -2705,12 +2706,14 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         araw = p.ruleengine.AlgorithmicRuleApplicationWorker()
         p.ruleengine.VERBOSITY = True
 
+        res = p.ruleengine.apply_semantic_rule(zr.I810, mod_context_uri=TEST_BASE_URI)
+
+
         with p.uri_context(uri=TEST_BASE_URI):
-            # res = p.ruleengine.apply_semantic_rules(*all_relevant_rules)
-            res2 = araw.experiment(zb, zr.add_stm_by_exclusion)
+            res = p.ruleengine.apply_semantic_rules(*all_relevant_rules)
             pred_report = araw.get_predicates_report(zb)
 
-        # IPS() # WIP
+        IPS() # WIP
 
 
 class Test_Z_Core(HouskeeperMixin, unittest.TestCase):

@@ -854,6 +854,24 @@ I820 = p.create_item(
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
+I810 = p.create_item(
+    R1__has_label="rule: deduce positive fact from 4 negative facts (hardcoded cheat)",
+    R2__has_description=("deduce positive fact from 4 negative facts (graph version)"),
+    R4__is_instance_of=p.I41["semantic rule"],
+)
+
+with I810.scope("context") as cm:
+    pass
+
+with I810.scope("premises") as cm:
+    pass
+
+with I810.scope("assertions") as cm:
+    pass
+
+# this is a temporary solution until the AlgorithmicRuleApplicationWorker is implemented
+I810.cheat = [p.ruleengine.AlgorithmicRuleApplicationWorker.experiment, zb, add_stm_by_exclusion]
+
 with I820.scope("context") as cm:
 
     cm.new_var(p0=p.instance_of(p.I1["general item"]))

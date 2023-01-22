@@ -801,7 +801,7 @@ class DataStore:
         stm_list: List[Statement] = self.relation_statements[rel_uri]
 
         res = []
-        if isinstance(filter, allowed_literal_types):
+        if isinstance(filter, allowed_literal_types) or isinstance(filter, Entity):
             cond_func = lambda obj: obj == filter
         else:
             cond_func = lambda obj: True

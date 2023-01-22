@@ -2209,6 +2209,21 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         self.assertEqual(len(res.new_statements), 88)
         self.assertIn(zb.I5209["red"], zp.person3.zb__R1055__has_not_house_color)
 
+    def test_d16__zebra_puzzle_stage02(self):
+
+        zb = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA_BASE_DATA, prefix="zb")
+        zr = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA_RULES, prefix="zr", reuse_loaded=True)
+        zp = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA02, prefix="zp")
+
+        araw = p.ruleengine.AlgorithmicRuleApplicationWorker()
+        pred_report = araw.get_predicates_report(zb)
+
+        # number of possibilities for each predicate
+        self.assertEqual(pred_report.counters, [120]*5)
+        # number of total possibilities
+        self.assertEqual(pred_report.total_prod, 24883200000)
+        self.assertTrue(p.check_type(pred_report.stable_candidates, Dict[str, List[Tuple[int, str]]]))
+
     # @unittest.skip("currently too slow")
     def test_e01__zebra_puzzle_stage02(self):
         """

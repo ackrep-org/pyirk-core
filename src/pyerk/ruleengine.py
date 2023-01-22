@@ -12,6 +12,7 @@ from enum import Enum
 import json
 import textwrap
 import time
+import itertools as it
 
 import networkx as nx
 from networkx.algorithms import isomorphism as nxiso
@@ -1361,7 +1362,6 @@ class AlgorithmicRuleApplicationWorker:
         rel_list = p.ds.get_subjects_for_relation(zb.R6020["is opposite of functional activity"].uri)
         result_conditions = [lambda res: len(res) == 4]
 
-        import itertools as it
         result_list = []
         for subj, pred in it.product(h_list, rel_list):
             tmp_res_list = subj.get_relations(pred.uri, return_obj=True)
@@ -1380,3 +1380,70 @@ class AlgorithmicRuleApplicationWorker:
             # TODO: add result.extend_with_binding_info(cfr, res_dict), see above
             final_result.extend(tmp_res)
         return final_result
+
+    def get_single_predicate_report(self, pred):
+        subj_type = pred.R8__has_domain_of_argument_1[0]
+        obj_type = pred.R11__has_range_of_result[0]
+
+        subj_items = subj_type.R51__instances_are_from[0].R39__has_element
+        obj_items = obj_type.R51__instances_are_from[0].R39__has_element
+
+        all_combination_tuples = [tuple(zip(subj_items, perm)) for perm in list(it.permutations(obj_items))]
+        # list like [((A, X), (B, Y), (C, Z)), ((A, Y), (B, X), (C, Z)), ...]
+
+        possible_combination_tuples = []
+        pred_opposite_list = p.ds.get_subjects_for_relation(p.R43["is opposite of"].uri, filter=pred)
+        if not pred_opposite_list:
+            return []
+        pred_opposite = pred_opposite_list[0]
+
+        for comb_tup in all_combination_tuples:
+            for subj, obj in comb_tup:
+                if obj in subj.get_relations(pred_opposite.uri, return_obj=True):
+                    # this combination leads to a contradiction
+                    break
+            else:
+                # no contradiction took place
+                good_tuple = []
+                for subj, obj in comb_tup:
+                    good_tuple.append((subj, pred, obj))
+                possible_combination_tuples.append(tuple(good_tuple))
+
+        return possible_combination_tuples
+
+    def get_predicates_report(self, zb):
+        """
+        Gather data for each relevant predicate how many possibilities of subject-object-pairs exisit, which do
+        not contradict an `oppo_pred`-statement, where `oppo_pred` is 'R43__is_opposite_of' the considered predicate.
+        """
+        func_act_list = p.ds.get_subjects_for_relation(zb.R2850["is functional activity"].uri, filter=True)
+
+        pred_report = Container()
+        pred_report.counters = []
+        pred_report.total_sum = 0
+        pred_report.total_prod = 1
+        pred_report.predicates = []
+        pred_report.stable_candidates = Container()
+        for pred in func_act_list:
+            possible_combination_tuples = self.get_single_predicate_report(pred)
+            if len(possible_combination_tuples) == 0:
+                continue
+            pred_report[pred.uri] = possible_combination_tuples
+            pred_report.counters.append(len(possible_combination_tuples))
+            pred_report.predicates.append(pred)
+            pred_report.total_sum += len(possible_combination_tuples)
+            pred_report.total_prod *= len(possible_combination_tuples)
+
+            # find (subject, object)-pairs which are stable among all combinations
+
+            # pred_report.stable_candidates[pred.uri] = defaultdict(dict)
+            tmp_def_dict = defaultdict(dict)
+            for comb_tup in possible_combination_tuples:
+                for subj, _, obj in comb_tup:
+                    tmp_def_dict[subj.uri][obj.uri] = 1
+
+            pred_report.stable_candidates[pred.uri] = []
+            for sub_uri, obj_dict in tmp_def_dict.items():
+                pred_report.stable_candidates[pred.uri].append((len(obj_dict), sub_uri))
+
+        return pred_report

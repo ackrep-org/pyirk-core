@@ -284,10 +284,14 @@ R68 = create_builtin_relation(
 R20 = create_builtin_relation(
     key_str="R20",
     R1="has defining scope",
-    R2="specifies the scope in which an entity or relation edge is defined (e.g. the premise of a theorem)",
-    R18="Note: one Entity can be parent of multiple scopes, (e.g. a theorem has 'context', 'premises', 'assertions')",
+    R2="specifies the scope *in* which an entity or relation edge is defined (e.g. the premise of a theorem)",
+    R18=(
+        "Notes: This relation is functional. But an Entity (e.g. a theorem) can be parent (via R21) of multiple "
+        "scopes, (e.g. 'setting', 'premise', 'assertion'). Each of these items can 'contain' other items in the sense, "
+        "that these other items are R20_has_defining_scope-related to the scope item. Thus, R20 and R21__is_scope_of "
+        "are *not* inverse to each other."
+    ),
     R22__is_functional=True,
-    # R68__is_inverse_of=R21["is scope of"],  # defined later for dependency reasons
 )
 
 qff_has_defining_scope = QualifierFactory(R20["has defining scope"], registry_name="qff_has_defining_scope")
@@ -303,10 +307,7 @@ R21 = create_builtin_relation(
         "This is not to be confused with R45__has_subscope."
     ),
     R22__is_functional=True,
-    R68__is_inverse_of=R20["has defining scope"],
 )
-
-R20["has defining scope"].set_relation("R68__is_inverse_of", R21["is scope of"])
 
 
 R23 = create_builtin_relation(

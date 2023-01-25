@@ -72,11 +72,13 @@ def apply_semantic_rule(rule: core.Item, mod_context_uri: str = None) -> List[co
         print("applying", rule)
     ra = RuleApplicator(rule, mod_context_uri=mod_context_uri)
     try:
+        t0 = time.time()
         res = ra.apply()
     except core.aux.RuleTermination as ex:
         res = core.RuleResult()
         res._rule = rule
         res.exception = ex
+        res.apply_time = time.time() - t0
 
     if VERBOSITY:
         print("  ", res, "\n")
@@ -1393,11 +1395,16 @@ class AlgorithmicRuleApplicationWorker:
         # in the future this logic will be parsed from the graph
         h_list = p.get_instances_of(zb.I7435["human"])
         rel_list = p.ds.get_subjects_for_relation(zb.R6020["is opposite of functional activity"].uri)
+        result_filters = [p.is_relevant_item]
         result_conditions = [lambda res: len(res) == 4]
 
         result_list = []
         for subj, pred in it.product(h_list, rel_list):
             tmp_res_list = subj.get_relations(pred.uri, return_obj=True)
+
+            for rf in result_filters:
+                tmp_res_list = [res for res in tmp_res_list if p.is_relevant_item(res)]
+
             for cond_func in result_conditions:
                 if not cond_func(tmp_res_list):
                     break
@@ -1463,6 +1470,12 @@ class AlgorithmicRuleApplicationWorker:
 
         h_list = p.get_instances_of(zb.I7435["human"], filter=p.is_relevant_item)
         rel_list = p.ds.get_subjects_for_relation(zb.R2850["is functional activity"].uri, filter=True)
+
+        # filter out the two person-person-activities (TODO: test if this is neccessary)
+        # otherwise we would have 7 statements per person
+        rel_list = [r for r in rel_list if r not in (
+            zb.R2353["lives immediately right of"], zb.R8768["lives immediately left of"]
+        )]
 
         result_filters = [p.is_relevant_item]
         result_conditions = [lambda res: len(res) == 1]
@@ -1601,15 +1614,22 @@ class HypothesisReasoner:
         result.stm_triples = [(subj, pred, obj) for obj in objs]
         result.reasoning_results = []
 
-        for subj, pred, obj in result.stm_triples:
+
+        # currently the good solution is the first by accident.
+        # TODO: test the other direction
+
+        for subj, pred, obj in result.stm_triples[1:]:
 
             # test the consequences of an hypothesis inside an isolated module (which can be deleted if it failed)
             self.register_module()
             with p.uri_context(uri=self.contex_uri):
                 stm = subj.set_relation(pred, obj)
+                k = 0
                 if VERBOSITY:
                     print("\n"*2, "    Assuming", stm, "and testing\n\n")
                 while True:
+                    k += 1
+                    # TODO: this might provoke a FunctionalRelationError in case of wrong hypothesis
                     res = apply_semantic_rules(*rule_list)
                     if res.exception or not res.new_statements:
                         break

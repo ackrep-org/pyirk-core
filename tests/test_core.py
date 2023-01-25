@@ -2190,7 +2190,7 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
             # )
 
             araw = p.ruleengine.AlgorithmicRuleApplicationWorker()
-            res = araw.experiment(zb, zr.add_stm_by_exclusion)
+            res = araw.hardcoded_I810(zb, zr.add_stm_by_exclusion)
 
         self.assertEqual(len(res.new_statements), 1)
         self.assertEqual(zb.I9848["Norwegian"].zb__R8098__has_house_color, zb.I4118["yellow"])
@@ -2217,7 +2217,8 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         zp = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA02, prefix="zp")
 
         araw = p.ruleengine.AlgorithmicRuleApplicationWorker()
-        pred_report = araw.get_predicates_report(zb)
+        func_act_list = p.ds.get_subjects_for_relation(zb.R2850["is functional activity"].uri, filter=True)
+        pred_report = araw.get_predicates_report(predicate_list=func_act_list)
 
         # number of possibilities for each predicate
         self.assertEqual(pred_report.counters, [120]*5)
@@ -2245,7 +2246,7 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
 
             # this does nothing because we only have 'meaningless' R50-statements
             res = p.ruleengine.apply_semantic_rules(
-                zr.I830["rule: ensure absence of contradictions (5 different-from statements)"]
+                zr.I830["rule: ensure absence of contradictions (5 different-from statements) (hardcoded cheat)"]
             )
             self.assertEqual(len(res.new_statements), 0)
 
@@ -2253,8 +2254,10 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
 
             with self.assertRaises(p.aux.LogicalContradiction) as err:
                 res = p.ruleengine.apply_semantic_rules(
-                    zr.I830["rule: ensure absence of contradictions (5 different-from statements)"]
+                    zr.I830["rule: ensure absence of contradictions (5 different-from statements) (hardcoded cheat)"]
                 )
+                if res.exception:
+                    raise res.exception
 
             msg = '<Item Ia1158["person1"]> has too many `R50__is_differnt_from` statements'
             self.assertEqual(err.exception.args[0], msg)
@@ -2324,9 +2327,10 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         reports.append(zb.report(display=False, title="I725"))
         result_history.append(res)
 
-        self.assertEqual(len(res.new_statements), 1)
-        self.assertEqual(len(res.rel_map), 1)
+        self.assertEqual(len(res.new_statements), 5)
+        self.assertEqual(len(res.rel_map), 2)
         self.assertIn(zb.R8768["lives immediately left of"].uri, res.rel_map)
+        self.assertIn(zb.R2693["is located immediately right of"].uri, res.rel_map)
 
         res_I730 = res = p.ruleengine.apply_semantic_rule(
             zp.zr.I730["rule: deduce negative facts for neighbours"], mod_context_uri=TEST_BASE_URI
@@ -2506,7 +2510,7 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         with p.uri_context(uri=TEST_BASE_URI):
             # because with traditional rules it seems to be difficult to efficiently deduce positive fact from
             # 4 negative facts, this is an algorithmic approach
-            res = araw.experiment(zb, zr.add_stm_by_exclusion)
+            res = araw.hardcoded_I810(zb, zr.add_stm_by_exclusion)
 
         reports.append(zb.report(display=False, title="I810_experiment"))
         result_history.append(res)
@@ -2540,7 +2544,7 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         with p.uri_context(uri=TEST_BASE_URI):
             # because with traditional rules it seems to be difficult to efficiently deduce positive fact from
             # 4 negative facts, this is an algorithmic approach
-            res = araw.experiment(zb, zr.add_stm_by_exclusion)
+            res = araw.hardcoded_I810(zb, zr.add_stm_by_exclusion)
 
         reports.append(zb.report(display=False, title="I810_experiment_(2)"))
         result_history.append(res)
@@ -2556,7 +2560,7 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         result_history.append(res)
 
         # this contains one statement about unlinked person5 TODO: fixme
-        self.assertEqual(len(res.new_statements), 8)
+        self.assertEqual(len(res.new_statements), 9)
 
         res = p.ruleengine.apply_semantic_rule(
             zp.zr.I798["rule: deduce negative facts from different-from-facts"], mod_context_uri=TEST_BASE_URI
@@ -2661,18 +2665,26 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         result_history.append(res)
 
         araw = p.ruleengine.AlgorithmicRuleApplicationWorker()
-        pred_report = araw.get_predicates_report(zb)
+        func_act_list = p.ds.get_subjects_for_relation(zb.R2850["is functional activity"].uri, filter=True)
+        pred_report = araw.get_predicates_report(predicate_list=func_act_list)
 
         with p.uri_context(uri=TEST_BASE_URI):
-            res = araw.experiment(zb, zr.add_stm_by_exclusion)
+            res = araw.hardcoded_I810(zb, zr.add_stm_by_exclusion)
 
         # for performance reasons we continue with a test_e03
 
+    # @unittest.skip("currently too slow")
     def test_e03__zebra_puzzle_stage02(self):
 
         zb = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA_BASE_DATA, prefix="zb")
         zr = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA_RULES, prefix="zr", reuse_loaded=True)
         zp = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA02, prefix="zp")
+
+        args = (zp.person8, zb.R2835["lives not in numbered house"], zb.I7582["house 2"], zb.I4735["house 3"],
+         zb.I4785["house 4"], zb.I1383["house 5"])
+
+
+
 
         fpath = pjoin(TEST_DATA_DIR1, "test_zebra_triples3.nt")
         with p.uri_context(uri=TEST_BASE_URI):
@@ -2683,6 +2695,10 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
             p.core._unlink_entity(zp.person2.uri, remove_from_mod=True)
             p.core._unlink_entity(zp.person5.uri, remove_from_mod=True)
             p.core._unlink_entity(zp.person12.uri, remove_from_mod=True)
+
+            # not sure were this comes from but it has to go (disconnected artifact)
+            p.core._unlink_entity("erk:/local/unittest#Ia9473", remove_from_mod=True)
+
 
         all_relevant_rules = [
             # zr.I701["rule: imply parent relation of a subrelation"],
@@ -2707,6 +2723,7 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
             zr.I800["rule: mark relations which are opposite of functional activities"],
             zr.I810["rule: deduce positive fact from 4 negative facts (hardcoded cheat)"],
             zr.I820["rule: deduce personhood by exclusion"],
+            zr.I825["rule: deduce lives-not-in... from lives-next-to"],
             zr.I830["rule: ensure absence of contradictions (5 different-from statements) (hardcoded cheat)"],
             zr.I840["rule: detect if puzzle is solved (hardcoded cheat)"],
         ]
@@ -2717,8 +2734,19 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         res = p.ruleengine.apply_semantic_rule(zr.I810, mod_context_uri=TEST_BASE_URI)
 
         with p.uri_context(uri=TEST_BASE_URI):
-            res = p.ruleengine.apply_semantic_rules(*all_relevant_rules[-2:])
-            pred_report = araw.get_predicates_report(zb)
+            IPS()
+            return
+            # res = p.ruleengine.apply_semantic_rules(*all_relevant_rules[1:])
+            func_act_list = p.ds.get_subjects_for_relation(zb.R2850["is functional activity"].uri, filter=True)
+            pred_report = araw.get_predicates_report(predicate_list=func_act_list)
+
+        hyre = p.ruleengine.HypothesisReasoner(zb, base_uri=TEST_BASE_URI)
+        res = hyre.hypothesis_reasoning_step(all_relevant_rules)
+
+
+        # manually unload internal module:
+        p.unload_mod(hyre.contex_uri, strict=False)
+
 
         # IPS() # WIP
 

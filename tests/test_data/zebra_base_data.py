@@ -343,6 +343,30 @@ R8768 = p.create_relation(
     R68__is_inverse_of=R2353["lives immediately right of"]
 )
 
+R2693 = p.create_relation(
+    R1__has_label="is located immediately right of",
+    R2__has_description="specifies that one house number is located directly right of another house number",
+    R8__has_domain_of_argument_1=I8809["house number"],
+    R11__has_range_of_result=I8809["house number"],
+    R22__is_functional=True,
+)
+
+R2183 = p.create_relation(
+    R1__has_label="is located immediately left of",
+    R2__has_description="specifies that one house number is located directly left of another house number",
+    R8__has_domain_of_argument_1=I7435["human"],
+    R11__has_range_of_result=I7435["human"],
+    R22__is_functional=True,
+    R68__is_inverse_of=R2693["is located immediately right of"]
+)
+
+
+I6448["house 1"].set_relation(R2183["is located immediately left of"], I7582["house 2"])
+I7582["house 2"].set_relation(R2183["is located immediately left of"], I4735["house 3"])
+I4735["house 3"].set_relation(R2183["is located immediately left of"], I4785["house 4"])
+I4785["house 4"].set_relation(R2183["is located immediately left of"], I1383["house 5"])
+I1383["house 5"]
+
 
 # negative relations
 

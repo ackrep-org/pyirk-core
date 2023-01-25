@@ -177,9 +177,8 @@ I725 = p.create_item(
 )
 
 with I725.scope("context") as cm:
-    cm.new_var(h1=p.instance_of(zb.I7435["human"]))
-    cm.new_var(h2=p.instance_of(zb.I7435["human"]))
     cm.new_var(itm1=p.instance_of(p.I1["general item"]))
+    cm.new_var(itm2=p.instance_of(p.I1["general item"]))
 
     cm.new_rel_var("rel1")
     cm.new_rel_var("rel2")
@@ -188,16 +187,16 @@ with I725.scope("premises") as cm:
     cm.set_sparql(
         """
         WHERE {
-            ?h1 ?rel1 ?h2.        # R3606["lives next to"]
+            ?itm1 ?rel1 ?itm2.        # R3606["lives next to"]
 
-            ?rel1 zb:R2850 true.     # R2850__is_functional_activity
+            # ?rel1 zb:R2850 true.     # R2850__is_functional_activity
             ?rel1 :R68 ?rel2.        # R68__is_inverse_of
         }
         """
     )
 
 with I725.scope("assertions") as cm:
-    cm.new_rel(cm.h2, cm.rel2, cm.h1, qualifiers=[p.qff_has_rule_ptg_mode(5)])
+    cm.new_rel(cm.itm2, cm.rel2, cm.itm1, qualifiers=[p.qff_has_rule_ptg_mode(5)])
 
 txt = r"{h1} {rel1} {h2}  AND  {rel21 R68__is_invsere_of {rel2}."
 
@@ -841,9 +840,18 @@ def add_stm_by_exclusion(self, p1, oppo_rel, not_itm1, not_itm2, not_itm3, not_i
 
     rel1 = oppo_rel.R43__is_opposite_of[0]
     res = p.RuleResult()
-    if not p1.get_relations(rel1.uri):
+
+    # check for existing relations
+    objs = p1.get_relations(rel1.uri, return_obj=True)
+    if not objs:
+        # set new relation
         stm = p1.set_relation(rel1, rest)
         res.add_statement(stm)
+    elif len(objs) == 1 and objs[0].R57__is_placeholder:
+        # replace a placeholder item if unique
+        chgd_stm = p.core.replace_and_unlink_entity(objs[0], rest)
+        res.changed_statements.append(chgd_stm)
+
     return res
 
 # ###############################################################################
@@ -986,6 +994,70 @@ with I840.scope("premises") as cm:
 
 with I840.scope("assertions") as cm:
     pass
+
+# ###############################################################################
+
+I825 = p.create_item(
+    R1__has_label="rule: deduce lives-not-in... from lives-next-to",
+    R4__is_instance_of=p.I41["semantic rule"],
+)
+
+
+with I825.scope("context") as cm:
+    cm.new_var(p1=p.instance_of(p.I1["general item"]))
+    cm.new_var(p2=p.instance_of(p.I1["general item"]))
+
+    cm.new_var(hn2=p.instance_of(p.I1["general item"]))
+    cm.uses_external_entities(zb.I7435["human"])
+
+    cm.new_variable_literal("house_index2")
+
+with I825.scope("premises") as cm:
+    cm.new_rel(cm.p1, p.R4["is instance of"], zb.I7435["human"], overwrite=True)
+    cm.new_rel(cm.p2, p.R4["is instance of"], zb.I7435["human"], overwrite=True)
+
+    cm.new_rel(cm.p1, zb.R3606["lives next to"], cm.p2)
+    cm.new_rel(cm.p2, zb.R9040["lives in numbered house"], cm.hn2)
+
+    cm.new_rel(cm.hn2, p.R40["has index"], cm.house_index2)
+
+def exclude_houses(self, p1, nbr_hn):
+
+    # construct the neighbours of the neighbour
+    left_nbrs = []
+    right_nbrs = []
+
+    tmp_entity = nbr_hn
+    while True:
+        right_nbr = tmp_entity.zb__R2693__is_located_immediately_right_of
+        if right_nbr:
+            right_nbrs.append(right_nbr)
+            tmp_entity = right_nbr
+        else:
+            break
+
+    tmp_entity = nbr_hn
+    while True:
+        left_nbr = tmp_entity.zb__R2183__is_located_immediately_left_of
+        if left_nbr:
+            left_nbrs.append(left_nbr)
+            tmp_entity = left_nbr
+        else:
+            break
+
+    # the first elements of these lists are admissible for p1 the rest is not
+    exclude_list = left_nbrs[1:] + right_nbrs[1:]
+
+    res = p.RuleResult()
+    for hn in exclude_list:
+        stm = p1.set_relation(zb.R2835["lives not in numbered house"], hn, prevent_duplicate=True)
+        res.add_statement(stm)
+
+    return res
+
+
+with I825.scope("assertions") as cm:
+    cm.new_consequent_func(exclude_houses, cm.p1, cm.hn2)
 
 # ###############################################################################
 

@@ -125,6 +125,10 @@ with I710.scope("premises") as cm:
 with I710.scope("assertions") as cm:
     cm.new_rel(cm.p1, p.R47["is same as"], cm.p2, qualifiers=[p.qff_has_rule_ptg_mode(5)])
 
+txt = r"{p1} {rel1} {some_itm}  AND  {p2} {rel1} {some_itm}."
+
+I710.set_relation(p.R69["has explanation text template"], txt)
+
 # ###############################################################################
 
 

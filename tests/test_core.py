@@ -2281,6 +2281,7 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         res = p.ruleengine.apply_semantic_rules(
             zr.I800["rule: mark relations which are opposite of functional activities"],
             zr.I810["rule: deduce positive fact from 4 negative facts (hardcoded cheat)"],
+            zr.I710["rule: identify same items via zb__R2850__is_functional_activity"],
             mod_context_uri=TEST_BASE_URI
         )
 

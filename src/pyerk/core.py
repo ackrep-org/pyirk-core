@@ -2260,6 +2260,7 @@ class RuleResult:
         self._rule = None
         self.apply_time = None
         self.exception = None
+        self.creator_object = None
 
         # dict like {rel_uri1: [stm1, stm2, ...]}
         # maps a relation uri to a list of statements which have this relation as predicate

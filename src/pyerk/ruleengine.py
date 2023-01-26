@@ -7,6 +7,7 @@ This module contains code to enable semantic inferences based on special items (
 """
 
 from typing import Dict, List, Tuple, Optional
+import os
 from collections import defaultdict
 from enum import Enum
 import json
@@ -16,6 +17,8 @@ import itertools as it
 
 import networkx as nx
 from networkx.algorithms import isomorphism as nxiso
+
+from jinja2 import Environment, PackageLoader, select_autoescape, FileSystemLoader
 
 # noinspection PyUnresolvedReferences
 from addict import Addict as Container
@@ -28,6 +31,7 @@ from . import core
 # todo: replace bi. with p. etc
 from . import builtin_entities as bi
 from . import builtin_entities as b
+from . import settings
 import pyerk as p
 
 LITERAL_BASE_URI = "erk:/tmp/literals"
@@ -52,7 +56,7 @@ def apply_all_semantic_rules(mod_context_uri=None) -> List[core.Statement]:
 
 def apply_semantic_rules(*rules: List, mod_context_uri: str = None) -> List[core.Statement]:
 
-    total_res = core.RuleResult()
+    total_res = ReportingRuleResult(raworker=None, rules=rules)
     for rule in rules:
         res = apply_semantic_rule(rule, mod_context_uri)
         total_res.add_partial(res)
@@ -73,9 +77,10 @@ def apply_semantic_rule(rule: core.Item, mod_context_uri: str = None) -> List[co
     ra = RuleApplicator(rule, mod_context_uri=mod_context_uri)
     try:
         t0 = time.time()
-        res = ra.apply()
+        raw_res = ra.apply()
+        res = ReportingRuleResult.get_new_instance(raw_res)
     except core.aux.RuleTermination as ex:
-        res = core.RuleResult()
+        res = ReportingRuleResult(raworker=None)
         res._rule = rule
         res.exception = ex
         res.apply_time = time.time() - t0
@@ -251,6 +256,8 @@ class RuleApplicator:
             core.aux.ensure_valid_baseuri(self.mod_context_uri)
             with core.uri_context(self.mod_context_uri):
                 res = self._apply()
+
+        res.creator_object = self
         return res
 
     def _apply(self) -> core.RuleResult:
@@ -430,6 +437,10 @@ class RuleApplicatorWorker:
 
         self.P: nx.MultiDiGraph = None
         self.create_prototype_subgraph_from_rule()
+
+    @property
+    def rule(self):
+        return self.parent.rule
 
     def apply_sparql_premise(self) -> core.RuleResult:
         t0 = time.time()
@@ -1226,13 +1237,39 @@ def edge_matcher(e1d: AtlasView, e2d: AtlasView) -> bool:
 
 class ReportingRuleResult(core.RuleResult):
 
-    def __init__(self, raworker: RuleApplicatorWorker, raw_result_count: int = None):
+    def __init__(
+            self, raworker: RuleApplicatorWorker, raw_result_count: int = None, rules: List[core.Item] = None
+        ):
+        assert isinstance(rules, (type(None), list, tuple))
         super().__init__()
+
         self.raworker = raworker
         self.statement_reports = []
-        self._rule = self.raworker.parent.rule
+
+        if rules is None or len(rules) == 0:
+            self._rule = self.raworker.rule
+        elif len(rules) == 1:
+            self._rule = rules[0]
+        else:
+            # in the case of multiple rules we do not set this variable
+            self._rule = None
         self.explanation_text_template = self._rule.R69__has_explanation_text_template
         self.raw_result_count = raw_result_count
+
+    @classmethod
+    def get_new_instance(cls: type, res: core.RuleResult):
+        """
+        Create an instance of this class based on the instance of a super class.
+        """
+        assert isinstance(res, core.RuleResult)
+        assert isinstance(res.creator_object, RuleApplicator)
+
+        inst = cls(raworker=None, rules=[res.creator_object.rule])
+        for key, value in res.__dict__.items():
+            setattr(inst, key, value)
+
+        return inst
+
 
     def add_bound_statement(self, stm: core.Statement, raw_binding_info: dict):
         """
@@ -1299,6 +1336,28 @@ class ReportingRuleResult(core.RuleResult):
             explanation_text = explanation_text.replace(" (I40__general_relation)", "")
 
         return explanation_text
+
+    def save_html_report(self, fpath: str, write_file=True, verbose=False):
+        """
+        Create a readable html version of the report
+        :param fpath:   str; path of output file
+        """
+
+        jin_env = Environment(loader=FileSystemLoader(settings.TEMPLATE_PATH))
+        template_doc = jin_env.get_template("rule-application-report-page.html")
+
+        context = Container()
+        context.css_path = os.path.join(settings.TEMPLATE_PATH, "base.css")
+        context.content = "Result of rule: "
+
+        res = template_doc.render(c=context)
+
+        if write_file:
+            with open(fpath, "w") as resfile:
+                resfile.write(res)
+            if verbose:
+                print(os.path.abspath(fpath), "written.")
+
 
 
 # Note this function will be called very often -> check for speedup possibilites

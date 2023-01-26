@@ -2262,6 +2262,36 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
             msg = '<Item Ia1158["person1"]> has too many `R50__is_differnt_from` statements'
             self.assertEqual(err.exception.args[0], msg)
 
+    def test_d18__zebra_puzzle_stage02(self):
+        """
+        Test HTML report
+        """
+
+        ##!
+
+        zb = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA_BASE_DATA, prefix="zb")
+        zr = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA_RULES, prefix="zr", reuse_loaded=True)
+        zp = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA02, prefix="zp")
+
+        fpath = pjoin(TEST_DATA_DIR1, "test_zebra_triples2.nt")
+        with p.uri_context(uri=TEST_BASE_URI):
+            c = p.io.import_stms_from_rdf_triples(fpath)  #noqa
+
+            # these two entities had been replaced by rule I720["rule: replace (some) same_as-items"]
+            p.core._unlink_entity(zp.person9.uri, remove_from_mod=True)
+            p.core._unlink_entity(zp.person2.uri, remove_from_mod=True)
+
+        res = p.ruleengine.apply_semantic_rules(
+            zp.zr.I800["rule: mark relations which are opposite of functional activities"],
+            mod_context_uri=TEST_BASE_URI
+        )
+
+        fpath = "tmp_report.html"
+        res.save_html_report(fpath)
+
+        self.assertTrue(os.path.exists(fpath))
+        os.unlink(fpath)
+
     # @unittest.skip("currently too slow")
     def test_e01__zebra_puzzle_stage02(self):
         """

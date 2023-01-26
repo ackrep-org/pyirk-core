@@ -271,7 +271,9 @@ class RuleApplicator:
         if getattr(self.rule, "cheat", None):
             func = self.rule.cheat[0]
             args = self.rule.cheat[1:]
-            return func(*args)
+            res = func(*args)
+            res._rule = self.rule
+            return res
         # end of cheat (hardcoded experimental query)
 
         if self.premise_type == PremiseType.GRAPH:
@@ -1550,13 +1552,13 @@ class AlgorithmicRuleApplicationWorker:
                 result_list.append((subj, pred, *tmp_res_list))
 
         # raworker=self, raw_result_count=len(result_list)
-        final_result = p.core.RuleResult()
+        final_result = ReportingRuleResult(raworker=None)
         final_result.apply_time = time.time() - t0
         for args in result_list:
-            tmp_res = consequent_function(None, *args)
+            cfr = consequent_function(None, *args)
 
             # TODO: add result.extend_with_binding_info(cfr, res_dict), see above
-            final_result.extend(tmp_res)
+            final_result.extend_with_binding_info(cfr, {})
         return final_result
 
     @staticmethod
@@ -1770,7 +1772,6 @@ class HypothesisReasoner:
                     res = apply_semantic_rules(*rule_list)
                     if res.exception or not res.new_statements:
                         break
-                    IPS()
                 if isinstance(res.exception, p.core.aux.ReasoningGoalReached):
                     print(p.aux.bgreen("puzzle solved"))
                     result.reasoning_results.append(res)
@@ -1781,5 +1782,3 @@ class HypothesisReasoner:
 
                 # delete all statements from this context
                 p.unload_mod(self.contex_uri)
-
-        IPS()

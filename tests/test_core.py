@@ -2266,9 +2266,6 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         """
         Test HTML report
         """
-
-        ##!
-
         zb = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA_BASE_DATA, prefix="zb")
         zr = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA_RULES, prefix="zr", reuse_loaded=True)
         zp = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA02, prefix="zp")
@@ -2282,7 +2279,8 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
             p.core._unlink_entity(zp.person2.uri, remove_from_mod=True)
 
         res = p.ruleengine.apply_semantic_rules(
-            zp.zr.I800["rule: mark relations which are opposite of functional activities"],
+            zr.I800["rule: mark relations which are opposite of functional activities"],
+            zr.I810["rule: deduce positive fact from 4 negative facts (hardcoded cheat)"],
             mod_context_uri=TEST_BASE_URI
         )
 
@@ -2290,7 +2288,9 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         res.save_html_report(fpath)
 
         self.assertTrue(os.path.exists(fpath))
-        os.unlink(fpath)
+
+        if not os.environ.get("KEEP_TEST_FILES"):
+            os.unlink(fpath)
 
     # @unittest.skip("currently too slow")
     def test_e01__zebra_puzzle_stage02(self):

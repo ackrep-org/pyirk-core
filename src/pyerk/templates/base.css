@@ -8,6 +8,7 @@
     --color-footer-background: hsl(230, 20%, 15%);
     --color-footer-text: hsl(00, 10%, 70%);
     --width-content: min(75vw, 60em);
+    --color-entity-background: #EEE;
 
 
 }
@@ -261,6 +262,13 @@ ul.entity-relations {
 .literal {
     font-family: monospace;
     background-color: hsl(200,0%,90%);
+/*     background-color: red; */
+    padding: 0.2rem;
+}
+
+.stm-entity {
+    font-family: monospace;
+    background-color: var(--color-entity-background);
 /*     background-color: red; */
     padding: 0.2rem;
 }

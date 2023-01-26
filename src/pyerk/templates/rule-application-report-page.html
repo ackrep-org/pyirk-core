@@ -29,9 +29,20 @@
     </div>
 <div class="main">
 
-some content:
+<h2>{{c.content.title}}</h2>
 
-{{c.content}}
+{% for rule_res in c.content.rule_res_list %}
+
+    <h3>{{rule_res.rule.short_key}}["{{rule_res.rule.R1}}"] ({{rule_res.length}})</h3>
+
+    {% for stm_container in rule_res.stm_container_list %}
+        {% include "l1_rule-application-report-stm.html"%}<br>
+    {% endfor %}
+
+
+<br>
+
+{% endfor %}
 
 </div>
 </div>

@@ -6,7 +6,7 @@ This module contains code to enable semantic inferences based on special items (
 
 """
 
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, List, Tuple, Optional, Union
 import os
 from collections import defaultdict
 from enum import Enum
@@ -19,6 +19,8 @@ import networkx as nx
 from networkx.algorithms import isomorphism as nxiso
 
 from jinja2 import Environment, PackageLoader, select_autoescape, FileSystemLoader
+from jinja2.filters import FILTERS as jinja_FILTERS
+
 
 # noinspection PyUnresolvedReferences
 from addict import Addict as Container
@@ -56,7 +58,7 @@ def apply_all_semantic_rules(mod_context_uri=None) -> List[core.Statement]:
 
 def apply_semantic_rules(*rules: List, mod_context_uri: str = None) -> List[core.Statement]:
 
-    total_res = ReportingRuleResult(raworker=None, rules=rules)
+    total_res = ReportingMultiRuleResult(rule_list=rules)
     for rule in rules:
         res = apply_semantic_rule(rule, mod_context_uri)
         total_res.add_partial(res)
@@ -77,7 +79,7 @@ def apply_semantic_rule(rule: core.Item, mod_context_uri: str = None) -> List[co
     ra = RuleApplicator(rule, mod_context_uri=mod_context_uri)
     try:
         t0 = time.time()
-        raw_res = ra.apply()
+        raw_res: core.RuleResult = ra.apply()
         res = ReportingRuleResult.get_new_instance(raw_res)
     except core.aux.RuleTermination as ex:
         res = ReportingRuleResult(raworker=None)
@@ -1238,22 +1240,19 @@ def edge_matcher(e1d: AtlasView, e2d: AtlasView) -> bool:
 class ReportingRuleResult(core.RuleResult):
 
     def __init__(
-            self, raworker: RuleApplicatorWorker, raw_result_count: int = None, rules: List[core.Item] = None
+            self, raworker: RuleApplicatorWorker, raw_result_count: int = None, rule: core.Item = None
         ):
-        assert isinstance(rules, (type(None), list, tuple))
         super().__init__()
 
         self.raworker = raworker
         self.statement_reports = []
 
-        if rules is None or len(rules) == 0:
+        if rule is None and raworker is not None:
             self._rule = self.raworker.rule
-        elif len(rules) == 1:
-            self._rule = rules[0]
+            self.explanation_text_template = self._rule.R69__has_explanation_text_template
         else:
-            # in the case of multiple rules we do not set this variable
             self._rule = None
-        self.explanation_text_template = self._rule.R69__has_explanation_text_template
+            self.explanation_text_template = None
         self.raw_result_count = raw_result_count
 
     @classmethod
@@ -1264,7 +1263,7 @@ class ReportingRuleResult(core.RuleResult):
         assert isinstance(res, core.RuleResult)
         assert isinstance(res.creator_object, RuleApplicator)
 
-        inst = cls(raworker=None, rules=[res.creator_object.rule])
+        inst = cls(raworker=None, rule=res.creator_object.rule)
         for key, value in res.__dict__.items():
             setattr(inst, key, value)
 
@@ -1332,10 +1331,55 @@ class ReportingRuleResult(core.RuleResult):
 
         else:
 
-            explanation_text = " ".join([f"({a.R1}: {b.R1})" for a, b in bindinfo])
+            explanation_text = " ".join([f"({crpr(a)}: {crpr(b)})" for a, b in bindinfo])
             explanation_text = explanation_text.replace(" (I40__general_relation)", "")
 
         return explanation_text
+
+    def _get_statement_report_count(self):
+
+        if self.raworker is None:
+            # this object is only a container for its partial results
+            return sum([p._get_statement_report_count() for p in self.partial_results])
+        else:
+            return len(self.statement_reports)
+
+    def _get_stm_container_list(self):
+
+        stm_container_list = []
+        if self.raworker is None:
+            # this object is only a container for its partial results
+            for part_res in self.partial_results:
+                stm_container_list.extend(part_res._get_stm_container_list())
+            return stm_container_list
+
+        for i, c in enumerate(self.statement_reports):
+
+            # create a container for statement and explanation -> let the template do the formatting
+            stm_container = Container()
+            stm_str = f"[{c.stm.subject.R1} | {c.stm.predicate.R1} | {crpr(c.stm.object)}]"
+            stm_container.explanation_text = self.get_explanation(c.bindinfo)
+            stm_container.txt = f"{stm_str}  because  {stm_container.explanation_text}"
+            stm_container.stm = c.stm
+
+
+            stm_container_list.append(stm_container)
+
+        return stm_container_list
+
+
+class ReportingMultiRuleResult(ReportingRuleResult):
+
+    def __init__(self, rule_list: List[core.Item]):
+        core.check_type(rule_list, Union[list, tuple])
+        self.rule_list = rule_list
+
+        super().__init__(raworker=None)
+
+    @property
+    def rule(self):
+        # for this class a single rule attribute is not meaningful
+        return None
 
     def save_html_report(self, fpath: str, write_file=True, verbose=False):
         """
@@ -1348,7 +1392,7 @@ class ReportingRuleResult(core.RuleResult):
 
         context = Container()
         context.css_path = os.path.join(settings.TEMPLATE_PATH, "base.css")
-        context.content = "Result of rule: "
+        context.content = self.get_report_content()
 
         res = template_doc.render(c=context)
 
@@ -1358,6 +1402,40 @@ class ReportingRuleResult(core.RuleResult):
             if verbose:
                 print(os.path.abspath(fpath), "written.")
 
+    def get_report_content(self):
+        """
+        """
+
+        content = Container()
+        content.title = self._get_report_title()
+        content.rule_res_list = self._get_rule_res_list()
+
+        return content
+
+    def _get_report_title(self):
+        return f"Result of {len(self.rule_list)} rule(s)"
+
+    def _get_rule_res_list(self):
+        rule_res_list = []
+        for part in self.partial_results:
+            c = Container(rule=part.rule, length=part._get_statement_report_count())
+            c.stm_container_list = part._get_stm_container_list()
+            rule_res_list.append(c)
+
+        return rule_res_list
+
+
+def crpr(obj):
+    """
+    custom representation function which accepts Entities and literals
+    """
+
+    if isinstance(obj, core.Entity):
+        return obj.R1
+    else:
+        return str(obj)
+
+jinja_FILTERS["crpr"] = crpr
 
 
 # Note this function will be called very often -> check for speedup possibilites

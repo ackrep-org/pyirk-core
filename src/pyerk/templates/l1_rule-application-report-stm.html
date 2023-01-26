@@ -1,0 +1,7 @@
+{% for elt in stm_container.stm.relation_tuple %}
+<span class="stm-entity">{{elt|crpr}}</span>
+{% endfor %}
+&nbsp; because &nbsp;
+<tt>
+{{stm_container.explanation_text}}
+</tt>

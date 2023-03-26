@@ -35,15 +35,13 @@
 
     <h3>{{rule_res.rule.short_key}}["{{rule_res.rule.R1}}"] ({{rule_res.length}})</h3>
 
-    <table class="stm_expl_table">
+    <div class="stm_expl_table">
 
     {% for stm_container in rule_res.stm_container_list %}
-        {% include "l1_rule-application-report-stm.html"%}<br>
+        {% include "l1_rule-application-report-stm.html"%}
     {% endfor %}
 
-    </table>
-
-<br>
+    </div>
 
 {% endfor %}
 

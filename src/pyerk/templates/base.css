@@ -269,7 +269,7 @@ ul.entity-relations {
     padding: 0.2rem;
 }
 
-.stm_entity {
+.stm_entity, .entity {
     font-family: monospace;
     background-color: var(--color-entity-background);
 /*     background-color: red; */

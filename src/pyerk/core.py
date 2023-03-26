@@ -10,6 +10,7 @@ import types
 import abc
 import random
 import functools
+from urllib.parse import quote
 from enum import Enum, unique
 import re as regex
 from addict import Dict as attr_dict
@@ -2317,6 +2318,14 @@ class RuleResult:
                 return self.partial_results[0].rule
 
         return self._rule
+
+
+def format_entity_html(e: Entity):
+
+    short_txt = f'<span class="entity">{e.R1}</span>'
+    detailed_txt = f'<span class="entity">{e.short_key}["{e.R1}"]</span>'
+
+    return f'<span class="js-toggle" data-short-txt="{quote(short_txt)}" data-detailed-txt="{quote(detailed_txt)}">{short_txt}</span>'
 
 
 def script_main(fpath):

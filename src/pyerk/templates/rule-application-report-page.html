@@ -13,6 +13,28 @@
 <link type="text/css" rel="stylesheet" href="{{c.css_path}}">
 
 
+<!-- toggle functionality for entity display -->
+<script>
+      var mode = 1; // switch to detailed mode on first call
+
+      function toggleItems() {
+        var items = document.getElementsByClassName('js-toggle');
+        var key = "";
+        if (mode === 0) {
+            key = "data-short-txt";
+            mode = 1;
+        } else {
+            key = "data-detailed-txt";
+            mode = 0;
+        }
+        for (var i = 0; i < items.length; i++) {
+            var src_data = items[i].getAttribute(key);
+            items[i].innerHTML = unescape(src_data);
+        }
+      }
+</script>
+
+
 
 <title></title>
 
@@ -28,6 +50,8 @@
     </div>
     </div>
 <div class="main">
+
+<button onclick="toggleItems()">toggle details</button>
 
 <h2>{{c.content.title}}</h2>
 

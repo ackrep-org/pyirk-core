@@ -1317,21 +1317,23 @@ class ReportingRuleResult(core.RuleResult):
 
     def get_explanation(self, bindinfo: List[Tuple[p.Entity]]):
         """
-        :param bindinfo:    list of 2-tuples like [(<Item Ia7458["h2"]>, <Item Ia1158["person1"]>),...]
+        :param bindinfo:    list of 2-tuples like [(<Item Ia7458["p1"]>, <Item Ia1158["person1"]>),...]
+
+        The bindinfo contains pairs of (<placeholder-item>, <real-item>) tuples. This function uses this information
+        together with the rule-specific explanation_text_template (like "{p1}  {rel1}  {p2}") to create strings like:
+        "person1  has_neighbour  person2".
         """
         if self.explanation_text_template:
             format_kwargs = {}
             for a, b in bindinfo:
                 a_name = a.R23__has_name_in_scope
                 if isinstance(b, core.Entity):
-                    format_kwargs[a_name] = b.R1
+                    format_kwargs[a_name] = core.format_entity_html(b)
                 else:
                     format_kwargs[a_name] = repr(b)
-
             return self.explanation_text_template.format(**format_kwargs)
 
         else:
-
             explanation_text = " ".join([f"({crpr(a)}: {crpr(b)})" for a, b in bindinfo])
             explanation_text = explanation_text.replace(" (I40__general_relation)", "")
 

@@ -2290,7 +2290,10 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
 
         self.assertTrue(os.path.exists(fpath))
 
-        if not os.environ.get("KEEP_TEST_FILES"):
+        # IPS()
+        if os.environ.get("KEEP_TEST_FILES"):
+            print(fpath, "written")
+        else:
             os.unlink(fpath)
 
     # @unittest.skip("currently too slow")
@@ -2677,7 +2680,7 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         result_history.append(res)
 
         #
-        res = p.ruleengine.apply_semantic_rules(zr.I803, mod_context_uri=zb.__URI__)
+        res = p.ruleengine.apply_semantic_rule(zr.I803, mod_context_uri=zb.__URI__)
         reports.append(zb.report(display=False, title=res.rule.short_key))
         result_history.append(res)
 

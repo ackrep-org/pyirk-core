@@ -202,7 +202,7 @@ with I725.scope("premises") as cm:
 with I725.scope("assertions") as cm:
     cm.new_rel(cm.itm2, cm.rel2, cm.itm1, qualifiers=[p.qff_has_rule_ptg_mode(5)])
 
-txt = r"{h1} {rel1} {h2}  AND  {rel21 R68__is_invsere_of {rel2}."
+txt = r"{h1} {rel1} {h2}  AND  {rel1} R68__is_invsere_of {rel2}."
 
 I725.set_relation(p.R69["has explanation text template"], txt)
 

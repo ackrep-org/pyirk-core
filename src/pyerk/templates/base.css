@@ -10,6 +10,9 @@
     --width-content: min(75vw, 60em);
     --color-entity-background: #EEE;
 
+    --color-stm-statement-background: #E00;
+    --color-stm-explanation-background: #0E0;
+
 
 }
 
@@ -266,11 +269,33 @@ ul.entity-relations {
     padding: 0.2rem;
 }
 
-.stm-entity {
+.stm_entity {
     font-family: monospace;
     background-color: var(--color-entity-background);
 /*     background-color: red; */
     padding: 0.2rem;
+    margin-right: 0.2rem;
+    border: 1px solid #955;
+}
+
+.stm_expl_table {
+/*     border-collapse: collapse; */
+    border: 1px solid black;
+    border-spacing: 10px;
+}
+
+.stm_expl_row {
+/*     margin: 2em; */
+/*     padding: 2em; */
+    border: 5px solid blue;
+}
+
+.stm_statement_cell1 {
+    background-color: var(--color-stm-statement-background);
+}
+
+.stm_explanation_cell1 {
+    background-color: var(--color-stm-explanation-background);
 }
 
 .result-table {

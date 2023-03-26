@@ -1,7 +1,7 @@
 <div class="stm_expl_row">
     <div class="stm_statement_cell">
         {% for elt in stm_container.stm.relation_tuple %}
-        <span class="stm_entity">{{elt|crpr}}</span>
+        {{elt|crpr}}
         {% endfor %}
     </div>
     <div class="stm_explanation_cell">

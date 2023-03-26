@@ -1434,9 +1434,9 @@ def crpr(obj):
     """
 
     if isinstance(obj, core.Entity):
-        return obj.R1
+        return core.format_entity_html(obj)
     else:
-        return str(obj)
+        return core.format_literal_html(obj)
 
 jinja_FILTERS["crpr"] = crpr
 

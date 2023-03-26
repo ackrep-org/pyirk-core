@@ -2328,5 +2328,9 @@ def format_entity_html(e: Entity):
     return f'<span class="js-toggle" data-short-txt="{quote(short_txt)}" data-detailed-txt="{quote(detailed_txt)}">{short_txt}</span>'
 
 
+def format_literal_html(obj):
+    return f'<span class="literal">{repr(obj)}</span>'
+
+
 def script_main(fpath):
     IPS()

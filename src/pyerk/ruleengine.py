@@ -32,7 +32,6 @@ from . import core
 
 # todo: replace bi. with p. etc
 from . import builtin_entities as bi
-from . import builtin_entities as b
 from . import settings
 import pyerk as p
 
@@ -72,7 +71,7 @@ def apply_semantic_rule(rule: core.Item, mod_context_uri: str = None) -> List[co
     """
     Create a RuleApplicator instance for the rules, execute its apply-method, return the result (list of new statements)
     """
-    assert rule.R4__is_instance_of == b.I41["semantic rule"]
+    assert rule.R4__is_instance_of == bi.I41["semantic rule"]
 
     if VERBOSITY:
         print("applying", rule)
@@ -94,7 +93,7 @@ def apply_semantic_rule(rule: core.Item, mod_context_uri: str = None) -> List[co
 
 def get_all_rules():
 
-    rule_instances: list = b.I41["semantic rule"].get_inv_relations("R4__is_instance_of", return_subj=True)
+    rule_instances: list = bi.I41["semantic rule"].get_inv_relations("R4__is_instance_of", return_subj=True)
 
     return rule_instances
 

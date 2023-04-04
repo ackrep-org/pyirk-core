@@ -1,0 +1,7 @@
+# this file contains some configuration for the pyerk package
+
+main_module = "zebra02.py"
+main_module_prefix = "zp"  # zebra puzzle
+version = "0.1.0.0"
+
+[pyerkdjango]

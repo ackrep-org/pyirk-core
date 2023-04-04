@@ -39,6 +39,8 @@ if os.environ.get("IPYDEX_AIOE") == "true":
 """
     TODO:
 
+    report should link entities to django
+
     model sets as type? and elements as instances?
     manually trigger reload in gui
 

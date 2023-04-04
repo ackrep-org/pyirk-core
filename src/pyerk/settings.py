@@ -35,6 +35,7 @@ URI_SEP = "#"
 OCSE_URI = "erk:/ocse/0.2"
 
 
+# this is relevant to look for pyerk-data to load (specified by a configuration file)
 BASE_DIR = os.getenv("PYERK_BASE_DIR", "")
 if not BASE_DIR:
     BASE_DIR = "./"

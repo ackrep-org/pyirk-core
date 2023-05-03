@@ -3,6 +3,17 @@ Command line interface for erk package
 """
 import os
 import argparse
+from pathlib import Path
+
+try:
+    # this will be part of standard library for python >= 3.11
+    import tomllib
+except ModuleNotFoundError:
+    import tomli as tomllib
+
+
+
+
 from . import core, erkloader, rdfstack
 from . import visualization
 from . import reportgenerator
@@ -41,10 +52,18 @@ def create_parser():
     parser.add_argument(
         "-l",
         "--load-mod",
-        help="load module from path with prefix.",
+        help="load module (.py file) from path with prefix.",
         nargs=2,
         default=None,
         metavar=("MOD_PATH", "PREFIX"),
+    )
+
+    parser.add_argument(
+        "-lp",
+        "--load-package",
+        help="load erk package (represented by erkpackage.tomle file)",
+        default=None,
+        metavar=("PACKAGE_TOML_PATH"),
     )
 
     # background: in earlier versions default erk-module paths were specified wrt the path of the
@@ -87,7 +106,7 @@ def create_parser():
     parser.add_argument(
         "-i",
         "--interactive-session",
-        help="start an interactive session (with the specified module loaded)",
+        help="start an interactive session (with the specified module/package loaded)",
         action="store_true",
     )
 
@@ -128,13 +147,23 @@ def main():
         print(release.__version__)
         exit()
 
+    if args.load_mod is not None and args.load_package is not None:
+        print(aux.byellow(
+            "The options to load a module and to load a package are mutually exclusive"
+        ))
+        exit()
+        
     if args.load_mod is not None:
 
         path, prefix = args.load_mod
         loaded_mod = process_mod(path=path, prefix=prefix, relative_to_workdir=True)
+    elif args.load_package is not None:
+        loaded_mod, prefix = process_package(args.load_package)
     else:
         loaded_mod = None
         prefix = None
+        
+
 
     if args.interactive_session:
         interactive_session(loaded_mod, prefix)
@@ -183,6 +212,22 @@ def main():
         pyerkdjango.core.start_django_shell()
     else:
         print("nothing to do, see option `--help` for more info")
+
+
+def process_package(pkg_path: str) -> erkloader.ModuleType:
+    
+    
+    if os.path.isdir(pkg_path):
+        pkg_path = os.path.join(pkg_path, "erkpackage.toml")
+    
+    with open(pkg_path, "rb") as fp:
+        erk_conf_dict = tomllib.load(fp)
+    ocse_main_rel_path = erk_conf_dict["main_module"]
+    main_module_prefix = erk_conf_dict["main_module_prefix"]
+    ocse_main_mod_path = Path(pkg_path).parent.joinpath(ocse_main_rel_path).as_posix()
+    
+    mod = erkloader.load_mod_from_path(modpath=ocse_main_mod_path, prefix=main_module_prefix)
+    return mod, main_module_prefix
 
 
 def process_mod(path: str, prefix: str, relative_to_workdir: bool = False) -> erkloader.ModuleType:

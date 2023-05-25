@@ -49,4 +49,7 @@ try:
     with open(confpath, "rb") as fp:
         CONF = tomllib.load(fp)
 except FileNotFoundError:
+    import logging
+    msg = f"file not found: {confpath}"
+    logging.warning(msg)
     CONF = {}

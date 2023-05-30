@@ -2,12 +2,15 @@
 
 import os
 import sys
+import logging
 
 try:
     # this will be part of standard library for python >= 3.11
     import tomllib
 except ModuleNotFoundError:
     import tomli as tomllib
+
+logger = logging.getLogger("pyerk")
 
 # for now we only support a subset of languages with wich the authors are familiar
 # if you miss a language, please consider contributing
@@ -49,7 +52,6 @@ try:
     with open(confpath, "rb") as fp:
         CONF = tomllib.load(fp)
 except FileNotFoundError:
-    import logging
     msg = f"file not found: {confpath}"
-    logging.warning(msg)
+    logger.warning(msg)
     CONF = {}

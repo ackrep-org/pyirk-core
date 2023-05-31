@@ -45,8 +45,9 @@ if not BASE_DIR:
 BASE_DIR = os.path.abspath(BASE_DIR)
 
 
-confpath = os.path.join(BASE_DIR, "erkpackage.toml")
-
+confpath = os.getenv("PYERK_CONF_PATH", "")
+if not confpath:
+    confpath = os.path.join(BASE_DIR, "erkpackage.toml")
 
 try:
     with open(confpath, "rb") as fp:

@@ -14,7 +14,7 @@ from urllib.parse import quote
 from enum import Enum, unique
 import re as regex
 from addict import Dict as attr_dict
-from typing import Dict, Union, List, Iterable, Optional
+from typing import Any, Dict, Union, List, Iterable, Optional
 from rdflib import Literal
 import pydantic
 import re
@@ -672,6 +672,17 @@ def wrap_function_with_search_uri_context(func, uri):
 
     return wrapped_func
 
+
+class PrefixShortCut:
+    def __getattribute__(self, prefix_name: str) -> Any:
+        if not prefix_name in ds.uri_prefix_mapping.b:
+            raise UnknownPrefixError(prefix_name)
+
+        uri = ds.uri_prefix_mapping.b[prefix_name]
+        mod = ds.uri_mod_dict[uri]
+        return mod
+
+pf = PrefixShortCut()
 
 class DataStore:
     """

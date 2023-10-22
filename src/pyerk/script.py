@@ -275,7 +275,17 @@ def debug():
 def create_auto_complete_file():
     lines = []
 
+    default_pkg_fname = "erkpackage.toml"
+    if len(core.ds.uri_mod_dict) == 0:
+        if os.path.exists(default_pkg_fname):
+            print(f"Loading {default_pkg_fname}")
+            process_package(default_pkg_fname)
+
     for uri, item in core.ds.items.items():
+        if "Ia" in item.short_key:
+            # this is an automatically created item -> omit
+            continue
+
         lines.append(f'{item.short_key}["{item.R1__has_label}"]\n')
 
     for uri, relation in core.ds.relations.items():

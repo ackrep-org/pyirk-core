@@ -124,6 +124,13 @@ def create_parser():
         action="store_true",
     )
 
+    parser.add_argument(
+        "-ac",
+        "--create-autocomplete-candidates",
+        help="create a file with autocomplete candidates in the current workdir",
+        action="store_true",
+    )
+
     parser.add_argument("--dbg", help="start debug routine", default=None, action="store_true")
 
     parser.add_argument(
@@ -152,7 +159,7 @@ def main():
             "The options to load a module and to load a package are mutually exclusive"
         ))
         exit()
-        
+
     if args.load_mod is not None:
 
         path, prefix = args.load_mod
@@ -162,11 +169,15 @@ def main():
     else:
         loaded_mod = None
         prefix = None
-        
+
 
 
     if args.interactive_session:
         interactive_session(loaded_mod, prefix)
+        exit()
+
+    if args.create_autocomplete_candidates:
+        create_auto_complete_file()
         exit()
 
     # typical calls to generate new keys:
@@ -215,17 +226,17 @@ def main():
 
 
 def process_package(pkg_path: str) -> erkloader.ModuleType:
-    
-    
+
+
     if os.path.isdir(pkg_path):
         pkg_path = os.path.join(pkg_path, "erkpackage.toml")
-    
+
     with open(pkg_path, "rb") as fp:
         erk_conf_dict = tomllib.load(fp)
     ocse_main_rel_path = erk_conf_dict["main_module"]
     main_module_prefix = erk_conf_dict["main_module_prefix"]
     ocse_main_mod_path = Path(pkg_path).parent.joinpath(ocse_main_rel_path).as_posix()
-    
+
     mod = erkloader.load_mod_from_path(modpath=ocse_main_mod_path, prefix=main_module_prefix)
     return mod, main_module_prefix
 
@@ -259,6 +270,25 @@ def debug():
     res = ds.rdfgraph.query(qsrc)
     z = aux.apply_func_to_table_cells(rdfstack.convert_from_rdf_to_pyerk, res)  # noqa
     IPS()
+
+
+def create_auto_complete_file():
+    lines = []
+
+    for uri, item in core.ds.items.items():
+        lines.append(f'{item.short_key}["{item.R1__has_label}"]\n')
+
+    for uri, relation in core.ds.relations.items():
+
+        label_str = relation.R1__has_label.replace(" ", "_")
+        lines.append(f"{relation.short_key}__{label_str}\n")
+
+    fname = ".ac_candidates.txt"
+    fpath = os.path.abspath(os.path.join("./", fname))
+    with open(fname, "w") as fp:
+        fp.writelines(lines)
+
+    print(f"File written: {fpath}")
 
 
 def interactive_session(loaded_mod, prefix):

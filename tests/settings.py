@@ -107,6 +107,10 @@ class HouskeeperMixin:
                 print(method_repr, p.aux.bgreen("passed"))
 
     def had_error(self):
+        return False
+
+        # TODO fix this for python 3.11 by using
+        # https://stackoverflow.com/questions/4414234/getting-pythons-unittest-results-in-a-teardown-method
 
         if USING_NOSE:
             # this will be an flat list (empty on no errors)

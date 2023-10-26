@@ -281,17 +281,20 @@ def create_auto_complete_file():
             print(f"Loading {default_pkg_fname}")
             process_package(default_pkg_fname)
 
-    for uri, item in core.ds.items.items():
-        if "Ia" in item.short_key:
+    for uri, entity in core.ds.items.items():
+        if "Ia" in entity.short_key:
             # this is an automatically created item -> omit
             continue
 
-        lines.append(f'{item.short_key}["{item.R1__has_label}"]\n')
+        lines.append(f'{entity.short_key}["{entity.R1__has_label}"]\n')
+        label_str = core.ilk2nlk(entity.R1__has_label)
+        lines.append(f"{entity.short_key}__{label_str}\n")
 
-    for uri, relation in core.ds.relations.items():
+    for uri, entity in core.ds.relations.items():
 
-        label_str = relation.R1__has_label.replace(" ", "_")
-        lines.append(f"{relation.short_key}__{label_str}\n")
+        label_str = core.ilk2nlk(entity.R1__has_label)
+        lines.append(f"{entity.short_key}__{label_str}\n")
+        lines.append(f'{entity.short_key}["{entity.R1__has_label}"]\n')
 
     fname = ".ac_candidates.txt"
     fpath = os.path.abspath(os.path.join("./", fname))

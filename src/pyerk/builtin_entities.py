@@ -401,7 +401,7 @@ I14 = create_builtin_item(
     key_str="I14",
     R1__has_label="mathematical proposition",
     R2__has_description="general mathematical proposition",
-    # R3__is_subclass_of=I7723["general mathematical proposition"]
+    # R3__is_subclass_off will be set below to I22__mathematical_knowledge_artifact
 )
 
 
@@ -1204,11 +1204,18 @@ R27 = create_builtin_relation(
 R26["has lhs"].set_relation(R8["has domain of argument 1"], I21["mathematical relation"])
 R27["has rhs"].set_relation(R8["has domain of argument 1"], I21["mathematical relation"])
 
+I46  = create_builtin_item(
+    key_str="I46",
+    R1__has_label="knowledge artifact",
+    R2__has_description="general type for things like a theory, quote, equation ...",
+    R4__is_instance_of=I2["Metaclass"],
+)
+
 I22 = create_builtin_item(
     key_str="I22",
     R1__has_label="mathematical knowledge artifact",
     R2__has_description="(class for) something like an equation or a theorem",
-    R3__is_subclass_of=I2["Metaclass"],
+    R3__is_subclass_of=I46["knowledge artifact"],
 )
 
 
@@ -2234,8 +2241,9 @@ R72 = create_builtin_relation(
     R22__is_functional=True,
 )
 
+# I46 is defined above
 
-# next keys: I46, R73
+# next keys: I47, R73
 
 # ######################################################################################################################
 # condition functions (to be used in the premise scope of a rule)

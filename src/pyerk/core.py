@@ -1236,7 +1236,7 @@ def check_processed_key_label(pkey: ProcessedStmtKey) -> None:
         # entity does not exist -> no label to compare with
         return
     label_compare_str1 = entity.R1
-    label_compare_str2 = entity.R1.replace(" ", "_").replace("-", "_")
+    label_compare_str2 = ilk2nlk(entity.R1)
 
     if pkey.label.lower() not in (label_compare_str1.lower(), label_compare_str2.lower()):
         msg = (
@@ -1245,6 +1245,13 @@ def check_processed_key_label(pkey: ProcessedStmtKey) -> None:
             "Note: this test is *not* case-sensitive."
         )
         raise ValueError(msg)
+
+def ilk2nlk(ilk: str) -> str:
+    """
+    convert index labled key (R1234["my relation"]) to name labled key (R1234__my_relation)
+    """
+
+    return ilk.replace(" ", "_").replace("-", "_")
 
 
 def u(key_str: str) -> str:

@@ -25,7 +25,7 @@ from .settings import (
     # TEST_ACKREP_DATA_FOR_UT_PATH,
     TEST_BASE_URI,
     HouskeeperMixin,
-   
+
 )
 
 
@@ -1657,7 +1657,7 @@ class Test_07_import_export(HouskeeperMixin, unittest.TestCase):
             stm = x0.set_relation(R301, x1, qualifiers=[QF_R302(True), QF_R302(x2)])  # noqa
 
         q_stms = [v for v in p.ds.stms_created_in_mod[TEST_BASE_URI].values() if v.is_qualifier()]
-        self.assertEquals(len(q_stms), 2)
+        self.assertEqual(len(q_stms), 2)
 
         fpath = pjoin(TEST_DATA_DIR1, "tmp_test.nt")
         p.io.export_rdf_triples(fpath, add_qualifiers=True,  modfilter=TEST_BASE_URI)

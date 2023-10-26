@@ -32,8 +32,8 @@ from .settings import (
     TEST_BASE_URI,
     WRITE_TMP_FILES,
     HouskeeperMixin,
-   
-    
+
+
     )
 
 
@@ -1021,22 +1021,22 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
 
             x = p.instance_of(p.I1["general item"])
 
-            self.assertEquals(itm1.R57__is_placeholder, None)
-            self.assertEquals(itm2.R57__is_placeholder, None)
+            self.assertEqual(itm1.R57__is_placeholder, None)
+            self.assertEqual(itm2.R57__is_placeholder, None)
 
             stms = p.set_multiple_statements((itm1, itm2), p.R57["is placeholder"], True)
-            self.assertEquals(len(stms), 2)
-            self.assertEquals(itm1.R57__is_placeholder, True)
-            self.assertEquals(itm2.R57__is_placeholder, True)
+            self.assertEqual(len(stms), 2)
+            self.assertEqual(itm1.R57__is_placeholder, True)
+            self.assertEqual(itm2.R57__is_placeholder, True)
 
             tup = p.new_tuple(itm1, itm2, itm3)
             stms = p.set_multiple_statements(tup.R39__has_element, p.R31["is in mathematical relation with"], x)
 
-            self.assertEquals(len(stms), 3)
+            self.assertEqual(len(stms), 3)
 
-            self.assertEquals(itm1.R31__is_in_mathematical_relation_with, [x])
-            self.assertEquals(itm2.R31__is_in_mathematical_relation_with, [x])
-            self.assertEquals(itm3.R31__is_in_mathematical_relation_with, [x])
+            self.assertEqual(itm1.R31__is_in_mathematical_relation_with, [x])
+            self.assertEqual(itm2.R31__is_in_mathematical_relation_with, [x])
+            self.assertEqual(itm3.R31__is_in_mathematical_relation_with, [x])
 
     def test_d11__get_subjects_for_relation(self):
 
@@ -1419,7 +1419,7 @@ class Test_07_import_export(HouskeeperMixin, unittest.TestCase):
             stm = x0.set_relation(R301, x1, qualifiers=[QF_R302(True), QF_R302(x2)])  # noqa
 
         q_stms = [v for v in p.ds.stms_created_in_mod[TEST_BASE_URI].values() if v.is_qualifier()]
-        self.assertEquals(len(q_stms), 2)
+        self.assertEqual(len(q_stms), 2)
 
         fpath = pjoin(TEST_DATA_DIR1, "tmp_test.nt")
         p.io.export_rdf_triples(fpath, add_qualifiers=True,  modfilter=TEST_BASE_URI)

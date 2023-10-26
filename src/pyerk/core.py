@@ -184,7 +184,7 @@ class Entity(abc.ABC):
 
             if adhoc_label_str not in all_labels_dict:
                 msg = (
-                    f"Mismatiching label for Entity {self.short_key}!\nGot '{adhoc_label}' but valid labels are: "
+                    f"Mismatiching label for Entity {self.short_key}! Got '{adhoc_label}' but valid labels are: "
                     f" {all_labels}.\n\n"
                     f"Note: in index-labeled key notation the language of the labels is ignored for convenience."
                 )

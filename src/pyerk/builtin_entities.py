@@ -65,13 +65,22 @@ def allows_instantiation(itm: Item) -> bool:
     #  ('R3', <Item I4236["mathematical expression"]>),
     #  ('R3', <Item I4235["mathematical object"]>),
     #  ('R4', <Item I2["Metaclass"]>),
-    #  ('R3', <Item I1["general item"]>)]
+    #  ('R3', <Item I1["general item"]>)
+    #  ('R3', <Item I45["general entity"]>)]
 
     if len(taxtree) < 2:
         return False
 
     relation_keys, items = zip(*taxtree)
-    if items[-2] is not I2["Metaclass"]:
+
+    if len(items) < 3:
+        # this is the case e.g. for:
+        # [
+        # ('R3', <Item I1["general item"]>)
+        #  ('R3', <Item I45["general entity"]>)]
+        return False
+
+    if items[-3] is not I2["Metaclass"]:
         return False
 
     if relation_keys.count("R4") > 1:
@@ -265,7 +274,7 @@ I40 = create_builtin_item(
     R1__has_label="general relation",
     R2__has_description="proxy item for a relation",
     R18__has_usage_hint=(
-        "This item (which is in no relation to I1__general_item) can be used as a placeholder for any relation. "
+        "This item (which is in no direct relation to I1__general_item) can be used as a placeholder for any relation. "
         "In other words: this can be interpreted as the common superclass for all relations"
     ),
 )
@@ -2200,7 +2209,33 @@ R71 = create_builtin_relation(
 )
 
 
-# next keys: I45, R72
+I45 = create_builtin_item(
+    key_str="I45",
+    R1__has_label="general entity",
+    R2__has_description="common superclass of I1['general item'] and I40['general relation']",
+
+    # TODO: decide where to break the circle
+    # R4__is_instance_of=I2["Metaclass"],
+)
+
+I1['general item'].set_relation( R3["is subclass of"], I45["general entity"])
+I40['general relation'].set_relation( R3["is subclass of"], I45["general entity"])
+
+
+R72 = create_builtin_relation(
+    key_str="R72",
+    R1__has_label="is generally related to",
+    R2__has_description=(
+        "specifies that the subject is 'somehow' related to the object"
+    ),
+    R8__has_domain_of_argument_1=I45["general entity"],
+    R11__has_range_of_result=bool,
+    R18__has_usage_hint="used to model relationships which are not (yet) possible to model otherwise",
+    R22__is_functional=True,
+)
+
+
+# next keys: I46, R73
 
 # ######################################################################################################################
 # condition functions (to be used in the premise scope of a rule)

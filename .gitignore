@@ -4,6 +4,8 @@
 .directory
 */.ipynb_checkpoints/*
 src/*.egg-info/*
+.ac_candidates.txt
+*.nt
 tmp*
 dist
 build

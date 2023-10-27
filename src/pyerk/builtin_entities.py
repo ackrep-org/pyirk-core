@@ -2238,12 +2238,26 @@ R72 = create_builtin_relation(
     R8__has_domain_of_argument_1=I45["general entity"],
     R11__has_range_of_result=bool,
     R18__has_usage_hint="used to model relationships which are not (yet) possible to model otherwise",
-    R22__is_functional=True,
 )
+
+R73 = create_builtin_relation(
+    key_str="R73",
+    R1__has_label="conceptually dependends",
+    R2__has_description=(
+        "specifies that the object is needed to define the subject"
+    ),
+    R8__has_domain_of_argument_1=I45["general entity"],
+    R11__has_range_of_result=bool,
+    R18__has_usage_hint=(
+        "Used to model directed relationships which are not (yet) possible to model otherwise. "
+        "See R72__is_generally_related_to."
+    ),
+)
+
 
 # I46 is defined above
 
-# next keys: I47, R73
+# next keys: I47, R74
 
 # ######################################################################################################################
 # condition functions (to be used in the premise scope of a rule)

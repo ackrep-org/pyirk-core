@@ -748,6 +748,33 @@ class ScopingCM:
         cm = cls(itm=self.item, namespace=namespace, scope=scope, parent_scope_cm=self)
         return cm
 
+    def copy_from(self, other_scope):
+        assert other_scope.R4 is I16["scope"]
+        statements = other_scope.get_inv_relations("R20__has_defining_scope")
+        var_definitions = []
+        relation_stms = []
+
+        for stm in statements:
+            if isinstance(stm, core.QualifierStatement):
+                assert isinstance(stm.subject, core.Statement)
+                relation_stms.append(stm.subject)
+            elif isinstance(stm, core.Statement):
+                var_definitions.append(stm.subject)
+
+        for var_item in var_definitions:
+            name = var_item.R23__has_name_in_scope
+            class_item = var_item.R4__is_instance_of
+
+            # ensure that this variable was created with instance_of
+            assert is_generic_instance(var_item)
+
+            self._new_var(variable_name=name, variable_object=instance_of(class_item, r1=name))
+
+
+def is_generic_instance(itm: Item) -> bool:
+    # TODO: make this more robust
+    return itm.short_key[1] == "a"
+
 
 class AbstractMathRelatedScopeCM(ScopingCM):
     """

@@ -602,7 +602,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         test to copy statements from one scope to another
         """
         with p.uri_context(uri=TEST_BASE_URI):
-            I7324 = p.create_item(
+            I0111 = p.create_item(
                 R1__has_label = "definition of something",
                 R4__is_instance_of =p.I20["mathematical definition"],
             )
@@ -610,12 +610,36 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
             my_set = p.instance_of(p.I13["mathematical set"])
             my_prop = p.instance_of(p.I11["mathematical property"])
 
-            with I7324["definition of something"].scope("setting") as cm:
+            # create some variables and relations
+            with I0111["definition of something"].scope("setting") as cm:
                 x = cm.new_var(x=p.instance_of(p.I39["positive integer"]))
                 y = cm.new_var(y=p.instance_of(p.I39["positive integer"]))
+                z = cm.new_var(z=p.instance_of(p.I39["positive integer"]))
+                cm.new_rel(x, p.R16["has property"], my_prop)
 
-            I7324_setting = I7324["definition of something"].get_subscope("setting")
-            self.assertEqual(I7324_setting.R4__is_instance_of, p.I16["scope"])
+                with p.ImplicationStatement() as imp1:
+                    imp1.antecedent_relation(lhs=x, rsgn="==", rhs=y)
+                    imp1.consequent_relation(lhs=y, rsgn=">=", rhs=x)
+
+            I0111_setting = I0111["definition of something"].get_subscope("setting")
+            self.assertEqual(I0111_setting.R4__is_instance_of, p.I16["scope"])
+
+            # create a new definition and copy statements from the old one
+            I0222 = p.create_item(
+                R1__has_label = "definition of something different",
+                R4__is_instance_of =p.I20["mathematical definition"],
+            )
+            with I0222["definition of something different"].scope("setting") as cm:
+                cm.copy_from(I0111_setting)
+
+            I0222_setting = I0222["definition of something different"].get_subscope("setting")
+
+            # stms = I0222_setting.get_inv_relations("R20__has_defining_scope")
+            stm_subjects = I0222_setting.get_inv_relations("R20__has_defining_scope", return_subj=True)
+
+            labels = [obj.R1 for obj in stm_subjects[:3]]
+            self.assertEqual(labels, ["x", "y", "z"])
+
 
     def test_c08__relations_with_sequence_as_argument(self):
         with p.uri_context(uri=TEST_BASE_URI):

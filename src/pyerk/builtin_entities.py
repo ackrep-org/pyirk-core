@@ -761,6 +761,10 @@ class ScopingCM:
             elif isinstance(stm, core.Statement):
                 var_definitions.append(stm.subject)
 
+        # keep track of which old variables correspond to which new ones
+        tmp_mapping = {}
+
+        # create variables
         for var_item in var_definitions:
             name = var_item.R23__has_name_in_scope
             class_item = var_item.R4__is_instance_of
@@ -768,7 +772,23 @@ class ScopingCM:
             # ensure that this variable was created with instance_of
             assert is_generic_instance(var_item)
 
-            self._new_var(variable_name=name, variable_object=instance_of(class_item, r1=name))
+            new_var_item = self._new_var(
+                variable_name=name,
+                variable_object=instance_of(class_item, r1=name)
+            )
+            tmp_mapping[var_item.uri] = new_var_item
+
+        # create relations
+        stm: core.Statement
+        for stm in relation_stms:
+            subj, pred, obj = stm.relation_tuple
+            new_subj = tmp_mapping.get(subj.uri, subj)
+            new_obj = tmp_mapping.get(obj.uri, obj)
+
+            # TODO: handle qualifiers and overwrite flag
+            self.new_rel(new_subj, pred, new_obj)
+
+        # TODO: handle ImplicationStatement (see test_c07c__scope_copying)
 
 
 def is_generic_instance(itm: Item) -> bool:

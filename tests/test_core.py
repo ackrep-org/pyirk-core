@@ -617,6 +617,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
                 z = cm.new_var(z=p.instance_of(p.I39["positive integer"]))
                 cm.new_rel(x, p.R16["has property"], my_prop)
 
+                # TODO: this does not occure in I0111_setting at all (!!)
                 with p.ImplicationStatement() as imp1:
                     imp1.antecedent_relation(lhs=x, rsgn="==", rhs=y)
                     imp1.consequent_relation(lhs=y, rsgn=">=", rhs=x)
@@ -637,9 +638,14 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
             # stms = I0222_setting.get_inv_relations("R20__has_defining_scope")
             stm_subjects = I0222_setting.get_inv_relations("R20__has_defining_scope", return_subj=True)
 
+            x2, y2, z2 = stm_subjects[:3]
             labels = [obj.R1 for obj in stm_subjects[:3]]
             self.assertEqual(labels, ["x", "y", "z"])
+            self.assertNotEqual(x.uri, x2.uri)
 
+            rel_stm = stm_subjects[3]
+            self.assertIsInstance(rel_stm, p.Statement)
+            self.assertEqual(rel_stm.relation_tuple, (x2, p.R16["has property"], my_prop))
 
     def test_c08__relations_with_sequence_as_argument(self):
         with p.uri_context(uri=TEST_BASE_URI):

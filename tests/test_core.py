@@ -726,7 +726,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
 
         self.assertEqual(itm1, itm2)
 
-        itm1_setting_namespace = itm1._ns_context
+        itm1_setting_namespace = itm1._ns_setting
         # alternative way to access names (graph based but bulky): itm1.scp__context.get_inv_relations("R20"), ...
 
         Z: p.Item = itm1_setting_namespace["Z"]

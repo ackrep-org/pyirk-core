@@ -601,6 +601,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         """
         test to copy statements from one scope to another
         """
+        ct = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
         with p.uri_context(uri=TEST_BASE_URI):
             I0111 = p.create_item(
                 R1__has_label = "definition of something",
@@ -617,6 +618,10 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
                 z = cm.new_var(z=p.instance_of(p.I39["positive integer"]))
                 cm.new_rel(x, p.R16["has property"], my_prop)
 
+                V = cm.new_var(V=p.instance_of(ct.ma.I9923["scalar field"]))
+                f = cm.new_var(f=p.instance_of(ct.ma.I9841["vector field"]))
+
+                LfV = cm.new_var(LfV=ct.I1347["Lie derivative of scalar field"](V, f, x))
                 # TODO: this does not occure in I0111_setting at all (!!)
                 with p.ImplicationStatement() as imp1:
                     imp1.antecedent_relation(lhs=x, rsgn="==", rhs=y)
@@ -628,7 +633,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
             # create a new definition and copy statements from the old one
             I0222 = p.create_item(
                 R1__has_label = "definition of something different",
-                R4__is_instance_of =p.I20["mathematical definition"],
+                R4__is_instance_of = p.I20["mathematical definition"],
             )
             with I0222["definition of something different"].scope("setting") as cm:
                 cm.copy_from(I0111_setting)
@@ -638,14 +643,18 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
             # stms = I0222_setting.get_inv_relations("R20__has_defining_scope")
             stm_subjects = I0222_setting.get_inv_relations("R20__has_defining_scope", return_subj=True)
 
-            x2, y2, z2 = stm_subjects[:3]
+            x2, y2, z2, V2, f2, LfV2 = stm_subjects[:6]
             labels = [obj.R1 for obj in stm_subjects[:3]]
             self.assertEqual(labels, ["x", "y", "z"])
             self.assertNotEqual(x.uri, x2.uri)
 
-            rel_stm = stm_subjects[3]
+            # relation statement are treated last
+            rel_stm = stm_subjects[-1]
             self.assertIsInstance(rel_stm, p.Statement)
             self.assertEqual(rel_stm.relation_tuple, (x2, p.R16["has property"], my_prop))
+
+            # TODO: test that the arguments of LfV are the new objects V2, f2, x2
+            # currently LfV seems to have !!no relation at all!! to V, f, x
 
     def test_c08__relations_with_sequence_as_argument(self):
         with p.uri_context(uri=TEST_BASE_URI):

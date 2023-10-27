@@ -89,12 +89,13 @@ def check_type(obj, expected_type, strict=True):
 
     class Model(pydantic.BaseModel):
         data: expected_type
-
-        class Config:
-            # necessary because https://github.com/samuelcolvin/pydantic/issues/182
-            # otherwise check_type raises() an error for types as Dict[str, owl2.Thing]
-            arbitrary_types_allowed = True
-            smart_union=True  # seems to be necessary to respect the ordering of types inside a unioin
+        # necessary because https://github.com/samuelcolvin/pydantic/issues/182
+        # otherwise check_type raises() an error for types as Dict[str, owl2.Thing]
+        # note: this has been converted from class-based config to dict-based config
+        # see: https://docs.pydantic.dev/2.4/migration/#changes-to-config
+        model_config = {
+            "arbitrary_types_allowed": True,
+        }
 
     # convert ValidationError to TypeError if the obj does not match the expected type
     try:

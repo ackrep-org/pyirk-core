@@ -1067,10 +1067,29 @@ def _get_subscopes(self):
     """
     Convenience method for items which usually have scopes: allow easy access to subscopes
     """
-    return self.get_inv_relations("R21__is_scope_of", return_subj=True)
+    scope_rels: list = self.get_inv_relations("R21__is_scope_of", return_subj=True)
+    return scope_rels
 
 I15["implication proposition"].add_method(_get_subscopes, name="get_subscopes")
 I16["scope"].add_method(_get_subscopes, name="get_subscopes")
+
+def _get_subscope(self, name: str):
+    assert isinstance(name, str)
+    scope_rels: list = self.get_inv_relations("R21__is_scope_of", return_subj=True)
+
+    res = [rel for rel in scope_rels if rel.R1 == name or rel.R1 == f"scp__{name}"]
+
+    if len(res) == 0:
+        msg = f"no scope with name {name} could be found"
+        raise core.aux.InvalidScopeNameError(msg)
+    elif len(res) > 1:
+        msg = f"unexpected: scope name {name} is not unique"
+        raise core.aux.InvalidScopeNameError(msg)
+    else:
+        return res[0]
+
+I15["implication proposition"].add_method(_get_subscope, name="get_subscope")
+I16["scope"].add_method(_get_subscope, name="get_subscope")
 
 def _get_statements_for_scope(self):
     """
@@ -1178,6 +1197,7 @@ I20 = create_builtin_item(
 # TODO: add these methods via inheritance
 I20["mathematical definition"].add_method(_proposition__scope, name="scope")
 I20["mathematical definition"].add_method(_get_subscopes, name="get_subscopes")
+I20["mathematical definition"].add_method(_get_subscope, name="get_subscope")
 
 
 I21 = create_builtin_item(

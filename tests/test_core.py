@@ -597,6 +597,26 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
             self.assertEqual(proxy_item.R26__has_lhs, z)
             self.assertEqual(proxy_item.R27__has_rhs, y)
 
+    def test_c07c__scope_copying(self):
+        """
+        test to copy statements from one scope to another
+        """
+        with p.uri_context(uri=TEST_BASE_URI):
+            I7324 = p.create_item(
+                R1__has_label = "definition of something",
+                R4__is_instance_of =p.I20["mathematical definition"],
+            )
+
+            my_set = p.instance_of(p.I13["mathematical set"])
+            my_prop = p.instance_of(p.I11["mathematical property"])
+
+            with I7324["definition of something"].scope("setting") as cm:
+                x = cm.new_var(x=p.instance_of(p.I39["positive integer"]))
+                y = cm.new_var(y=p.instance_of(p.I39["positive integer"]))
+
+            I7324_setting = I7324["definition of something"].get_subscope("setting")
+            self.assertEqual(I7324_setting.R4__is_instance_of, p.I16["scope"])
+
     def test_c08__relations_with_sequence_as_argument(self):
         with p.uri_context(uri=TEST_BASE_URI):
             Ia001 = p.create_item(R1__has_label="test item")

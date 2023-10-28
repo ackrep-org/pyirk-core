@@ -184,6 +184,10 @@ class UndefinedRelationError(PyERKError):
     pass
 
 
+class TaxonomicError(PyERKError):
+    pass
+
+
 class RuleTermination(PyERKError):
     pass
 

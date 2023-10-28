@@ -703,6 +703,17 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
             itm4 = p.instance_of(itm3)
         self.assertFalse(p.allows_instantiation(itm4))
 
+    def test_c09a__is_subclass_of(self):
+
+        self.assertTrue(p.is_subclass_of(p.I39["positive integer"], p.I38["non-negative integer"]))
+        self.assertTrue(p.is_subclass_of(p.I39["positive integer"], p.I37["integer number"]))
+        self.assertTrue(p.is_subclass_of(p.I39["positive integer"], p.I35["real number"]))
+
+        with self.assertRaises(p.aux.TaxonomicError):
+            p.is_subclass_of(p.I39["positive integer"], p.I1["general item"])
+
+        self.assertFalse(p.is_subclass_of(p.I35["real number"], p.I39["positive integer"]))
+
     def test_c10__qualifiers(self):
         _ = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
         _ = p.erkloader.load_mod_from_path(TEST_DATA_PATH3, prefix="ag")

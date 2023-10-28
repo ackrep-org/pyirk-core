@@ -126,6 +126,33 @@ def get_taxonomy_tree(itm, add_self=True) -> list:
     return res
 
 
+def is_subclass_of(itm1: Item, itm2: Item) -> bool:
+
+    for i, itm in enumerate((itm1, itm2), start=1):
+        if not allows_instantiation(itm):
+            msg = f"itm{1} ({itm}) is not a instantiable class"
+            raise core.aux.TaxonomicError(msg)
+
+    taxtree1 = get_taxonomy_tree(itm1)
+
+    # This is a list of 2-tuples like the following:
+    # [(None, <Item I4239["monovariate polynomial"]>),
+    #  ('R3', <Item I4237["monovariate rational function"]>),
+    #  ('R3', <Item I4236["mathematical expression"]>),
+    #  ('R3', <Item I4235["mathematical object"]>),
+    #  ('R4', <Item I2["Metaclass"]>),
+    #  ('R3', <Item I1["general item"]>)
+    #  ('R3', <Item I45["general entity"]>)]
+
+    # reminder: R3__is_subclass_of, R4__is_instance_of
+
+    res = ("R3", itm2) in taxtree1
+
+    return res
+
+
+
+
 def instance_of(cls_entity, r1: str = None, r2: str = None, qualifiers: List[Item] = None) -> Item:
     """
     Create an instance (R4) of an item. Try to obtain the label by inspection of the calling context (if r1 is None).

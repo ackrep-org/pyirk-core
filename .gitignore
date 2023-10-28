@@ -6,6 +6,7 @@
 src/*.egg-info/*
 .ac_candidates.txt
 *.nt
+.vscode
 tmp*
 dist
 build

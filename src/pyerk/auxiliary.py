@@ -180,6 +180,10 @@ class FunctionalRelationError(PyERKError):
     pass
 
 
+class UndefinedRelationError(PyERKError):
+    pass
+
+
 class RuleTermination(PyERKError):
     pass
 
@@ -323,7 +327,7 @@ def make_uri(base_uri: str, short_key):
 # Currently it is not needed but might be useful in the future.
 def convert_key_str_to_num(key_str: str) -> int:
 
-    import regex  # this import is "parked here" as long as the function is not used
+    import re as regex  # this import is "parked here" as long as the function is not used
 
     re_short_key = regex.compile(r"^((Ia?)|(Ra?)|(RE))(\d+)$")
     # produces 5 groups: [{outer-parenthesis}, {inner-p1}, {inner-p2}, {inner-p3}, {last-p}]

@@ -1,4 +1,4 @@
-from typing import List, Union, Optional, Any
+from typing import List, Union, Optional, Any, Tuple
 
 from ipydex import IPS  # noqa
 
@@ -577,6 +577,9 @@ class ScopingCM:
         self.scope = scope
         self.parent_scope_cm = parent_scope_cm
 
+        # this is used in copy_from
+        self.tmp_var_mapping = {}
+
     def __enter__(self):
         """
         implicitly called in the head of the with statemet
@@ -747,6 +750,75 @@ class ScopingCM:
 
         cm = cls(itm=self.item, namespace=namespace, scope=scope, parent_scope_cm=self)
         return cm
+
+    def copy_from(self, other_scope):
+        assert other_scope.R4 is I16["scope"]
+        statements = other_scope.get_inv_relations("R20__has_defining_scope")
+        var_definitions = []
+        relation_stms = []
+
+        for stm in statements:
+            if isinstance(stm, core.QualifierStatement):
+                assert isinstance(stm.subject, core.Statement)
+                relation_stms.append(stm.subject)
+            elif isinstance(stm, core.Statement):
+                var_definitions.append(stm.subject)
+
+        # to keep track of which old variables correspond to which new ones
+        self.tmp_var_mapping.clear()
+
+        # create variables
+        for var_item in var_definitions:
+            name = var_item.R23__has_name_in_scope
+            class_item = var_item.R4__is_instance_of
+
+            # ensure that this variable was created with instance_of
+            assert is_generic_instance(var_item)
+
+            if var_item.R35__is_applied_mapping_of:
+                new_var_item = self._copy_mapping(var_item)
+            else:
+                new_var_item = self._new_var(
+                    variable_name=name,
+                    variable_object=instance_of(class_item, r1=name)
+                )
+            self.tmp_var_mapping[var_item.uri] = new_var_item
+
+        # create relations
+        stm: core.Statement
+        for stm in relation_stms:
+            subj, pred, obj = stm.relation_tuple
+            new_subj = self.tmp_var_mapping.get(subj.uri, subj)
+            new_obj = self.tmp_var_mapping.get(obj.uri, obj)
+
+            # TODO: handle qualifiers and overwrite flag
+            self.new_rel(new_subj, pred, new_obj)
+
+        # TODO: handle ImplicationStatement (see test_c07c__scope_copying)
+
+
+    def _copy_mapping(self, mapping_item: Item) -> Item:
+        mapping_type = mapping_item.R35__is_applied_mapping_of
+        assert mapping_type is not None
+
+        name = mapping_item.R23__has_name_in_scope
+        assert name is not None
+
+        args = mapping_item.get_arguments()
+
+        new_args = (self.tmp_var_mapping[arg.uri] for arg in args)
+
+        new_mapping_item = mapping_type(*new_args)
+        # TODO: add R20__has_defining_scope and R23__has_name_in_scope
+
+        self._new_var(variable_name=name, variable_object=new_mapping_item)
+
+        return new_mapping_item
+
+
+def is_generic_instance(itm: Item) -> bool:
+    # TODO: make this more robust
+    return itm.short_key[1] == "a"
 
 
 class AbstractMathRelatedScopeCM(ScopingCM):
@@ -1067,10 +1139,29 @@ def _get_subscopes(self):
     """
     Convenience method for items which usually have scopes: allow easy access to subscopes
     """
-    return self.get_inv_relations("R21__is_scope_of", return_subj=True)
+    scope_rels: list = self.get_inv_relations("R21__is_scope_of", return_subj=True)
+    return scope_rels
 
 I15["implication proposition"].add_method(_get_subscopes, name="get_subscopes")
 I16["scope"].add_method(_get_subscopes, name="get_subscopes")
+
+def _get_subscope(self, name: str):
+    assert isinstance(name, str)
+    scope_rels: list = self.get_inv_relations("R21__is_scope_of", return_subj=True)
+
+    res = [rel for rel in scope_rels if rel.R1 == name or rel.R1 == f"scp__{name}"]
+
+    if len(res) == 0:
+        msg = f"no scope with name {name} could be found"
+        raise core.aux.InvalidScopeNameError(msg)
+    elif len(res) > 1:
+        msg = f"unexpected: scope name {name} is not unique"
+        raise core.aux.InvalidScopeNameError(msg)
+    else:
+        return res[0]
+
+I15["implication proposition"].add_method(_get_subscope, name="get_subscope")
+I16["scope"].add_method(_get_subscope, name="get_subscope")
 
 def _get_statements_for_scope(self):
     """
@@ -1178,6 +1269,7 @@ I20 = create_builtin_item(
 # TODO: add these methods via inheritance
 I20["mathematical definition"].add_method(_proposition__scope, name="scope")
 I20["mathematical definition"].add_method(_get_subscopes, name="get_subscopes")
+I20["mathematical definition"].add_method(_get_subscope, name="get_subscope")
 
 
 I21 = create_builtin_item(
@@ -1316,8 +1408,24 @@ R29 = create_builtin_relation(
 )
 
 
+# this function is added as a method to the results of `create_evaluated_mapping(...)` see below
+def get_arguments(self: Item) -> Tuple[Item]:
+    """
+    Convenience function to simplify the access to the entities which are in
+    itm.R36__has_argument_tuple.
+    """
+
+    arg_tuple_item = self.R36__has_argument_tuple
+    if arg_tuple_item is None:
+        msg = f"Unexpected: {self} has no arguments (associated via R36__has_argument_tuple)"
+        raise core.aux.UndefinedRelationError
+
+    args = arg_tuple_item.get_relations("R39__has_element", return_obj=True)
+    return args
+
+
 # TODO: doc: this mechanism needs documentation
-# this function can be added to mapping objects as needed
+# this function can be added to mapping objects as `_custom_call`-method
 def create_evaluated_mapping(mapping: Item, *args) -> Item:
     """
 
@@ -1368,6 +1476,9 @@ def create_evaluated_mapping(mapping: Item, *args) -> Item:
 
     arg_tup = new_tuple(*args)
     ev_mapping.set_relation(R36["has argument tuple"], arg_tup)
+
+    # add convenience method
+    ev_mapping.add_method(get_arguments, "get_arguments")
 
     return ev_mapping
 

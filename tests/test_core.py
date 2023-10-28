@@ -597,6 +597,70 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
             self.assertEqual(proxy_item.R26__has_lhs, z)
             self.assertEqual(proxy_item.R27__has_rhs, y)
 
+    def test_c07c__scope_copying(self):
+        """
+        test to copy statements from one scope to another
+        """
+        ct = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
+        with p.uri_context(uri=TEST_BASE_URI):
+            I0111 = p.create_item(
+                R1__has_label = "definition of something",
+                R4__is_instance_of =p.I20["mathematical definition"],
+            )
+
+            my_set = p.instance_of(p.I13["mathematical set"])
+            my_prop = p.instance_of(p.I11["mathematical property"])
+
+            # create some variables and relations
+            with I0111["definition of something"].scope("setting") as cm:
+                x = cm.new_var(x=p.instance_of(p.I39["positive integer"]))
+                y = cm.new_var(y=p.instance_of(p.I39["positive integer"]))
+                z = cm.new_var(z=p.instance_of(p.I39["positive integer"]))
+                cm.new_rel(x, p.R16["has property"], my_prop)
+
+                V = cm.new_var(V=p.instance_of(ct.ma.I9923["scalar field"]))
+                f = cm.new_var(f=p.instance_of(ct.ma.I9841["vector field"]))
+
+                LfV = cm.new_var(LfV=ct.I1347["Lie derivative of scalar field"](V, f, x))
+                # TODO: this does not occure in I0111_setting at all (!!)
+                with p.ImplicationStatement() as imp1:
+                    imp1.antecedent_relation(lhs=x, rsgn="==", rhs=y)
+                    imp1.consequent_relation(lhs=y, rsgn=">=", rhs=x)
+
+            I0111_setting = I0111["definition of something"].get_subscope("setting")
+            self.assertEqual(I0111_setting.R4__is_instance_of, p.I16["scope"])
+
+            # create a new definition and copy statements from the old one
+            I0222 = p.create_item(
+                R1__has_label = "definition of something different",
+                R4__is_instance_of = p.I20["mathematical definition"],
+            )
+            with I0222["definition of something different"].scope("setting") as cm:
+                cm.copy_from(I0111_setting)
+
+            I0222_setting = I0222["definition of something different"].get_subscope("setting")
+
+            # stms = I0222_setting.get_inv_relations("R20__has_defining_scope")
+            stm_subjects = I0222_setting.get_inv_relations("R20__has_defining_scope", return_subj=True)
+
+            x2, y2, z2, V2, f2, LfV2 = stm_subjects[:6]
+            labels = [obj.R1 for obj in stm_subjects[:3]]
+            self.assertEqual(labels, ["x", "y", "z"])
+            self.assertNotEqual(x.uri, x2.uri)
+
+            # relation statement are treated last
+            rel_stm = stm_subjects[-1]
+            self.assertIsInstance(rel_stm, p.Statement)
+            self.assertEqual(rel_stm.relation_tuple, (x2, p.R16["has property"], my_prop))
+
+            # TODO: test that the arguments of LfV are the new objects V2, f2, x2
+            args1 = LfV.get_arguments()
+            args2 = LfV2.get_arguments()
+
+            self.assertEqual(len(args1), len(args2))
+            self.assertEqual(args2, [V2, f2, x2])
+
+
     def test_c08__relations_with_sequence_as_argument(self):
         with p.uri_context(uri=TEST_BASE_URI):
             Ia001 = p.create_item(R1__has_label="test item")
@@ -667,7 +731,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
 
         self.assertEqual(itm1, itm2)
 
-        itm1_setting_namespace = itm1._ns_context
+        itm1_setting_namespace = itm1._ns_setting
         # alternative way to access names (graph based but bulky): itm1.scp__context.get_inv_relations("R20"), ...
 
         Z: p.Item = itm1_setting_namespace["Z"]

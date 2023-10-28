@@ -180,6 +180,10 @@ class FunctionalRelationError(PyERKError):
     pass
 
 
+class UndefinedRelationError(PyERKError):
+    pass
+
+
 class RuleTermination(PyERKError):
     pass
 

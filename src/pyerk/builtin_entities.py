@@ -1,4 +1,4 @@
-from typing import List, Union, Optional, Any
+from typing import List, Union, Optional, Any, Tuple
 
 from ipydex import IPS  # noqa
 
@@ -804,8 +804,7 @@ class ScopingCM:
         name = mapping_item.R23__has_name_in_scope
         assert name is not None
 
-        arg_tuple_item = mapping_item.R36__has_argument_tuple
-        args = arg_tuple_item.get_relations("R39__has_element", return_obj=True)
+        args = mapping_item.get_arguments()
 
         new_args = (self.tmp_var_mapping[arg.uri] for arg in args)
 
@@ -1409,8 +1408,24 @@ R29 = create_builtin_relation(
 )
 
 
+# this function is added as a method to the results of `create_evaluated_mapping(...)` see below
+def get_arguments(self: Item) -> Tuple[Item]:
+    """
+    Convenience function to simplify the access to the entities which are in
+    itm.R36__has_argument_tuple.
+    """
+
+    arg_tuple_item = self.R36__has_argument_tuple
+    if arg_tuple_item is None:
+        msg = f"Unexpected: {self} has no arguments (associated via R36__has_argument_tuple)"
+        raise core.aux.UndefinedRelationError
+
+    args = arg_tuple_item.get_relations("R39__has_element", return_obj=True)
+    return args
+
+
 # TODO: doc: this mechanism needs documentation
-# this function can be added to mapping objects as needed
+# this function can be added to mapping objects as `_custom_call`-method
 def create_evaluated_mapping(mapping: Item, *args) -> Item:
     """
 
@@ -1461,6 +1476,9 @@ def create_evaluated_mapping(mapping: Item, *args) -> Item:
 
     arg_tup = new_tuple(*args)
     ev_mapping.set_relation(R36["has argument tuple"], arg_tup)
+
+    # add convenience method
+    ev_mapping.add_method(get_arguments, "get_arguments")
 
     return ev_mapping
 

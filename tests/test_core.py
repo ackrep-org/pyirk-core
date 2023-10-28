@@ -654,6 +654,12 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
             self.assertEqual(rel_stm.relation_tuple, (x2, p.R16["has property"], my_prop))
 
             # TODO: test that the arguments of LfV are the new objects V2, f2, x2
+            args1 = LfV.get_arguments()
+            args2 = LfV2.get_arguments()
+
+            self.assertEqual(len(args1), len(args2))
+            self.assertEqual(args2, [V2, f2, x2])
+
 
     def test_c08__relations_with_sequence_as_argument(self):
         with p.uri_context(uri=TEST_BASE_URI):

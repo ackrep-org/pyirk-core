@@ -654,7 +654,6 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
             self.assertEqual(rel_stm.relation_tuple, (x2, p.R16["has property"], my_prop))
 
             # TODO: test that the arguments of LfV are the new objects V2, f2, x2
-            # currently LfV seems to have !!no relation at all!! to V, f, x
 
     def test_c08__relations_with_sequence_as_argument(self):
         with p.uri_context(uri=TEST_BASE_URI):

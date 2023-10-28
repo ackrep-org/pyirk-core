@@ -577,6 +577,9 @@ class ScopingCM:
         self.scope = scope
         self.parent_scope_cm = parent_scope_cm
 
+        # this is used in copy_from
+        self.tmp_var_mapping = {}
+
     def __enter__(self):
         """
         implicitly called in the head of the with statemet
@@ -761,8 +764,8 @@ class ScopingCM:
             elif isinstance(stm, core.Statement):
                 var_definitions.append(stm.subject)
 
-        # keep track of which old variables correspond to which new ones
-        tmp_mapping = {}
+        # to keep track of which old variables correspond to which new ones
+        self.tmp_var_mapping.clear()
 
         # create variables
         for var_item in var_definitions:
@@ -772,23 +775,46 @@ class ScopingCM:
             # ensure that this variable was created with instance_of
             assert is_generic_instance(var_item)
 
-            new_var_item = self._new_var(
-                variable_name=name,
-                variable_object=instance_of(class_item, r1=name)
-            )
-            tmp_mapping[var_item.uri] = new_var_item
+            if var_item.R35__is_applied_mapping_of:
+                new_var_item = self._copy_mapping(var_item)
+            else:
+                new_var_item = self._new_var(
+                    variable_name=name,
+                    variable_object=instance_of(class_item, r1=name)
+                )
+            self.tmp_var_mapping[var_item.uri] = new_var_item
 
         # create relations
         stm: core.Statement
         for stm in relation_stms:
             subj, pred, obj = stm.relation_tuple
-            new_subj = tmp_mapping.get(subj.uri, subj)
-            new_obj = tmp_mapping.get(obj.uri, obj)
+            new_subj = self.tmp_var_mapping.get(subj.uri, subj)
+            new_obj = self.tmp_var_mapping.get(obj.uri, obj)
 
             # TODO: handle qualifiers and overwrite flag
             self.new_rel(new_subj, pred, new_obj)
 
         # TODO: handle ImplicationStatement (see test_c07c__scope_copying)
+
+
+    def _copy_mapping(self, mapping_item: Item) -> Item:
+        mapping_type = mapping_item.R35__is_applied_mapping_of
+        assert mapping_type is not None
+
+        name = mapping_item.R23__has_name_in_scope
+        assert name is not None
+
+        arg_tuple_item = mapping_item.R36__has_argument_tuple
+        args = arg_tuple_item.get_relations("R39__has_element", return_obj=True)
+
+        new_args = (self.tmp_var_mapping[arg.uri] for arg in args)
+
+        new_mapping_item = mapping_type(*new_args)
+        # TODO: add R20__has_defining_scope and R23__has_name_in_scope
+
+        self._new_var(variable_name=name, variable_object=new_mapping_item)
+
+        return new_mapping_item
 
 
 def is_generic_instance(itm: Item) -> bool:

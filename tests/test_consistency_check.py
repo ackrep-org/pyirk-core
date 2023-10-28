@@ -44,14 +44,31 @@ class Test_01_CC(HouskeeperMixin, unittest.TestCase):
                 R11__has_range_of_result=p.I34["complex number"],
             )
 
+            real_number = p.instance_of(p.I35["real number"])
             general_int = p.instance_of(p.I37["integer number"])
             nonneg_int = p.instance_of(p.I38["non-negative integer"])
             positive_int = p.instance_of(p.I39["positive integer"])
 
-            # this should work
-            app1a = I0111["test operator"](general_int, nonneg_int, positive_int)
-            app1b = I0111["test operator"](nonneg_int, nonneg_int, positive_int)
+            if 0:
+                # these should work
+                p.cc.check(I0111["test operator"](general_int, nonneg_int, positive_int))
 
-            # this should raise an error
-            app2 = I0111["test operator"](general_int, nonneg_int)
-            app3 = I0111["test operator"](general_int, nonneg_int, positive_int)
+                # now pass an instance of a subclass for arg1
+                p.cc.check(I0111["test operator"](nonneg_int, nonneg_int, positive_int))
+
+                # these should raise an error
+                with self.assertRaises(p.cc.WrongArgNumber):
+                    p.cc.check(I0111["test operator"](general_int))
+                with self.assertRaises(p.cc.WrongArgNumber):
+                    p.cc.check(I0111["test operator"](general_int, ))
+
+            # now pass an instance of a subclass for arg1
+            p.cc.check(I0111["test operator"](nonneg_int, nonneg_int, positive_int))
+
+            with self.assertRaises(p.cc.WrongArgType):
+                # type error for arg2
+                p.cc.check(I0111["test operator"](general_int, general_int, positive_int))
+
+            with self.assertRaises(p.cc.WrongArgType):
+                # type error for arg1 and arg3
+                p.cc.check(I0111["test operator"](real_number, nonneg_int, real_number))

@@ -21,15 +21,13 @@ def export_rdf_triples(fpath: str, **kwargs):
 
 
 def import_raw_rdf_triples(fpath: str):
-
     g = rdflib.Graph()
     g.parse(fpath)
     return g
 
 
 def import_stms_from_rdf_triples(fpath: str):
-    """
-    """
+    """ """
 
     g = import_raw_rdf_triples(fpath)
 

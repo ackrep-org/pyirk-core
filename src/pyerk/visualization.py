@@ -162,7 +162,6 @@ class EntityNode(AbstractGraphObject):
         self._perform_label_segmentation()
 
     def get_dot_label(self, render=False) -> str:
-
         if render:
             return render_label(self.dot_label_str)
         else:
@@ -214,7 +213,6 @@ class Edge(AbstractGraphObject):
 
 
 def create_node(arg: Union[p.Entity, object], url_template: str):
-
     if isinstance(arg, p.Entity):
         return EntityNode(arg, url_template)
     elif isinstance(arg, str):
@@ -224,7 +222,6 @@ def create_node(arg: Union[p.Entity, object], url_template: str):
 
 
 def create_key_with_length(basic_key_gen: callable, length: int) -> str:
-
     base_key = next(basic_key_gen)
 
     relevant_length = length - 2  # (account for curly braces (see REMARK__curly_braces_wrapping))
@@ -232,7 +229,6 @@ def create_key_with_length(basic_key_gen: callable, length: int) -> str:
     if relevant_length <= len(base_key):
         key_str = base_key
     else:
-
         assert relevant_length > 0
         assert length < 36, "unexpected long length"
 
@@ -281,7 +277,6 @@ def create_label_segments(label: str, maxlen: int) -> Tuple[List[str], List[str]
     split_chars = (" ", "-", "_", ":")
 
     while len(rest) > maxlen:
-
         first_part = rest[:maxlen]
 
         # handle special case where the next character is a space
@@ -316,7 +311,6 @@ def create_label_segments(label: str, maxlen: int) -> Tuple[List[str], List[str]
 
 class CustomizedDiGraph(nx.DiGraph):
     def add_node(self, node: AbstractGraphObject, **kwargs):
-
         # set defaults
         # note: adding an id keyword here does not influence the id in the svg
         new_kwargs = dict(label=node.get_dot_label(), id=node.id, shape=node.shape)
@@ -526,7 +520,6 @@ def visualize_entity(uri: str, url_template="", write_tmp_files: bool = False) -
 
 
 def visualize_all_entities(url_template="", write_tmp_files: bool = False) -> str:
-
     G = create_complete_graph(url_template)
 
     print(f"Visualizing {len(G.nodes)} nodes and {len(G.edges)} edges.")

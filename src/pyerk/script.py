@@ -12,8 +12,6 @@ except ModuleNotFoundError:
     import tomli as tomllib
 
 
-
-
 from . import core, erkloader, rdfstack
 from . import visualization
 from . import reportgenerator
@@ -143,7 +141,6 @@ def create_parser():
 
 
 def main():
-
     args = create_parser().parse_args()
 
     if args.dbg:
@@ -155,13 +152,10 @@ def main():
         exit()
 
     if args.load_mod is not None and args.load_package is not None:
-        print(aux.byellow(
-            "The options to load a module and to load a package are mutually exclusive"
-        ))
+        print(aux.byellow("The options to load a module and to load a package are mutually exclusive"))
         exit()
 
     if args.load_mod is not None:
-
         path, prefix = args.load_mod
         loaded_mod = process_mod(path=path, prefix=prefix, relative_to_workdir=True)
     elif args.load_package is not None:
@@ -169,8 +163,6 @@ def main():
     else:
         loaded_mod = None
         prefix = None
-
-
 
     if args.interactive_session:
         interactive_session(loaded_mod, prefix)
@@ -194,7 +186,6 @@ def main():
     elif reportconf_path := args.generate_report:
         reportgenerator.generate_report(reportconf_path)
     elif key := args.visualize:
-
         if key == "__all__":
             visualization.visualize_all_entities(write_tmp_files=True)
             return
@@ -226,8 +217,6 @@ def main():
 
 
 def process_package(pkg_path: str) -> erkloader.ModuleType:
-
-
     if os.path.isdir(pkg_path):
         pkg_path = os.path.join(pkg_path, "erkpackage.toml")
 
@@ -242,7 +231,6 @@ def process_package(pkg_path: str) -> erkloader.ModuleType:
 
 
 def process_mod(path: str, prefix: str, relative_to_workdir: bool = False) -> erkloader.ModuleType:
-
     if not relative_to_workdir:
         msg = "using mod paths which are not relative to workdir is deprecated since pyerk version 0.6.0"
         raise DeprecationWarning(msg)
@@ -291,7 +279,6 @@ def create_auto_complete_file():
         lines.append(f"{entity.short_key}__{label_str}\n")
 
     for uri, entity in core.ds.relations.items():
-
         label_str = core.ilk2nlk(entity.R1__has_label)
         lines.append(f"{entity.short_key}__{label_str}\n")
         lines.append(f'{entity.short_key}["{entity.R1__has_label}"]\n')

@@ -112,9 +112,7 @@ def check_type(obj, expected_type, strict=True):
     if not mod.data == obj:
         if not strict:
             return False
-        msg = (
-            f"While type-checking: Unexpected inner structure of parsed model. Expected: {expected_type}"
-        )
+        msg = f"While type-checking: Unexpected inner structure of parsed model. Expected: {expected_type}"
         raise TypeError(msg)
     return True
 
@@ -143,7 +141,6 @@ class Entity(abc.ABC):
         self._unlinked = False
 
     def __call__(self, *args, **kwargs):
-
         custom_call_method = getattr(self, "_custom_call", None)
         if custom_call_method is None:
             msg = f"entity {self} has not defined a _custom_call-method and thus cannot be called"
@@ -276,7 +273,6 @@ class Entity(abc.ABC):
                 self.add_method(func)
 
     def _get_relation_contents(self, rel_uri: str):
-
         aux.ensure_valid_uri(rel_uri)
 
         statements: List[Statement] = ds.get_statements(self.uri, rel_uri)
@@ -322,7 +318,6 @@ class Entity(abc.ABC):
             filtered_res_explicit_lang = []
             filtered_res_without_lang = []
             for elt in res:
-
                 # if no language is defined (e.g. ordinary string) -> use interpret this as match
                 # (but only if no other result with matching language attribute is available)
                 lng = getattr(elt, "language", None)
@@ -446,7 +441,6 @@ class Entity(abc.ABC):
                 return None
 
         if isinstance(relation, Relation):
-
             if isinstance(obj, (Entity, *allowed_literal_types)) or obj in allowed_literal_types:
                 return self._set_relation(relation.uri, obj, scope=scope, qualifiers=qualifiers, proxyitem=proxyitem)
             # Todo: remove obsolete code:
@@ -471,7 +465,6 @@ class Entity(abc.ABC):
         qualifiers: Optional[list] = None,
         proxyitem: Optional["Item"] = None,
     ) -> "Statement":
-
         aux.ensure_valid_uri(rel_uri)
         rel = ds.relations[rel_uri]
 
@@ -515,7 +508,6 @@ class Entity(abc.ABC):
 
         # if the object is not a literal then also store the inverse relation
         if isinstance(rel_content, Entity):
-
             inv_stm = Statement(
                 relation=rel,
                 relation_tuple=(self, rel, rel_content),
@@ -683,7 +675,9 @@ class PrefixShortCut:
         mod = ds.uri_mod_dict[uri]
         return mod
 
+
 pf = PrefixShortCut()
+
 
 class DataStore:
     """
@@ -785,7 +779,6 @@ class DataStore:
         return res
 
     def get_entity_by_uri(self, uri: str, etype=None, strict=True) -> Union[Entity, None]:
-
         if etype is not None:
             # only one lookup is needed
             if etype == EType.ITEM:
@@ -814,7 +807,6 @@ class DataStore:
         return getattr(entity, "R20") is None
 
     def get_subjects_for_relation(self, rel_uri: str, filter=None):
-
         stm_list: List[Statement] = self.relation_statements[rel_uri]
 
         res = []
@@ -1173,7 +1165,6 @@ def _resolve_prefix(pr_key: ProcessedStmtKey, passed_mod_uri: str = None) -> Non
 
             # 2a) check search_uri context
             if search_uri:
-
                 candidate_uri = aux.make_uri(search_uri, pr_key.short_key)
                 res_entity = ds.get_entity_by_uri(candidate_uri, strict=False)
 
@@ -1246,6 +1237,7 @@ def check_processed_key_label(pkey: ProcessedStmtKey) -> None:
             "Note: this test is *not* case-sensitive."
         )
         raise ValueError(msg)
+
 
 def ilk2nlk(ilk: str) -> str:
     """
@@ -1413,7 +1405,6 @@ class KeyManager:
         self._generate_key_numbers()
 
     def pop(self, index: int = -1) -> int:
-
         key = self.key_reservoir.pop(index)
         return key
 
@@ -1581,14 +1572,12 @@ class Statement:
         return self.short_key
 
     def __repr__(self):
-
         res = f"{self.short_key}{self.relation_tuple}"
         return res
 
     def _process_qualifiers(
         self, qlist: Union[List[RawQualifier], List["QualifierStatement"]], scope: Optional["Entity"] = None
     ) -> None:
-
         if not qlist:
             # nothing to do
             return
@@ -1599,7 +1588,6 @@ class Statement:
             return
 
         for qf in qlist:
-
             if isinstance(qf.obj, Entity):
                 corresponding_entity = qf.obj
                 corresponding_literal = None
@@ -1680,7 +1668,6 @@ class Statement:
                 pass
 
         if self.role == RelationRole.SUBJECT:
-
             subj_rel_edges: Dict[str : List[Statement]] = ds.statements[subj.uri]
             tolerant_removal(subj_rel_edges.get(pred.uri, []), self)
 
@@ -1972,6 +1959,7 @@ class uri_context(abstract_uri_context):
     """
     Context manager for creating entities with a given uri
     """
+
     def __init__(self, uri: str, prefix: str = None):
         super().__init__(_uri_stack, uri, prefix)
 
@@ -1980,6 +1968,7 @@ class search_uri_context(abstract_uri_context):
     """
     uri Context manager for searching for entities with a given key
     """
+
     def __init__(self, uri: str, prefix: str = None):
         super().__init__(_search_uri_stack, uri, prefix)
 
@@ -2102,7 +2091,6 @@ def _unlink_entity(uri: str, remove_from_mod=False) -> None:
         re_list.extend(local_re_list)
 
     if isinstance(entity, Relation):
-
         tmp = ds.relation_statements.pop(uri, [])
         re_list.extend(tmp)
 
@@ -2169,7 +2157,6 @@ def replace_and_unlink_entity(old_entity: Entity, new_entity: Entity):
                 # prevent the creation of a duplicated statement
                 existing_objs = new_entity.get_relations(predicate.uri, return_obj=True)
                 if not obj in existing_objs:
-
                     # it is possible that predicate is functional and new_entitiy.predicate has a value
                     # different from obj. this is OK if one of them is a placeholder
                     if len(existing_objs) == 1 and predicate.R22__is_functional:
@@ -2342,7 +2329,6 @@ class RuleResult:
 
 
 def format_entity_html(e: Entity):
-
     short_txt = f'<span class="entity">{e.R1}</span>'
     detailed_txt = f'<span class="entity">{e.short_key}["{e.R1}"]</span>'
 

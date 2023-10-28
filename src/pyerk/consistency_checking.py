@@ -36,10 +36,7 @@ def check(itm: Item):
     expected_arg_types = get_expected_arg_types(operator_itm)
 
     if len(arg_type_items) != len(expected_arg_types):
-        msg = (
-            f"While checking {itm}: got {len(arg_type_items)} arg(s) but "
-            f"{len(expected_arg_types)} where expected"
-        )
+        msg = f"While checking {itm}: got {len(arg_type_items)} arg(s) but " f"{len(expected_arg_types)} where expected"
         raise WrongArgNumber(msg)
 
     # the lengths match, now check the types
@@ -49,16 +46,11 @@ def check(itm: Item):
             continue
         if bi.is_subclass_of(actual, expected):
             continue
-        msg = (
-            f"expected {expected} but got {actual}, while checking"
-            f"arg type {i} for {itm}"
-        )
+        msg = f"expected {expected} but got {actual}, while checking" f"arg type {i} for {itm}"
         raise WrongArgType(msg)
 
 
-
 def get_expected_arg_types(itm: Item) -> Tuple[Item]:
-
     arg1_dom = itm.R8__has_domain_of_argument_1
     arg2_dom = itm.R9__has_domain_of_argument_2
     arg3_dom = itm.R10__has_domain_of_argument_3
@@ -70,17 +62,11 @@ def get_expected_arg_types(itm: Item) -> Tuple[Item]:
 
     match domains:
         case [None, _, _]:
-            msg = (
-                "unexpected: R8__has_domain_of_argument_1 is undefined for "
-                f"operator {itm}"
-            )
+            msg = "unexpected: R8__has_domain_of_argument_1 is undefined for " f"operator {itm}"
             raise ErkTypeError(msg)
 
         case [_, None, a3] if a3 is not None:
-            msg = (
-                f"inconsistency for operator {itm}: domain for arg3 defined "
-                "but not for arg 2"
-            )
+            msg = f"inconsistency for operator {itm}: domain for arg3 defined " "but not for arg 2"
             raise ErkTypeError(msg)
         case [a1, None, None]:
             arity = 1
@@ -89,9 +75,7 @@ def get_expected_arg_types(itm: Item) -> Tuple[Item]:
         case [a1, a2, a3]:
             arity = 3
         case _:
-            msg = (
-                f"unexpected domain structure for {itm}: {domains}"
-            )
+            msg = f"unexpected domain structure for {itm}: {domains}"
             raise ErkTypeError(msg)
 
     domains = domains[:arity]
@@ -101,10 +85,7 @@ def get_expected_arg_types(itm: Item) -> Tuple[Item]:
     for i, dom in enumerate(domains):
         assert isinstance(dom, list)
         if len(dom) != 1:
-            msg = (
-                f"multi-valued domains are not yet supported (arg {i+1}) "
-                f"of {itm}"
-            )
+            msg = f"multi-valued domains are not yet supported (arg {i+1}) " f"of {itm}"
             raise core.aux.NotYetFinishedError(msg)
         res.append(dom[0])
 

@@ -51,12 +51,21 @@ def check_applied_operator(itm: Item):
 
     # the lengths match, now check the types
 
-    for i, (actual, expected) in enumerate(zip(arg_type_items, expected_arg_types)):
-        if actual == expected:
+    for i, (actual_type, expected_type) in enumerate(zip(arg_type_items, expected_arg_types)):
+        if bi.is_subclass_of(actual_type, expected_type, allow_id=True):
             continue
-        if bi.is_subclass_of(actual, expected):
+
+        # the main type does not match. One of the secondary types might still match
+        continue_outer_loop = False
+        for secondary_class_item in args[i].R30__is_secondary_instance_of:
+            if bi.is_subclass_of(secondary_class_item, expected_type, allow_id=True):
+                continue_outer_loop = True
+                break
+        if continue_outer_loop:
             continue
-        msg = f"expected {expected} but got {actual}, while checking arg type {i} for {itm}\n {get_error_location()}"
+
+        # if we reach this there was no match -> error
+        msg = f"expected {expected_type} but got {actual_type}, while checking arg type {i} for {itm}\n {get_error_location()}"
         raise WrongArgType(msg)
 
 

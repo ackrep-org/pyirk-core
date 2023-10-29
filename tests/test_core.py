@@ -807,7 +807,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
 
             # test prefix notation in keyword attributes
             # first: missing prefix -> unknown key
-            with self.assertRaises(KeyError):
+            with self.assertRaises(p.aux.ShortKeyNotFoundError):
                 _ = p.create_item(key_str="I0125", R1="some label", R7641__has_approximation=e0)
 
             # second: use prefix to adresse the correct relation

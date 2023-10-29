@@ -142,11 +142,17 @@ class InvalidPrefixError(PyERKError):
     pass
 
 
+# used for syntax problems
 class InvalidShortKeyError(PyERKError):
     pass
 
 
 class InvalidGeneralKeyError(PyERKError):
+    pass
+
+
+# used for syntactically correct keys which could not be found
+class ShortKeyNotFoundError(PyERKError):
     pass
 
 

@@ -206,11 +206,13 @@ class Entity(abc.ABC):
         except KeyError:
             pass
         try:
-            res = process_key_str(attr_name)
-        except (KeyError, aux.UnknownURIError, aux.InvalidGeneralKeyError, aux.InvalidShortKeyError) as err:
+            processed_key = process_key_str(attr_name)
+        except (aux.ShortKeyNotFoundError) as err:
+            raise
+        except (aux.InvalidGeneralKeyError, aux.InvalidShortKeyError, aux.UnknownURIError) as err:
             # this happens if a syntactically valid key string could not be resolved
             raise AttributeError(*err.args)
-        if not res.etype == EType.RELATION:
+        if not processed_key.etype == EType.RELATION:
             r3 = getattr(self, "R3", None)
             r4 = getattr(self, "R4", None)
             msg = (
@@ -222,9 +224,9 @@ class Entity(abc.ABC):
 
         try:
             # TODO: introduce prefixes here, which are mapped to uris
-            etyrel = self._get_relation_contents(rel_uri=res.uri)
+            etyrel = self._get_relation_contents(rel_uri=processed_key.uri)
         except KeyError:
-            msg = f"'{type(self)}' object has no attribute '{res.short_key}'"
+            msg = f"'{type(self)}' object has no attribute '{processed_key.short_key}'"
             raise AttributeError(msg)
         return etyrel
 
@@ -249,7 +251,7 @@ class Entity(abc.ABC):
         parent_class: Union[Entity, None]
         try:
             parent_class = self.R3
-        except AttributeError:
+        except aux.ShortKeyNotFoundError:
             parent_class = None
 
         if parent_class not in (None, []):
@@ -267,7 +269,7 @@ class Entity(abc.ABC):
         parent_class: Union[Entity, None]
         try:
             parent_class = self.R4
-        except AttributeError:
+        except aux.ShortKeyNotFoundError:
             parent_class = None
 
         if parent_class not in (None, []):
@@ -1220,7 +1222,7 @@ def _resolve_prefix(pr_key: ProcessedStmtKey, passed_mod_uri: str = None) -> Non
                     f"No entity could be found for short_key {pr_key.short_key}, neither in active module "
                     f"({active_mod_uri}) nor in builin_entities ({settings.BUILTINS_URI})"
                 )
-                raise KeyError(msg)
+                raise aux.ShortKeyNotFoundError(msg)
     else:
         # prefix was not not None
         mod_uri = ds.get_uri_for_prefix(pr_key.prefix)
@@ -1269,6 +1271,7 @@ def ilk2nlk(ilk: str) -> str:
     """
     convert index labled key (R1234["my relation"]) to name labled key (R1234__my_relation)
     """
+    assert isinstance(ilk, str)
 
     return ilk.replace(" ", "_").replace("-", "_")
 
@@ -1690,7 +1693,7 @@ class Statement:
         if key:
             try:
                 uri = process_key_str(key).uri
-            except KeyError:
+            except aux.ShortKeyNotFoundError:
                 if tolerate_key_error:
                     # this allows to ask for qualifiers before they are created
                     return None

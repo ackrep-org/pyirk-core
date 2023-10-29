@@ -65,7 +65,7 @@ def check_applied_operator(itm: Item):
             continue
 
         # if we reach this there was no match -> error
-        msg = f"expected {expected_type} but got {actual_type}, while checking arg type {i} for {itm}\n {get_error_location()}"
+        msg = f"expected {expected_type} but got {actual_type}, while checking arg type {i} for {itm}\n{get_error_location()}"
         raise WrongArgType(msg)
 
 
@@ -102,11 +102,11 @@ def get_expected_arg_types(itm: Item) -> Tuple[Item]:
 
     match domains:
         case [None, _, _]:
-            msg = "unexpected: R8__has_domain_of_argument_1 is undefined for " f"operator {itm}"
+            msg = f"unexpected: R8__has_domain_of_argument_1 is undefined for operator {itm}\n{get_error_location()}"
             raise ErkTypeError(msg)
 
         case [_, None, a3] if a3 is not None:
-            msg = f"inconsistency for operator {itm}: domain for arg3 defined " "but not for arg 2"
+            msg = f"inconsistency for operator {itm}: domain for arg3 defined but not for arg2\n{get_error_location()}"
             raise ErkTypeError(msg)
         case [a1, None, None]:
             arity = 1
@@ -115,7 +115,7 @@ def get_expected_arg_types(itm: Item) -> Tuple[Item]:
         case [a1, a2, a3]:
             arity = 3
         case _:
-            msg = f"unexpected domain structure for {itm}: {domains}"
+            msg = f"unexpected domain structure for {itm}: {domains}\n {get_error_location()}"
             raise ErkTypeError(msg)
 
     domains = domains[:arity]

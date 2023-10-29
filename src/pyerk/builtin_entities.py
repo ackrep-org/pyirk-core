@@ -1498,6 +1498,8 @@ def create_evaluated_mapping(mapping: Item, *args) -> Item:
     # add convenience method
     ev_mapping.add_method(get_arguments, "get_arguments")
 
+    ev_mapping.finalize()
+
     return ev_mapping
 
 

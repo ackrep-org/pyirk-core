@@ -103,4 +103,4 @@ def get_expected_arg_types(itm: Item) -> Tuple[Item]:
 
 
 def enable_consitency_checking():
-    core.register_hook("post-create-item", check)
+    core.register_hook("post-finalize-item", check)

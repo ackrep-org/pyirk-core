@@ -656,6 +656,16 @@ class Entity(abc.ABC):
         stm.unlink()
         return self.set_relation(rel, new_obj, qualifiers=qualifiers)
 
+    def finalize(self):
+        """
+        Method which is intended to be explicitly called if an (automatically created) entity is finished.
+
+        Background: some entities like evaluated mappings are manipulated after creation.
+        Hooks like consistency-checking have to be executed afterwards.
+        """
+
+        run_hooks(self, phase="post-finalize")
+
 
 def wrap_function_with_search_uri_context(func, uri):
     @functools.wraps(func)
@@ -750,6 +760,9 @@ class DataStore:
             "post-create-entity": [],
             "post-create-item": [],
             "post-create-relation": [],
+            "post-finalize-entity": [],
+            "post-finalize-item": [],
+            "post-finalize-relation": [],
         }
         return self.hooks
 
@@ -1355,7 +1368,7 @@ def create_item(key_str: str = "", **kwargs) -> Item:
     # acces the defaultdict(list)
     ds.entities_created_in_mod[mod_uri].append(itm.uri)
 
-    run_hooks(itm)
+    run_hooks(itm, phase="post-create")
 
     return itm
 
@@ -1392,28 +1405,38 @@ class RelationRole(Enum):
     OBJECT = 2
 
 
-def run_hooks(entity: Entity) -> None:
+VALID_HOOK_PHASES = ["post-create", "post-finalize"]
+VALID_HOOK_TYPES = [
+    "post-create-entity",
+    "post-create-item",
+    "post-create-relation",
+    "post-finalize-entity",
+    "post-finalize-item",
+    "post-finalize-relation",
+]
+
+
+def run_hooks(entity: Entity, phase: str) -> None:
     """
     Run (previously registered) hooks after the creation of entities.
     This can be used for sanity checking etc.
     """
 
-    if not ds.hooks:
-        return
-    for hook_func in ds.hooks["post-create-entity"]:
+    assert phase in VALID_HOOK_PHASES
+
+    for hook_func in ds.hooks[f"{phase}-entity"]:
         hook_func(entity)
 
     if isinstance(entity, Item):
-        for hook_func in ds.hooks["post-create-item"]:
+        for hook_func in ds.hooks[f"{phase}-item"]:
             hook_func(entity)
 
     if isinstance(entity, Relation):
-        for hook_func in ds.hooks["post-create-relation"]:
+        for hook_func in ds.hooks[f"{phase}-relation"]:
             hook_func(entity)
 
 
 def register_hook(type_str: str, func: callable) -> None:
-    VALID_HOOK_TYPES = ["post-create-entity", "post-create-item", "post-create-relation"]
     assert type_str in VALID_HOOK_TYPES
     assert callable(func)
 
@@ -1805,7 +1828,7 @@ def create_relation(key_str: str = "", **kwargs) -> Relation:
     ds.relations[rel.uri] = rel
     ds.entities_created_in_mod[mod_uri].append(rel.uri)
 
-    run_hooks(rel)
+    run_hooks(rel, phase="post-create")
 
     return rel
 

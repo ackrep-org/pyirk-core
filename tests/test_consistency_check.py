@@ -84,9 +84,6 @@ class Test_01_CC(HouskeeperMixin, unittest.TestCase):
 
         with p.uri_context(uri=TEST_BASE_URI):
             real_number = p.instance_of(p.I35["real number"])
-            I0111["test operator"](real_number, real_number, real_number)
-
-            return
             with self.assertRaises(p.cc.WrongArgType):
                 # type error for all args
                 I0111["test operator"](real_number, real_number, real_number)

@@ -129,7 +129,7 @@ def get_taxonomy_tree(itm, add_self=True) -> list:
 def is_subclass_of(itm1: Item, itm2: Item) -> bool:
     for i, itm in enumerate((itm1, itm2), start=1):
         if not allows_instantiation(itm):
-            msg = f"itm{1} ({itm}) is not a instantiable class"
+            msg = f"itm{i} ({itm}) is not a instantiable class"
             raise core.aux.TaxonomicError(msg)
 
     taxtree1 = get_taxonomy_tree(itm1)
@@ -148,6 +148,22 @@ def is_subclass_of(itm1: Item, itm2: Item) -> bool:
     res = ("R3", itm2) in taxtree1
 
     return res
+
+
+def is_instance_of(itm1: Item, itm2: Item) -> bool:
+    """
+    Returns True if itm1.R4 is a subclass (R3) of itm2
+    """
+    parent_class = itm1.R4__is_instance_of
+
+    if parent_class is None:
+        msg = f"itm1 ({itm1}) has no Statement for relation R4__is_instance_of"
+        raise core.aux.TaxonomicError(msg)
+
+    if parent_class == itm2:
+        return True
+    else:
+        return is_subclass_of(parent_class, itm2)
 
 
 def instance_of(cls_entity, r1: str = None, r2: str = None, qualifiers: List[Item] = None) -> Item:

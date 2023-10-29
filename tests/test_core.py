@@ -714,6 +714,25 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
 
         self.assertFalse(p.is_subclass_of(p.I35["real number"], p.I39["positive integer"]))
 
+    def test_c09b__is_instance_of(self):
+        with p.uri_context(uri=TEST_BASE_URI):
+            i1 = p.instance_of(p.I39["positive integer"])
+
+            self.assertTrue(p.is_instance_of(i1, p.I39["positive integer"]))
+            self.assertTrue(p.is_instance_of(i1, p.I37["integer number"]))
+            self.assertTrue(p.is_instance_of(i1, p.I34["complex number"]))
+
+            i2 = p.instance_of(p.I37["integer number"])
+            self.assertTrue(p.is_instance_of(i2, p.I37["integer number"]))
+            self.assertTrue(p.is_instance_of(i2, p.I34["complex number"]))
+
+            self.assertFalse(p.is_instance_of(i2, p.I39["positive integer"]))
+
+            with self.assertRaises(p.aux.TaxonomicError):
+                # I39 is not an instance -> error
+                p.is_instance_of(p.I39["positive integer"], p.I39["positive integer"])
+
+
     def test_c10__qualifiers(self):
         _ = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
         _ = p.erkloader.load_mod_from_path(TEST_DATA_PATH3, prefix="ag")

@@ -73,6 +73,7 @@ class HouskeeperMixin:
         method_repr = f"{cls.__module__}:{cls.__qualname__}.{self._testMethodName}"
         os.environ["UNITTEST_METHOD_NAME"] = method_repr
         self.register_this_module()
+        p.ds.initialize_hooks()
 
     def tearDown(self) -> None:
         # possibility to keep the mods loaded on error for easier interactive debugging

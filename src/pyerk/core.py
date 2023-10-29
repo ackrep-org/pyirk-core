@@ -215,6 +215,19 @@ class Entity(abc.ABC):
             raise AttributeError(msg)
         return etyrel
 
+    def __setattr__(self, attr_name: str, attr_value: Any):
+        if attr_name.startswith("_") or not self._is_initialized or attr_name in self.__dict__:
+            # change of existing "real" attribute
+            super().__setattr__(attr_name, attr_value)
+            return
+        try:
+            processed_key = self.__process_attribute_name(attr_name, exception_type=aux.UndefinedRelationError)
+        except aux.UndefinedRelationError:
+            # attr_name could not be resolved to an defined relation
+            super().__setattr__(attr_name, attr_value)
+            return
+        self.set_relation(ds.get_entity_by_uri(processed_key.uri), attr_value)
+
     def __process_attribute_name(self, attr_name:str, exception_type=AttributeError) -> "ProcessedStmtKey":
         pass
         try:
@@ -676,7 +689,17 @@ class Entity(abc.ABC):
         run_hooks(self, phase="post-finalize")
 
 
-def wrap_function_with_search_uri_context(func, uri):
+def wrap_function_with_search_uri_context(func, uri=None):
+    if uri is None:
+        # assume that this function is used as decorator in a module which defines __URI__ globally
+        import inspect
+        frame = inspect.currentframe()
+        uri = frame.f_back.f_globals.get("__URI__")
+        if uri is None:
+            fi = inspect.getframeinfo(frame.f_back)
+            msg = f"could not find `__URI__` in module {fi.filename}"
+            raise aux.PyERKError(msg)
+
     @functools.wraps(func)
     def wrapped_func(*args, **kwargs):
         with search_uri_context(uri=uri):

@@ -1228,6 +1228,18 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         # ensure expected number of hooks (after re-initialization)
         self.assertEqual(sum([len(lst) for lst in p.ds.hooks.values()]), 0)
 
+    def test_d15__setattr(self):
+
+        return
+
+        with p.uri_context(uri=TEST_BASE_URI, prefix="ut"):
+            itm1 = p.instance_of(p.I1["general item"])
+            R301 = p.create_relation(R1="test relation")
+
+            itm1.R301 = "success"
+
+            self.assertTrue(R301.uri in itm1.get_relations())
+
 
 class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
     def setUp(self):

@@ -146,6 +146,10 @@ class InvalidShortKeyError(PyERKError):
     pass
 
 
+class InvalidGeneralKeyError(PyERKError):
+    pass
+
+
 class InvalidScopeNameError(PyERKError):
     pass
 

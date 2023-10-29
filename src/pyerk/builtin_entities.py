@@ -1508,7 +1508,7 @@ R30 = create_builtin_relation(
     key_str="R30",
     R1__has_label="is secondary instance of",
     R2__has_description=(
-        "specifies that the subject is an instance of a class-item,in addtioin to its unambiguous parent class."
+        "specifies that the subject is an instance of a class-item, in addition to its unambiguous parent class."
     ),
     R18__has_usage_hint=(
         "Note that this relation is not functional. This construction allows to combine single (R4) "

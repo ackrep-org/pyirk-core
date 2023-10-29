@@ -1189,6 +1189,45 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         # this is what we actually want to test (note that the inner list could be specified more precisely)
         self.assertTrue(p.check_type(data, Dict[str, List[List[Union[int, str]]]], strict=False))
 
+    def test_d14__run_hooks(self):
+        with p.uri_context(uri=TEST_BASE_URI, prefix="ut"):
+            R301 = p.create_relation(R1="test relation")
+
+        def myhook1(itm: p.Item):
+            itm.set_relation(R301, "entity: check")
+
+        def myhook2(itm: p.Item):
+            itm.set_relation(R301, "item: check")
+
+        def myhook3(itm: p.Item):
+            itm.set_relation(R301, "relation: check")
+
+        p.register_hook("post-create-entity", myhook1)
+
+        with p.uri_context(uri=TEST_BASE_URI, prefix="ut"):
+            itm1 = p.instance_of(p.I1["general item"])
+
+            # Note: this has to be executed in the uri_context (otherwise R301 would be unknown)
+            self.assertEqual(itm1.R301, ["entity: check"])
+
+
+            p.register_hook("post-create-item", myhook2)
+            p.register_hook("post-create-relation", myhook3)
+
+            # ensure expected number of hooks
+            self.assertEqual(sum([len(lst) for lst in p.ds.hooks.values()]), 3)
+            itm2 = p.instance_of(p.I1["general item"])
+
+            R500 = p.create_relation(R1="test relation2")
+
+            self.assertEqual(itm2.R301, ["entity: check", "item: check"])
+            self.assertEqual(R500.R301, ["entity: check", "relation: check"])
+
+        p.ds.initialize_hooks()
+
+        # ensure expected number of hooks (after re-initialization)
+        self.assertEqual(sum([len(lst) for lst in p.ds.hooks.values()]), 0)
+
 
 class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
     def setUp(self):

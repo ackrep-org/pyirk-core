@@ -742,6 +742,17 @@ class DataStore:
         # store unlinked entities
         self.unlinked_entities = {}
 
+        # store hook functions
+        self.hooks = self.initialize_hooks()
+
+    def initialize_hooks(self) -> dict:
+        self.hooks = {
+            "post-create-entity": [],
+            "post-create-item": [],
+            "post-create-relation": [],
+        }
+        return self.hooks
+
     def get_item_by_label(self, label) -> Entity:
         """
         Search over all item and return the first item which has the provided label.
@@ -1343,6 +1354,9 @@ def create_item(key_str: str = "", **kwargs) -> Item:
 
     # acces the defaultdict(list)
     ds.entities_created_in_mod[mod_uri].append(itm.uri)
+
+    run_hooks(itm)
+
     return itm
 
 
@@ -1376,6 +1390,34 @@ class RelationRole(Enum):
     SUBJECT = 0
     PREDICATE = 1
     OBJECT = 2
+
+
+def run_hooks(entity: Entity) -> None:
+    """
+    Run (previously registered) hooks after the creation of entities.
+    This can be used for sanity checking etc.
+    """
+
+    if not ds.hooks:
+        return
+    for hook_func in ds.hooks["post-create-entity"]:
+        hook_func(entity)
+
+    if isinstance(entity, Item):
+        for hook_func in ds.hooks["post-create-item"]:
+            hook_func(entity)
+
+    if isinstance(entity, Relation):
+        for hook_func in ds.hooks["post-create-relation"]:
+            hook_func(entity)
+
+
+def register_hook(type_str: str, func: callable) -> None:
+    VALID_HOOK_TYPES = ["post-create-entity", "post-create-item", "post-create-relation"]
+    assert type_str in VALID_HOOK_TYPES
+    assert callable(func)
+
+    ds.hooks[type_str].append(func)
 
 
 # for now we want unique numbers for keys for relations and items etc (although this is not necessary)
@@ -1762,6 +1804,9 @@ def create_relation(key_str: str = "", **kwargs) -> Relation:
         raise aux.InvalidURIError(msg)
     ds.relations[rel.uri] = rel
     ds.entities_created_in_mod[mod_uri].append(rel.uri)
+
+    run_hooks(rel)
+
     return rel
 
 

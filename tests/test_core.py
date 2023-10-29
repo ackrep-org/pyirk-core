@@ -713,6 +713,9 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
             p.is_subclass_of(p.I39["positive integer"], p.I1["general item"])
 
         self.assertFalse(p.is_subclass_of(p.I35["real number"], p.I39["positive integer"]))
+        self.assertFalse(p.is_subclass_of(p.I35["real number"], p.I35["real number"]))
+
+        self.assertTrue(p.is_subclass_of(p.I35["real number"], p.I35["real number"], allow_id=True))
 
     def test_c09b__is_instance_of(self):
         with p.uri_context(uri=TEST_BASE_URI):

@@ -126,7 +126,17 @@ def get_taxonomy_tree(itm, add_self=True) -> list:
     return res
 
 
-def is_subclass_of(itm1: Item, itm2: Item) -> bool:
+def is_subclass_of(itm1: Item, itm2: Item, allow_id=False) -> bool:
+    """
+    Return True if itm1 is an (indirect) subclass (via) R3__is_subclass_of itm2
+
+    :param allow_id:    bool, indicate that itm1 == itm2 is also considered
+                        as valid. default: False
+    """
+
+    if allow_id and itm1 == itm2:
+        return True
+
     for i, itm in enumerate((itm1, itm2), start=1):
         if not allows_instantiation(itm):
             msg = f"itm{i} ({itm}) is not a instantiable class"

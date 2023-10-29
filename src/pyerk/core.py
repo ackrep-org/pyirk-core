@@ -205,22 +205,7 @@ class Entity(abc.ABC):
             return self.__dict__[attr_name]
         except KeyError:
             pass
-        try:
-            processed_key = process_key_str(attr_name)
-        except (aux.ShortKeyNotFoundError) as err:
-            raise
-        except (aux.InvalidGeneralKeyError, aux.InvalidShortKeyError, aux.UnknownURIError) as err:
-            # this happens if a syntactically valid key string could not be resolved
-            raise AttributeError(*err.args)
-        if not processed_key.etype == EType.RELATION:
-            r3 = getattr(self, "R3", None)
-            r4 = getattr(self, "R4", None)
-            msg = (
-                f"Unexpected attribute name: '{attr_name}' of entity {self}\n",
-                f"Type hint: self.R3__is_subclass_of: {r3}\n",
-                f"Type hint: self.R4__is_instance_of: {r4}\n",
-            )
-            raise AttributeError(msg)
+        processed_key = self.__process_attribute_name(attr_name)
 
         try:
             # TODO: introduce prefixes here, which are mapped to uris
@@ -229,6 +214,26 @@ class Entity(abc.ABC):
             msg = f"'{type(self)}' object has no attribute '{processed_key.short_key}'"
             raise AttributeError(msg)
         return etyrel
+
+    def __process_attribute_name(self, attr_name:str, exception_type=AttributeError) -> "ProcessedStmtKey":
+        pass
+        try:
+            processed_key = process_key_str(attr_name)
+        except (aux.ShortKeyNotFoundError) as err:
+            raise
+        except (aux.InvalidGeneralKeyError, aux.InvalidShortKeyError, aux.UnknownURIError) as err:
+            # this happens if a syntactically valid key string could not be resolved
+            raise exception_type(*err.args)
+        if not processed_key.etype == EType.RELATION:
+            r3 = getattr(self, "R3", None)
+            r4 = getattr(self, "R4", None)
+            msg = (
+                f"Unexpected attribute name: '{attr_name}' of entity {self}\n",
+                f"Type hint: self.R3__is_subclass_of: {r3}\n",
+                f"Type hint: self.R4__is_instance_of: {r4}\n",
+            )
+            raise exception_type(msg)
+        return processed_key
 
     def __eq__(self, other):
         return id(self) == id(other)

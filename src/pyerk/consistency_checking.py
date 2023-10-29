@@ -28,6 +28,16 @@ class WrongArgType(ErkTypeError):
 
 def check(itm: Item):
     operator_itm = itm.R35__is_applied_mapping_of
+    if operator_itm:
+        check_applied_operator(itm)
+    else:
+        # no checks implemented yet for other types of items
+        # IPS()
+        pass
+
+
+def check_applied_operator(itm: Item):
+    operator_itm = itm.R35__is_applied_mapping_of
     assert operator_itm is not None
 
     args = itm.get_arguments()
@@ -90,3 +100,7 @@ def get_expected_arg_types(itm: Item) -> Tuple[Item]:
         res.append(dom[0])
 
     return res
+
+
+def enable_consitency_checking():
+    core.register_hook("post-create-item", check)

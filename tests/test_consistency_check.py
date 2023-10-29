@@ -21,8 +21,9 @@ from .settings import (
 
 # noinspection PyPep8Naming
 class Test_01_CC(HouskeeperMixin, unittest.TestCase):
-    def test_a01__cc_basics(self):
 
+
+    def create_operators(self):
         with p.uri_context(uri=TEST_BASE_URI):
 
             I4895 = p.create_item(
@@ -44,6 +45,13 @@ class Test_01_CC(HouskeeperMixin, unittest.TestCase):
                 R11__has_range_of_result=p.I34["complex number"],
             )
 
+            return I0111
+
+    def test_a01__cc_basics(self):
+
+        I0111 = self.create_operators()
+
+        with p.uri_context(uri=TEST_BASE_URI):
             real_number = p.instance_of(p.I35["real number"])
             general_int = p.instance_of(p.I37["integer number"])
             nonneg_int = p.instance_of(p.I38["non-negative integer"])
@@ -68,3 +76,17 @@ class Test_01_CC(HouskeeperMixin, unittest.TestCase):
             with self.assertRaises(p.cc.WrongArgType):
                 # type error for arg1 and arg3
                 p.cc.check(I0111["test operator"](real_number, nonneg_int, real_number))
+
+    def test_a02__cc_enable_checking(self):
+
+        I0111 = self.create_operators()
+        p.cc.enable_consitency_checking()
+
+        with p.uri_context(uri=TEST_BASE_URI):
+            real_number = p.instance_of(p.I35["real number"])
+            I0111["test operator"](real_number, real_number, real_number)
+
+            return
+            with self.assertRaises(p.cc.WrongArgType):
+                # type error for all args
+                I0111["test operator"](real_number, real_number, real_number)

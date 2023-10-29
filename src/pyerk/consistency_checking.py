@@ -56,8 +56,29 @@ def check_applied_operator(itm: Item):
             continue
         if bi.is_subclass_of(actual, expected):
             continue
-        msg = f"expected {expected} but got {actual}, while checking" f"arg type {i} for {itm}"
+        msg = f"expected {expected} but got {actual}, while checking arg type {i} for {itm}\n {get_error_location()}"
         raise WrongArgType(msg)
+
+
+def get_error_location():
+    import inspect
+    import os
+    f = inspect.currentframe()
+    MAX_STACK_DEPTH = 100
+    for i in range(MAX_STACK_DEPTH):
+        fi = inspect.getframeinfo(f)
+        if fi.function == "<module>":
+            break
+        f = f.f_back
+    else:
+        # break was not reached
+        msg = "<could not find pyerk module in stack>"
+        return msg
+    fname = os.path.split(fi.filename)[-1]
+    code_context = "\n".join(fi.code_context).strip()
+
+    msg = f"{fname}:{fi.lineno}: `{code_context}`"
+    return msg
 
 
 def get_expected_arg_types(itm: Item) -> Tuple[Item]:

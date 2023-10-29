@@ -130,6 +130,7 @@ class Entity(abc.ABC):
 
     def __init__(self, base_uri):
         # this will hold mappings like "R1234": EntityRelation(..., R1234)
+        self._is_initialized = False  # will be True after __post_init__
         self.relation_dict = {}
         self._method_prototypes = []
         self._namespaces = {}
@@ -206,7 +207,7 @@ class Entity(abc.ABC):
             pass
         try:
             res = process_key_str(attr_name)
-        except (KeyError, aux.UnknownURIError) as err:
+        except (KeyError, aux.UnknownURIError, aux.InvalidGeneralKeyError, aux.InvalidShortKeyError) as err:
             # this happens if a syntactically valid key string could not be resolved
             raise AttributeError(*err.args)
         if not res.etype == EType.RELATION:
@@ -236,6 +237,7 @@ class Entity(abc.ABC):
         assert self.uri is not None
         self._perform_inheritance()
         self._perform_instantiation()
+        self._is_initialized = True
 
     def _perform_inheritance(self):
         """
@@ -1106,10 +1108,10 @@ def process_key_str(
 
     errmsg = f"unxexpected key_str: `{key_str}` (maybe a literal or syntax error)"
     if not match1:
-        raise KeyError(errmsg)
+        raise aux.InvalidGeneralKeyError(errmsg)
 
     if match1.group(3) is None or match1.group(7) is None:
-        raise KeyError(errmsg)
+        raise aux.InvalidGeneralKeyError(errmsg)
 
     res.prefix = match1.group(2)  # this might be None
     res.short_key = match1.group(3) + match1.group(7)
@@ -1122,11 +1124,11 @@ def process_key_str(
     errmsg = f"invalid suffix of key_str `{key_str}` (probably syntax error)"
     if match2 and match3:
         # key seems to mix underscores and square brackets
-        raise KeyError(errmsg)
+        raise aux.InvalidGeneralKeyError(errmsg)
 
     if suffix and (not match2) and (not match3):
         # syntax of suffix seems to be wrong (e., g. missing bracket)
-        raise KeyError(errmsg)
+        raise aux.InvalidGeneralKeyError(errmsg)
 
     if match2:
         res.label = match2.group(1)
@@ -1143,7 +1145,7 @@ def process_key_str(
         res.vtype = VType.ENTITY
     else:
         msg = f"unxexpected shortkey: '{res.short_key}' (maybe a literal)"
-        raise KeyError(msg)
+        raise aux.InvalidShortKeyError(msg)
 
     if resolve_prefix:
         _resolve_prefix(res, passed_mod_uri=mod_uri)

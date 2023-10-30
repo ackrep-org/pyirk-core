@@ -35,7 +35,7 @@ def load_mod_from_path(
     modname=None,
     allow_reload=True,
     smart_relative=None,
-    reuse_loaded=False,
+    reuse_loaded=None,
 ) -> ModuleType:
     """
 
@@ -46,7 +46,47 @@ def load_mod_from_path(
     :param smart_relative:  flag; if True, relative paths are interpreted w.r.t. the calling module
                             (not w.r.t. current working path)
     :param reuse_loaded:    flag; if True and the module was already loaded before, then just use this
+                            if False:: reload; if None use the default action from pyerk.ds
     :return:
+    """
+
+    reuse_loaded_original = pyerk.ds.reuse_loaded_module
+
+    match reuse_loaded:
+        case True:
+            reuse_loaded__actual = True
+            pyerk.ds.reuse_loaded_module = True
+        case False:
+            reuse_loaded__actual = False
+            pyerk.ds.reuse_loaded_module = False
+        case None:
+            # use the (unchange) default
+            reuse_loaded__actual = pyerk.ds.reuse_loaded_module
+
+    try:
+        mod = _load_mod_from_path(modpath, prefix, modname, allow_reload, smart_relative, reuse_loaded__actual)
+    except:
+        if reuse_loaded is not None:
+            # we had changed the default
+            pyerk.ds.reuse_loaded_module = reuse_loaded_original
+        raise
+
+    if reuse_loaded is not None:
+        # we had changed the default
+        pyerk.ds.reuse_loaded_module = reuse_loaded_original
+    return mod
+
+
+def _load_mod_from_path(
+    modpath: str,
+    prefix: str,
+    modname=None,
+    allow_reload=True,
+    smart_relative=None,
+    reuse_loaded=False,
+) -> ModuleType:
+    """
+    see docstring of load_mod_from_path
     """
 
     # save some data structures in order to reenable them if something goes wrong

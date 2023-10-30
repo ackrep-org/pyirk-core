@@ -778,6 +778,9 @@ class DataStore:
         # dict like {uri1: <mod1>, ...}
         self.uri_mod_dict = {}
 
+        # this flag (default False) might be changed during erkloader calls
+        self.reuse_loaded_module = False
+
         # this list serves to keep track of nested scopes
         self.scope_stack = []
 

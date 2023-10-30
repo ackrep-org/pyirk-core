@@ -126,6 +126,56 @@ def get_taxonomy_tree(itm, add_self=True) -> list:
     return res
 
 
+def is_subclass_of(itm1: Item, itm2: Item, allow_id=False) -> bool:
+    """
+    Return True if itm1 is an (indirect) subclass (via) R3__is_subclass_of itm2
+
+    :param allow_id:    bool, indicate that itm1 == itm2 is also considered
+                        as valid. default: False
+    """
+
+    if allow_id and itm1 == itm2:
+        return True
+
+    for i, itm in enumerate((itm1, itm2), start=1):
+        if not allows_instantiation(itm):
+            msg = f"itm{i} ({itm}) is not a instantiable class"
+            raise core.aux.TaxonomicError(msg)
+
+    taxtree1 = get_taxonomy_tree(itm1)
+
+    # This is a list of 2-tuples like the following:
+    # [(None, <Item I4239["monovariate polynomial"]>),
+    #  ('R3', <Item I4237["monovariate rational function"]>),
+    #  ('R3', <Item I4236["mathematical expression"]>),
+    #  ('R3', <Item I4235["mathematical object"]>),
+    #  ('R4', <Item I2["Metaclass"]>),
+    #  ('R3', <Item I1["general item"]>)
+    #  ('R3', <Item I45["general entity"]>)]
+
+    # reminder: R3__is_subclass_of, R4__is_instance_of
+
+    res = ("R3", itm2) in taxtree1
+
+    return res
+
+
+def is_instance_of(itm1: Item, itm2: Item) -> bool:
+    """
+    Returns True if itm1.R4 is a subclass (R3) of itm2
+    """
+    parent_class = itm1.R4__is_instance_of
+
+    if parent_class is None:
+        msg = f"itm1 ({itm1}) has no Statement for relation R4__is_instance_of"
+        raise core.aux.TaxonomicError(msg)
+
+    if parent_class == itm2:
+        return True
+    else:
+        return is_subclass_of(parent_class, itm2)
+
+
 def instance_of(cls_entity, r1: str = None, r2: str = None, qualifiers: List[Item] = None) -> Item:
     """
     Create an instance (R4) of an item. Try to obtain the label by inspection of the calling context (if r1 is None).
@@ -518,7 +568,6 @@ def get_scopes(entity: Entity) -> List[Item]:
 
 
 def get_items_defined_in_scope(scope: Item) -> List[Entity]:
-
     assert scope.R4__is_instance_of == I16["scope"]
     # R20__has_defining_scope
     re_list = core.ds.inv_statements[scope.short_key]["R20"]
@@ -568,7 +617,6 @@ class ScopingCM:
     valid_subscope_types = None
 
     def __init__(self, itm: Item, namespace: dict, scope: Item, parent_scope_cm=None):
-
         # prevent the accidental instantiation of abstract subclasses
         assert not __class__.__name__.lower().startswith("abstract")
 
@@ -674,7 +722,6 @@ class ScopingCM:
             qualifiers = []
 
         if overwrite:
-
             qff_has_defining_scope: QualifierFactory = ds.qff_dict["qff_has_defining_scope"]
             qualifiers.append(qff_has_defining_scope(self.scope))
             return sub.overwrite_statement(pred.uri, obj, qualifiers=qualifiers)
@@ -739,7 +786,6 @@ class ScopingCM:
             )
             raise core.aux.InvalidScopeTypeError(msg)
 
-
         if max_subscopes_of_this_type == 1:
             name = scope_type
         else:
@@ -778,10 +824,7 @@ class ScopingCM:
             if var_item.R35__is_applied_mapping_of:
                 new_var_item = self._copy_mapping(var_item)
             else:
-                new_var_item = self._new_var(
-                    variable_name=name,
-                    variable_object=instance_of(class_item, r1=name)
-                )
+                new_var_item = self._new_var(variable_name=name, variable_object=instance_of(class_item, r1=name))
             self.tmp_var_mapping[var_item.uri] = new_var_item
 
         # create relations
@@ -795,7 +838,6 @@ class ScopingCM:
             self.new_rel(new_subj, pred, new_obj)
 
         # TODO: handle ImplicationStatement (see test_c07c__scope_copying)
-
 
     def _copy_mapping(self, mapping_item: Item) -> Item:
         mapping_type = mapping_item.R35__is_applied_mapping_of
@@ -910,6 +952,7 @@ class QuantifiedSubScopeCM(AbstractMathRelatedScopeCM):
     """
     A scoping context manager for universally or existentially quantified statements
     """
+
     valid_subscope_types = {"CONDITION": 1}
 
     def __init__(self, *args, **kwargs):
@@ -917,12 +960,10 @@ class QuantifiedSubScopeCM(AbstractMathRelatedScopeCM):
         self.condition_cm = self._create_subscope_cm("CONDITION", SubScopeConditionCM)
 
     def add_condition_statement(self, subj, pred, obj, qualifiers=None):
-
         with self.condition_cm:
             self.condition_cm.new_rel(subj, pred, obj, qualifiers=qualifiers)
 
     def add_condition_math_relation(self, *args, **kwargs):
-
         with self.condition_cm:
             self.condition_cm.new_math_relation(*args, **kwargs)
 
@@ -930,19 +971,19 @@ class QuantifiedSubScopeCM(AbstractMathRelatedScopeCM):
         with self.condition_cm:
             return self.condition_cm.new_var(**kwargs)
 
+
 class SubScopeConditionCM(AbstractMathRelatedScopeCM):
     """
     A scoping context manager to specify the condition of another scope
     """
+
     valid_subscope_types = {}
 
 
 class _rule__CM(ScopingCM):
-
     valid_subscope_types = {"AND": float("inf"), "OR": 1}
 
     def __init__(self, *args, **kwargs):
-
         self._anchor_item_counter = 0
         super().__init__(*args, **kwargs)
 
@@ -1012,12 +1053,10 @@ class _rule__CM(ScopingCM):
         return self._new_var(name, variable_object)
 
     def new_rel(self, sub: Entity, pred: Entity, obj: Entity, qualifiers=None, overwrite=False) -> Statement:
-
         if qualifiers is None:
             qualifiers = []
 
         if isinstance(pred, Item):
-
             if not pred.R4__is_instance_of == I40["general relation"]:
                 msg = f"Expected relation but got {pred}"
                 raise TypeError(msg)
@@ -1029,7 +1068,6 @@ class _rule__CM(ScopingCM):
         return super().new_rel(sub, pred, obj, qualifiers, overwrite)
 
     def _get_new_anchor_item(self, name):
-
         # note `anchor_item_counter` is a property
 
         name = f"{name}{self.anchor_item_counter}"
@@ -1142,8 +1180,10 @@ def _get_subscopes(self):
     scope_rels: list = self.get_inv_relations("R21__is_scope_of", return_subj=True)
     return scope_rels
 
+
 I15["implication proposition"].add_method(_get_subscopes, name="get_subscopes")
 I16["scope"].add_method(_get_subscopes, name="get_subscopes")
+
 
 def _get_subscope(self, name: str):
     assert isinstance(name, str)
@@ -1160,8 +1200,10 @@ def _get_subscope(self, name: str):
     else:
         return res[0]
 
+
 I15["implication proposition"].add_method(_get_subscope, name="get_subscope")
 I16["scope"].add_method(_get_subscope, name="get_subscope")
+
 
 def _get_statements_for_scope(self):
     """
@@ -1172,7 +1214,9 @@ def _get_statements_for_scope(self):
     # return all statements where which have self as R20 qualifier
     return [s for s in subjects if isinstance(s, Statement)]
 
+
 I16["scope"].add_method(_get_statements_for_scope, name="get_statements_for_scope")
+
 
 def _get_items_for_scope(self):
     """
@@ -1182,6 +1226,7 @@ def _get_items_for_scope(self):
 
     # return all items where which have self as R20 qualifier
     return [s for s in subjects if isinstance(s, Item)]
+
 
 I16["scope"].add_method(_get_items_for_scope, name="get_items_for_scope")
 
@@ -1231,7 +1276,6 @@ R24["has LaTeX string"].set_relation(R11["has range of result"], str)
 # they should be used only as an addendum to semantic representations
 # TODO: Fix ocse_ct.I6091["control affinity"]
 def create_expression(latex_src: str, r1: str = None, r2: str = None) -> Item:
-
     if r1 is None:
         r1 = f"generic expression ({latex_src})"
 
@@ -1296,7 +1340,7 @@ R27 = create_builtin_relation(
 R26["has lhs"].set_relation(R8["has domain of argument 1"], I21["mathematical relation"])
 R27["has rhs"].set_relation(R8["has domain of argument 1"], I21["mathematical relation"])
 
-I46  = create_builtin_item(
+I46 = create_builtin_item(
     key_str="I46",
     R1__has_label="knowledge artifact",
     R2__has_description="general type for things like a theory, quote, equation ...",
@@ -1480,6 +1524,8 @@ def create_evaluated_mapping(mapping: Item, *args) -> Item:
     # add convenience method
     ev_mapping.add_method(get_arguments, "get_arguments")
 
+    ev_mapping.finalize()
+
     return ev_mapping
 
 
@@ -1488,7 +1534,7 @@ R30 = create_builtin_relation(
     key_str="R30",
     R1__has_label="is secondary instance of",
     R2__has_description=(
-        "specifies that the subject is an instance of a class-item,in addtioin to its unambiguous parent class."
+        "specifies that the subject is an instance of a class-item, in addition to its unambiguous parent class."
     ),
     R18__has_usage_hint=(
         "Note that this relation is not functional. This construction allows to combine single (R4) "
@@ -1520,7 +1566,6 @@ def new_equation(lhs: Item, rhs: Item, doc=None, scope: Optional[Item] = None) -
 
 
 def new_mathematical_relation(lhs: Item, rsgn: str, rhs: Item, doc=None, scope: Optional[Item] = None) -> Item:
-
     rsgn_dict = {
         "==": I23["equation"],
         "<": I29["less-than-relation"],
@@ -1881,6 +1926,7 @@ R44 = create_builtin_relation(
 # see docs for more general information about qualifiers
 univ_quant = QualifierFactory(R44["is universally quantified"])
 
+
 # TODO: obsolete
 def uq_instance_of(type_entity: Item, r1: str = None, r2: str = None) -> Item:
     """
@@ -1906,6 +1952,7 @@ def uq_instance_of(type_entity: Item, r1: str = None, r2: str = None) -> Item:
     # TODO: This should be used as a qualifier
     instance.set_relation(R44["is universally quantified"], True)
     return instance
+
 
 # placed here for its obvious relation to universal quantification
 R66 = create_builtin_relation(
@@ -1951,7 +1998,6 @@ class ImplicationStatement:
     """
 
     def __init__(self):
-
         parent_scope = ds.get_current_scope()
 
         scope_name_a = f"imp_stmt_antcdt in {parent_scope}"
@@ -2073,6 +2119,7 @@ def close_class_with_R51(cls_item: Item):
 
     return tpl
 
+
 def set_multiple_statements(subjects: Union[list, tuple], predicate: Relation, object: Any, qualifiers=None):
     """
     For every element of subjects, create a statement with predicate and object
@@ -2085,7 +2132,6 @@ def set_multiple_statements(subjects: Union[list, tuple], predicate: Relation, o
         res.append(stm)
 
     return res
-
 
 
 R52 = create_builtin_relation(
@@ -2211,7 +2257,6 @@ R62["is relation property"].set_relation(R62["is relation property"], True)
 
 
 def get_relation_properties_uris():
-
     stms: List[Statement] = ds.relation_statements[R62.uri]
     uris = []
     for stm in stms:
@@ -2331,21 +2376,18 @@ I45 = create_builtin_item(
     key_str="I45",
     R1__has_label="general entity",
     R2__has_description="common superclass of I1['general item'] and I40['general relation']",
-
     # TODO: decide where to break the circle
     # R4__is_instance_of=I2["Metaclass"],
 )
 
-I1['general item'].set_relation( R3["is subclass of"], I45["general entity"])
-I40['general relation'].set_relation( R3["is subclass of"], I45["general entity"])
+I1["general item"].set_relation(R3["is subclass of"], I45["general entity"])
+I40["general relation"].set_relation(R3["is subclass of"], I45["general entity"])
 
 
 R72 = create_builtin_relation(
     key_str="R72",
     R1__has_label="is generally related to",
-    R2__has_description=(
-        "specifies that the subject is 'somehow' related to the object"
-    ),
+    R2__has_description=("specifies that the subject is 'somehow' related to the object"),
     R8__has_domain_of_argument_1=I45["general entity"],
     R11__has_range_of_result=bool,
     R18__has_usage_hint="used to model relationships which are not (yet) possible to model otherwise",
@@ -2354,9 +2396,7 @@ R72 = create_builtin_relation(
 R73 = create_builtin_relation(
     key_str="R73",
     R1__has_label="conceptually dependends",
-    R2__has_description=(
-        "specifies that the object is needed to define the subject"
-    ),
+    R2__has_description=("specifies that the object is needed to define the subject"),
     R8__has_domain_of_argument_1=I45["general entity"],
     R11__has_range_of_result=bool,
     R18__has_usage_hint=(
@@ -2425,7 +2465,7 @@ def copy_statements(self, rel1: Relation, rel2: Relation):
     res = RuleResult()
     for stm in ds.relation_statements[rel1.uri]:
         stm: Statement
-    #    TODO: handle qualifiers
+        #    TODO: handle qualifiers
         new_stm = stm.subject.set_relation(rel2, stm.object, prevent_duplicate=True)
         res.add_statement(new_stm)
 

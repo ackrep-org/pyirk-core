@@ -4,7 +4,7 @@ This module serves to perform integrity checks on the knowledge base
 from typing import Union
 
 from . import core as pyerk, auxiliary as aux
-from . auxiliary import STATEMENTS_URI_PART, PREDICATES_URI_PART, QUALIFIERS_URI_PART
+from .auxiliary import STATEMENTS_URI_PART, PREDICATES_URI_PART, QUALIFIERS_URI_PART
 
 # noinspection PyUnresolvedReferences
 from ipydex import IPS
@@ -124,17 +124,16 @@ def check_uri_in_modfilter(uri, modfilter):
     part0: str = uri.split("#")[0]
 
     if part0.endswith(STATEMENTS_URI_PART):
-        part0 = part0[:-len(STATEMENTS_URI_PART)]
+        part0 = part0[: -len(STATEMENTS_URI_PART)]
         IPS()
     elif part0.endswith(QUALIFIERS_URI_PART):
-        part0 = part0[:-len(QUALIFIERS_URI_PART)]
+        part0 = part0[: -len(QUALIFIERS_URI_PART)]
         IPS()
 
     return part0 in modfilter
 
 
 def check_subclass(entity, class_item):
-
     # wip!
 
     # Hier müsste man prüfen ob es eine instanz-subklassen*-Beziehung gibt
@@ -151,7 +150,6 @@ Sparql_results_type = Union[aux.ListWithAttributes, SPARQLResult, Result]
 
 
 def perform_sparql_query(qsrc: str, return_raw=False) -> Sparql_results_type:
-
     if pyerk.ds.rdfgraph is None:
         pyerk.ds.rdfgraph = create_rdf_triples()
 
@@ -183,7 +181,6 @@ def convert_from_rdf_to_pyerk(rdfnode) -> object:
 
 
 def get_sparql_example_query():
-
     qsrc = f"""
 
         PREFIX : <{ERK_URI}>
@@ -196,7 +193,6 @@ def get_sparql_example_query():
 
 
 def get_sparql_example_query2():
-
     qsrc = f"""
         PREFIX : <{ERK_URI}>
         PREFIX ocse: <erk:/ocse/0.2#>

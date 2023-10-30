@@ -41,7 +41,7 @@ TEST_MOD_NAME = "control_theory1"
 
 # useful to get the currently latest sha strings:
 # git log --pretty=oneline | head
-TEST_DATA_REPO_COMMIT_SHA = "efad98a8db56d9ef99ab27831bec457581c5b437"  # (2023-10-27 21:47:09)
+TEST_DATA_REPO_COMMIT_SHA = "f1733025fdccb19cbd1be39c654c25251604c26f"  # (2023-10-30 10:10:00)
 
 # TODO: make this more robust (e.g. search for config file or environment variable)
 # TODO: put link to docs here (directory layout)
@@ -49,8 +49,9 @@ TEST_ACKREP_DATA_FOR_UT_PATH = pjoin(ERK_ROOT_DIR, "..", "ackrep", "ackrep_data_
 
 os.environ["UNITTEST"] = "True"
 
-# this flag controls some printing behavior (it is usually true on the developer machine but false on the CI machine)
-USING_NOSE = "nose" in sys.modules
+# UNLOAD_MODS is True by default but could be set to False via env var.
+# This is sometimes useful to prevent the deletion of entites by tear_down()
+UNLOAD_MODS = not (os.getenv("PYERK_NOT_UNLOAD_MODS") == "True")
 
 __URI__ = TEST_BASE_URI = "erk:/local/unittest"
 
@@ -72,11 +73,12 @@ class HouskeeperMixin:
         method_repr = f"{cls.__module__}:{cls.__qualname__}.{self._testMethodName}"
         os.environ["UNITTEST_METHOD_NAME"] = method_repr
         self.register_this_module()
+        p.ds.initialize_hooks()
 
     def tearDown(self) -> None:
-        if not self.had_error() or not USING_NOSE:
-            # keep the mods loaded on error for easier interactive debugging
-            # but only if not using nose (-> always unload mods on CI)
+        # possibility to keep the mods loaded on error for easier interactive debugging
+        # UNLOAD_MODS is True by default
+        if UNLOAD_MODS:
             self.unload_all_mods()
         self.print_methodnames()
         os.environ.pop("UNITTEST_METHOD_NAME", None)
@@ -112,9 +114,5 @@ class HouskeeperMixin:
         # TODO fix this for python 3.11 by using
         # https://stackoverflow.com/questions/4414234/getting-pythons-unittest-results-in-a-teardown-method
 
-        if USING_NOSE:
-            # this will be an flat list (empty on no errors)
-            return bool(self._outcome.errors)
-        else:
-            error_list = [b for (a, b) in self._outcome.errors if b is not None]
-            return bool(error_list)
+        error_list = [b for (a, b) in self._outcome.errors if b is not None]
+        return bool(error_list)

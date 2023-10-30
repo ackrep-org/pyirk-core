@@ -3,6 +3,7 @@ import sys
 import os
 from os.path import join as pjoin
 from typing import Dict, List, Union
+from packaging import version
 
 import rdflib
 
@@ -52,7 +53,13 @@ class Test_00_Core(HouskeeperMixin, unittest.TestCase):
 
         self.assertIn(TEST_DATA_REPO_COMMIT_SHA, sha_list)
 
-    def test_a1__process_key_str(self):
+    def test_a1__dependencyies(self):
+        # this tests checks some dependencies which are prone to cause problems (e.g. due to recent api-changes)
+
+        pydantic_version = version.parse(p.pydantic.__version__)
+        self.assertGreaterEqual(pydantic_version, version.parse("2.4.2"))
+
+    def test_b1__process_key_str(self):
         res = p.process_key_str("I1")
         self.assertEqual(res.prefix, None)
         self.assertEqual(res.short_key, "I1")
@@ -98,7 +105,7 @@ class Test_00_Core(HouskeeperMixin, unittest.TestCase):
         with self.assertRaises(p.aux.InvalidGeneralKeyError):
             res = p.process_key_str("some_prefix__I000__double_label_['redundant']", check=False)
 
-    def test_b1__uri_contex_manager(self):
+    def test_b2__uri_contex_manager(self):
         """
         Test defined behavior of errors occur in uri_context
         :return:

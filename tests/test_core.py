@@ -871,6 +871,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         with p.uri_context(uri=ct.__URI__):
             self.assertEqual(e2.R7641__has_approximation[0], e0)
 
+    @unittest.skipIf(os.environ.get("CI"), "Skipping visualization test on CI to prevent graphviz-dependency")
     def test_c13__format_label(self):
         with p.uri_context(uri=TEST_BASE_URI):
             e1 = p.create_item(key_str="I0123", R1="1234567890")
@@ -900,6 +901,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         label = node.get_dot_label(render=True)
         self.assertEqual(label, 'I0126\\n["12 34567-\\n890abcdefgh"]')
 
+    @unittest.skipIf(os.environ.get("CI"), "Skipping visualization test on CI to prevent graphviz-dependency")
     def test_c14__visualization1(self):
 
         res_graph: visualization.nx.DiGraph = visualization.create_nx_graph_from_entity(
@@ -914,6 +916,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         res_graph: visualization.nx.DiGraph = visualization.create_nx_graph_from_entity(auto_item.uri)
         self.assertGreater(res_graph.number_of_nodes(), 7)
 
+    @unittest.skipIf(os.environ.get("CI"), "Skipping visualization test on CI to prevent graphviz-dependency")
     def test_c15__visualization2(self):
         # test rendering of dot
 
@@ -1508,14 +1511,14 @@ class Test_Z_Core(HouskeeperMixin, unittest.TestCase):
                 p.ds.preprocess_query(qsrc_incorr_1)
             self.assertEqual(cm.exception.args[0], msg)
 
-
 class Test_05_Script1(HouskeeperMixin, unittest.TestCase):
+    @unittest.skipIf(os.environ.get("CI"), "Skipping visualization test on CI to prevent graphviz-dependency")
     def test_c01__visualization(self):
         cmd = "pyerk -vis I12"
         res = os.system(cmd)
         self.assertEqual(res, 0)
 
-
+@unittest.skipIf(os.environ.get("CI"), "Skipping report tests on CI to prevent dependencies")
 class Test_06_reportgenerator(HouskeeperMixin, unittest.TestCase):
     @p.erkloader.preserve_cwd
     def tearDown(self) -> None:

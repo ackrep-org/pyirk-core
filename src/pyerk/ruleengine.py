@@ -70,7 +70,7 @@ def apply_semantic_rule(rule: core.Item, mod_context_uri: str = None) -> List[co
     """
     Create a RuleApplicator instance for the rules, execute its apply-method, return the result (list of new statements)
     """
-    assert rule.R4__is_instance_of == bi.I41["semantic rule"]
+    assert bi.is_instance_of(rule, bi.I41["semantic rule"])
 
     if VERBOSITY:
         print("applying", rule)

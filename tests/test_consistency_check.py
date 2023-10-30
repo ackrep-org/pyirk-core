@@ -14,7 +14,7 @@ import pyerk as p
 from .settings import (
     TEST_BASE_URI,
     HouskeeperMixin,
-
+    TEST_DATA_PATH2,
 
     )
 
@@ -87,3 +87,63 @@ class Test_01_CC(HouskeeperMixin, unittest.TestCase):
             with self.assertRaises(p.cc.WrongArgType):
                 # type error for all args
                 I0111["test operator"](real_number, real_number, real_number)
+
+    def _define_tst_rule(self, ct) -> p.Item:
+        with p.uri_context(uri=TEST_BASE_URI):
+            I501 = p.create_item(
+                R1__has_label="match matmul all",
+                R2__has_description=("test to match every instance of ma__I5177__matmul"),
+                R4__is_instance_of=p.I47["constraint rule"],
+            )
+
+            with I501.scope("context") as cm:
+                cm.new_var(x=p.instance_of(p.I1["general item"]))
+                cm.uses_external_entities(I501)
+                cm.uses_external_entities(ct.ma.I5177["matmul"])
+
+            with I501.scope("premises") as cm:
+                cm.new_rel(cm.x, p.R4["is instance of"], ct.ma.I5177["matmul"], overwrite=True)
+
+            with I501.scope("assertions") as cm:
+                cm.new_rel(cm.x, p.R54["is matched by rule"], I501)
+
+        return I501["match matmul all"]
+
+    def test_b01__cc_constraint_violation_rules(self):
+
+        ct = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
+        I501 = self._define_tst_rule(ct)
+        with p.uri_context(uri=TEST_BASE_URI):
+
+            A = p.instance_of(ct.ma.I9904["matrix"])
+            AxA = ct.ma.I5177["matmul"](A, A)
+
+            self.assertEqual(AxA.R54__is_matched_by_rule, [])
+
+            res = p.ruleengine.apply_semantic_rule(I501)
+
+        # self.assertEqual(len(res.new_statements), 3)
+        IPS()
+        # TODO: !! fix this
+        self.assertEqual(AxA.R54__is_matched_by_rule, [I501])
+
+    def test_c01__cc_matrix_dimensions(self):
+
+        ct = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
+        with p.uri_context(uri=TEST_BASE_URI):
+            n1 = p.instance_of(p.I39["positive integer"])
+            m1 = p.instance_of(p.I39["positive integer"])
+
+            n2 = p.instance_of(p.I39["positive integer"])
+            m2 = p.instance_of(p.I39["positive integer"])
+
+            A1 = p.instance_of(ct.ma.I9904["matrix"])
+            A2 = p.instance_of(ct.ma.I9904["matrix"])
+            B = p.instance_of(ct.ma.I9904["matrix"])
+
+            A1.R5939__has_column_number = m1
+            A2.R5939__has_column_number = n2
+            B.R5938__has_row_number = n2
+
+            A1B = ct.ma.I5177["matmul"](A1, B)
+            A2B = ct.ma.I5177["matmul"](A2, B)

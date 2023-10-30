@@ -143,3 +143,13 @@ def get_expected_arg_types(itm: Item) -> Tuple[Item]:
 
 def enable_consitency_checking():
     core.register_hook("post-finalize-item", check)
+
+
+def apply_constraint_rules_to_entity(entity: bi.Entity):
+    """
+    Basic idea: every module should formulate its own constraint rules (as part of the graph).
+
+    These rules are (indirect) instances I41["semantic rule"]. If they apply, they result in a
+    ConstraintViolationStatement.
+    """
+    pass

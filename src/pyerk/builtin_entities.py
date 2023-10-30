@@ -2408,7 +2408,30 @@ R73 = create_builtin_relation(
 
 # I46 is defined above
 
-# next keys: I47, R74
+I47 = create_builtin_item(
+    key_str="I47",
+    R1__has_label="constraint rule",
+    R2__has_description="rule that specifies which constraints a set of entites has to fulfill",
+    R3__is_subclass_of=I41["semantic rule"]
+)
+
+I48 = create_builtin_item(
+    key_str="I48",
+    R1__has_label="constraint violation",
+    R2__has_description="instances of this class specify a concrete constraint violation",
+    R3__is_subclass_of=I2["Metaclass"],
+)
+
+R74 = create_builtin_relation(
+    key_str="R74",
+    R1__has_label="has constraint violation",
+    R2__has_description=("specifies that the subject violates some I47__constraint_rule"),
+    R8__has_domain_of_argument_1=I45["general entity"],
+    R11__has_range_of_result=I48["constraint violation"],
+)
+
+
+# next keys: I48, R75
 
 # ######################################################################################################################
 # condition functions (to be used in the premise scope of a rule)

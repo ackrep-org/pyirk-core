@@ -40,6 +40,9 @@ def check_applied_operator(itm: Item):
     operator_itm = itm.R35__is_applied_mapping_of
     assert operator_itm is not None
 
+    # prevent unnoticed module reload issues
+    assert not itm.get_arguments()[0].R4._unlinked
+
     args = itm.get_arguments()
     arg_type_items = [arg.R4__is_instance_of for arg in args]
 
@@ -64,12 +67,18 @@ def check_applied_operator(itm: Item):
         if continue_outer_loop:
             continue
 
+        # handle some special cases (TODO: I41["semantic rule"]-instances for this, see zebra puzzle test data)
+        if bi.is_subclass_of(actual_type, bi.I34["complex number"], allow_id=True) and expected_type == bi.I18["mathematical expression"]:
+            continue
+
         # if we reach this there was no match -> error
-        msg = f"expected {expected_type} but got {actual_type}, while checking arg type {i} for {itm}\n{get_error_location()}"
+        msg = f"expected {expected_type} but got {actual_type}, while checking type of arg{i+1} for {itm}\n{get_error_location()}"
         raise WrongArgType(msg)
 
 
 def get_error_location():
+    # TODO: This function gives only useful results if error occurs during module loading
+    # but not if it occurs in a test_method
     import inspect
     import os
     f = inspect.currentframe()

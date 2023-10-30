@@ -425,7 +425,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
 
         ct = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
         with p.uri_context(uri=TEST_BASE_URI):
-            poly1 = p.instance_of(ct.I4239["monovariate polynomial"])
+            poly1 = p.instance_of(ct.I4239["abstract monovariate polynomial"])
 
         # test that an arbitrary item is *not* callable
         self.assertRaises(TypeError, ct.ma.I2738["field of complex numbers"], 0)
@@ -689,7 +689,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
 
         itm1 = p.ds.get_entity_by_key_str("I2__Metaclass")
         itm2 = p.ds.get_entity_by_key_str("I12__mathematical_object")
-        itm3 = p.ds.get_entity_by_key_str("ma__I4239__monovariate_polynomial")
+        itm3 = p.ds.get_entity_by_key_str("ma__I4239__abstract_monovariate_polynomial")
 
         # metaclass could be considered as an instance of itself because metaclasses are allowed to have
         # subclasses and instances (which is both true for I2__metaclass)

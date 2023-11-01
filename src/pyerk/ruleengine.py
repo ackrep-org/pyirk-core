@@ -147,15 +147,15 @@ class RuleApplicator:
 
         self.premise_stm_lists, self.premise_item_lists = self.extract_premise_stm_lists()
 
-        # TODO: rename "scp__context" -> "setting"
+        # Note: "scp__setting" previously was named scp __context
         self.setting_stms, self.vars = filter_relevant_stms(
-            rule.scp__context.get_inv_relations("R20__has_defining_scope")
+            rule.scp__setting.get_inv_relations("R20__has_defining_scope")
         )
 
-        self.external_entities = rule.scp__context.get_relations("R55__uses_as_external_entity", return_obj=True)
+        self.external_entities = rule.scp__setting.get_relations("R55__uses_as_external_entity", return_obj=True)
 
         # get all subjects (Entities or Statements of the setting-scope)
-        subjects = rule.scp__context.get_inv_relations("R20__has_defining_scope", return_subj=True)
+        subjects = rule.scp__setting.get_inv_relations("R20__has_defining_scope", return_subj=True)
 
         self.vars_for_literals = [
             s

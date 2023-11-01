@@ -1299,12 +1299,12 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
                 cm.new_var(P3=p.instance_of(p.I11["mathematical property"]))
             #     # A = cm.new_var(sys=instance_of(I1["general item"]))
             #
-            with self.rule1["subproperty rule 1"].scope("premises") as cm:
+            with self.rule1["subproperty rule 1"].scope("premise") as cm:
                 cm.new_rel(cm.P2, p.R17["is subproperty of"], cm.P1)
                 cm.new_rel(cm.P3, p.R17["is subproperty of"], cm.P2)
                 # todo: state that all variables are different from each other
 
-            with self.rule1["subproperty rule 1"].scope("assertions") as cm:
+            with self.rule1["subproperty rule 1"].scope("assertion") as cm:
                 cm.new_rel(cm.P3, p.R17["is subproperty of"], cm.P1)
 
     def test_a01__basics(self):
@@ -1393,7 +1393,7 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
     def test_c06__ruleengine05(self):
         self.setup_data1()
         premises_stms = p.ruleengine.filter_relevant_stms(
-            self.rule1.scp__premises.get_inv_relations("R20__has_defining_scope")
+            self.rule1.scp__premise.get_inv_relations("R20__has_defining_scope")
         )
 
         self.assertEqual(len(premises_stms), 2)

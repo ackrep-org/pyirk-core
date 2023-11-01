@@ -516,9 +516,6 @@ def _register_scope(self, name: str, scope_type: str = None) -> (dict, "Item"):
     if scope_type is None:
         scope_type = name.upper()
 
-        # TODO: remove this after renaming has taken place:
-        new_types = {"PREMISES": "PREMISE", "ASSERTIONS": "ASSERTION"}
-        scope_type = new_types.get(scope_type, scope_type)
     scope.set_relation(R64["has scope type"], scope_type)
 
     return ns, scope
@@ -2584,12 +2581,12 @@ def raise_reasoning_goal_reached(self, msg_template, *args):
 #     cm.new_var(P3=instance_of(I11["mathematical property"]))
 # #     # A = cm.new_var(sys=instance_of(I1["general item"]))
 # #
-# with I041["subproperty rule 1"].scope("premises") as cm:
+# with I041["subproperty rule 1"].scope("premise") as cm:
 #     cm.new_rel(cm.P2, R17["is subproperty of"], cm.P1)
 #     cm.new_rel(cm.P3, R17["is subproperty of"], cm.P2)
 #     # todo: state that all variables are different from each other
 #
-# with I041["subproperty rule 1"].scope("assertions") as cm:
+# with I041["subproperty rule 1"].scope("assertion") as cm:
 #     cm.new_rel(cm.P3, R17["is subproperty of"], cm.P1)
 
 # noinspection PyUnresolvedReferences

@@ -168,7 +168,7 @@ class RuleApplicator:
         ]
 
         # this are the variables created in the assertion scope
-        subjects = rule.scp__assertions.get_inv_relations("R20__has_defining_scope", return_subj=True)
+        subjects = rule.scp__assertion.get_inv_relations("R20__has_defining_scope", return_subj=True)
         self.fiat_prototype_vars = [s for s in subjects if isinstance(s, core.Entity)]
 
         # this structure holds the nodes corresponding to the fiat_prototypes
@@ -190,7 +190,7 @@ class RuleApplicator:
         self.ra_workers = [RuleApplicatorWorker(self, stms, itms) for stms, itms in pairs]
 
     def get_premise_type(self) -> PremiseType:
-        self.sparql_src = self.rule.scp__premises.get_relations("R63__has_SPARQL_source", return_obj=True)
+        self.sparql_src = self.rule.scp__premise.get_relations("R63__has_SPARQL_source", return_obj=True)
 
         if self.sparql_src:
             assert self.premise_stm_lists == [[]]
@@ -203,10 +203,10 @@ class RuleApplicator:
         premise_item_lists = []
 
         direct_stms, direct_items = filter_relevant_stms(
-            self.rule.scp__premises.get_inv_relations("R20__has_defining_scope")
+            self.rule.scp__premise.get_inv_relations("R20__has_defining_scope")
         )
 
-        if scope_OR := getattr(self.rule.scp__premises, "scp__OR", None):
+        if scope_OR := getattr(self.rule.scp__premise, "scp__OR", None):
             direct_OR_scope_stms, items = filter_relevant_stms(scope_OR.get_inv_relations("R20__has_defining_scope"))
             assert len(items) == 0, "msg creation of new items is now allowed in OR-subscopes"
 
@@ -400,8 +400,8 @@ class RuleApplicatorWorker:
         # this are the variables created in the premise scope
         self.condition_func_anchor_items = premise_items
 
-        self.sparql_src = rule.scp__premises.get_relations("R63__has_SPARQL_source", return_obj=True)
-        self.assertions_stms = filter_relevant_stms(rule.scp__assertions.get_inv_relations("R20"), return_items=False)
+        self.sparql_src = rule.scp__premise.get_relations("R63__has_SPARQL_source", return_obj=True)
+        self.assertions_stms = filter_relevant_stms(rule.scp__assertion.get_inv_relations("R20"), return_items=False)
 
         # for every local node (integer key) store a list of relations like:
         # {<uri1>: S5971(<Item Ia5322["rel1 (I40__general_rel)"]>, <Relation R2850["is functional activity"]>, True)}

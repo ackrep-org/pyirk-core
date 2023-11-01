@@ -101,10 +101,10 @@ class Test_01_CC(HouskeeperMixin, unittest.TestCase):
                 cm.uses_external_entities(I501)
                 cm.uses_external_entities(ct.ma.I5177["matmul"])
 
-            with I501.scope("premises") as cm:
+            with I501.scope("premise") as cm:
                 cm.new_rel(cm.x, p.R35["is applied mapping of"], ct.ma.I5177["matmul"])
 
-            with I501.scope("assertions") as cm:
+            with I501.scope("assertion") as cm:
                 cm.new_rel(cm.x, p.R54["is matched by rule"], I501)
 
         return I501["match matmul all"]

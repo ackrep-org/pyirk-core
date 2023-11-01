@@ -108,10 +108,10 @@ with I901.scope("setting") as cm:
     cm.new_var(P1=p.instance_of(p.I1["general item"]))
     cm.uses_external_entities(I901)
 #
-with I901.scope("premises") as cm:
+with I901.scope("premise") as cm:
     cm.new_rel(cm.P1, p.R57["is placeholder"], True)
 
-with I901.scope("assertions") as cm:
+with I901.scope("assertion") as cm:
     cm.new_rel(cm.P1, p.R54["is matched by rule"], I901)
 
 # ###############################################################################
@@ -131,11 +131,11 @@ with I902.scope("setting") as cm:
     cm.new_var(T2=p.instance_of(p.I33["tuple"]))
     cm.uses_external_entities(I902)
 
-with I902.scope("premises") as cm:
+with I902.scope("premise") as cm:
     cm.new_rel(cm.C1, p.R51["instances are from"], cm.T1)
     cm.new_rel(cm.P1, p.R52["is none of"], cm.T2)
 
-with I902.scope("assertions") as cm:
+with I902.scope("assertion") as cm:
     cm.new_rel(cm.P1, p.R54["is matched by rule"], I902)
 
 # ###############################################################################
@@ -157,7 +157,7 @@ with I903.scope("setting") as cm:
     cm.uses_external_entities(I903)
 
 
-with I903.scope("premises") as cm:
+with I903.scope("premise") as cm:
     cm.new_rel(cm.C1, p.R51["instances are from"], cm.T1)
     cm.new_rel(cm.P1, p.R52["is none of"], cm.T2)
 
@@ -179,7 +179,7 @@ def tuple_difference_factory(self, tuple_item1, tuple_item2):
     return res
 
 
-with I903.scope("assertions") as cm:
+with I903.scope("assertion") as cm:
     cm.new_var(T_diff=p.instance_of(p.I33["tuple"]))  # remaining items
     cm.T_diff.add_method(tuple_difference_factory, "fiat_factory")
 
@@ -203,12 +203,12 @@ with I904.scope("setting") as cm:
     cm.new_var(T1=p.instance_of(p.I33["tuple"]))
     cm.uses_external_entities(I904)
 
-with I904.scope("premises") as cm:
+with I904.scope("premise") as cm:
     cm.new_rel(cm.i1, p.R56["is one of"], cm.T1)
     cm.new_rel(cm.T1, p.R38["has length"], 1)
     cm.new_rel(cm.T1, p.R39["has element"], cm.elt0)
 
-with I904.scope("assertions") as cm:
+with I904.scope("assertion") as cm:
     cm.new_rel(cm.i1, p.R54["is matched by rule"], I904)
 
     cm.new_rel(cm.i1, p.R47["is same as"], cm.elt0)
@@ -226,11 +226,11 @@ with I905.scope("setting") as cm:
     cm.new_var(placeholder=p.instance_of(p.I1["general item"]))
     cm.new_var(real_item=p.instance_of(p.I1["general item"]))
 
-with I905.scope("premises") as cm:
+with I905.scope("premise") as cm:
     cm.new_rel(cm.placeholder, p.R57["is placeholder"], True)
     cm.new_rel(cm.placeholder, p.R47["is same as"], cm.real_item)
 
-with I905.scope("assertions") as cm:
+with I905.scope("assertion") as cm:
     cm.new_consequent_func(p.replacer_method, cm.placeholder, cm.real_item)
 
 # ###############################################################################

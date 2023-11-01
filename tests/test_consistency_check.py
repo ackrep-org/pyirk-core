@@ -98,14 +98,19 @@ class Test_01_CC(HouskeeperMixin, unittest.TestCase):
 
             with I501.scope("setting") as cm:
                 cm.new_var(x=p.instance_of(p.I1["general item"]))
+                cm.new_var(arg_tuple=p.instance_of(p.I33["tuple"]))
+                # cm.new_var(arg1=p.instance_of(p.I1["general item"]))
+                # cm.new_var(arg2=p.instance_of(p.I1["general item"]))
                 cm.uses_external_entities(I501)
                 cm.uses_external_entities(ct.ma.I5177["matmul"])
 
             with I501.scope("premise") as cm:
                 cm.new_rel(cm.x, p.R35["is applied mapping of"], ct.ma.I5177["matmul"])
+                cm.new_rel(cm.x, p.R36["has argument tuple"], cm.arg_tuple)
 
             with I501.scope("assertion") as cm:
                 cm.new_rel(cm.x, p.R54["is matched by rule"], I501)
+                cm.new_rel(cm.arg_tuple, p.R54["is matched by rule"], I501)
 
         return I501["match matmul all"]
 
@@ -122,13 +127,13 @@ class Test_01_CC(HouskeeperMixin, unittest.TestCase):
 
             res = p.ruleengine.apply_semantic_rule(I501)
 
-        self.assertEqual(len(res.new_statements), 1)
+        self.assertGreaterEqual(len(res.new_statements), 1)
         self.assertEqual(AxA.R54__is_matched_by_rule, [I501])
 
-    @unittest.expectedFailure
     def test_c01__cc_matrix_dimensions(self):
 
         ct = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
+        I501 = self._define_tst_rule(ct)
         with p.uri_context(uri=TEST_BASE_URI):
             n1 = p.instance_of(p.I39["positive integer"])
             m1 = p.instance_of(p.I39["positive integer"])
@@ -140,9 +145,16 @@ class Test_01_CC(HouskeeperMixin, unittest.TestCase):
             A2 = p.instance_of(ct.ma.I9904["matrix"])
             B = p.instance_of(ct.ma.I9904["matrix"])
 
-            A1.R5939__has_column_number = m1
-            A2.R5939__has_column_number = n2
-            B.R5938__has_row_number = n2
+            A1.ma__R5939__has_column_number = m1
+            A2.ma__R5939__has_column_number = n2
+            B.ma__R5938__has_row_number = n2
 
             A1B = ct.ma.I5177["matmul"](A1, B)
             A2B = ct.ma.I5177["matmul"](A2, B)
+
+            res = p.ruleengine.apply_semantic_rule(I501)
+
+        self.assertGreaterEqual(len(res.new_statements), 4)
+        self.assertEqual(A1B.R36__has_argument_tuple.R54__is_matched_by_rule, [I501])
+        self.assertEqual(A2B.R36__has_argument_tuple.R54__is_matched_by_rule, [I501])
+        # IPS()

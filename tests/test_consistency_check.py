@@ -102,7 +102,7 @@ class Test_01_CC(HouskeeperMixin, unittest.TestCase):
                 cm.uses_external_entities(ct.ma.I5177["matmul"])
 
             with I501.scope("premises") as cm:
-                cm.new_rel(cm.x, p.R4["is instance of"], ct.ma.I5177["matmul"], overwrite=True)
+                cm.new_rel(cm.x, p.R35["is applied mapping of"], ct.ma.I5177["matmul"])
 
             with I501.scope("assertions") as cm:
                 cm.new_rel(cm.x, p.R54["is matched by rule"], I501)
@@ -122,9 +122,7 @@ class Test_01_CC(HouskeeperMixin, unittest.TestCase):
 
             res = p.ruleengine.apply_semantic_rule(I501)
 
-        # self.assertEqual(len(res.new_statements), 3)
-        IPS()
-        # TODO: !! fix this
+        self.assertEqual(len(res.new_statements), 1)
         self.assertEqual(AxA.R54__is_matched_by_rule, [I501])
 
     @unittest.expectedFailure

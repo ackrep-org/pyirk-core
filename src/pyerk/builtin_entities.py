@@ -794,8 +794,15 @@ class ScopingCM:
         cm = cls(itm=self.item, namespace=namespace, scope=scope, parent_scope_cm=self)
         return cm
 
-    def copy_from(self, other_scope):
-        assert other_scope.R4 is I16["scope"]
+    def copy_from(self, other_obj: Item, scope_name:str = None):
+        assert isinstance(other_obj, Item)
+        if scope_name is None:
+            other_scope = other_obj
+            assert other_scope.R4 is I16["scope"]
+        else:
+            assert isinstance(scope_name, str)
+            other_scope = other_obj.get_subscope(scope_name)
+
         statements = other_scope.get_inv_relations("R20__has_defining_scope")
         var_definitions = []
         relation_stms = []
@@ -843,8 +850,10 @@ class ScopingCM:
         name = mapping_item.R23__has_name_in_scope
         assert name is not None
 
-        args = mapping_item.get_arguments()
-
+        try:
+            args = mapping_item.get_arguments()
+        except AttributeError:
+            args = ()
         new_args = (self.tmp_var_mapping[arg.uri] for arg in args)
 
         new_mapping_item = mapping_type(*new_args)
@@ -1896,6 +1905,8 @@ I41 = create_builtin_item(
 )
 
 I41["semantic rule"].add_method(_rule__scope, name="scope")
+# I41["semantic rule"].add_method(_get_subscopes, name="get_subscopes")
+# I41["semantic rule"].add_method(_get_subscope, name="get_subscope")
 
 # I42 is already used above
 

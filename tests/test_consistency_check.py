@@ -99,8 +99,12 @@ class Test_01_CC(HouskeeperMixin, unittest.TestCase):
             with I501.scope("setting") as cm:
                 cm.new_var(x=p.instance_of(p.I1["general item"]))
                 cm.new_var(arg_tuple=p.instance_of(p.I33["tuple"]))
-                # cm.new_var(arg1=p.instance_of(p.I1["general item"]))
-                # cm.new_var(arg2=p.instance_of(p.I1["general item"]))
+                cm.new_var(arg1=p.instance_of(p.I1["general item"]))
+                cm.new_var(arg2=p.instance_of(p.I1["general item"]))
+
+                cm.new_var(arg1_ra=p.instance_of(p.I49["reification anchor"]))
+                cm.new_var(arg2_ra=p.instance_of(p.I49["reification anchor"]))
+
                 cm.uses_external_entities(I501)
                 cm.uses_external_entities(ct.ma.I5177["matmul"])
 
@@ -108,9 +112,24 @@ class Test_01_CC(HouskeeperMixin, unittest.TestCase):
                 cm.new_rel(cm.x, p.R35["is applied mapping of"], ct.ma.I5177["matmul"])
                 cm.new_rel(cm.x, p.R36["has argument tuple"], cm.arg_tuple)
 
+                cm.new_rel(cm.arg_tuple, p.R39["has element"], cm.arg1)
+                cm.new_rel(cm.arg_tuple, p.R39["has element"], cm.arg2)
+
+                # specify the argument order
+                cm.new_rel(cm.arg_tuple, p.R75["has reification anchor"], cm.arg1_ra)
+                cm.new_rel(cm.arg_tuple, p.R75["has reification anchor"], cm.arg2_ra)
+
+                cm.new_rel(cm.arg1_ra, p.R39["has element"], cm.arg1)
+                cm.new_rel(cm.arg2_ra, p.R39["has element"], cm.arg2)
+
+                cm.new_rel(cm.arg1_ra, p.R40["has index"], 0)
+                cm.new_rel(cm.arg2_ra, p.R40["has index"], 1)
+
             with I501.scope("assertion") as cm:
                 cm.new_rel(cm.x, p.R54["is matched by rule"], I501)
                 cm.new_rel(cm.arg_tuple, p.R54["is matched by rule"], I501)
+                cm.new_rel(cm.arg1, p.R54["is matched by rule"], I501)
+                cm.new_rel(cm.arg2, p.R54["is matched by rule"], I501)
 
         return I501["match matmul all"]
 
@@ -154,7 +173,12 @@ class Test_01_CC(HouskeeperMixin, unittest.TestCase):
 
             res = p.ruleengine.apply_semantic_rule(I501)
 
-        self.assertGreaterEqual(len(res.new_statements), 4)
+        self.assertGreaterEqual(len(res.new_statements), 2)
+
         self.assertEqual(A1B.R36__has_argument_tuple.R54__is_matched_by_rule, [I501])
         self.assertEqual(A2B.R36__has_argument_tuple.R54__is_matched_by_rule, [I501])
-        # IPS()
+        self.assertEqual(A1.R54__is_matched_by_rule, [I501])
+        self.assertEqual(A2.R54__is_matched_by_rule, [I501])
+
+        # B is matched twice because it is used in two matrix-products
+        self.assertEqual(B.R54__is_matched_by_rule, [I501, I501])

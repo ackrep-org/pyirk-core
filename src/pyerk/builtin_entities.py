@@ -1701,6 +1701,12 @@ def new_tuple(*args, **kwargs) -> Item:
     for idx, arg in enumerate(args):
         tup.set_relation(R39["has element"], arg, qualifiers=[has_index(idx)])
 
+        # new specification of index (allow easy access in rules)
+        ra = instance_of(I49["reification anchor"])
+        ra.set_relation(R39["has element"], arg)
+        ra.set_relation(R40["has index"], idx)
+        tup.set_relation(R75["has reification anchor"], ra)
+
     return tup
 
 
@@ -2428,7 +2434,28 @@ R74 = create_builtin_relation(
 )
 
 
-# next keys: I48, R75
+I49 = create_builtin_item(
+    key_str="I49",
+    R1__has_label="reification anchor",
+    R2__has_description="instances of this class serve to express statements with arity > 2",
+    R3__is_subclass_of=I2["Metaclass"],
+    R18__has_usage_hint="see example usage in `new_tuple(...)`",
+)
+
+R75 = create_builtin_relation(
+    key_str="R75",
+    R1__has_label="has reification anchor",
+    R2__has_description=("specifies that the subject is described by some reificated statement"),
+    R8__has_domain_of_argument_1=I45["general entity"],
+    R11__has_range_of_result=I48["constraint violation"],
+    R18__has_usage_hint=(
+        "example usage: specify the argument order for I33__tuple instances with R39__has_element "
+        "and R40__has_index"
+    ),
+)
+
+
+# next keys: I50, R76
 
 # ######################################################################################################################
 # condition functions (to be used in the premise scope of a rule)

@@ -96,7 +96,7 @@ class Test_01_CC(HouskeeperMixin, unittest.TestCase):
                 R4__is_instance_of=p.I47["constraint rule"],
             )
 
-            with I501.scope("context") as cm:
+            with I501.scope("setting") as cm:
                 cm.new_var(x=p.instance_of(p.I1["general item"]))
                 cm.uses_external_entities(I501)
                 cm.uses_external_entities(ct.ma.I5177["matmul"])

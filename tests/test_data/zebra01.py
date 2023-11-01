@@ -104,7 +104,7 @@ I901 = p.create_item(
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
-with I901.scope("context") as cm:
+with I901.scope("setting") as cm:
     cm.new_var(P1=p.instance_of(p.I1["general item"]))
     cm.uses_external_entities(I901)
 #
@@ -123,7 +123,7 @@ I902 = p.create_item(
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
-with I902.scope("context") as cm:
+with I902.scope("setting") as cm:
     cm.new_var(C1=p.instance_of(p.I2["Metaclass"]))  # this is the class
     cm.new_var(P1=p.instance_of(cm.C1))  # this is the instance (this will be the beverage)
 
@@ -148,7 +148,7 @@ I903 = p.create_item(
 )
 
 # TODO: prevent a scope from being called again
-with I903.scope("context") as cm:
+with I903.scope("setting") as cm:
     cm.new_var(C1=p.instance_of(p.I2["Metaclass"]))  # this is the class
     cm.new_var(P1=p.instance_of(cm.C1))  # this is the instance (this will be the beverage)
 
@@ -197,7 +197,7 @@ I904 = p.create_item(
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
-with I904.scope("context") as cm:
+with I904.scope("setting") as cm:
     cm.new_var(i1=p.instance_of(p.I1["general item"]))
     cm.new_var(elt0=p.instance_of(p.I1["general item"]))
     cm.new_var(T1=p.instance_of(p.I33["tuple"]))
@@ -222,7 +222,7 @@ I905 = p.create_item(
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
-with I905.scope("context") as cm:
+with I905.scope("setting") as cm:
     cm.new_var(placeholder=p.instance_of(p.I1["general item"]))
     cm.new_var(real_item=p.instance_of(p.I1["general item"]))
 

@@ -166,7 +166,7 @@ class Test_01_rulebased_reasoning(HouskeeperMixin, unittest.TestCase):
                 R4__is_instance_of=p.I41["semantic rule"],
             )
 
-            with I702.scope("context") as cm:
+            with I702.scope("setting") as cm:
                 cm.new_var(x=p.instance_of(p.I1["general item"]))
                 cm.uses_external_entities(I702)
                 cm.uses_external_entities(p.I36["rational number"])
@@ -210,7 +210,7 @@ class Test_01_rulebased_reasoning(HouskeeperMixin, unittest.TestCase):
                 R4__is_instance_of=p.I41["semantic rule"],
             )
 
-            with I703.scope("context") as cm:
+            with I703.scope("setting") as cm:
                 cm.new_var(x=p.instance_of(p.I1["general item"]))
                 cm.uses_external_entities(I703)
                 cm.uses_external_entities(p.I36["rational number"])
@@ -244,7 +244,7 @@ class Test_01_rulebased_reasoning(HouskeeperMixin, unittest.TestCase):
                 R4__is_instance_of=p.I41["semantic rule"],
             )
 
-            with I704.scope("context") as cm:
+            with I704.scope("setting") as cm:
                 cm.new_var(x=p.instance_of(p.I1["general item"]))
                 cm.new_var(y=p.instance_of(p.I1["general item"]))
                 cm.uses_external_entities(p.I36['rational number'])
@@ -273,7 +273,7 @@ class Test_01_rulebased_reasoning(HouskeeperMixin, unittest.TestCase):
                 R4__is_instance_of=p.I41["semantic rule"],
             )
 
-            with I702.scope("context") as cm:
+            with I702.scope("setting") as cm:
                 cm.new_var(x=p.instance_of(p.I1["general item"]))
 
             self.assertEqual(cm.x.R4, p.I1["general item"])
@@ -312,7 +312,7 @@ class Test_01_rulebased_reasoning(HouskeeperMixin, unittest.TestCase):
                 R4__is_instance_of=p.I41["semantic rule"],
             )
 
-            with I704.scope("context") as cm:
+            with I704.scope("setting") as cm:
                 cm.new_var(x=p.instance_of(p.I1["general item"]))
                 cm.new_var(y=p.instance_of(p.I1["general item"]))
                 cm.uses_external_entities(I704)
@@ -374,7 +374,7 @@ class Test_01_rulebased_reasoning(HouskeeperMixin, unittest.TestCase):
                 R4__is_instance_of=p.I41["semantic rule"],
             )
 
-            with I701.scope("context") as cm:
+            with I701.scope("setting") as cm:
                 cm.new_var(rel1=p.instance_of(p.I40["general relation"]))
                 cm.new_var(rel2=p.instance_of(p.I40["general relation"]))
                 cm.uses_external_entities(I701)
@@ -401,7 +401,7 @@ class Test_01_rulebased_reasoning(HouskeeperMixin, unittest.TestCase):
                 R4__is_instance_of=p.I41["semantic rule"],
             )
 
-            with I702.scope("context") as cm:
+            with I702.scope("setting") as cm:
                 cm.new_var(rel1=p.instance_of(p.I40["general relation"]))
                 cm.uses_external_entities(I702)
 
@@ -437,7 +437,7 @@ class Test_01_rulebased_reasoning(HouskeeperMixin, unittest.TestCase):
                 R4__is_instance_of=p.I41["semantic rule"],
             )
 
-            with I701.scope("context") as cm:
+            with I701.scope("setting") as cm:
                 cm.new_var(rel1=p.instance_of(p.I40["general relation"]))
                 cm.new_var(rel2=p.instance_of(p.I40["general relation"]))
 
@@ -454,7 +454,7 @@ class Test_01_rulebased_reasoning(HouskeeperMixin, unittest.TestCase):
                 R4__is_instance_of=p.I41["semantic rule"],
             )
 
-            with I763.scope("context") as cm:
+            with I763.scope("setting") as cm:
                 cm.new_var(p1=p.instance_of(p.I1["general item"]))
                 cm.new_var(p2=p.instance_of(p.I1["general item"]))
 
@@ -504,7 +504,7 @@ class Test_01_rulebased_reasoning(HouskeeperMixin, unittest.TestCase):
                 R4__is_instance_of=p.I41["semantic rule"],
             )
 
-            with I701.scope("context") as cm:
+            with I701.scope("setting") as cm:
                 cm.new_var(rel1=p.instance_of(p.I40["general relation"]))
 
             with I701.scope("premises") as cm:
@@ -554,7 +554,7 @@ class Test_01_rulebased_reasoning(HouskeeperMixin, unittest.TestCase):
                 R4__is_instance_of=p.I41["semantic rule"],
             )
 
-            with I703.scope("context") as cm:
+            with I703.scope("setting") as cm:
                 cm.new_var(itm1=p.instance_of(p.I1["general item"]))
                 cm.new_var(itm2=p.instance_of(p.I1["general item"]))
                 cm.uses_external_entities(I703)
@@ -607,7 +607,7 @@ class Test_01_rulebased_reasoning(HouskeeperMixin, unittest.TestCase):
                 R4__is_instance_of=p.I41["semantic rule"],
             )
 
-            with I703.scope("context") as cm:
+            with I703.scope("setting") as cm:
                 cm.new_var(var1=p.instance_of(p.I1["general item"]))
                 cm.new_var(var2=p.instance_of(p.I1["general item"]))
                 cm.new_variable_literal("val1")
@@ -647,7 +647,7 @@ class Test_01_rulebased_reasoning(HouskeeperMixin, unittest.TestCase):
                 R4__is_instance_of=p.I41["semantic rule"],
             )
 
-            with I704.scope("context") as cm:
+            with I704.scope("setting") as cm:
                 cm.new_var(var1=p.instance_of(p.I1["general item"]))
                 cm.new_var(var2=p.instance_of(p.I1["general item"]))
                 cm.new_variable_literal("val1")
@@ -699,7 +699,7 @@ class Test_01_rulebased_reasoning(HouskeeperMixin, unittest.TestCase):
                 R4__is_instance_of=p.I41["semantic rule"],
             )
 
-            with I703.scope("context") as cm:
+            with I703.scope("setting") as cm:
                 cm.new_var(var1=p.instance_of(p.I1["general item"]))
                 cm.uses_external_entities(R301)
 
@@ -746,7 +746,7 @@ class Test_01_rulebased_reasoning(HouskeeperMixin, unittest.TestCase):
                 R4__is_instance_of=p.I41["semantic rule"],
             )
 
-            with I703.scope("context") as cm:
+            with I703.scope("setting") as cm:
                 cm.new_var(var0=p.instance_of(p.I1["general item"]))
                 cm.new_var(var1=p.instance_of(p.I1["general item"]))
 
@@ -790,7 +790,7 @@ class Test_01_rulebased_reasoning(HouskeeperMixin, unittest.TestCase):
                 R4__is_instance_of=p.I41["semantic rule"],
             )
 
-            with I704.scope("context") as cm:
+            with I704.scope("setting") as cm:
                 cm.new_var(var0=p.instance_of(p.I1["general item"]))
                 cm.new_var(var1=p.instance_of(p.I1["general item"]))
 
@@ -841,7 +841,7 @@ class Test_01_rulebased_reasoning(HouskeeperMixin, unittest.TestCase):
                 R4__is_instance_of=p.I41["semantic rule"],
             )
 
-            with I601.scope("context") as cm:
+            with I601.scope("setting") as cm:
                 cm.new_var(itm1=p.instance_of(p.I1["general item"]))
                 cm.new_var(itm2=p.instance_of(p.I1["general item"]))
 

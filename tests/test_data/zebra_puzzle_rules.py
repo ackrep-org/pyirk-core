@@ -27,7 +27,7 @@ I701 = p.create_item(
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
-with I701.scope("context") as cm:
+with I701.scope("setting") as cm:
     cm.new_var(rel1=p.instance_of(p.I40["general relation"]))
     cm.new_var(rel2=p.instance_of(p.I40["general relation"]))
 
@@ -46,7 +46,7 @@ I702 = p.create_item(
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
-with I702.scope("context") as cm:
+with I702.scope("setting") as cm:
     cm.new_var(rel1=p.instance_of(p.I40["general relation"]))
 
 with I702.scope("premises") as cm:
@@ -64,7 +64,7 @@ I705 = p.create_item(
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
-with I705.scope("context") as cm:
+with I705.scope("setting") as cm:
     cm.new_var(p1=p.instance_of(zb.I7435["human"]))
     cm.new_var(p2=p.instance_of(zb.I7435["human"]))
     cm.uses_external_entities(zb.I7435["human"])
@@ -94,7 +94,7 @@ I710 = p.create_item(
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
-with I710.scope("context") as cm:
+with I710.scope("setting") as cm:
     cm.new_var(p1=p.instance_of(p.I1["general item"]))
     cm.new_var(p2=p.instance_of(p.I1["general item"]))
     cm.new_var(some_itm=p.instance_of(p.I1["general item"]))
@@ -138,7 +138,7 @@ I720 = p.create_item(
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
-with I720.scope("context") as cm:
+with I720.scope("setting") as cm:
     cm.new_var(itm1=p.instance_of(p.I1["general item"]))
     cm.new_var(itm2=p.instance_of(p.I1["general item"]))
     cm.uses_external_entities(p.R57["is placeholder"])
@@ -180,7 +180,7 @@ I725 = p.create_item(
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
-with I725.scope("context") as cm:
+with I725.scope("setting") as cm:
     cm.new_var(itm1=p.instance_of(p.I1["general item"]))
     cm.new_var(itm2=p.instance_of(p.I1["general item"]))
 
@@ -214,7 +214,7 @@ I730 = p.create_item(
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
-with I730.scope("context") as cm:
+with I730.scope("setting") as cm:
     cm.new_var(h1=p.instance_of(zb.I7435["human"]))
     cm.new_var(h2=p.instance_of(zb.I7435["human"]))
     cm.new_var(itm1=p.instance_of(p.I1["general item"]))
@@ -247,7 +247,7 @@ I740 = p.create_item(
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
-with I740.scope("context") as cm:
+with I740.scope("setting") as cm:
     cm.new_var(h1=p.instance_of(zb.I7435["human"]))
     cm.new_var(h2=p.instance_of(zb.I7435["human"]))
     cm.new_var(itm1=p.instance_of(p.I1["general item"]))
@@ -299,7 +299,7 @@ I750 = p.create_item(
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
-with I750.scope("context") as cm:
+with I750.scope("setting") as cm:
     cm.new_var(p1=p.instance_of(zb.I7435["human"]))
     cm.uses_external_entities(zb.I7435["human"], zb.R9040["lives in numbered house"], zb.I8809["house number"])
 
@@ -329,7 +329,7 @@ I760 = p.create_item(
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
-with I760.scope("context") as cm:
+with I760.scope("setting") as cm:
     # persons
     cm.new_var(p1=p.instance_of(zb.I7435["human"]))
     cm.new_var(p2=p.instance_of(zb.I7435["human"]))
@@ -384,7 +384,7 @@ I763 = p.create_item(
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
-with I763.scope("context") as cm:
+with I763.scope("setting") as cm:
     # persons
     cm.new_var(p1=p.instance_of(zb.I7435["human"]))
     cm.new_var(p2=p.instance_of(zb.I7435["human"]))
@@ -412,7 +412,7 @@ I770 = p.create_item(
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
-with I770.scope("context") as cm:
+with I770.scope("setting") as cm:
     cm.new_var(hn1=p.instance_of(zb.I8809["house number"]))
     cm.new_var(imp_idcs_tup=p.instance_of(p.I33["tuple"]))
 
@@ -461,7 +461,7 @@ I780 = p.create_item(
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
-with I780.scope("context") as cm:
+with I780.scope("setting") as cm:
     cm.new_var(cls1=p.instance_of(p.I1["general item"]))
     cm.new_var(itm1=p.instance_of(p.I1["general item"]))
     cm.new_var(tup1=p.instance_of(p.I33["tuple"]))
@@ -511,7 +511,7 @@ I790 = p.create_item(
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
-with I790.scope("context") as cm:
+with I790.scope("setting") as cm:
     cm.new_var(itm1=p.instance_of(p.I1["general item"]))
     cm.new_var(elt0=p.instance_of(p.I1["general item"]))
     cm.new_var(tup1=p.instance_of(p.I33["tuple"]))
@@ -535,7 +535,7 @@ I741 = p.create_item(
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
-with I741.scope("context") as cm:
+with I741.scope("setting") as cm:
     cm.new_var(h1=p.instance_of(zb.I7435["human"]))
     cm.new_var(h2=p.instance_of(zb.I7435["human"]))
     cm.new_var(itm1a=p.instance_of(p.I1["general item"]))
@@ -595,7 +595,7 @@ I792 = p.create_item(
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
-with I792.scope("context") as cm:
+with I792.scope("setting") as cm:
     cm.new_var(h1=p.instance_of(zb.I7435["human"]))
     cm.new_var(h2=p.instance_of(zb.I7435["human"]))
     cm.new_var(itm1a=p.instance_of(p.I1["general item"]))
@@ -639,7 +639,7 @@ I794 = p.create_item(
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
-with I794.scope("context") as cm:
+with I794.scope("setting") as cm:
     # persons
     cm.new_var(p1=p.instance_of(zb.I7435["human"]))
     cm.new_var(p2=p.instance_of(zb.I7435["human"]))
@@ -681,7 +681,7 @@ I796 = p.create_item(
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
-with I796.scope("context") as cm:
+with I796.scope("setting") as cm:
     # persons
     cm.new_var(p1=p.instance_of(p.I1["general item"]))
     cm.new_var(p2=p.instance_of(p.I1["general item"]))
@@ -718,7 +718,7 @@ I798 = p.create_item(
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
-with I798.scope("context") as cm:
+with I798.scope("setting") as cm:
     cm.new_var(p1=p.instance_of(zb.I7435["human"]))
     cm.new_var(p2=p.instance_of(zb.I7435["human"]))
     cm.new_var(itm1=p.instance_of(p.I1["general item"]))
@@ -755,7 +755,7 @@ I800 = p.create_item(
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
-with I800.scope("context") as cm:
+with I800.scope("setting") as cm:
 
     cm.new_var(rel1=p.instance_of(p.I40["general relation"]))
     cm.new_var(rel1_not=p.instance_of(p.I40["general relation"]))
@@ -778,7 +778,7 @@ I803 = p.create_item(
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
-with I803.scope("context") as cm:
+with I803.scope("setting") as cm:
 
     cm.new_var(p1=p.instance_of(p.I1["general item"]))
     cm.new_var(itm1=p.instance_of(p.I1["general item"]))
@@ -872,7 +872,7 @@ I810 = p.create_item(
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
-with I810.scope("context") as cm:
+with I810.scope("setting") as cm:
     pass
 
 with I810.scope("premises") as cm:
@@ -884,7 +884,7 @@ with I810.scope("assertions") as cm:
 # this is a temporary solution until the AlgorithmicRuleApplicationWorker is implemented
 I810.cheat = [p.ruleengine.AlgorithmicRuleApplicationWorker.hardcoded_I810, zb, add_stm_by_exclusion]
 
-with I820.scope("context") as cm:
+with I820.scope("setting") as cm:
 
     cm.new_var(p0=p.instance_of(p.I1["general item"]))
 
@@ -939,7 +939,7 @@ I830.cheat = [
 
 
 # currently obsolete because of hardcoded cheat
-with I830.scope("context") as cm:
+with I830.scope("setting") as cm:
 
     cm.new_var(p0=p.instance_of(p.I1["general item"]))
 
@@ -990,7 +990,7 @@ I840.cheat = [
     "puzzle solved"
 ]
 
-with I840.scope("context") as cm:
+with I840.scope("setting") as cm:
     pass
 
 with I840.scope("premises") as cm:
@@ -1007,7 +1007,7 @@ I825 = p.create_item(
 )
 
 
-with I825.scope("context") as cm:
+with I825.scope("setting") as cm:
     cm.new_var(p1=p.instance_of(p.I1["general item"]))
     cm.new_var(p2=p.instance_of(p.I1["general item"]))
 

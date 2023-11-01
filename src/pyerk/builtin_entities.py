@@ -517,7 +517,7 @@ def _register_scope(self, name: str, scope_type: str = None) -> (dict, "Item"):
         scope_type = name.upper()
 
         # TODO: remove this after renaming has taken place:
-        new_types = {"CONTEXT": "SETTING", "PREMISES": "PREMISE", "ASSERTIONS": "ASSERTION"}
+        new_types = {"PREMISES": "PREMISE", "ASSERTIONS": "ASSERTION"}
         scope_type = new_types.get(scope_type, scope_type)
     scope.set_relation(R64["has scope type"], scope_type)
 
@@ -554,7 +554,7 @@ def add_relations_to_scope(relation_tuples: Union[list, tuple], scope: Entity):
 def get_scopes(entity: Entity) -> List[Item]:
     """
     Return a list of all scope-items which are associated with this entity like
-    [<scope:context>, <scope:premise>, <scope:assertion>] for a proposition-item.
+    [<scope:setting>, <scope:premise>, <scope:assertion>] for a proposition-item.
 
     :param entity:
     :return:
@@ -585,7 +585,7 @@ def add_scope_to_defining_statement(ent: Entity, scope: Item) -> None:
 
     The motivation for this function is a usage pattern like:
     ```
-    with I3007.scope("context") as cm:
+    with I3007.scope("setting") as cm:
         cm.new_var(sys=p.instance_of(I5948["dynamical system"]))
     )
     ```
@@ -2577,7 +2577,7 @@ def raise_reasoning_goal_reached(self, msg_template, *args):
 # )
 #
 #
-# with I041["subproperty rule 1"].scope("context") as cm:
+# with I041["subproperty rule 1"].scope("setting") as cm:
 #
 #     cm.new_var(P1=instance_of(I11["mathematical property"]))
 #     cm.new_var(P2=instance_of(I11["mathematical property"]))

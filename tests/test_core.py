@@ -1293,7 +1293,7 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
                 R4__is_instance_of=p.I41["semantic rule"],
             )
 
-            with self.rule1["subproperty rule 1"].scope("context") as cm:
+            with self.rule1["subproperty rule 1"].scope("setting") as cm:
                 cm.new_var(P1=p.instance_of(p.I11["mathematical property"]))
                 cm.new_var(P2=p.instance_of(p.I11["mathematical property"]))
                 cm.new_var(P3=p.instance_of(p.I11["mathematical property"]))

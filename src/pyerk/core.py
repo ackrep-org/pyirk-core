@@ -790,6 +790,11 @@ class DataStore:
         # store hook functions
         self.hooks = self.initialize_hooks()
 
+        # data structure to facilitate scope-copying
+        # keys: 2-tuples: (new_scope_uri, old_var_uri)
+        # values: new_var_item
+        self.scope_var_mappings = {}
+
     def initialize_hooks(self) -> dict:
         self.hooks = {
             "post-create-entity": [],

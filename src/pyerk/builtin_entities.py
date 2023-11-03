@@ -622,9 +622,6 @@ class ScopingCM:
         self.scope = scope
         self.parent_scope_cm = parent_scope_cm
 
-        # this is used in copy_from
-        self.tmp_var_mapping = {}
-
     def __enter__(self):
         """
         implicitly called in the head of the with statemet
@@ -814,8 +811,8 @@ class ScopingCM:
             elif isinstance(stm, core.Statement):
                 var_definitions.append(stm.subject)
 
-        # to keep track of which old variables correspond to which new ones
-        self.tmp_var_mapping.clear()
+        if other_scope.R64__has_scope_type in ("PREMISE", "ASSERTION"):
+            pass
 
         # create variables
         for var_item in var_definitions:
@@ -829,19 +826,64 @@ class ScopingCM:
                 new_var_item = self._copy_mapping(var_item)
             else:
                 new_var_item = self._new_var(variable_name=name, variable_object=instance_of(class_item, r1=name))
-            self.tmp_var_mapping[var_item.uri] = new_var_item
+
+        # to keep track of which old variables correspond to which new ones
+            ds.scope_var_mappings[(self.scope.uri, var_item.uri)] = new_var_item
 
         # create relations
         stm: core.Statement
         for stm in relation_stms:
             subj, pred, obj = stm.relation_tuple
-            new_subj = self.tmp_var_mapping.get(subj.uri, subj)
-            new_obj = self.tmp_var_mapping.get(obj.uri, obj)
+            new_subj = self._get_new_var_from_old(subj)
+            new_obj = self._get_new_var_from_old(obj)
 
             # TODO: handle qualifiers and overwrite flag
-            self.new_rel(new_subj, pred, new_obj)
+            try:
+                self.new_rel(new_subj, pred, new_obj)
+            except core.aux.FunctionalRelationError:
+                if new_subj.R35__is_applied_mapping_of is not None:
+                    res = new_subj.overwrite_statement(pred.uri, obj)
+                else:
+                    raise
+            except:
+                raise
 
         # TODO: handle ImplicationStatement (see test_c07c__scope_copying)
+
+    def _get_new_var_from_old(self, old_var: Item, strict=False) -> Item:
+
+        if isinstance(old_var, core.allowed_literal_types):
+            return old_var
+
+        assert isinstance(old_var, Item)
+
+        # 1st try: vars created in this scope
+        new_var = ds.scope_var_mappings.get((self.scope.uri, old_var.uri))
+
+        if new_var is not  None:
+            return new_var
+
+        # 2nd try: vars created in the setting scope
+        this_scope_parent = self.scope.R21__is_scope_of
+        all_scopes = this_scope_parent.get_inv_relations("R21__is_scope_of", return_subj=True)
+
+        setting_scopes = [scp for scp in all_scopes if scp.R64__has_scope_type == "SETTING"]
+        assert len(setting_scopes) == 1
+        setting_scope = setting_scopes[0]
+
+        new_var = ds.scope_var_mappings.get((setting_scope.uri, old_var.uri))
+
+        if new_var is not  None:
+            return new_var
+
+        # TODO: look in the premise scope?
+
+        if strict:
+            msg = f"Unexpected: Could not find a copied item associated to {old_var}"
+            raise core.aux.PyERKError(msg)
+
+        # last ressort return the original variable (because it was an external var)
+        return old_var
 
     def _copy_mapping(self, mapping_item: Item) -> Item:
         mapping_type = mapping_item.R35__is_applied_mapping_of
@@ -854,7 +896,7 @@ class ScopingCM:
             args = mapping_item.get_arguments()
         except AttributeError:
             args = ()
-        new_args = (self.tmp_var_mapping[arg.uri] for arg in args)
+        new_args = (self._get_new_var_from_old(arg, strict=True) for arg in args)
 
         new_mapping_item = mapping_type(*new_args)
         # TODO: add R20__has_defining_scope and R23__has_name_in_scope
@@ -862,6 +904,25 @@ class ScopingCM:
         self._new_var(variable_name=name, variable_object=new_mapping_item)
 
         return new_mapping_item
+
+    def _get_premise_vars(self) -> dict:
+        """
+        return a dict of all items that were defined in the associated setting scope.
+
+        key: variable names (via R23__has_name_in_scope)
+        value: item objects
+        """
+        this_scope_parent = self.scope.R21__is_scope_of
+
+        all_scopes = this_scope_parent.get_inv_relations("R21__is_scope_of", return_subj=True)
+
+        setting_scopes = [scp for scp in all_scopes if scp.R64__has_scope_type == "SETTING"]
+        assert len(setting_scopes) == 1
+        setting_scope = setting_scopes[0]
+        defined_items = setting_scope.get_inv_relations("R20__has_defining_scope")
+
+        settings_vars_mapping = dict((stm.subject.R23__has_name_in_scope, stm.subject) for stm in defined_items)
+        return settings_vars_mapping
 
 
 def is_generic_instance(itm: Item) -> bool:
@@ -1905,8 +1966,8 @@ I41 = create_builtin_item(
 )
 
 I41["semantic rule"].add_method(_rule__scope, name="scope")
-# I41["semantic rule"].add_method(_get_subscopes, name="get_subscopes")
-# I41["semantic rule"].add_method(_get_subscope, name="get_subscope")
+I41["semantic rule"].add_method(_get_subscopes, name="get_subscopes")
+I41["semantic rule"].add_method(_get_subscope, name="get_subscope")
 
 # I42 is already used above
 

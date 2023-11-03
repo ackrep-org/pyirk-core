@@ -132,14 +132,20 @@ class Test_01_CC(HouskeeperMixin, unittest.TestCase):
                 cm.new_rel(cm.arg2, p.R54["is matched by rule"], I501)
 
             # this rule deals with operand dimensions
-            # I502 = p.create_item(
-            #     R1__has_label="match matmul all",
-            #     R2__has_description=("test to match every instance of ma__I5177__matmul"),
-            #     R4__is_instance_of=p.I47["constraint rule"],
-            # )
+            I502 = p.create_item(
+                R1__has_label="match matmul all",
+                R2__has_description=("test to match every instance of ma__I5177__matmul"),
+                R4__is_instance_of=p.I47["constraint rule"],
+            )
 
-            # with I502.scope("setting") as cm:
-            #     cm.copy_from(I501, "setting")
+            with I502.scope("setting") as cm:
+                cm.copy_from(I501, "setting")
+
+                # m1 = p.instance_of(p.I39["positive integer"])
+                # n2 = p.instance_of(p.I39["positive integer"])
+
+            with I502.scope("premise") as cm:
+                cm.copy_from(I501, "premise")
 
         return I501["match matmul all"]
 

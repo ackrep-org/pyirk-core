@@ -2536,6 +2536,15 @@ R75 = create_builtin_relation(
     ),
 )
 
+R76 = create_builtin_relation(
+    key_str="R76",
+    R1__has_label="has associated rule",
+    R2__has_description="...",
+    R8__has_domain_of_argument_1=I45["general entity"],
+    R11__has_range_of_result=I41["semantic rule"],
+    R22__is_functional=True,
+)
+
 
 # next keys: I50, R76
 

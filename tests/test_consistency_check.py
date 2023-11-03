@@ -133,14 +133,14 @@ class Test_01_CC(HouskeeperMixin, unittest.TestCase):
 
             # this rule deals with operand dimensions
             I502 = p.create_item(
-                R1__has_label="check mat mul dimensions",
+                R1__has_label="raise exception on invalid mat mul dimensions",
                 R2__has_description=("test to match every instance of ma__I5177__matmul"),
                 R4__is_instance_of=p.I47["constraint rule"],
             )
 
             with I502.scope("setting") as cm:
                 cm.copy_from(I501, "setting")
-                cm.uses_external_entities(I502)
+                cm.uses_external_entities(cm.rule)
                 cm.uses_external_entities(ct.ma.I5177["matmul"])
 
                 cm.new_var(m1=p.instance_of(p.I39["positive integer"]))
@@ -169,9 +169,53 @@ class Test_01_CC(HouskeeperMixin, unittest.TestCase):
             with I502.scope("assertion") as cm:
                 cm.new_consequent_func(raise_error_for_item, cm.rule, cm.x, anchor_item=None)
 
+
+            # this rule creates I48["constraint violation"]-Items instead of raising exceptions
+            I503 = p.create_item(
+                R1__has_label="create I48__constraint_violation for invalid matmul calls",
+                R2__has_description="...",
+                R4__is_instance_of=p.I47["constraint rule"],
+            )
+
+            with I503.scope("setting") as cm:
+                cm.copy_from(I501, "setting")
+                cm.uses_external_entities(cm.rule)
+
+                # needed here because used in scp__premise of I501
+                cm.uses_external_entities(ct.ma.I5177["matmul"])
+
+
+                cm.new_var(m1=p.instance_of(p.I39["positive integer"]))
+                cm.new_var(n2=p.instance_of(p.I39["positive integer"]))
+
+            with I503.scope("premise") as cm:
+                cm.copy_from(I501, "premise")
+
+                cm.new_rel(cm.arg1, ct.ma.R5939["has column number"], cm.m1)
+                cm.new_rel(cm.arg2, ct.ma.R5938["has row number"], cm.n2)
+
+                # cm.new_math_relation(cm.m1, "!=", cm.n2)
+
+                # TODO: create this condition function from the above relation
+                cm.new_condition_func(lambda self, x, y: x != y, cm.m1, cm.n2)
+
+            def create_constraint_violation_item(anchor_item, main_arg, rule):
+
+                res = p.RuleResult()
+                cvio: p.Item = p.instance_of(p.I48["constraint violation"])
+                res.new_entities.append(cvio)
+                res.new_statements.append(cvio.set_relation(p.R76["has associated rule"], rule))
+                res.new_statements.append(main_arg.set_relation(p.R74["has constraint violation"], cvio))
+
+                return res
+
+            with I503.scope("assertion") as cm:
+                cm.new_consequent_func(create_constraint_violation_item, cm.x, cm.rule)
+
         res = p.aux.Container(
             I501=I501,
             I502=I502,
+            I503=I503,
         )
         return res
 
@@ -197,7 +241,7 @@ class Test_01_CC(HouskeeperMixin, unittest.TestCase):
 
         ct = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
         c = self._define_tst_rules(ct)
-        I501, I502 = c.I501, c.I502
+        I501, I502, I503 = c.I501, c.I502, c.I503
         with p.uri_context(uri=TEST_BASE_URI):
             n1 = p.instance_of(p.I39["positive integer"])
             m1 = p.instance_of(p.I39["positive integer"])
@@ -228,5 +272,19 @@ class Test_01_CC(HouskeeperMixin, unittest.TestCase):
         # B is matched twice because it is used in two matrix-products
         self.assertEqual(B.R54__is_matched_by_rule, [I501, I501])
 
+        #
+        # test the rule which raises an exception
         with self.assertRaises(p.cc.ErkConsistencyError):
-            res = p.ruleengine.apply_semantic_rule(I502, TEST_BASE_URI)
+            p.ruleengine.apply_semantic_rule(I502["raise exception on invalid mat mul dimensions"], TEST_BASE_URI)
+
+        #
+        # test the rule which produces a I48["constraint violation"] instance
+        res = p.ruleengine.apply_semantic_rule(I503, TEST_BASE_URI)
+
+        self.assertEqual(len(res.new_entities), 1)
+
+        cvio, = A1B.R74__has_constraint_violation
+        self.assertEqual(cvio.R76__has_associated_rule, I503)
+        self.assertTrue(p.is_instance_of, p.I48["constraint violation"])
+
+        self.assertEqual(A2B.R74__has_constraint_violation, [])

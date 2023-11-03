@@ -976,6 +976,13 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
 
         self.assertTrue(d.ma__R8736__depends_polyonomially_on, s)
 
+    def test_d02b__signature_inheritance(self):
+        ct = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
+        with p.uri_context(uri=TEST_BASE_URI):
+            P = p.instance_of(ct.ma.I4240["matrix polynomial"])
+            self.assertEqual(P.R8__has_domain_of_argument_1, [ct.ma.I9906["square matrix"]])
+            self.assertEqual(P.R11__has_range_of_result, [ct.ma.I9906["square matrix"]])
+
     def test_d03__replace_entity(self):
 
         ma = p.erkloader.load_mod_from_path(TEST_DATA_PATH_MA, prefix="ma")

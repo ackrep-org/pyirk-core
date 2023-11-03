@@ -227,6 +227,22 @@ def instance_of(cls_entity, r1: str = None, r2: str = None, qualifiers: List[Ite
         qualifiers = [qff_has_defining_scope(class_scope)]
     new_item.set_relation(R4["is instance of"], cls_entity, qualifiers=qualifiers)
 
+    # add consistency relevant relations:
+    # note that the could be overwritten with item.overwrite_statement
+    for rel in [
+        R8["has domain of argument 1"],
+        R9["has domain of argument 2"],
+        R10["has domain of argument 3"],
+        R11["has range of result"],
+    ]:
+
+        obj = cls_entity.get_relations(rel.uri, return_obj=True)
+        if obj not in ([], None):
+            if isinstance(obj, list):
+                assert len(obj) == 1
+                obj = obj[0]
+            new_item.set_relation(rel, obj)
+
     # TODO: solve this more elegantly
     # this has to be run again after setting R4
     new_item.__post_init__()

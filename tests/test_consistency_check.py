@@ -88,7 +88,7 @@ class Test_01_CC(HouskeeperMixin, unittest.TestCase):
                 # type error for all args
                 I0111["test operator"](real_number, real_number, real_number)
 
-    def _define_tst_rule(self, ct) -> p.Item:
+    def _define_tst_rules(self, ct) -> p.aux.Container:
         with p.uri_context(uri=TEST_BASE_URI):
             I501 = p.create_item(
                 R1__has_label="match matmul all",
@@ -133,7 +133,7 @@ class Test_01_CC(HouskeeperMixin, unittest.TestCase):
 
             # this rule deals with operand dimensions
             I502 = p.create_item(
-                R1__has_label="match matmul all",
+                R1__has_label="check mat mul dimensions",
                 R2__has_description=("test to match every instance of ma__I5177__matmul"),
                 R4__is_instance_of=p.I47["constraint rule"],
             )
@@ -156,15 +156,18 @@ class Test_01_CC(HouskeeperMixin, unittest.TestCase):
             with I502.scope("assertion") as cm:
                 cm.new_consequent_func(raise_error_for_item, cm.rule, cm.x, anchor_item=None)
 
-
-        return I501["match matmul all"]
+        res = p.aux.Container(
+            I501=I501,
+            I502=I502,
+        )
+        return res
 
     # this tests now fails because the rule got more specific -> is test obsolete or should there be a separate rule?
     @unittest.expectedFailure
     def test_b01__cc_constraint_violation_rules(self):
 
         ct = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
-        I501 = self._define_tst_rule(ct)
+        I501 = self._define_tst_rules(ct)
         with p.uri_context(uri=TEST_BASE_URI):
 
             A = p.instance_of(ct.ma.I9904["matrix"])
@@ -180,7 +183,8 @@ class Test_01_CC(HouskeeperMixin, unittest.TestCase):
     def test_c01__cc_matrix_dimensions(self):
 
         ct = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
-        I501 = self._define_tst_rule(ct)
+        c = self._define_tst_rules(ct)
+        I501, I502 = c.I501, c.I502
         with p.uri_context(uri=TEST_BASE_URI):
             n1 = p.instance_of(p.I39["positive integer"])
             m1 = p.instance_of(p.I39["positive integer"])

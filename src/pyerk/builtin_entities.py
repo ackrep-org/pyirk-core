@@ -1053,7 +1053,15 @@ class _rule__CM(AbstractMathRelatedScopeCM):
     def __init__(self, *args, **kwargs):
         self._anchor_item_counter = 0
         super().__init__(*args, **kwargs)
-        self.rule = self.scope.R21__is_scope_of
+        r21_parent_of_scope = self.scope.R21__is_scope_of
+        while True:
+            # take care of nested scopes
+            tmp = r21_parent_of_scope.R21__is_scope_of
+            if tmp:
+                r21_parent_of_scope = tmp
+            else:
+                break
+        self.rule = r21_parent_of_scope
         assert is_instance_of(self.rule, I41["semantic rule"])
 
     @property

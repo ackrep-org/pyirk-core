@@ -1047,12 +1047,14 @@ class SubScopeConditionCM(AbstractMathRelatedScopeCM):
     valid_subscope_types = {}
 
 
-class _rule__CM(ScopingCM):
+class _rule__CM(AbstractMathRelatedScopeCM):
     valid_subscope_types = {"AND": float("inf"), "OR": 1}
 
     def __init__(self, *args, **kwargs):
         self._anchor_item_counter = 0
         super().__init__(*args, **kwargs)
+        self.rule = self.scope.R21__is_scope_of
+        assert is_instance_of(self.rule, I41["semantic rule"])
 
     @property
     def anchor_item_counter(self):

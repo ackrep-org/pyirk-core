@@ -141,11 +141,21 @@ class Test_01_CC(HouskeeperMixin, unittest.TestCase):
             with I502.scope("setting") as cm:
                 cm.copy_from(I501, "setting")
 
-                # m1 = p.instance_of(p.I39["positive integer"])
-                # n2 = p.instance_of(p.I39["positive integer"])
+                cm.new_var(m1=p.instance_of(p.I39["positive integer"]))
+                cm.new_var(n2=p.instance_of(p.I39["positive integer"]))
 
             with I502.scope("premise") as cm:
                 cm.copy_from(I501, "premise")
+
+                # probably this needs to be/create a condition function
+                cm.new_math_relation(cm.m1, "!=", cm.n2)
+
+            def raise_error_for_item(rule, arg):
+                raise p.cc.ErkConsistencyError(f"rule {rule} failed for arg {arg}")
+
+            with I502.scope("assertion") as cm:
+                cm.new_consequent_func(raise_error_for_item, cm.rule, cm.x, anchor_item=None)
+
 
         return I501["match matmul all"]
 

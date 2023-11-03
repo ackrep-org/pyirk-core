@@ -14,7 +14,10 @@ from .core import Item
 from ipydex import IPS
 
 
-class ErkTypeError(core.aux.PyERKError):
+class ErkConsistencyError(core.aux.PyERKError):
+    pass
+
+class ErkTypeError(ErkConsistencyError):
     pass
 
 

@@ -140,6 +140,8 @@ class Test_01_CC(HouskeeperMixin, unittest.TestCase):
 
             with I502.scope("setting") as cm:
                 cm.copy_from(I501, "setting")
+                cm.uses_external_entities(I502)
+                cm.uses_external_entities(ct.ma.I5177["matmul"])
 
                 cm.new_var(m1=p.instance_of(p.I39["positive integer"]))
                 cm.new_var(n2=p.instance_of(p.I39["positive integer"]))
@@ -147,11 +149,22 @@ class Test_01_CC(HouskeeperMixin, unittest.TestCase):
             with I502.scope("premise") as cm:
                 cm.copy_from(I501, "premise")
 
-                # probably this needs to be/create a condition function
-                cm.new_math_relation(cm.m1, "!=", cm.n2)
+                cm.new_rel(cm.arg1, ct.ma.R5939["has column number"], cm.m1)
+                cm.new_rel(cm.arg2, ct.ma.R5938["has row number"], cm.n2)
 
-            def raise_error_for_item(rule, arg):
-                raise p.cc.ErkConsistencyError(f"rule {rule} failed for arg {arg}")
+                # cm.new_math_relation(cm.m1, "!=", cm.n2)
+
+                # TODO: create this condition function from the above relation
+                cm.new_condition_func(lambda self, x, y: x != y, cm.m1, cm.n2)
+
+            def raise_error_for_item(_anchor_item: p.Item, rule: p.Item, arg: p.Item):
+                """
+                :param _anchor_item:    auxiliary graph node to which the condition function is attached
+                                        it is passed automatically (not needed here)
+                :param rule:            the rule which has this function as a consequent_func
+                :param arg:             the item which triggerred the rule
+                """
+                raise p.cc.ErkConsistencyError(f"Rule {rule} failed for arg {arg}.")
 
             with I502.scope("assertion") as cm:
                 cm.new_consequent_func(raise_error_for_item, cm.rule, cm.x, anchor_item=None)
@@ -214,3 +227,6 @@ class Test_01_CC(HouskeeperMixin, unittest.TestCase):
 
         # B is matched twice because it is used in two matrix-products
         self.assertEqual(B.R54__is_matched_by_rule, [I501, I501])
+
+        with self.assertRaises(p.cc.ErkConsistencyError):
+            res = p.ruleengine.apply_semantic_rule(I502, TEST_BASE_URI)

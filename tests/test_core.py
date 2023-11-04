@@ -49,9 +49,10 @@ class Test_00_Core(HouskeeperMixin, unittest.TestCase):
 
         repo = git.Repo(TEST_DATA_REPO_PATH)
         log_list = repo.git.log("--pretty=oneline").split("\n")
+        msg = f"Unexpected: could not find commit hash {TEST_DATA_REPO_COMMIT_SHA} in repo {TEST_DATA_REPO_PATH}"
         sha_list = [line.split(" ")[0] for line in log_list]
 
-        self.assertIn(TEST_DATA_REPO_COMMIT_SHA, sha_list)
+        self.assertIn(TEST_DATA_REPO_COMMIT_SHA, sha_list, msg=msg)
 
     def test_a1__dependencyies(self):
         # this tests checks some dependencies which are prone to cause problems (e.g. due to recent api-changes)

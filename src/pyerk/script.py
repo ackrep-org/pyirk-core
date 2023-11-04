@@ -129,6 +129,13 @@ def create_parser():
         action="store_true",
     )
 
+    parser.add_argument(
+        "-ik",
+        "--insert-keys-for-placeholders",
+        help="replace `_newitemkey_ = ` with appropriate short keys",
+        metavar="path_to_mod"
+    )
+
     parser.add_argument("--dbg", help="start debug routine", default=None, action="store_true")
 
     parser.add_argument(
@@ -212,6 +219,8 @@ def main():
             # exit(10)
             raise
         pyerkdjango.core.start_django_shell()
+    elif args.insert_keys_for_placeholders:
+        insert_keys_for_placeholders(args.insert_keys_for_placeholders)
     else:
         print("nothing to do, see option `--help` for more info")
 
@@ -289,6 +298,69 @@ def create_auto_complete_file():
         fp.writelines(lines)
 
     print(f"File written: {fpath}")
+
+
+def insert_keys_for_placeholders(modpath):
+    """
+    Motivation:
+    When mass-inserting entities, it is easier to use a placeholder instead of unique short_key.
+    This function replaces these placeholders with adequate unique short keys.
+    """
+
+    with open(modpath) as fp:
+        old_txt = fp.read()
+
+    # first write backup
+    fname = os.path.split(modpath)[-1]
+    import tempfile
+    import shutil
+    backup_path = os.path.join(tempfile.mkdtemp(), fname)
+
+    shutil.copy(modpath, backup_path)
+    print(f"Backup: {backup_path}")
+
+    placeholder = "_newitemkey_ = "
+    key_count = old_txt.count(f"\n{placeholder}")
+
+    #
+    # write the module without the placeholder lines
+    old_lines = old_txt.split("\n")
+    tmp_lines = []
+    for line in old_lines:
+        if line.startswith(placeholder):
+            continue
+        else:
+            tmp_lines.append(line)
+
+    tmp_modpath = os.path.join(tempfile.mkdtemp(prefix="pyerk_tmp_"), fname)
+
+    with open(tmp_modpath, "w") as fp:
+        fp.write("\n".join(tmp_lines))
+
+    #
+    # load this temporary module
+    loaded_mod = process_mod(path=tmp_modpath, prefix="mod", relative_to_workdir=True)
+    item_keys = [core.generate_new_key("I", mod_uri=loaded_mod.__URI__) for i in range(key_count)]
+
+    # replace the respective lines in the original module
+    new_lines = []
+    for line in old_lines:
+        if line.startswith(placeholder):
+            key = item_keys.pop()
+            new_line = line.replace(placeholder, f"{key} = ")
+        else:
+            new_line = line
+        new_lines.append(new_line)
+
+    txt = "\n".join(new_lines)
+    with open(modpath, "w") as fp:
+        fp.write(txt)
+        if not txt.endswith("\n"):
+            fp.write("\n")
+
+    print(f"File (over)written {modpath}")
+    with open(modpath, "w") as fp:
+        fp.write(txt)
 
 
 def interactive_session(loaded_mod, prefix):

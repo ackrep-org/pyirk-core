@@ -40,7 +40,6 @@ class OneToOneMapping(object):
         assert len(self.a) == len(self.b)
 
     def add_pair(self, key_a, key_b):
-
         if key_a in self.a:
             msg = f"key_a '{key_a}' does already exist."
             raise KeyError(msg)
@@ -56,7 +55,6 @@ class OneToOneMapping(object):
         assert len(self.a) == len(self.b)
 
     def remove_pair(self, key_a=None, key_b=None, strict=True):
-
         try:
             if key_a is not None:
                 key_b = self.a.pop(key_a)
@@ -100,7 +98,6 @@ def apply_func_to_table_cells(func: callable, table: Iterable, *args, **kwargs) 
 
 
 def ensure_rdf_str_literal(arg, allow_none=True) -> Union[Literal, None]:
-
     if allow_none and arg is None:
         return arg
 
@@ -145,7 +142,17 @@ class InvalidPrefixError(PyERKError):
     pass
 
 
+# used for syntax problems
 class InvalidShortKeyError(PyERKError):
+    pass
+
+
+class InvalidGeneralKeyError(PyERKError):
+    pass
+
+
+# used for syntactically correct keys which could not be found
+class ShortKeyNotFoundError(PyERKError):
     pass
 
 
@@ -164,6 +171,7 @@ class ModuleAlreadyLoadedError(PyERKError):
 class SemanticRuleError(PyERKError):
     pass
 
+
 class InconsistentEdgeRelations(SemanticRuleError):
     pass
 
@@ -181,6 +189,10 @@ class FunctionalRelationError(PyERKError):
 
 
 class UndefinedRelationError(PyERKError):
+    pass
+
+
+class TaxonomicError(PyERKError):
     pass
 
 
@@ -326,7 +338,6 @@ def make_uri(base_uri: str, short_key):
 # This function was once part of the key-recycling mechanism.
 # Currently it is not needed but might be useful in the future.
 def convert_key_str_to_num(key_str: str) -> int:
-
     import re as regex  # this import is "parked here" as long as the function is not used
 
     re_short_key = regex.compile(r"^((Ia?)|(Ra?)|(RE))(\d+)$")
@@ -367,12 +378,10 @@ def clean_dict(dikt: Dict[Any, Union[list, dict]]) -> Dict[Any, Union[list, dict
 
 
 def uri_set(*args):
-
     res = []
     for arg in args:
         res.append(arg.uri)
     return set(res)
-
 
 
 def bright(txt):

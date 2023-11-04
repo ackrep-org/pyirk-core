@@ -56,13 +56,12 @@ def apply_all_semantic_rules(mod_context_uri=None) -> List[core.Statement]:
 
 
 def apply_semantic_rules(*rules: List, mod_context_uri: str = None) -> List[core.Statement]:
-
     total_res = ReportingMultiRuleResult(rule_list=rules)
     for rule in rules:
         res = apply_semantic_rule(rule, mod_context_uri)
         total_res.add_partial(res)
         if res.exception:
-             break
+            break
 
     return total_res
 
@@ -71,7 +70,7 @@ def apply_semantic_rule(rule: core.Item, mod_context_uri: str = None) -> List[co
     """
     Create a RuleApplicator instance for the rules, execute its apply-method, return the result (list of new statements)
     """
-    assert rule.R4__is_instance_of == bi.I41["semantic rule"]
+    assert bi.is_instance_of(rule, bi.I41["semantic rule"])
 
     if VERBOSITY:
         print("applying", rule)
@@ -92,7 +91,6 @@ def apply_semantic_rule(rule: core.Item, mod_context_uri: str = None) -> List[co
 
 
 def get_all_rules():
-
     rule_instances: list = bi.I41["semantic rule"].get_inv_relations("R4__is_instance_of", return_subj=True)
 
     return rule_instances
@@ -149,15 +147,15 @@ class RuleApplicator:
 
         self.premise_stm_lists, self.premise_item_lists = self.extract_premise_stm_lists()
 
-        # TODO: rename "scp__context" -> "setting"
+        # Note: "scp__setting" previously was named scp __context
         self.setting_stms, self.vars = filter_relevant_stms(
-            rule.scp__context.get_inv_relations("R20__has_defining_scope")
+            rule.scp__setting.get_inv_relations("R20__has_defining_scope")
         )
 
-        self.external_entities = rule.scp__context.get_relations("R55__uses_as_external_entity", return_obj=True)
+        self.external_entities = rule.scp__setting.get_relations("R55__uses_as_external_entity", return_obj=True)
 
         # get all subjects (Entities or Statements of the setting-scope)
-        subjects = rule.scp__context.get_inv_relations("R20__has_defining_scope", return_subj=True)
+        subjects = rule.scp__setting.get_inv_relations("R20__has_defining_scope", return_subj=True)
 
         self.vars_for_literals = [
             s
@@ -170,7 +168,7 @@ class RuleApplicator:
         ]
 
         # this are the variables created in the assertion scope
-        subjects = rule.scp__assertions.get_inv_relations("R20__has_defining_scope", return_subj=True)
+        subjects = rule.scp__assertion.get_inv_relations("R20__has_defining_scope", return_subj=True)
         self.fiat_prototype_vars = [s for s in subjects if isinstance(s, core.Entity)]
 
         # this structure holds the nodes corresponding to the fiat_prototypes
@@ -192,8 +190,7 @@ class RuleApplicator:
         self.ra_workers = [RuleApplicatorWorker(self, stms, itms) for stms, itms in pairs]
 
     def get_premise_type(self) -> PremiseType:
-
-        self.sparql_src = self.rule.scp__premises.get_relations("R63__has_SPARQL_source", return_obj=True)
+        self.sparql_src = self.rule.scp__premise.get_relations("R63__has_SPARQL_source", return_obj=True)
 
         if self.sparql_src:
             assert self.premise_stm_lists == [[]]
@@ -202,15 +199,14 @@ class RuleApplicator:
             return PremiseType.GRAPH
 
     def extract_premise_stm_lists(self):
-
         premise_stm_lists = []
         premise_item_lists = []
 
         direct_stms, direct_items = filter_relevant_stms(
-            self.rule.scp__premises.get_inv_relations("R20__has_defining_scope")
+            self.rule.scp__premise.get_inv_relations("R20__has_defining_scope")
         )
 
-        if scope_OR := getattr(self.rule.scp__premises, "scp__OR", None):
+        if scope_OR := getattr(self.rule.scp__premise, "scp__OR", None):
             direct_OR_scope_stms, items = filter_relevant_stms(scope_OR.get_inv_relations("R20__has_defining_scope"))
             assert len(items) == 0, "msg creation of new items is now allowed in OR-subscopes"
 
@@ -292,7 +288,6 @@ class RuleApplicator:
             self.literal_variable_nodes.add_pair(var.uri, node_name)
 
     def create_prototypes_for_fiat_entities(self):
-
         for i, var in enumerate(self.fiat_prototype_vars):
             node_name = f"fiat{i}"
             self.asserted_nodes.add_pair(var.uri, node_name)
@@ -306,7 +301,6 @@ class RuleApplicator:
         G = nx.MultiDiGraph()
 
         for uri, entity in list(core.ds.items.items()) + list(core.ds.relations.items()):
-
             # prevent items created inside scopes
             if is_node_for_simple_graph(entity):
                 # TODO: rename kwarg itm to ent
@@ -406,8 +400,8 @@ class RuleApplicatorWorker:
         # this are the variables created in the premise scope
         self.condition_func_anchor_items = premise_items
 
-        self.sparql_src = rule.scp__premises.get_relations("R63__has_SPARQL_source", return_obj=True)
-        self.assertions_stms = filter_relevant_stms(rule.scp__assertions.get_inv_relations("R20"), return_items=False)
+        self.sparql_src = rule.scp__premise.get_relations("R63__has_SPARQL_source", return_obj=True)
+        self.assertions_stms = filter_relevant_stms(rule.scp__assertion.get_inv_relations("R20"), return_items=False)
 
         # for every local node (integer key) store a list of relations like:
         # {<uri1>: S5971(<Item Ia5322["rel1 (I40__general_rel)"]>, <Relation R2850["is functional activity"]>, True)}
@@ -466,11 +460,12 @@ class RuleApplicatorWorker:
             # prepend the qsrc with linenumbers via regex, see: https://stackoverflow.com/a/64621297/333403
             def repl(m):
                 repl.cnt += 1
-                return f'{repl.cnt:03d}: '
+                return f"{repl.cnt:03d}: "
 
             repl.cnt = 0
             import re
-            print(re.sub(r'(?m)^', repl, qsrc))
+
+            print(re.sub(r"(?m)^", repl, qsrc))
             raise
 
         res2 = p.aux.apply_func_to_table_cells(p.rdfstack.convert_from_rdf_to_pyerk, res)
@@ -489,8 +484,6 @@ class RuleApplicatorWorker:
         return res
 
     def apply_graph_premise(self) -> core.RuleResult:
-
-
         t0 = time.time()
         result_maps = self.match_subgraph_P()
         # TODO: for debugging the result_maps data structure the following things might be helpful:
@@ -578,7 +571,6 @@ class RuleApplicatorWorker:
             search_dict = {**res_dict, **dict(zip(anchor_node_names, asserted_new_items))}
 
             for cntnr in self.asserted_relation_templates:
-
                 n1, rel, n2 = cntnr.subject, cntnr.predicate, cntnr.object
 
                 # in most cases rel is an Relation, but it could also be a proxy-item for a relation
@@ -668,7 +660,6 @@ class RuleApplicatorWorker:
         return extended_result_map
 
     def _get_all_edge_predicate_relations(self, uri1, uri2, ensure_length1=False):
-
         relations = []
         edge_dicts: Dict[dict] = self.parent.G.get_edge_data(uri1, uri2)
 
@@ -720,7 +711,6 @@ class RuleApplicatorWorker:
         self._fill_extended_local_nodes()
 
         for var in self.parent.fiat_prototype_vars:
-
             call_args = var.get_relations("R29", return_obj=True)
             fiat_factory = getattr(var, "fiat_factory", None)
 
@@ -806,7 +796,7 @@ class RuleApplicatorWorker:
                 final_obj = obj  # the LiteralWrapper instance
 
             c = Container(subject=self.extended_local_nodes.a[sub.uri], predicate=pred, object=final_obj)
-            c.omit_if_existing = (stm.get_first_qualifier_obj_with_rel("R59__has_rule_prototype_graph_mode") == 5)
+            c.omit_if_existing = stm.get_first_qualifier_obj_with_rel("R59__has_rule_prototype_graph_mode") == 5
 
             res.append(c)
 
@@ -954,7 +944,6 @@ class RuleApplicatorWorker:
         return False
 
     def get_premise_type(self) -> PremiseType:
-
         if self.sparql_src:
             assert len(self.premises_stms) == 0
             return PremiseType.SPARQL
@@ -969,7 +958,6 @@ class RuleApplicatorWorker:
         self._create_psg_nodes()
         self.asserted_relation_templates = self.get_asserted_relation_templates()
         if self.parent.premise_type == PremiseType.GRAPH:
-
             # this call might also add further nodes
             self._create_psg_edges()
 
@@ -988,7 +976,6 @@ class RuleApplicatorWorker:
         i = 0
 
         for var in self.parent.vars + self.parent.external_entities:
-
             assert isinstance(var, core.Entity)
 
             # omit vars which are already registered
@@ -1021,11 +1008,9 @@ class RuleApplicatorWorker:
             i += 1
 
     def _create_psg_edges(self) -> None:
-
         i = len(self.local_nodes.a)
 
         for stm in self.parent.setting_stms + self.premises_stms:
-
             subj, pred, obj = stm.relation_tuple
 
             if self._ignore_item(subj):
@@ -1109,7 +1094,6 @@ class RuleApplicatorWorker:
         cc = self._get_weakly_connected_components(self.P)
 
         if len(cc.main_components) == 0:
-
             # TODO: remove this when implementing the AlgorithmicRuleApplicationWorker
             if getattr(self.parent.rule, "cheat", None):
                 return
@@ -1132,7 +1116,6 @@ class RuleApplicatorWorker:
             raise core.aux.SemanticRuleError(msg)
 
     def ensure_node_of_P(self, i):
-
         if i not in self.P.nodes:
             node_data = self.local_node_candidates[i]
             self.P.add_node(i, **node_data)
@@ -1190,6 +1173,8 @@ wildcard_relation_uri = bi.R58["wildcard relation"].uri
 
 
 AtlasView = nx.coreviews.AtlasView
+
+
 def edge_matcher(e1d: AtlasView, e2d: AtlasView) -> bool:
     """
 
@@ -1239,10 +1224,7 @@ def edge_matcher(e1d: AtlasView, e2d: AtlasView) -> bool:
 
 
 class ReportingRuleResult(core.RuleResult):
-
-    def __init__(
-            self, raworker: RuleApplicatorWorker, raw_result_count: int = None, rule: core.Item = None
-        ):
+    def __init__(self, raworker: RuleApplicatorWorker, raw_result_count: int = None, rule: core.Item = None):
         super().__init__()
 
         self.raworker = raworker
@@ -1270,7 +1252,6 @@ class ReportingRuleResult(core.RuleResult):
 
         return inst
 
-
     def add_bound_statement(self, stm: core.Statement, raw_binding_info: dict):
         """
         :param stm:
@@ -1287,7 +1268,7 @@ class ReportingRuleResult(core.RuleResult):
             uri = self.raworker.extended_local_nodes.b.get(node)
             assert uri
             premise_entity = self.raworker._get_by_uri(uri)
-            bindinfo.append( (premise_entity, result_entity) )
+            bindinfo.append((premise_entity, result_entity))
 
         c = Container(stm=stm, bindinfo=bindinfo)
         self.statement_reports.append(c)
@@ -1303,7 +1284,6 @@ class ReportingRuleResult(core.RuleResult):
         print(self.report_str(max=max, sep=sep))
 
     def report_str(self, max=None, sep=""):
-
         res = []
         for i, c in enumerate(self.statement_reports):
             stm_str = f"[{c.stm.subject.R1} | {c.stm.predicate.R1} | {c.stm.object.R1}]"
@@ -1340,7 +1320,6 @@ class ReportingRuleResult(core.RuleResult):
         return explanation_text
 
     def _get_statement_report_count(self):
-
         if self.raworker is None:
             # this object is only a container for its partial results
             return sum([p._get_statement_report_count() for p in self.partial_results])
@@ -1348,7 +1327,6 @@ class ReportingRuleResult(core.RuleResult):
             return len(self.statement_reports)
 
     def _get_stm_container_list(self):
-
         stm_container_list = []
         if self.raworker is None:
             # this object is only a container for its partial results
@@ -1357,7 +1335,6 @@ class ReportingRuleResult(core.RuleResult):
             return stm_container_list
 
         for i, c in enumerate(self.statement_reports):
-
             # create a container for statement and explanation -> let the template do the formatting
             stm_container = Container()
             stm_str = f"[{c.stm.subject.R1} | {c.stm.predicate.R1} | {crpr(c.stm.object)}]"
@@ -1365,14 +1342,12 @@ class ReportingRuleResult(core.RuleResult):
             stm_container.txt = f"{stm_str}  because  {stm_container.explanation_text}"
             stm_container.stm = c.stm
 
-
             stm_container_list.append(stm_container)
 
         return stm_container_list
 
 
 class ReportingMultiRuleResult(ReportingRuleResult):
-
     def __init__(self, rule_list: List[core.Item]):
         core.check_type(rule_list, Union[list, tuple])
         self.rule_list = rule_list
@@ -1406,8 +1381,7 @@ class ReportingMultiRuleResult(ReportingRuleResult):
                 print(os.path.abspath(fpath), "written.")
 
     def get_report_content(self):
-        """
-        """
+        """ """
 
         content = Container()
         content.title = self._get_report_title()
@@ -1438,6 +1412,7 @@ def crpr(obj):
     else:
         return core.format_literal_html(obj)
 
+
 jinja_FILTERS["crpr"] = crpr
 
 
@@ -1453,7 +1428,6 @@ def compare_relation_statements(rel1: core.Relation, stm_list: List[core.Stateme
             return False
         # omit labels for performance: R4__is_instance_of; I40__general_relation
         if getattr(stm.object, "R4", None) == p.I40:
-
             # Note: this might be too general, but false positives will be filtered out in the postprocessing
             return isinstance(raw_res[0], core.Relation)
         # builtin: p.R71__enforce_matching_result_type
@@ -1501,11 +1475,9 @@ def is_node_for_simple_graph(entity: core.Entity) -> bool:
 
 
 def get_simple_properties(item: core.Item) -> dict:
-
     stm_dict = item.get_relations()
     res = {}
     for rel_uri, stm_list in stm_dict.items():
-
         for stm in stm_list:
             assert isinstance(stm, core.Statement)
             assert len(stm.relation_tuple) == 3
@@ -1517,10 +1489,12 @@ def get_simple_properties(item: core.Item) -> dict:
 
     return res
 
+
 class AlgorithmicRuleApplicationWorker:
     """
     This class executes algorithmic rules.
     """
+
     def __init__(self):
         # simple hack
         self.parent = Container(rule=None)
@@ -1594,7 +1568,6 @@ class AlgorithmicRuleApplicationWorker:
         final_result = p.core.RuleResult()
 
         for result_args in result_list:
-
             assert len(args) == 1  # this is like ("{} has too many `R50__is_differnt_from` statements",)
             tmp_res = consequent_function(None, *args, result_args[0])
 
@@ -1613,9 +1586,11 @@ class AlgorithmicRuleApplicationWorker:
 
         # filter out the two person-person-activities (TODO: test if this is neccessary)
         # otherwise we would have 7 statements per person
-        rel_list = [r for r in rel_list if r not in (
-            zb.R2353["lives immediately right of"], zb.R8768["lives immediately left of"]
-        )]
+        rel_list = [
+            r
+            for r in rel_list
+            if r not in (zb.R2353["lives immediately right of"], zb.R8768["lives immediately left of"])
+        ]
 
         result_filters = [p.is_relevant_item]
         result_conditions = [lambda res: len(res) == 1]
@@ -1680,7 +1655,6 @@ class AlgorithmicRuleApplicationWorker:
         not contradict an `oppo_pred`-statement, where `oppo_pred` is 'R43__is_opposite_of' the considered predicate.
         """
 
-
         pred_report = Container()
         pred_report.counters = []
         pred_report.total_sum = 0
@@ -1717,8 +1691,8 @@ class AlgorithmicRuleApplicationWorker:
         pred_report.hypothesis_candidates.sort(key=lambda elt: elt[0])
         return pred_report
 
-class HypothesisReasoner:
 
+class HypothesisReasoner:
     uri_suffix = "HYPOTHESIS"
 
     def __init__(self, zb, base_uri):
@@ -1731,21 +1705,20 @@ class HypothesisReasoner:
         p.register_mod(self.contex_uri, keymanager, check_uri=False)
 
     def hypothesis_reasoning_step(self, rule_list):
-
         # generate hypothesis
         araw = AlgorithmicRuleApplicationWorker()
         func_act_list = p.ds.get_subjects_for_relation(self.zb.R2850["is functional activity"].uri, filter=True)
         pred_report = araw.get_predicates_report(predicate_list=func_act_list)
 
         for pos_count, hypo_container in pred_report.hypothesis_candidates:
-             if pos_count == 1:
-                 # this information is already fixed. there is only this one possibility
-                 continue
+            if pos_count == 1:
+                # this information is already fixed. there is only this one possibility
+                continue
 
-             subj = p.ds.get_entity_by_uri(hypo_container.subj)
-             pred = p.ds.get_entity_by_uri(hypo_container.pred)
-             objs = [p.ds.get_entity_by_uri(uri) for uri in hypo_container.objs]
-             break
+            subj = p.ds.get_entity_by_uri(hypo_container.subj)
+            pred = p.ds.get_entity_by_uri(hypo_container.pred)
+            objs = [p.ds.get_entity_by_uri(uri) for uri in hypo_container.objs]
+            break
         else:
             msg = "Unexpectedly only trivial remaining possibilities have been found."
             raise NotImplementedError(msg)
@@ -1754,19 +1727,17 @@ class HypothesisReasoner:
         result.stm_triples = [(subj, pred, obj) for obj in objs]
         result.reasoning_results = []
 
-
         # currently the good solution is the first by accident.
         # TODO: test the other direction
 
         for subj, pred, obj in result.stm_triples[1:]:
-
             # test the consequences of an hypothesis inside an isolated module (which can be deleted if it failed)
             self.register_module()
             with p.uri_context(uri=self.contex_uri):
                 stm = subj.set_relation(pred, obj)
                 k = 0
                 if VERBOSITY:
-                    print("\n"*2, "    Assuming", stm, "and testing\n\n")
+                    print("\n" * 2, "    Assuming", stm, "and testing\n\n")
                 while True:
                     k += 1
                     # TODO: this might provoke a FunctionalRelationError in case of wrong hypothesis

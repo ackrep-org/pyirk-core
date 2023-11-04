@@ -20,7 +20,6 @@ from . import settings
 
 
 def generate_report(reportconf_path: str):
-
     rg = ReportGenerator(reportconf_path)
     rg.generate_report()
 
@@ -32,7 +31,6 @@ class ReportGenerator:
 
     @preserve_cwd
     def __init__(self, reportconf_path: str, write_file: bool = True):
-
         self.write_file = write_file
         self.reportconf_raw = self.load_report_conf(reportconf_path)
         self.mods = self.load_modules()
@@ -55,7 +53,6 @@ class ReportGenerator:
         return conf
 
     def load_modules(self) -> list:
-
         res = []
         if not (lmdict := self.reportconf_raw.get("load_modules")):
             return res
@@ -84,7 +81,6 @@ class ReportGenerator:
         affiliations = []
         af_counter = 1
         for at in self.authors:
-
             af_list = at.get("affiliation", [])
             if not isinstance(af_list, list):
                 assert isinstance(af_list, p.Entity)

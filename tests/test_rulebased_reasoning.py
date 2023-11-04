@@ -166,15 +166,15 @@ class Test_01_rulebased_reasoning(HouskeeperMixin, unittest.TestCase):
                 R4__is_instance_of=p.I41["semantic rule"],
             )
 
-            with I702.scope("context") as cm:
+            with I702.scope("setting") as cm:
                 cm.new_var(x=p.instance_of(p.I1["general item"]))
                 cm.uses_external_entities(I702)
                 cm.uses_external_entities(p.I36["rational number"])
 
-            with I702.scope("premises") as cm:
+            with I702.scope("premise") as cm:
                 cm.new_rel(cm.x, p.R4["is instance of"], p.I36["rational number"], overwrite=True)
 
-            with I702.scope("assertions") as cm:
+            with I702.scope("assertion") as cm:
                 cm.new_rel(cm.x, p.R54["is matched by rule"], I702)
 
             self.assertEqual(itm1.R54__is_matched_by_rule, [])
@@ -210,16 +210,16 @@ class Test_01_rulebased_reasoning(HouskeeperMixin, unittest.TestCase):
                 R4__is_instance_of=p.I41["semantic rule"],
             )
 
-            with I703.scope("context") as cm:
+            with I703.scope("setting") as cm:
                 cm.new_var(x=p.instance_of(p.I1["general item"]))
                 cm.uses_external_entities(I703)
                 cm.uses_external_entities(p.I36["rational number"])
 
-            with I703.scope("premises") as cm:
+            with I703.scope("premise") as cm:
                 cm.new_rel(cm.x, p.R4["is instance of"], p.I36["rational number"], overwrite=True)
                 cm.new_rel(cm.x, p.R57["is placeholder"], True)
 
-            with I703.scope("assertions") as cm:
+            with I703.scope("assertion") as cm:
                 cm.new_rel(cm.x, p.R54["is matched by rule"], I703)
 
             res = p.ruleengine.apply_semantic_rule(I703)
@@ -244,16 +244,16 @@ class Test_01_rulebased_reasoning(HouskeeperMixin, unittest.TestCase):
                 R4__is_instance_of=p.I41["semantic rule"],
             )
 
-            with I704.scope("context") as cm:
+            with I704.scope("setting") as cm:
                 cm.new_var(x=p.instance_of(p.I1["general item"]))
                 cm.new_var(y=p.instance_of(p.I1["general item"]))
                 cm.uses_external_entities(p.I36['rational number'])
 
-            with I704.scope("premises") as cm:
+            with I704.scope("premise") as cm:
                 cm.new_rel(cm.x, p.R4["is instance of"], p.I36['rational number'], overwrite=True)
                 cm.new_rel(cm.x, p.R47["is same as"], cm.y)
 
-            with I704.scope("assertions") as cm:
+            with I704.scope("assertion") as cm:
                 cm.new_consequent_func(p.replacer_method, cm.y, cm.x)
 
             res = p.ruleengine.apply_semantic_rule(I704)
@@ -273,12 +273,12 @@ class Test_01_rulebased_reasoning(HouskeeperMixin, unittest.TestCase):
                 R4__is_instance_of=p.I41["semantic rule"],
             )
 
-            with I702.scope("context") as cm:
+            with I702.scope("setting") as cm:
                 cm.new_var(x=p.instance_of(p.I1["general item"]))
 
             self.assertEqual(cm.x.R4, p.I1["general item"])
 
-            with I702.scope("premises") as cm:
+            with I702.scope("premise") as cm:
                 cm.new_rel(cm.x, p.R4["is instance of"], p.I2["Metaclass"], overwrite=True)
 
                 # arbitrary ordinary relation
@@ -286,7 +286,7 @@ class Test_01_rulebased_reasoning(HouskeeperMixin, unittest.TestCase):
 
             self.assertEqual(cm.x.R4, p.I2["Metaclass"])
 
-        premise_stms = I702.scp__premises.get_inv_relations("R20")
+        premise_stms = I702.scp__premise.get_inv_relations("R20")
 
         # there are two premisie statements: 1.: R4, 2. R38
         self.assertEqual(len(premise_stms), 2)
@@ -312,16 +312,16 @@ class Test_01_rulebased_reasoning(HouskeeperMixin, unittest.TestCase):
                 R4__is_instance_of=p.I41["semantic rule"],
             )
 
-            with I704.scope("context") as cm:
+            with I704.scope("setting") as cm:
                 cm.new_var(x=p.instance_of(p.I1["general item"]))
                 cm.new_var(y=p.instance_of(p.I1["general item"]))
                 cm.uses_external_entities(I704)
 
-            with I704.scope("premises") as cm:
+            with I704.scope("premise") as cm:
                 cm.new_rel(cm.x, p.R47["is same as"], cm.y)
                 cm.new_condition_func(p.label_compare_method, cm.x, cm.y)
 
-            with I704.scope("assertions") as cm:
+            with I704.scope("assertion") as cm:
                 cm.new_rel(cm.x, p.R54["is matched by rule"], I704)
 
             new_stms = p.ruleengine.apply_semantic_rule(I704)
@@ -374,15 +374,15 @@ class Test_01_rulebased_reasoning(HouskeeperMixin, unittest.TestCase):
                 R4__is_instance_of=p.I41["semantic rule"],
             )
 
-            with I701.scope("context") as cm:
+            with I701.scope("setting") as cm:
                 cm.new_var(rel1=p.instance_of(p.I40["general relation"]))
                 cm.new_var(rel2=p.instance_of(p.I40["general relation"]))
                 cm.uses_external_entities(I701)
 
-            with I701.scope("premises") as cm:
+            with I701.scope("premise") as cm:
                 cm.new_rel(cm.rel1, p.R17["is subproperty of"], cm.rel2)
 
-            with I701.scope("assertions") as cm:
+            with I701.scope("assertion") as cm:
                 cm.new_rel(cm.rel1, p.R54["is matched by rule"], I701)
 
             res = p.ruleengine.apply_semantic_rule(I701)
@@ -401,14 +401,14 @@ class Test_01_rulebased_reasoning(HouskeeperMixin, unittest.TestCase):
                 R4__is_instance_of=p.I41["semantic rule"],
             )
 
-            with I702.scope("context") as cm:
+            with I702.scope("setting") as cm:
                 cm.new_var(rel1=p.instance_of(p.I40["general relation"]))
                 cm.uses_external_entities(I702)
 
-            with I702.scope("premises") as cm:
+            with I702.scope("premise") as cm:
                 cm.new_rel(cm.rel1, p.R1["has label"], "another relation", overwrite=True)
 
-            with I702.scope("assertions") as cm:
+            with I702.scope("assertion") as cm:
                 cm.new_rel(cm.rel1, p.R54["is matched by rule"], I702)
 
             res = p.ruleengine.apply_semantic_rule(I702)
@@ -437,14 +437,14 @@ class Test_01_rulebased_reasoning(HouskeeperMixin, unittest.TestCase):
                 R4__is_instance_of=p.I41["semantic rule"],
             )
 
-            with I701.scope("context") as cm:
+            with I701.scope("setting") as cm:
                 cm.new_var(rel1=p.instance_of(p.I40["general relation"]))
                 cm.new_var(rel2=p.instance_of(p.I40["general relation"]))
 
-            with I701.scope("premises") as cm:
+            with I701.scope("premise") as cm:
                 cm.new_rel(cm.rel1, p.R17["is subproperty of"], cm.rel2)
 
-            with I701.scope("assertions") as cm:
+            with I701.scope("assertion") as cm:
                 cm.new_consequent_func(p.copy_statements, cm.rel1, cm.rel2)
 
             # define another (incomplete) rule which is never applied
@@ -454,11 +454,11 @@ class Test_01_rulebased_reasoning(HouskeeperMixin, unittest.TestCase):
                 R4__is_instance_of=p.I41["semantic rule"],
             )
 
-            with I763.scope("context") as cm:
+            with I763.scope("setting") as cm:
                 cm.new_var(p1=p.instance_of(p.I1["general item"]))
                 cm.new_var(p2=p.instance_of(p.I1["general item"]))
 
-            with I763.scope("premises") as cm:
+            with I763.scope("premise") as cm:
                 cm.new_rel(cm.p1, R302["subrelation"], cm.p2)
 
             self.assertEqual(itm1.R301__parent_relation, [])
@@ -504,13 +504,13 @@ class Test_01_rulebased_reasoning(HouskeeperMixin, unittest.TestCase):
                 R4__is_instance_of=p.I41["semantic rule"],
             )
 
-            with I701.scope("context") as cm:
+            with I701.scope("setting") as cm:
                 cm.new_var(rel1=p.instance_of(p.I40["general relation"]))
 
-            with I701.scope("premises") as cm:
+            with I701.scope("premise") as cm:
                 cm.new_rel(cm.rel1, p.R42["is symmetrical"], True)
 
-            with I701.scope("assertions") as cm:
+            with I701.scope("assertion") as cm:
                 cm.new_consequent_func(p.reverse_statements, cm.rel1)
 
             self.assertEqual(itm2.R301, [])
@@ -554,19 +554,19 @@ class Test_01_rulebased_reasoning(HouskeeperMixin, unittest.TestCase):
                 R4__is_instance_of=p.I41["semantic rule"],
             )
 
-            with I703.scope("context") as cm:
+            with I703.scope("setting") as cm:
                 cm.new_var(itm1=p.instance_of(p.I1["general item"]))
                 cm.new_var(itm2=p.instance_of(p.I1["general item"]))
                 cm.uses_external_entities(I703)
 
                 cm.new_rel_var("rel1")
 
-            with I703.scope("premises") as cm:
+            with I703.scope("premise") as cm:
 
                 cm.new_rel(cm.rel1, R2850["is functional activity"], True)
                 cm.new_rel(cm.itm1, cm.rel1, cm.itm2)
 
-            with I703.scope("assertions") as cm:
+            with I703.scope("assertion") as cm:
                 cm.new_rel(cm.itm1, p.R54["is matched by rule"], I703)
                 cm.new_rel(cm.itm2, p.R54["is matched by rule"], I703)
                 cm.new_rel(cm.rel1, p.R54["is matched by rule"], I703)
@@ -607,17 +607,17 @@ class Test_01_rulebased_reasoning(HouskeeperMixin, unittest.TestCase):
                 R4__is_instance_of=p.I41["semantic rule"],
             )
 
-            with I703.scope("context") as cm:
+            with I703.scope("setting") as cm:
                 cm.new_var(var1=p.instance_of(p.I1["general item"]))
                 cm.new_var(var2=p.instance_of(p.I1["general item"]))
                 cm.new_variable_literal("val1")
 
-            with I703.scope("premises") as cm:
+            with I703.scope("premise") as cm:
 
                 cm.new_rel(cm.var1, R301["semantic relation"], cm.var2)
                 cm.new_rel(cm.var1, R302["data attribute"], cm.val1)
 
-            with I703.scope("assertions") as cm:
+            with I703.scope("assertion") as cm:
                 cm.new_rel(cm.var1, R302, "good")
                 cm.new_rel(cm.var2, R302, cm.val1)
 
@@ -647,17 +647,17 @@ class Test_01_rulebased_reasoning(HouskeeperMixin, unittest.TestCase):
                 R4__is_instance_of=p.I41["semantic rule"],
             )
 
-            with I704.scope("context") as cm:
+            with I704.scope("setting") as cm:
                 cm.new_var(var1=p.instance_of(p.I1["general item"]))
                 cm.new_var(var2=p.instance_of(p.I1["general item"]))
                 cm.new_variable_literal("val1")
 
-            with I704.scope("premises") as cm:
+            with I704.scope("premise") as cm:
 
                 cm.new_rel(cm.var1, R303["new data attribute"], cm.val1)
                 cm.new_rel(cm.var2, R303["new data attribute"], cm.val1)
 
-            with I704.scope("assertions") as cm:
+            with I704.scope("assertion") as cm:
                 cm.new_rel(cm.var1, R301, cm.var2)
 
             res = p.ruleengine.apply_semantic_rule(I704)
@@ -699,15 +699,15 @@ class Test_01_rulebased_reasoning(HouskeeperMixin, unittest.TestCase):
                 R4__is_instance_of=p.I41["semantic rule"],
             )
 
-            with I703.scope("context") as cm:
+            with I703.scope("setting") as cm:
                 cm.new_var(var1=p.instance_of(p.I1["general item"]))
                 cm.uses_external_entities(R301)
 
-            with I703.scope("premises") as cm:
+            with I703.scope("premise") as cm:
                 cm.new_rel(cm.var1, R302["data attribute"], 1)
                 cm.new_condition_func(p.does_not_have_relation, cm.var1, R301["semantic relation"])
 
-            with I703.scope("assertions") as cm:
+            with I703.scope("assertion") as cm:
                 cm.new_rel(cm.var1, R302, "good")
 
             res = p.ruleengine.apply_semantic_rule(I703)
@@ -746,7 +746,7 @@ class Test_01_rulebased_reasoning(HouskeeperMixin, unittest.TestCase):
                 R4__is_instance_of=p.I41["semantic rule"],
             )
 
-            with I703.scope("context") as cm:
+            with I703.scope("setting") as cm:
                 cm.new_var(var0=p.instance_of(p.I1["general item"]))
                 cm.new_var(var1=p.instance_of(p.I1["general item"]))
 
@@ -755,7 +755,7 @@ class Test_01_rulebased_reasoning(HouskeeperMixin, unittest.TestCase):
                     with cm.OR():
                         pass
 
-            with I703.scope("premises") as cm:
+            with I703.scope("premise") as cm:
 
                 # this condition must hold in all cases:
                 cm.new_rel(cm.var1, R301, cm.var0)
@@ -769,12 +769,12 @@ class Test_01_rulebased_reasoning(HouskeeperMixin, unittest.TestCase):
                     with self.assertRaises(p.aux.InvalidScopeNameError):
                         cm.new_rel(cm.var1, R302, 20)
 
-            with I703.scope("assertions") as cm:
+            with I703.scope("assertion") as cm:
                 cm.new_rel(cm.var1, R302, "good")
 
             res = p.ruleengine.apply_semantic_rule(I703)
 
-            self.assertEqual(I703.scp__premises.scp__OR.R4, p.I16["scope"])
+            self.assertEqual(I703.scp__premise.scp__OR.R4, p.I16["scope"])
 
             self.assertEqual(x1.R302[-1], "good")
             self.assertEqual(x2.R302[-1], "good")
@@ -790,13 +790,13 @@ class Test_01_rulebased_reasoning(HouskeeperMixin, unittest.TestCase):
                 R4__is_instance_of=p.I41["semantic rule"],
             )
 
-            with I704.scope("context") as cm:
+            with I704.scope("setting") as cm:
                 cm.new_var(var0=p.instance_of(p.I1["general item"]))
                 cm.new_var(var1=p.instance_of(p.I1["general item"]))
 
                 cm.uses_external_entities(p.I35["real number"])
 
-            with I704.scope("premises") as cm:
+            with I704.scope("premise") as cm:
 
                 # this condition must hold in all cases:
                 cm.new_rel(cm.var1, p.R4["is instance of"], p.I35["real number"], overwrite=True)
@@ -809,7 +809,7 @@ class Test_01_rulebased_reasoning(HouskeeperMixin, unittest.TestCase):
                         cm_AND.new_rel(cm.var1, R302, 10)
                         cm_AND.new_rel(cm.var1, R301, cm.var0)
 
-            with I704.scope("assertions") as cm:
+            with I704.scope("assertion") as cm:
                 cm.new_rel(cm.var1, R302, "good2")
 
             res = p.ruleengine.apply_semantic_rule(I704)
@@ -841,14 +841,14 @@ class Test_01_rulebased_reasoning(HouskeeperMixin, unittest.TestCase):
                 R4__is_instance_of=p.I41["semantic rule"],
             )
 
-            with I601.scope("context") as cm:
+            with I601.scope("setting") as cm:
                 cm.new_var(itm1=p.instance_of(p.I1["general item"]))
                 cm.new_var(itm2=p.instance_of(p.I1["general item"]))
 
-            with I601.scope("premises") as cm:
+            with I601.scope("premise") as cm:
                 cm.new_rel(cm.itm1, R301, cm.itm2)
 
-            with I601.scope("assertions") as cm:
+            with I601.scope("assertion") as cm:
                 cm.new_rel(cm.itm1, R302, "good")
 
             res = p.ruleengine.apply_semantic_rule(I601)
@@ -1482,255 +1482,3 @@ class Test_01_rulebased_reasoning(HouskeeperMixin, unittest.TestCase):
 
 
         # IPS() # WIP
-
-
-class Test_Z_Core(HouskeeperMixin, unittest.TestCase):
-    """
-    Collection of test that should be executed last (because they seem to influence othter tests).
-    This is achieved by putting "ZZ" in the name (assuming that test classes are executed in alphabetical order).
-    """
-
-    def test_sparql_query(self):
-        # This test seems somehow to influence later tests
-        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, TEST_MOD_NAME)
-        p.ds.rdfgraph = p.rdfstack.create_rdf_triples()
-        qsrc = p.rdfstack.get_sparql_example_query()
-        res = p.ds.rdfgraph.query(qsrc)
-        res2 = p.aux.apply_func_to_table_cells(p.rdfstack.convert_from_rdf_to_pyerk, res)
-
-        # Note this will fail if more `R5__has_part` relations are used
-        expected_result = [
-            [mod1.I4466["Systems Theory"], p.I4["Mathematics"]],
-            [mod1.I4466["Systems Theory"], p.I5["Engineering"]],
-        ]
-        self.assertEqual(res2, expected_result)
-
-    def test_c01__sparql_query2(self):
-        # TODO: replace by Model entity once it exists
-        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, TEST_MOD_NAME)
-
-        with p.uri_context(uri=TEST_BASE_URI):
-            m1 = p.instance_of(mod1.I7641["general system model"], r1="test_model 1", r2="a test model")
-            m2 = p.instance_of(mod1.I7641["general system model"], r1="test_model 2", r2="a test model")
-
-            m1.set_relation(p.R16["has property"], mod1.I9210["stabilizability"])
-            m2.set_relation(p.R16["has property"], mod1.I7864["controllability"])
-
-        # graph has to be created after the entities
-        p.ds.rdfgraph = p.rdfstack.create_rdf_triples()
-
-        qsrc = f"""
-        PREFIX : <{p.rdfstack.ERK_URI}>
-        PREFIX ct: <{mod1.__URI__}#>
-        SELECT ?s ?o
-        WHERE {{
-            ?s :R16 ct:I7864.
-        }}
-        """
-        res = p.ds.rdfgraph.query(qsrc)
-        res2 = p.aux.apply_func_to_table_cells(p.rdfstack.convert_from_rdf_to_pyerk, res)
-
-        expected_result = [
-            [m2["test_model 2"], None],
-        ]
-        self.assertEqual(res2, expected_result)
-
-    def test_c02__sparql_zz_preprocessing(self):
-        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, TEST_MOD_NAME)
-
-        with p.uri_context(uri=TEST_BASE_URI):
-            m1 = p.instance_of(mod1.I7641["general system model"], r1="test_model 1", r2="a test model")
-            m2 = p.instance_of(mod1.I7641["general system model"], r1="test_model 2", r2="a test model")
-
-            m1.set_relation(p.R16["has property"], mod1.I9210["stabilizability"])
-            m2.set_relation(p.R16["has property"], mod1.I7864["controllability"])
-
-        # graph has to be created after the entities
-        p.ds.rdfgraph = p.rdfstack.create_rdf_triples()
-
-        # syntactically correct query:
-        condition_list = [
-            "?s :R16__has_property ct:I7864__controllability.",
-            "?s :R16__has_property ct:I7864__controllability .",
-            "?s   :R16__has_property   ct:I7864__controllability   .",
-            "?s (:R4__is_instance_of|:R3__is_subclass_of)* :I1__general_item .",
-        ]
-
-        for condition in condition_list:
-            qsrc_corr = f"""
-            PREFIX : <{p.rdfstack.ERK_URI}>
-            PREFIX ct: <{mod1.__URI__}#>
-            SELECT ?s ?o
-            WHERE {{
-                {condition}
-            }}
-            """
-            q = p.ds.preprocess_query(qsrc_corr)
-            res = p.ds.rdfgraph.query(q)
-            res2 = p.aux.apply_func_to_table_cells(p.rdfstack.convert_from_rdf_to_pyerk, res)
-            self.assertGreater(len(res2), 0)
-
-        # syntactically incorrect querys:
-        condition_list = [
-            "?s :R16__wrong ct:I7864__controllability.",
-        ]
-        msg_list = [
-            "Entity label 'has property' for entity ':R16__wrong' and given label 'wrong' do not match!",
-        ]
-
-        for condition, msg in zip(condition_list, msg_list):
-            qsrc_incorr_1 = f"""
-            PREFIX : <{p.rdfstack.ERK_URI}>
-            PREFIX ct: <{mod1.__URI__}#>
-            SELECT ?s ?o
-            WHERE {{
-                {condition}
-            }}
-            """
-            with self.assertRaises(AssertionError) as cm:
-                p.ds.preprocess_query(qsrc_incorr_1)
-            self.assertEqual(cm.exception.args[0], msg)
-
-
-class Test_05_Script1(HouskeeperMixin, unittest.TestCase):
-    def test_c01__visualization(self):
-        cmd = "pyerk -vis I12"
-        res = os.system(cmd)
-        self.assertEqual(res, 0)
-
-
-class Test_06_reportgenerator(HouskeeperMixin, unittest.TestCase):
-    @p.erkloader.preserve_cwd
-    def tearDown(self) -> None:
-        super().tearDown()
-        os.chdir(pjoin(TEST_DATA_DIR1, "reports"))
-        try:
-            os.unlink("report.tex")
-        except FileNotFoundError:
-            pass
-
-    def test_c01__resolve_entities_in_nested_data(self):
-
-        reind = rgen.resolve_entities_in_nested_data
-        some_list = [1, 123.4, "foobar"]
-        self.assertEqual(reind(some_list), some_list)
-
-        data1 = {"key1": some_list, "key2": ":I1"}
-        data1exp = {"key1": some_list, "key2": p.I1}
-        self.assertEqual(reind(data1), data1exp)
-
-        mod2 = p.erkloader.load_mod_from_path(TEST_DATA_PATH3, prefix="ag")
-
-        data1 = {"key1": ':ag__I2746["Rudolf Kalman"]', "key2": {"nested_key": ':ag__R1833["has employer"]'}}
-        data1exp = {"key1": mod2.I2746, "key2": {"nested_key": mod2.R1833}}
-        self.assertEqual(reind(data1), data1exp)
-
-    @p.erkloader.preserve_cwd
-    def test_c02__report_generation1(self):
-
-        reportconf_path1 = pjoin(TEST_DATA_DIR1, "reports", "reportconf.toml")
-        reporttex_path1 = pjoin(TEST_DATA_DIR1, "reports", "report.tex")
-        os.chdir(pjoin(TEST_DATA_DIR1, "reports"))
-        self.assertFalse(os.path.exists(reporttex_path1))
-        rg = rgen.ReportGenerator(reportconf_path1, write_file=True)
-        rg.generate_report()
-        self.assertTrue(os.path.exists(reporttex_path1))
-
-        self.assertEqual(len(rg.authors), 2)
-
-
-class Test_07_import_export(HouskeeperMixin, unittest.TestCase):
-
-    def test_b01__rdf_export(self):
-
-        with p.uri_context(uri=TEST_BASE_URI):
-            R301 = p.create_relation(R1="relation1")
-            R302 = p.create_relation(R1="test qualifier")
-
-            QF_R302 = p.QualifierFactory(R302["test qualifier"])
-
-            x0 = p.instance_of(p.I35["real number"])
-            x1 = p.instance_of(p.I35["real number"])
-            x2 = p.instance_of(p.I35["real number"])
-
-            # create two qualifiers (one with a literal object-value and one with x2 as object-value)
-            stm = x0.set_relation(R301, x1, qualifiers=[QF_R302(True), QF_R302(x2)])  # noqa
-
-        q_stms = [v for v in p.ds.stms_created_in_mod[TEST_BASE_URI].values() if v.is_qualifier()]
-        self.assertEqual(len(q_stms), 2)
-
-        fpath = pjoin(TEST_DATA_DIR1, "tmp_test.nt")
-        p.io.export_rdf_triples(fpath, add_qualifiers=True,  modfilter=TEST_BASE_URI)
-        g = p.io.import_raw_rdf_triples(fpath)
-        os.unlink(fpath)
-
-        self.assertGreater(len(g), 40)
-
-    def test_b02__rdf_import(self):
-
-        fpath = pjoin(TEST_DATA_DIR1, "test_triples1.nt")
-
-        with p.uri_context(uri=TEST_BASE_URI):
-            # the labels will be overwritten
-            R301 = p.create_relation(R1="__foo__ relation1")
-            R302 = p.create_relation(R1="__foo__ test qualifier")  # noqa
-
-            c = p.io.import_stms_from_rdf_triples(fpath)
-
-            c.new_items.sort(key=lambda itm: itm.R1__has_label)
-
-            x0, x1, x2 = c.new_items
-            # test that overwriting worked
-            self.assertEqual(R301.R1__has_label, "relation1")
-
-            # test that a statement has been created
-            self.assertEqual(x0.R301__relation1, [x1])
-
-    def test_b03__zebra_puzzle_import(self):
-        """
-        match persons which have four negative statements of the same kind (test statement relations)
-        """
-        zb = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA_BASE_DATA, prefix="zb")
-
-        self.assertEqual(zb.I9848["Norwegian"].zb__R8098__has_house_color, None)
-        self.assertEqual(zb.I9848["Norwegian"].zb__R1055__has_not_house_color, [])
-
-        # test to load facts
-
-        fpath = pjoin(TEST_DATA_DIR1, "test_zebra_triples1.nt")
-        with p.uri_context(uri=TEST_BASE_URI):
-            c = p.io.import_stms_from_rdf_triples(fpath)  #noqa
-        self.assertEqual(zb.I9848["Norwegian"].zb__R8098__has_house_color, zb.I4118["yellow"])
-        self.assertEqual(len(zb.I9848["Norwegian"].zb__R1055__has_not_house_color), 4)
-
-    def test_b04__zebra_puzzle_unlinked_items(self):
-        zb = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA_BASE_DATA, prefix="zb")
-        zp = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA02, prefix="zp")
-
-        # persons1 ... person12 exists -> if they are unlinked within a module this is not yet reflected in the
-        # rdf-data -> TODO: introduce a "Housekeeping" item for every module
-
-        # this tests ensures that at least the unlinked item is not present in the rdfgrap
-
-        with p.uri_context(uri=TEST_BASE_URI):
-            zp.person10.set_relation(zb.R8098["has house color"], zb.I7612["ivory"])
-            zp.person11.set_relation(zb.R8098["has house color"], zb.I4118["yellow"])
-            zp.person10.set_relation(zb.R3606["lives next to"], zp.person11)
-
-
-        fpath = pjoin(TEST_DATA_DIR1, "tmp_test.nt")
-        p.io.export_rdf_triples(fpath, add_qualifiers=True,  modfilter=TEST_BASE_URI)
-        g = p.io.import_raw_rdf_triples(fpath)
-
-        self.assertTrue(rdflib.URIRef(zp.person11.uri) in g.subjects())
-        self.assertTrue(rdflib.URIRef(zp.person11.uri) in g.objects())
-
-        p.core._unlink_entity(zp.person11.uri, remove_from_mod=True)
-
-        p.io.export_rdf_triples(fpath, add_qualifiers=True,  modfilter=TEST_BASE_URI)
-        g = p.io.import_raw_rdf_triples(fpath)
-
-        self.assertFalse(rdflib.URIRef(zp.person11.uri) in g.subjects())
-        self.assertFalse(rdflib.URIRef(zp.person11.uri) in g.objects())
-
-        os.unlink(fpath)

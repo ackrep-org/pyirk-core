@@ -8,6 +8,7 @@ try:
     from . import rdfstack
     from . import ruleengine
     from . import auxiliary as aux
+    from . import consistency_checking as cc
 except ImportError:
     # this might be relevant during the installation process
     pass

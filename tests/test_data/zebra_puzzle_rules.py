@@ -27,14 +27,14 @@ I701 = p.create_item(
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
-with I701.scope("context") as cm:
+with I701.scope("setting") as cm:
     cm.new_var(rel1=p.instance_of(p.I40["general relation"]))
     cm.new_var(rel2=p.instance_of(p.I40["general relation"]))
 
-with I701.scope("premises") as cm:
+with I701.scope("premise") as cm:
     cm.new_rel(cm.rel1, p.R17["is subproperty of"], cm.rel2)
 
-with I701.scope("assertions") as cm:
+with I701.scope("assertion") as cm:
     cm.new_consequent_func(p.copy_statements, cm.rel1, cm.rel2)
 
 # ###############################################################################
@@ -46,13 +46,13 @@ I702 = p.create_item(
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
-with I702.scope("context") as cm:
+with I702.scope("setting") as cm:
     cm.new_var(rel1=p.instance_of(p.I40["general relation"]))
 
-with I702.scope("premises") as cm:
+with I702.scope("premise") as cm:
     cm.new_rel(cm.rel1, p.R42["is symmetrical"], True)
 
-with I702.scope("assertions") as cm:
+with I702.scope("assertion") as cm:
     cm.new_consequent_func(p.reverse_statements, cm.rel1)
 
 # ###############################################################################
@@ -64,13 +64,13 @@ I705 = p.create_item(
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
-with I705.scope("context") as cm:
+with I705.scope("setting") as cm:
     cm.new_var(p1=p.instance_of(zb.I7435["human"]))
     cm.new_var(p2=p.instance_of(zb.I7435["human"]))
     cm.uses_external_entities(zb.I7435["human"])
 
 
-with I705.scope("premises") as cm:
+with I705.scope("premise") as cm:
     cm.new_rel(cm.p1, p.R4["is instance of"], zb.I7435["human"], overwrite=True)
     cm.new_rel(cm.p2, p.R4["is instance of"], zb.I7435["human"], overwrite=True)
 
@@ -78,7 +78,7 @@ with I705.scope("premises") as cm:
     cm.new_rel(cm.p2, p.R57["is placeholder"], False)
 
 
-with I705.scope("assertions") as cm:
+with I705.scope("assertion") as cm:
     cm.new_rel(cm.p1, p.R50["is different from"], cm.p2, qualifiers=[p.qff_has_rule_ptg_mode(5)])
     cm.new_rel(cm.p2, p.R50["is different from"], cm.p1, qualifiers=[p.qff_has_rule_ptg_mode(5)])
 
@@ -94,13 +94,13 @@ I710 = p.create_item(
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
-with I710.scope("context") as cm:
+with I710.scope("setting") as cm:
     cm.new_var(p1=p.instance_of(p.I1["general item"]))
     cm.new_var(p2=p.instance_of(p.I1["general item"]))
     cm.new_var(some_itm=p.instance_of(p.I1["general item"]))
     cm.new_rel_var("rel1")  # -> p.instance_of(p.I40["general relation"]))
 
-with I710.scope("premises") as cm:
+with I710.scope("premise") as cm:
     cm.set_sparql(
         """
         WHERE {
@@ -122,7 +122,7 @@ with I710.scope("premises") as cm:
 
     # cm.new_rel(cm.rel1, zb.R2850["is functional activity"], True)
 
-with I710.scope("assertions") as cm:
+with I710.scope("assertion") as cm:
     cm.new_rel(cm.p1, p.R47["is same as"], cm.p2, qualifiers=[p.qff_has_rule_ptg_mode(5)])
 
 txt = r"{p1} {rel1} {some_itm}  AND  {p2} {rel1} {some_itm}."
@@ -138,12 +138,12 @@ I720 = p.create_item(
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
-with I720.scope("context") as cm:
+with I720.scope("setting") as cm:
     cm.new_var(itm1=p.instance_of(p.I1["general item"]))
     cm.new_var(itm2=p.instance_of(p.I1["general item"]))
     cm.uses_external_entities(p.R57["is placeholder"])
 
-with I720.scope("premises") as cm:
+with I720.scope("premise") as cm:
     cm.new_rel(cm.itm1, p.R47["is same as"], cm.itm2)  # itm1 should stay, itm2 will be replaced by it
     cm.new_rel(cm.itm2, p.R57["is placeholder"], True)
 
@@ -168,7 +168,7 @@ with I720.scope("premises") as cm:
     # TODO: this blocks the second application because only one itm is placeholder -> introduce logical OR
     # cm.new_condition_func(p.label_compare_method, cm.itm1, cm.itm2)
 
-with I720.scope("assertions") as cm:
+with I720.scope("assertion") as cm:
     # replace the certain placeholder (itm2) by the other item
     cm.new_consequent_func(p.replacer_method, cm.itm2, cm.itm1)
 
@@ -180,14 +180,14 @@ I725 = p.create_item(
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
-with I725.scope("context") as cm:
+with I725.scope("setting") as cm:
     cm.new_var(itm1=p.instance_of(p.I1["general item"]))
     cm.new_var(itm2=p.instance_of(p.I1["general item"]))
 
     cm.new_rel_var("rel1")
     cm.new_rel_var("rel2")
 
-with I725.scope("premises") as cm:
+with I725.scope("premise") as cm:
     cm.set_sparql(
         """
         WHERE {
@@ -199,7 +199,7 @@ with I725.scope("premises") as cm:
         """
     )
 
-with I725.scope("assertions") as cm:
+with I725.scope("assertion") as cm:
     cm.new_rel(cm.itm2, cm.rel2, cm.itm1, qualifiers=[p.qff_has_rule_ptg_mode(5)])
 
 txt = r"{h1} {rel1} {h2}  AND  {rel1} R68__is_invsere_of {rel2}."
@@ -214,7 +214,7 @@ I730 = p.create_item(
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
-with I730.scope("context") as cm:
+with I730.scope("setting") as cm:
     cm.new_var(h1=p.instance_of(zb.I7435["human"]))
     cm.new_var(h2=p.instance_of(zb.I7435["human"]))
     cm.new_var(itm1=p.instance_of(p.I1["general item"]))
@@ -222,7 +222,7 @@ with I730.scope("context") as cm:
     cm.new_rel_var("rel1")
     cm.new_rel_var("rel2")
 
-with I730.scope("premises") as cm:
+with I730.scope("premise") as cm:
     cm.set_sparql(
         """
         WHERE {
@@ -236,7 +236,7 @@ with I730.scope("premises") as cm:
         """
     )
 
-with I730.scope("assertions") as cm:
+with I730.scope("assertion") as cm:
     cm.new_rel(cm.h2, cm.rel2, cm.itm1, qualifiers=[p.qff_has_rule_ptg_mode(5)])
 
 # ###############################################################################
@@ -247,7 +247,7 @@ I740 = p.create_item(
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
-with I740.scope("context") as cm:
+with I740.scope("setting") as cm:
     cm.new_var(h1=p.instance_of(zb.I7435["human"]))
     cm.new_var(h2=p.instance_of(zb.I7435["human"]))
     cm.new_var(itm1=p.instance_of(p.I1["general item"]))
@@ -259,7 +259,7 @@ with I740.scope("context") as cm:
     cm.new_rel_var("rel1_not")
     cm.new_rel_var("rel2_not")
 
-with I740.scope("premises") as cm:
+with I740.scope("premise") as cm:
     cm.set_sparql(
         """
         WHERE {
@@ -287,7 +287,7 @@ with I740.scope("premises") as cm:
         """
     )
 
-with I740.scope("assertions") as cm:
+with I740.scope("assertion") as cm:
     cm.new_rel(cm.h2, cm.rel2_not, cm.itm2, qualifiers=[p.qff_has_rule_ptg_mode(5)])
 
 # ###############################################################################
@@ -299,15 +299,15 @@ I750 = p.create_item(
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
-with I750.scope("context") as cm:
+with I750.scope("setting") as cm:
     cm.new_var(p1=p.instance_of(zb.I7435["human"]))
     cm.uses_external_entities(zb.I7435["human"], zb.R9040["lives in numbered house"], zb.I8809["house number"])
 
-with I750.scope("premises") as cm:
+with I750.scope("premise") as cm:
     cm.new_rel(cm.p1, p.R4["is instance of"], zb.I7435["human"], overwrite=True)
     cm.new_condition_func(p.does_not_have_relation, cm.p1, zb.R9040["lives in numbered house"])
 
-with I750.scope("assertions") as cm:
+with I750.scope("assertion") as cm:
     cm.new_consequent_func(
         # the last argument (True) specifies that the new entity will be a placeholder
         p.new_instance_as_object,
@@ -329,7 +329,7 @@ I760 = p.create_item(
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
-with I760.scope("context") as cm:
+with I760.scope("setting") as cm:
     # persons
     cm.new_var(p1=p.instance_of(zb.I7435["human"]))
     cm.new_var(p2=p.instance_of(zb.I7435["human"]))
@@ -341,7 +341,7 @@ with I760.scope("context") as cm:
     # house number indices
     cm.new_variable_literal("house_index1")
 
-with I760.scope("premises") as cm:
+with I760.scope("premise") as cm:
     cm.new_rel(cm.p1, zb.R3606["lives next to"], cm.p2)
     cm.new_rel(cm.p1, zb.R9040["lives in numbered house"], cm.hn1)
     cm.new_rel(cm.p2, zb.R9040["lives in numbered house"], cm.hn2)
@@ -373,7 +373,7 @@ def exclude_house_numbers_for_neighbour(self, nbr_hn: p.Item, primal_house_index
     return res
 
 
-with I760.scope("assertions") as cm:
+with I760.scope("assertion") as cm:
     cm.new_consequent_func(exclude_house_numbers_for_neighbour, cm.hn2, cm.house_index1)
 
 # ###############################################################################
@@ -384,16 +384,16 @@ I763 = p.create_item(
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
-with I763.scope("context") as cm:
+with I763.scope("setting") as cm:
     # persons
     cm.new_var(p1=p.instance_of(zb.I7435["human"]))
     cm.new_var(p2=p.instance_of(zb.I7435["human"]))
     cm.uses_external_entities(zb.I6448["house 1"], zb.I1383["house 5"])
 
-with I763.scope("premises") as cm:
+with I763.scope("premise") as cm:
     cm.new_rel(cm.p1, zb.R2353["lives immediately right of"], cm.p2)
 
-with I763.scope("assertions") as cm:
+with I763.scope("assertion") as cm:
     cm.new_rel(
         cm.p1, zb.R2835["lives not in numbered house"], zb.I6448["house 1"], qualifiers=[p.qff_has_rule_ptg_mode(5)]
     )
@@ -412,13 +412,13 @@ I770 = p.create_item(
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
-with I770.scope("context") as cm:
+with I770.scope("setting") as cm:
     cm.new_var(hn1=p.instance_of(zb.I8809["house number"]))
     cm.new_var(imp_idcs_tup=p.instance_of(p.I33["tuple"]))
 
     cm.uses_external_entities(zb.I8809["house number"])
 
-with I770.scope("premises") as cm:
+with I770.scope("premise") as cm:
     cm.new_rel(cm.hn1, p.R4["is instance of"], zb.I8809["house number"], overwrite=True)
     cm.new_rel(cm.hn1, zb.R8139["has impossible indices"], cm.imp_idcs_tup)
 
@@ -449,7 +449,7 @@ def create_none_of_tuple(self, hn_item, imp_idcs_tup):
     return res
 
 
-with I770.scope("assertions") as cm:
+with I770.scope("assertion") as cm:
     cm.new_consequent_func(create_none_of_tuple, cm.hn1, cm.imp_idcs_tup)
 
 
@@ -461,7 +461,7 @@ I780 = p.create_item(
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
-with I780.scope("context") as cm:
+with I780.scope("setting") as cm:
     cm.new_var(cls1=p.instance_of(p.I1["general item"]))
     cm.new_var(itm1=p.instance_of(p.I1["general item"]))
     cm.new_var(tup1=p.instance_of(p.I33["tuple"]))
@@ -470,7 +470,7 @@ with I780.scope("context") as cm:
     cm.uses_external_entities(p.I2["Metaclass"])
 
 
-with I780.scope("premises") as cm:
+with I780.scope("premise") as cm:
     cm.new_rel(cm.cls1, p.R4["is instance of"], p.I2["Metaclass"], overwrite=True)
     cm.new_rel(cm.itm1, p.R4["is instance of"], cm.cls1, overwrite=True)
     cm.new_rel(cm.cls1, p.R51["instances are from"], cm.tup1)
@@ -494,7 +494,7 @@ def tuple_difference_factory(self, tuple_item1, tuple_item2):
     return res
 
 
-with I780.scope("assertions") as cm:
+with I780.scope("assertion") as cm:
     cm.new_var(tup_diff=p.instance_of(p.I33["tuple"]))  # remaining items
     # cm.tup_diff.add_method(tuple_difference_factory, "fiat_factory")
 
@@ -511,17 +511,17 @@ I790 = p.create_item(
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
-with I790.scope("context") as cm:
+with I790.scope("setting") as cm:
     cm.new_var(itm1=p.instance_of(p.I1["general item"]))
     cm.new_var(elt0=p.instance_of(p.I1["general item"]))
     cm.new_var(tup1=p.instance_of(p.I33["tuple"]))
 
-with I790.scope("premises") as cm:
+with I790.scope("premise") as cm:
     cm.new_rel(cm.itm1, p.R56["is one of"], cm.tup1)
     cm.new_rel(cm.tup1, p.R38["has length"], 1)
     cm.new_rel(cm.tup1, p.R39["has element"], cm.elt0)
 
-with I790.scope("assertions") as cm:
+with I790.scope("assertion") as cm:
     cm.new_rel(cm.elt0, p.R47["is same as"], cm.itm1)
 
 # ###############################################################################
@@ -535,7 +535,7 @@ I741 = p.create_item(
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
-with I741.scope("context") as cm:
+with I741.scope("setting") as cm:
     cm.new_var(h1=p.instance_of(zb.I7435["human"]))
     cm.new_var(h2=p.instance_of(zb.I7435["human"]))
     cm.new_var(itm1a=p.instance_of(p.I1["general item"]))
@@ -547,7 +547,7 @@ with I741.scope("context") as cm:
     # cm.new_rel_var("rel1_not")
     cm.new_rel_var("rel2_not")
 
-with I741.scope("premises") as cm:
+with I741.scope("premise") as cm:
     cm.set_sparql(
         """
         WHERE {
@@ -579,7 +579,7 @@ with I741.scope("premises") as cm:
         """
     )
 
-with I741.scope("assertions") as cm:
+with I741.scope("assertion") as cm:
     # qualifier means: 5 -> create_asserted_statement_only_if_new
     cm.new_rel(cm.h2, cm.rel2_not, cm.itm1b, qualifiers=[p.qff_has_rule_ptg_mode(5)])
 
@@ -595,7 +595,7 @@ I792 = p.create_item(
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
-with I792.scope("context") as cm:
+with I792.scope("setting") as cm:
     cm.new_var(h1=p.instance_of(zb.I7435["human"]))
     cm.new_var(h2=p.instance_of(zb.I7435["human"]))
     cm.new_var(itm1a=p.instance_of(p.I1["general item"]))
@@ -604,7 +604,7 @@ with I792.scope("context") as cm:
     cm.new_rel_var("rel1")
     cm.new_rel_var("rel1_not")
 
-with I792.scope("premises") as cm:
+with I792.scope("premise") as cm:
     cm.set_sparql(
         """
         WHERE {
@@ -622,7 +622,7 @@ with I792.scope("premises") as cm:
         """
     )
 
-with I792.scope("assertions") as cm:
+with I792.scope("assertion") as cm:
     # qualifier means: 5 -> create_asserted_statement_only_if_new
     cm.new_rel(cm.h1, p.R50["is different from"], cm.h2, qualifiers=[p.qff_has_rule_ptg_mode(5)])
     cm.new_rel(cm.h2, p.R50["is different from"], cm.h1, qualifiers=[p.qff_has_rule_ptg_mode(5)])
@@ -639,7 +639,7 @@ I794 = p.create_item(
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
-with I794.scope("context") as cm:
+with I794.scope("setting") as cm:
     # persons
     cm.new_var(p1=p.instance_of(zb.I7435["human"]))
     cm.new_var(p2=p.instance_of(zb.I7435["human"]))
@@ -653,7 +653,7 @@ with I794.scope("context") as cm:
     cm.new_variable_literal("house_index2")
 
 
-with I794.scope("premises") as cm:
+with I794.scope("premise") as cm:
     cm.new_rel(cm.p1, zb.R9040["lives in numbered house"], cm.hn1)
     cm.new_rel(cm.p2, zb.R9040["lives in numbered house"], cm.hn2)
 
@@ -664,7 +664,7 @@ with I794.scope("premises") as cm:
 
 I794.set_relation(p.R70["has number of prototype-graph-components"], 2)
 
-with I794.scope("assertions") as cm:
+with I794.scope("assertion") as cm:
     # qualifier means: 5 -> create_asserted_statement_only_if_new
     cm.new_rel(cm.p2, zb.R2353["lives immediately right of"], cm.p1, qualifiers=[p.qff_has_rule_ptg_mode(5)])
     cm.new_rel(cm.p1, p.R50["is different from"], cm.p2, qualifiers=[p.qff_has_rule_ptg_mode(5)])
@@ -681,7 +681,7 @@ I796 = p.create_item(
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
-with I796.scope("context") as cm:
+with I796.scope("setting") as cm:
     # persons
     cm.new_var(p1=p.instance_of(p.I1["general item"]))
     cm.new_var(p2=p.instance_of(p.I1["general item"]))
@@ -689,7 +689,7 @@ with I796.scope("context") as cm:
     cm.new_var(p4=p.instance_of(p.I1["general item"]))
     cm.uses_external_entities(zb.I7435["human"])
 
-with I796.scope("premises") as cm:
+with I796.scope("premise") as cm:
     # this serves to speed up the rule (for being more specific)
     cm.new_rel(cm.p1, p.R4["is instance of"], zb.I7435["human"], overwrite=True)
     cm.new_rel(cm.p2, p.R4["is instance of"], zb.I7435["human"], overwrite=True)
@@ -703,7 +703,7 @@ with I796.scope("premises") as cm:
 
 # I798.set_relation(p.R70["has number of prototype-graph-components"], 2)
 
-with I796.scope("assertions") as cm:
+with I796.scope("assertion") as cm:
     # qualifier means: 5 -> create_asserted_statement_only_if_new
     cm.new_rel(cm.p2, p.R50["is different from"], cm.p4, qualifiers=[p.qff_has_rule_ptg_mode(5)])
     cm.new_rel(cm.p4, p.R50["is different from"], cm.p2, qualifiers=[p.qff_has_rule_ptg_mode(5)])
@@ -718,7 +718,7 @@ I798 = p.create_item(
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
-with I798.scope("context") as cm:
+with I798.scope("setting") as cm:
     cm.new_var(p1=p.instance_of(zb.I7435["human"]))
     cm.new_var(p2=p.instance_of(zb.I7435["human"]))
     cm.new_var(itm1=p.instance_of(p.I1["general item"]))
@@ -726,7 +726,7 @@ with I798.scope("context") as cm:
     cm.new_rel_var("rel1")
     cm.new_rel_var("rel2")
 
-with I798.scope("premises") as cm:
+with I798.scope("premise") as cm:
     cm.set_sparql(
         """
         WHERE {
@@ -740,7 +740,7 @@ with I798.scope("premises") as cm:
         """
     )
 
-with I798.scope("assertions") as cm:
+with I798.scope("assertion") as cm:
     cm.new_rel(cm.p2, cm.rel2, cm.itm1, qualifiers=[p.qff_has_rule_ptg_mode(5)])
 
 
@@ -755,16 +755,16 @@ I800 = p.create_item(
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
-with I800.scope("context") as cm:
+with I800.scope("setting") as cm:
 
     cm.new_var(rel1=p.instance_of(p.I40["general relation"]))
     cm.new_var(rel1_not=p.instance_of(p.I40["general relation"]))
 
-with I800.scope("premises") as cm:
+with I800.scope("premise") as cm:
     cm.new_rel(cm.rel1_not, p.R43["is opposite of"], cm.rel1)
     cm.new_rel(cm.rel1, zb.R2850["is functional activity"], True)
 
-with I800.scope("assertions") as cm:
+with I800.scope("assertion") as cm:
     cm.new_rel(cm.rel1_not, zb.R6020["is opposite of functional activity"], True, qualifiers=[p.qff_has_rule_ptg_mode(5)])
     cm.new_rel(cm.rel1_not, p.R71["enforce matching result type"], True, qualifiers=[p.qff_has_rule_ptg_mode(5)])
 
@@ -778,7 +778,7 @@ I803 = p.create_item(
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
-with I803.scope("context") as cm:
+with I803.scope("setting") as cm:
 
     cm.new_var(p1=p.instance_of(p.I1["general item"]))
     cm.new_var(itm1=p.instance_of(p.I1["general item"]))
@@ -788,7 +788,7 @@ with I803.scope("context") as cm:
     cm.new_rel_var("rel1")
     cm.new_rel_var("rel1_not")
 
-with I803.scope("premises") as cm:
+with I803.scope("premise") as cm:
     cm.set_sparql(
         """
         WHERE {
@@ -807,7 +807,7 @@ with I803.scope("premises") as cm:
         """
     )
 
-with I803.scope("assertions") as cm:
+with I803.scope("assertion") as cm:
     cm.new_rel(cm.p1, cm.rel1_not, cm.itm2, qualifiers=[p.qff_has_rule_ptg_mode(5)])
 
 
@@ -872,19 +872,19 @@ I810 = p.create_item(
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
-with I810.scope("context") as cm:
+with I810.scope("setting") as cm:
     pass
 
-with I810.scope("premises") as cm:
+with I810.scope("premise") as cm:
     pass
 
-with I810.scope("assertions") as cm:
+with I810.scope("assertion") as cm:
     pass
 
 # this is a temporary solution until the AlgorithmicRuleApplicationWorker is implemented
 I810.cheat = [p.ruleengine.AlgorithmicRuleApplicationWorker.hardcoded_I810, zb, add_stm_by_exclusion]
 
-with I820.scope("context") as cm:
+with I820.scope("setting") as cm:
 
     cm.new_var(p0=p.instance_of(p.I1["general item"]))
 
@@ -897,7 +897,7 @@ with I820.scope("context") as cm:
     cm.uses_external_entities(zb.I7435["human"])
 
 
-with I820.scope("premises") as cm:
+with I820.scope("premise") as cm:
     cm.new_rel(cm.p0, p.R4["is instance of"], zb.I7435["human"], overwrite=True)
 
     cm.new_rel(cm.p1, p.R4["is instance of"], zb.I7435["human"], overwrite=True)
@@ -919,7 +919,7 @@ with I820.scope("premises") as cm:
     cm.new_rel(cm.p4, p.R57["is placeholder"], False)
     cm.new_rel(cm.p5, p.R57["is placeholder"], False)
 
-with I820.scope("assertions") as cm:
+with I820.scope("assertion") as cm:
     cm.new_rel(cm.p0, p.R47["is same as"], cm.p5, qualifiers=[p.qff_has_rule_ptg_mode(5)])
 
 
@@ -939,7 +939,7 @@ I830.cheat = [
 
 
 # currently obsolete because of hardcoded cheat
-with I830.scope("context") as cm:
+with I830.scope("setting") as cm:
 
     cm.new_var(p0=p.instance_of(p.I1["general item"]))
 
@@ -952,7 +952,7 @@ with I830.scope("context") as cm:
     cm.uses_external_entities(zb.I7435["human"])
 
 
-with I830.scope("premises") as cm:
+with I830.scope("premise") as cm:
     cm.new_rel(cm.p0, p.R4["is instance of"], zb.I7435["human"], overwrite=True)
 
     cm.new_rel(cm.p1, p.R4["is instance of"], zb.I7435["human"], overwrite=True)
@@ -973,7 +973,7 @@ with I830.scope("premises") as cm:
     cm.new_rel(cm.p4, p.R57["is placeholder"], False)
     cm.new_rel(cm.p5, p.R57["is placeholder"], False)
 
-with I830.scope("assertions") as cm:
+with I830.scope("assertion") as cm:
     cm.new_consequent_func(p.raise_contradiction, "{} has too many `R50__is_differnt_from` statements", cm.p0)
 
 # ###############################################################################
@@ -990,13 +990,13 @@ I840.cheat = [
     "puzzle solved"
 ]
 
-with I840.scope("context") as cm:
+with I840.scope("setting") as cm:
     pass
 
-with I840.scope("premises") as cm:
+with I840.scope("premise") as cm:
     pass
 
-with I840.scope("assertions") as cm:
+with I840.scope("assertion") as cm:
     pass
 
 # ###############################################################################
@@ -1007,7 +1007,7 @@ I825 = p.create_item(
 )
 
 
-with I825.scope("context") as cm:
+with I825.scope("setting") as cm:
     cm.new_var(p1=p.instance_of(p.I1["general item"]))
     cm.new_var(p2=p.instance_of(p.I1["general item"]))
 
@@ -1016,7 +1016,7 @@ with I825.scope("context") as cm:
 
     cm.new_variable_literal("house_index2")
 
-with I825.scope("premises") as cm:
+with I825.scope("premise") as cm:
     cm.new_rel(cm.p1, p.R4["is instance of"], zb.I7435["human"], overwrite=True)
     cm.new_rel(cm.p2, p.R4["is instance of"], zb.I7435["human"], overwrite=True)
 
@@ -1060,7 +1060,7 @@ def exclude_houses(self, p1, nbr_hn):
     return res
 
 
-with I825.scope("assertions") as cm:
+with I825.scope("assertion") as cm:
     cm.new_consequent_func(exclude_houses, cm.p1, cm.hn2)
 
 # ###############################################################################

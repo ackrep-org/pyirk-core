@@ -3,6 +3,7 @@ import sys
 import os
 from os.path import join as pjoin
 from typing import Dict, List, Union
+from packaging import version
 
 import rdflib
 
@@ -48,11 +49,18 @@ class Test_00_Core(HouskeeperMixin, unittest.TestCase):
 
         repo = git.Repo(TEST_DATA_REPO_PATH)
         log_list = repo.git.log("--pretty=oneline").split("\n")
+        msg = f"Unexpected: could not find commit hash {TEST_DATA_REPO_COMMIT_SHA} in repo {TEST_DATA_REPO_PATH}"
         sha_list = [line.split(" ")[0] for line in log_list]
 
-        self.assertIn(TEST_DATA_REPO_COMMIT_SHA, sha_list)
+        self.assertIn(TEST_DATA_REPO_COMMIT_SHA, sha_list, msg=msg)
 
-    def test_a1__process_key_str(self):
+    def test_a1__dependencyies(self):
+        # this tests checks some dependencies which are prone to cause problems (e.g. due to recent api-changes)
+
+        pydantic_version = version.parse(p.pydantic.__version__)
+        self.assertGreaterEqual(pydantic_version, version.parse("2.4.2"))
+
+    def test_b1__process_key_str(self):
         res = p.process_key_str("I1")
         self.assertEqual(res.prefix, None)
         self.assertEqual(res.short_key, "I1")
@@ -76,7 +84,7 @@ class Test_00_Core(HouskeeperMixin, unittest.TestCase):
         with self.assertRaises(p.UnknownPrefixError):
             res = p.process_key_str("some_prefix__I000__test_label", check=False, resolve_prefix=True)
 
-        with self.assertRaises(KeyError):
+        with self.assertRaises(p.aux.InvalidGeneralKeyError):
             res = p.process_key_str("some_prefix_literal_value", check=False)
 
         res = p.process_key_str("some_prefix__I000['test_label']", check=False, resolve_prefix=False)
@@ -89,16 +97,16 @@ class Test_00_Core(HouskeeperMixin, unittest.TestCase):
         self.assertEqual(res.short_key, "I000")
         self.assertEqual(res.label, "test_label")
 
-        with self.assertRaises(KeyError):
+        with self.assertRaises(p.aux.InvalidGeneralKeyError):
             res = p.process_key_str("some_prefix__I000['missing bracket'", check=False)
 
-        with self.assertRaises(KeyError):
+        with self.assertRaises(p.aux.InvalidGeneralKeyError):
             res = p.process_key_str("some_prefix__I000[missing quotes]", check=False)
 
-        with self.assertRaises(KeyError):
+        with self.assertRaises(p.aux.InvalidGeneralKeyError):
             res = p.process_key_str("some_prefix__I000__double_label_['redundant']", check=False)
 
-    def test_b1__uri_contex_manager(self):
+    def test_b2__uri_contex_manager(self):
         """
         Test defined behavior of errors occur in uri_context
         :return:
@@ -425,7 +433,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
 
         ct = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
         with p.uri_context(uri=TEST_BASE_URI):
-            poly1 = p.instance_of(ct.I4239["monovariate polynomial"])
+            poly1 = p.instance_of(ct.I4239["abstract monovariate polynomial"])
 
         # test that an arbitrary item is *not* callable
         self.assertRaises(TypeError, ct.ma.I2738["field of complex numbers"], 0)
@@ -689,7 +697,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
 
         itm1 = p.ds.get_entity_by_key_str("I2__Metaclass")
         itm2 = p.ds.get_entity_by_key_str("I12__mathematical_object")
-        itm3 = p.ds.get_entity_by_key_str("ma__I4239__monovariate_polynomial")
+        itm3 = p.ds.get_entity_by_key_str("ma__I4239__abstract_monovariate_polynomial")
 
         # metaclass could be considered as an instance of itself because metaclasses are allowed to have
         # subclasses and instances (which is both true for I2__metaclass)
@@ -702,6 +710,39 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
             # itm3 is a normal class -> itm4 is not allowed to have instances (itm4 is no metaclass-instance)
             itm4 = p.instance_of(itm3)
         self.assertFalse(p.allows_instantiation(itm4))
+
+    def test_c09a__is_subclass_of(self):
+
+        self.assertTrue(p.is_subclass_of(p.I39["positive integer"], p.I38["non-negative integer"]))
+        self.assertTrue(p.is_subclass_of(p.I39["positive integer"], p.I37["integer number"]))
+        self.assertTrue(p.is_subclass_of(p.I39["positive integer"], p.I35["real number"]))
+
+        with self.assertRaises(p.aux.TaxonomicError):
+            p.is_subclass_of(p.I39["positive integer"], p.I1["general item"])
+
+        self.assertFalse(p.is_subclass_of(p.I35["real number"], p.I39["positive integer"]))
+        self.assertFalse(p.is_subclass_of(p.I35["real number"], p.I35["real number"]))
+
+        self.assertTrue(p.is_subclass_of(p.I35["real number"], p.I35["real number"], allow_id=True))
+
+    def test_c09b__is_instance_of(self):
+        with p.uri_context(uri=TEST_BASE_URI):
+            i1 = p.instance_of(p.I39["positive integer"])
+
+            self.assertTrue(p.is_instance_of(i1, p.I39["positive integer"]))
+            self.assertTrue(p.is_instance_of(i1, p.I37["integer number"]))
+            self.assertTrue(p.is_instance_of(i1, p.I34["complex number"]))
+
+            i2 = p.instance_of(p.I37["integer number"])
+            self.assertTrue(p.is_instance_of(i2, p.I37["integer number"]))
+            self.assertTrue(p.is_instance_of(i2, p.I34["complex number"]))
+
+            self.assertFalse(p.is_instance_of(i2, p.I39["positive integer"]))
+
+            with self.assertRaises(p.aux.TaxonomicError):
+                # I39 is not an instance -> error
+                p.is_instance_of(p.I39["positive integer"], p.I39["positive integer"])
+
 
     def test_c10__qualifiers(self):
         _ = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
@@ -772,7 +813,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         self.assertEqual(pkey2.label, "my_label")
 
         # wrong syntax of key_str (missing "__")
-        self.assertRaises(KeyError, p.process_key_str, "R1234XYZ")
+        self.assertRaises(p.aux.InvalidGeneralKeyError, p.process_key_str, "R1234XYZ")
 
         pkey3 = p.process_key_str("R2__has_description", check=False)
 
@@ -796,7 +837,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
 
             # test prefix notation in keyword attributes
             # first: missing prefix -> unknown key
-            with self.assertRaises(KeyError):
+            with self.assertRaises(p.aux.ShortKeyNotFoundError):
                 _ = p.create_item(key_str="I0125", R1="some label", R7641__has_approximation=e0)
 
             # second: use prefix to adresse the correct relation
@@ -831,6 +872,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         with p.uri_context(uri=ct.__URI__):
             self.assertEqual(e2.R7641__has_approximation[0], e0)
 
+    @unittest.skipIf(os.environ.get("CI"), "Skipping visualization test on CI to prevent graphviz-dependency")
     def test_c13__format_label(self):
         with p.uri_context(uri=TEST_BASE_URI):
             e1 = p.create_item(key_str="I0123", R1="1234567890")
@@ -860,6 +902,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         label = node.get_dot_label(render=True)
         self.assertEqual(label, 'I0126\\n["12 34567-\\n890abcdefgh"]')
 
+    @unittest.skipIf(os.environ.get("CI"), "Skipping visualization test on CI to prevent graphviz-dependency")
     def test_c14__visualization1(self):
 
         res_graph: visualization.nx.DiGraph = visualization.create_nx_graph_from_entity(
@@ -874,6 +917,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         res_graph: visualization.nx.DiGraph = visualization.create_nx_graph_from_entity(auto_item.uri)
         self.assertGreater(res_graph.number_of_nodes(), 7)
 
+    @unittest.skipIf(os.environ.get("CI"), "Skipping visualization test on CI to prevent graphviz-dependency")
     def test_c15__visualization2(self):
         # test rendering of dot
 
@@ -932,6 +976,13 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         self.assertTrue(M.ma__R8736__depends_polyonomially_on, s)
 
         self.assertTrue(d.ma__R8736__depends_polyonomially_on, s)
+
+    def test_d02b__signature_inheritance(self):
+        ct = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
+        with p.uri_context(uri=TEST_BASE_URI):
+            P = p.instance_of(ct.ma.I4240["matrix polynomial"])
+            self.assertEqual(P.R8__has_domain_of_argument_1, [ct.ma.I9906["square matrix"]])
+            self.assertEqual(P.R11__has_range_of_result, [ct.ma.I9906["square matrix"]])
 
     def test_d03__replace_entity(self):
 
@@ -1178,6 +1229,57 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         # this is what we actually want to test (note that the inner list could be specified more precisely)
         self.assertTrue(p.check_type(data, Dict[str, List[List[Union[int, str]]]], strict=False))
 
+    def test_d14__run_hooks(self):
+        with p.uri_context(uri=TEST_BASE_URI, prefix="ut"):
+            R301 = p.create_relation(R1="test relation")
+
+        def myhook1(itm: p.Item):
+            itm.set_relation(R301, "entity: check")
+
+        def myhook2(itm: p.Item):
+            itm.set_relation(R301, "item: check")
+
+        def myhook3(itm: p.Item):
+            itm.set_relation(R301, "relation: check")
+
+        p.register_hook("post-create-entity", myhook1)
+
+        with p.uri_context(uri=TEST_BASE_URI, prefix="ut"):
+            itm1 = p.instance_of(p.I1["general item"])
+
+            # Note: this has to be executed in the uri_context (otherwise R301 would be unknown)
+            self.assertEqual(itm1.R301, ["entity: check"])
+
+
+            p.register_hook("post-create-item", myhook2)
+            p.register_hook("post-create-relation", myhook3)
+
+            # ensure expected number of hooks
+            self.assertEqual(sum([len(lst) for lst in p.ds.hooks.values()]), 3)
+            itm2 = p.instance_of(p.I1["general item"])
+
+            R500 = p.create_relation(R1="test relation2")
+
+            self.assertEqual(itm2.R301, ["entity: check", "item: check"])
+            self.assertEqual(R500.R301, ["entity: check", "relation: check"])
+
+        p.ds.initialize_hooks()
+
+        # ensure expected number of hooks (after re-initialization)
+        self.assertEqual(sum([len(lst) for lst in p.ds.hooks.values()]), 0)
+
+    def test_d15__setattr(self):
+
+        return
+
+        with p.uri_context(uri=TEST_BASE_URI, prefix="ut"):
+            itm1 = p.instance_of(p.I1["general item"])
+            R301 = p.create_relation(R1="test relation")
+
+            itm1.R301 = "success"
+
+            self.assertTrue(R301.uri in itm1.get_relations())
+
 
 class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
     def setUp(self):
@@ -1199,18 +1301,18 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
                 R4__is_instance_of=p.I41["semantic rule"],
             )
 
-            with self.rule1["subproperty rule 1"].scope("context") as cm:
+            with self.rule1["subproperty rule 1"].scope("setting") as cm:
                 cm.new_var(P1=p.instance_of(p.I11["mathematical property"]))
                 cm.new_var(P2=p.instance_of(p.I11["mathematical property"]))
                 cm.new_var(P3=p.instance_of(p.I11["mathematical property"]))
             #     # A = cm.new_var(sys=instance_of(I1["general item"]))
             #
-            with self.rule1["subproperty rule 1"].scope("premises") as cm:
+            with self.rule1["subproperty rule 1"].scope("premise") as cm:
                 cm.new_rel(cm.P2, p.R17["is subproperty of"], cm.P1)
                 cm.new_rel(cm.P3, p.R17["is subproperty of"], cm.P2)
                 # todo: state that all variables are different from each other
 
-            with self.rule1["subproperty rule 1"].scope("assertions") as cm:
+            with self.rule1["subproperty rule 1"].scope("assertion") as cm:
                 cm.new_rel(cm.P3, p.R17["is subproperty of"], cm.P1)
 
     def test_a01__basics(self):
@@ -1299,7 +1401,7 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
     def test_c06__ruleengine05(self):
         self.setup_data1()
         premises_stms = p.ruleengine.filter_relevant_stms(
-            self.rule1.scp__premises.get_inv_relations("R20__has_defining_scope")
+            self.rule1.scp__premise.get_inv_relations("R20__has_defining_scope")
         )
 
         self.assertEqual(len(premises_stms), 2)
@@ -1417,14 +1519,14 @@ class Test_Z_Core(HouskeeperMixin, unittest.TestCase):
                 p.ds.preprocess_query(qsrc_incorr_1)
             self.assertEqual(cm.exception.args[0], msg)
 
-
 class Test_05_Script1(HouskeeperMixin, unittest.TestCase):
+    @unittest.skipIf(os.environ.get("CI"), "Skipping visualization test on CI to prevent graphviz-dependency")
     def test_c01__visualization(self):
         cmd = "pyerk -vis I12"
         res = os.system(cmd)
         self.assertEqual(res, 0)
 
-
+@unittest.skipIf(os.environ.get("CI"), "Skipping report tests on CI to prevent dependencies")
 class Test_06_reportgenerator(HouskeeperMixin, unittest.TestCase):
     @p.erkloader.preserve_cwd
     def tearDown(self) -> None:

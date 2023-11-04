@@ -126,6 +126,56 @@ def get_taxonomy_tree(itm, add_self=True) -> list:
     return res
 
 
+def is_subclass_of(itm1: Item, itm2: Item, allow_id=False) -> bool:
+    """
+    Return True if itm1 is an (indirect) subclass (via) R3__is_subclass_of itm2
+
+    :param allow_id:    bool, indicate that itm1 == itm2 is also considered
+                        as valid. default: False
+    """
+
+    if allow_id and itm1 == itm2:
+        return True
+
+    for i, itm in enumerate((itm1, itm2), start=1):
+        if not allows_instantiation(itm):
+            msg = f"itm{i} ({itm}) is not a instantiable class"
+            raise core.aux.TaxonomicError(msg)
+
+    taxtree1 = get_taxonomy_tree(itm1)
+
+    # This is a list of 2-tuples like the following:
+    # [(None, <Item I4239["monovariate polynomial"]>),
+    #  ('R3', <Item I4237["monovariate rational function"]>),
+    #  ('R3', <Item I4236["mathematical expression"]>),
+    #  ('R3', <Item I4235["mathematical object"]>),
+    #  ('R4', <Item I2["Metaclass"]>),
+    #  ('R3', <Item I1["general item"]>)
+    #  ('R3', <Item I45["general entity"]>)]
+
+    # reminder: R3__is_subclass_of, R4__is_instance_of
+
+    res = ("R3", itm2) in taxtree1
+
+    return res
+
+
+def is_instance_of(itm1: Item, itm2: Item) -> bool:
+    """
+    Returns True if itm1.R4 is a subclass (R3) of itm2
+    """
+    parent_class = itm1.R4__is_instance_of
+
+    if parent_class is None:
+        msg = f"itm1 ({itm1}) has no Statement for relation R4__is_instance_of"
+        raise core.aux.TaxonomicError(msg)
+
+    if parent_class == itm2:
+        return True
+    else:
+        return is_subclass_of(parent_class, itm2)
+
+
 def instance_of(cls_entity, r1: str = None, r2: str = None, qualifiers: List[Item] = None) -> Item:
     """
     Create an instance (R4) of an item. Try to obtain the label by inspection of the calling context (if r1 is None).
@@ -176,6 +226,22 @@ def instance_of(cls_entity, r1: str = None, r2: str = None, qualifiers: List[Ite
     if not qualifiers and class_scope is not None:
         qualifiers = [qff_has_defining_scope(class_scope)]
     new_item.set_relation(R4["is instance of"], cls_entity, qualifiers=qualifiers)
+
+    # add consistency relevant relations:
+    # note that the could be overwritten with item.overwrite_statement
+    for rel in [
+        R8["has domain of argument 1"],
+        R9["has domain of argument 2"],
+        R10["has domain of argument 3"],
+        R11["has range of result"],
+    ]:
+
+        obj = cls_entity.get_relations(rel.uri, return_obj=True)
+        if obj not in ([], None):
+            if isinstance(obj, list):
+                assert len(obj) == 1
+                obj = obj[0]
+            new_item.set_relation(rel, obj)
 
     # TODO: solve this more elegantly
     # this has to be run again after setting R4
@@ -466,9 +532,6 @@ def _register_scope(self, name: str, scope_type: str = None) -> (dict, "Item"):
     if scope_type is None:
         scope_type = name.upper()
 
-        # TODO: remove this after renaming has taken place:
-        new_types = {"CONTEXT": "SETTING", "PREMISES": "PREMISE", "ASSERTIONS": "ASSERTION"}
-        scope_type = new_types.get(scope_type, scope_type)
     scope.set_relation(R64["has scope type"], scope_type)
 
     return ns, scope
@@ -504,7 +567,7 @@ def add_relations_to_scope(relation_tuples: Union[list, tuple], scope: Entity):
 def get_scopes(entity: Entity) -> List[Item]:
     """
     Return a list of all scope-items which are associated with this entity like
-    [<scope:context>, <scope:premise>, <scope:assertion>] for a proposition-item.
+    [<scope:setting>, <scope:premise>, <scope:assertion>] for a proposition-item.
 
     :param entity:
     :return:
@@ -518,7 +581,6 @@ def get_scopes(entity: Entity) -> List[Item]:
 
 
 def get_items_defined_in_scope(scope: Item) -> List[Entity]:
-
     assert scope.R4__is_instance_of == I16["scope"]
     # R20__has_defining_scope
     re_list = core.ds.inv_statements[scope.short_key]["R20"]
@@ -536,7 +598,7 @@ def add_scope_to_defining_statement(ent: Entity, scope: Item) -> None:
 
     The motivation for this function is a usage pattern like:
     ```
-    with I3007.scope("context") as cm:
+    with I3007.scope("setting") as cm:
         cm.new_var(sys=p.instance_of(I5948["dynamical system"]))
     )
     ```
@@ -568,7 +630,6 @@ class ScopingCM:
     valid_subscope_types = None
 
     def __init__(self, itm: Item, namespace: dict, scope: Item, parent_scope_cm=None):
-
         # prevent the accidental instantiation of abstract subclasses
         assert not __class__.__name__.lower().startswith("abstract")
 
@@ -576,9 +637,6 @@ class ScopingCM:
         self.namespace = namespace
         self.scope = scope
         self.parent_scope_cm = parent_scope_cm
-
-        # this is used in copy_from
-        self.tmp_var_mapping = {}
 
     def __enter__(self):
         """
@@ -674,7 +732,6 @@ class ScopingCM:
             qualifiers = []
 
         if overwrite:
-
             qff_has_defining_scope: QualifierFactory = ds.qff_dict["qff_has_defining_scope"]
             qualifiers.append(qff_has_defining_scope(self.scope))
             return sub.overwrite_statement(pred.uri, obj, qualifiers=qualifiers)
@@ -739,7 +796,6 @@ class ScopingCM:
             )
             raise core.aux.InvalidScopeTypeError(msg)
 
-
         if max_subscopes_of_this_type == 1:
             name = scope_type
         else:
@@ -751,8 +807,15 @@ class ScopingCM:
         cm = cls(itm=self.item, namespace=namespace, scope=scope, parent_scope_cm=self)
         return cm
 
-    def copy_from(self, other_scope):
-        assert other_scope.R4 is I16["scope"]
+    def copy_from(self, other_obj: Item, scope_name:str = None):
+        assert isinstance(other_obj, Item)
+        if scope_name is None:
+            other_scope = other_obj
+            assert other_scope.R4 is I16["scope"]
+        else:
+            assert isinstance(scope_name, str)
+            other_scope = other_obj.get_subscope(scope_name)
+
         statements = other_scope.get_inv_relations("R20__has_defining_scope")
         var_definitions = []
         relation_stms = []
@@ -764,8 +827,8 @@ class ScopingCM:
             elif isinstance(stm, core.Statement):
                 var_definitions.append(stm.subject)
 
-        # to keep track of which old variables correspond to which new ones
-        self.tmp_var_mapping.clear()
+        if other_scope.R64__has_scope_type in ("PREMISE", "ASSERTION"):
+            pass
 
         # create variables
         for var_item in var_definitions:
@@ -778,24 +841,65 @@ class ScopingCM:
             if var_item.R35__is_applied_mapping_of:
                 new_var_item = self._copy_mapping(var_item)
             else:
-                new_var_item = self._new_var(
-                    variable_name=name,
-                    variable_object=instance_of(class_item, r1=name)
-                )
-            self.tmp_var_mapping[var_item.uri] = new_var_item
+                new_var_item = self._new_var(variable_name=name, variable_object=instance_of(class_item, r1=name))
+
+        # to keep track of which old variables correspond to which new ones
+            ds.scope_var_mappings[(self.scope.uri, var_item.uri)] = new_var_item
 
         # create relations
         stm: core.Statement
         for stm in relation_stms:
             subj, pred, obj = stm.relation_tuple
-            new_subj = self.tmp_var_mapping.get(subj.uri, subj)
-            new_obj = self.tmp_var_mapping.get(obj.uri, obj)
+            new_subj = self._get_new_var_from_old(subj)
+            new_obj = self._get_new_var_from_old(obj)
 
             # TODO: handle qualifiers and overwrite flag
-            self.new_rel(new_subj, pred, new_obj)
+            try:
+                self.new_rel(new_subj, pred, new_obj)
+            except core.aux.FunctionalRelationError:
+                if new_subj.R35__is_applied_mapping_of is not None:
+                    res = new_subj.overwrite_statement(pred.uri, obj)
+                else:
+                    raise
+            except:
+                raise
 
         # TODO: handle ImplicationStatement (see test_c07c__scope_copying)
 
+    def _get_new_var_from_old(self, old_var: Item, strict=False) -> Item:
+
+        if isinstance(old_var, core.allowed_literal_types):
+            return old_var
+
+        assert isinstance(old_var, Item)
+
+        # 1st try: vars created in this scope
+        new_var = ds.scope_var_mappings.get((self.scope.uri, old_var.uri))
+
+        if new_var is not  None:
+            return new_var
+
+        # 2nd try: vars created in the setting scope
+        this_scope_parent = self.scope.R21__is_scope_of
+        all_scopes = this_scope_parent.get_inv_relations("R21__is_scope_of", return_subj=True)
+
+        setting_scopes = [scp for scp in all_scopes if scp.R64__has_scope_type == "SETTING"]
+        assert len(setting_scopes) == 1
+        setting_scope = setting_scopes[0]
+
+        new_var = ds.scope_var_mappings.get((setting_scope.uri, old_var.uri))
+
+        if new_var is not  None:
+            return new_var
+
+        # TODO: look in the premise scope?
+
+        if strict:
+            msg = f"Unexpected: Could not find a copied item associated to {old_var}"
+            raise core.aux.PyERKError(msg)
+
+        # last ressort return the original variable (because it was an external var)
+        return old_var
 
     def _copy_mapping(self, mapping_item: Item) -> Item:
         mapping_type = mapping_item.R35__is_applied_mapping_of
@@ -804,9 +908,11 @@ class ScopingCM:
         name = mapping_item.R23__has_name_in_scope
         assert name is not None
 
-        args = mapping_item.get_arguments()
-
-        new_args = (self.tmp_var_mapping[arg.uri] for arg in args)
+        try:
+            args = mapping_item.get_arguments()
+        except AttributeError:
+            args = ()
+        new_args = (self._get_new_var_from_old(arg, strict=True) for arg in args)
 
         new_mapping_item = mapping_type(*new_args)
         # TODO: add R20__has_defining_scope and R23__has_name_in_scope
@@ -814,6 +920,25 @@ class ScopingCM:
         self._new_var(variable_name=name, variable_object=new_mapping_item)
 
         return new_mapping_item
+
+    def _get_premise_vars(self) -> dict:
+        """
+        return a dict of all items that were defined in the associated setting scope.
+
+        key: variable names (via R23__has_name_in_scope)
+        value: item objects
+        """
+        this_scope_parent = self.scope.R21__is_scope_of
+
+        all_scopes = this_scope_parent.get_inv_relations("R21__is_scope_of", return_subj=True)
+
+        setting_scopes = [scp for scp in all_scopes if scp.R64__has_scope_type == "SETTING"]
+        assert len(setting_scopes) == 1
+        setting_scope = setting_scopes[0]
+        defined_items = setting_scope.get_inv_relations("R20__has_defining_scope")
+
+        settings_vars_mapping = dict((stm.subject.R23__has_name_in_scope, stm.subject) for stm in defined_items)
+        return settings_vars_mapping
 
 
 def is_generic_instance(itm: Item) -> bool:
@@ -910,6 +1035,7 @@ class QuantifiedSubScopeCM(AbstractMathRelatedScopeCM):
     """
     A scoping context manager for universally or existentially quantified statements
     """
+
     valid_subscope_types = {"CONDITION": 1}
 
     def __init__(self, *args, **kwargs):
@@ -917,12 +1043,10 @@ class QuantifiedSubScopeCM(AbstractMathRelatedScopeCM):
         self.condition_cm = self._create_subscope_cm("CONDITION", SubScopeConditionCM)
 
     def add_condition_statement(self, subj, pred, obj, qualifiers=None):
-
         with self.condition_cm:
             self.condition_cm.new_rel(subj, pred, obj, qualifiers=qualifiers)
 
     def add_condition_math_relation(self, *args, **kwargs):
-
         with self.condition_cm:
             self.condition_cm.new_math_relation(*args, **kwargs)
 
@@ -930,21 +1054,31 @@ class QuantifiedSubScopeCM(AbstractMathRelatedScopeCM):
         with self.condition_cm:
             return self.condition_cm.new_var(**kwargs)
 
+
 class SubScopeConditionCM(AbstractMathRelatedScopeCM):
     """
     A scoping context manager to specify the condition of another scope
     """
+
     valid_subscope_types = {}
 
 
-class _rule__CM(ScopingCM):
-
+class _rule__CM(AbstractMathRelatedScopeCM):
     valid_subscope_types = {"AND": float("inf"), "OR": 1}
 
     def __init__(self, *args, **kwargs):
-
         self._anchor_item_counter = 0
         super().__init__(*args, **kwargs)
+        r21_parent_of_scope = self.scope.R21__is_scope_of
+        while True:
+            # take care of nested scopes
+            tmp = r21_parent_of_scope.R21__is_scope_of
+            if tmp:
+                r21_parent_of_scope = tmp
+            else:
+                break
+        self.rule = r21_parent_of_scope
+        assert is_instance_of(self.rule, I41["semantic rule"])
 
     @property
     def anchor_item_counter(self):
@@ -1012,12 +1146,10 @@ class _rule__CM(ScopingCM):
         return self._new_var(name, variable_object)
 
     def new_rel(self, sub: Entity, pred: Entity, obj: Entity, qualifiers=None, overwrite=False) -> Statement:
-
         if qualifiers is None:
             qualifiers = []
 
         if isinstance(pred, Item):
-
             if not pred.R4__is_instance_of == I40["general relation"]:
                 msg = f"Expected relation but got {pred}"
                 raise TypeError(msg)
@@ -1029,7 +1161,6 @@ class _rule__CM(ScopingCM):
         return super().new_rel(sub, pred, obj, qualifiers, overwrite)
 
     def _get_new_anchor_item(self, name):
-
         # note `anchor_item_counter` is a property
 
         name = f"{name}{self.anchor_item_counter}"
@@ -1142,8 +1273,10 @@ def _get_subscopes(self):
     scope_rels: list = self.get_inv_relations("R21__is_scope_of", return_subj=True)
     return scope_rels
 
+
 I15["implication proposition"].add_method(_get_subscopes, name="get_subscopes")
 I16["scope"].add_method(_get_subscopes, name="get_subscopes")
+
 
 def _get_subscope(self, name: str):
     assert isinstance(name, str)
@@ -1160,8 +1293,10 @@ def _get_subscope(self, name: str):
     else:
         return res[0]
 
+
 I15["implication proposition"].add_method(_get_subscope, name="get_subscope")
 I16["scope"].add_method(_get_subscope, name="get_subscope")
+
 
 def _get_statements_for_scope(self):
     """
@@ -1172,7 +1307,9 @@ def _get_statements_for_scope(self):
     # return all statements where which have self as R20 qualifier
     return [s for s in subjects if isinstance(s, Statement)]
 
+
 I16["scope"].add_method(_get_statements_for_scope, name="get_statements_for_scope")
+
 
 def _get_items_for_scope(self):
     """
@@ -1182,6 +1319,7 @@ def _get_items_for_scope(self):
 
     # return all items where which have self as R20 qualifier
     return [s for s in subjects if isinstance(s, Item)]
+
 
 I16["scope"].add_method(_get_items_for_scope, name="get_items_for_scope")
 
@@ -1231,7 +1369,6 @@ R24["has LaTeX string"].set_relation(R11["has range of result"], str)
 # they should be used only as an addendum to semantic representations
 # TODO: Fix ocse_ct.I6091["control affinity"]
 def create_expression(latex_src: str, r1: str = None, r2: str = None) -> Item:
-
     if r1 is None:
         r1 = f"generic expression ({latex_src})"
 
@@ -1296,7 +1433,7 @@ R27 = create_builtin_relation(
 R26["has lhs"].set_relation(R8["has domain of argument 1"], I21["mathematical relation"])
 R27["has rhs"].set_relation(R8["has domain of argument 1"], I21["mathematical relation"])
 
-I46  = create_builtin_item(
+I46 = create_builtin_item(
     key_str="I46",
     R1__has_label="knowledge artifact",
     R2__has_description="general type for things like a theory, quote, equation ...",
@@ -1480,6 +1617,8 @@ def create_evaluated_mapping(mapping: Item, *args) -> Item:
     # add convenience method
     ev_mapping.add_method(get_arguments, "get_arguments")
 
+    ev_mapping.finalize()
+
     return ev_mapping
 
 
@@ -1488,7 +1627,7 @@ R30 = create_builtin_relation(
     key_str="R30",
     R1__has_label="is secondary instance of",
     R2__has_description=(
-        "specifies that the subject is an instance of a class-item,in addtioin to its unambiguous parent class."
+        "specifies that the subject is an instance of a class-item, in addition to its unambiguous parent class."
     ),
     R18__has_usage_hint=(
         "Note that this relation is not functional. This construction allows to combine single (R4) "
@@ -1520,7 +1659,6 @@ def new_equation(lhs: Item, rhs: Item, doc=None, scope: Optional[Item] = None) -
 
 
 def new_mathematical_relation(lhs: Item, rsgn: str, rhs: Item, doc=None, scope: Optional[Item] = None) -> Item:
-
     rsgn_dict = {
         "==": I23["equation"],
         "<": I29["less-than-relation"],
@@ -1658,6 +1796,12 @@ def new_tuple(*args, **kwargs) -> Item:
 
     for idx, arg in enumerate(args):
         tup.set_relation(R39["has element"], arg, qualifiers=[has_index(idx)])
+
+        # new specification of index (allow easy access in rules)
+        ra = instance_of(I49["reification anchor"])
+        ra.set_relation(R39["has element"], arg)
+        ra.set_relation(R40["has index"], idx)
+        tup.set_relation(R75["has reification anchor"], ra)
 
     return tup
 
@@ -1848,6 +1992,8 @@ I41 = create_builtin_item(
 )
 
 I41["semantic rule"].add_method(_rule__scope, name="scope")
+I41["semantic rule"].add_method(_get_subscopes, name="get_subscopes")
+I41["semantic rule"].add_method(_get_subscope, name="get_subscope")
 
 # I42 is already used above
 
@@ -1881,6 +2027,7 @@ R44 = create_builtin_relation(
 # see docs for more general information about qualifiers
 univ_quant = QualifierFactory(R44["is universally quantified"])
 
+
 # TODO: obsolete
 def uq_instance_of(type_entity: Item, r1: str = None, r2: str = None) -> Item:
     """
@@ -1906,6 +2053,7 @@ def uq_instance_of(type_entity: Item, r1: str = None, r2: str = None) -> Item:
     # TODO: This should be used as a qualifier
     instance.set_relation(R44["is universally quantified"], True)
     return instance
+
 
 # placed here for its obvious relation to universal quantification
 R66 = create_builtin_relation(
@@ -1951,7 +2099,6 @@ class ImplicationStatement:
     """
 
     def __init__(self):
-
         parent_scope = ds.get_current_scope()
 
         scope_name_a = f"imp_stmt_antcdt in {parent_scope}"
@@ -2073,6 +2220,7 @@ def close_class_with_R51(cls_item: Item):
 
     return tpl
 
+
 def set_multiple_statements(subjects: Union[list, tuple], predicate: Relation, object: Any, qualifiers=None):
     """
     For every element of subjects, create a statement with predicate and object
@@ -2085,7 +2233,6 @@ def set_multiple_statements(subjects: Union[list, tuple], predicate: Relation, o
         res.append(stm)
 
     return res
-
 
 
 R52 = create_builtin_relation(
@@ -2211,7 +2358,6 @@ R62["is relation property"].set_relation(R62["is relation property"], True)
 
 
 def get_relation_properties_uris():
-
     stms: List[Statement] = ds.relation_statements[R62.uri]
     uris = []
     for stm in stms:
@@ -2331,21 +2477,18 @@ I45 = create_builtin_item(
     key_str="I45",
     R1__has_label="general entity",
     R2__has_description="common superclass of I1['general item'] and I40['general relation']",
-
     # TODO: decide where to break the circle
     # R4__is_instance_of=I2["Metaclass"],
 )
 
-I1['general item'].set_relation( R3["is subclass of"], I45["general entity"])
-I40['general relation'].set_relation( R3["is subclass of"], I45["general entity"])
+I1["general item"].set_relation(R3["is subclass of"], I45["general entity"])
+I40["general relation"].set_relation(R3["is subclass of"], I45["general entity"])
 
 
 R72 = create_builtin_relation(
     key_str="R72",
     R1__has_label="is generally related to",
-    R2__has_description=(
-        "specifies that the subject is 'somehow' related to the object"
-    ),
+    R2__has_description=("specifies that the subject is 'somehow' related to the object"),
     R8__has_domain_of_argument_1=I45["general entity"],
     R11__has_range_of_result=bool,
     R18__has_usage_hint="used to model relationships which are not (yet) possible to model otherwise",
@@ -2354,9 +2497,7 @@ R72 = create_builtin_relation(
 R73 = create_builtin_relation(
     key_str="R73",
     R1__has_label="conceptually dependends",
-    R2__has_description=(
-        "specifies that the object is needed to define the subject"
-    ),
+    R2__has_description=("specifies that the object is needed to define the subject"),
     R8__has_domain_of_argument_1=I45["general entity"],
     R11__has_range_of_result=bool,
     R18__has_usage_hint=(
@@ -2368,7 +2509,60 @@ R73 = create_builtin_relation(
 
 # I46 is defined above
 
-# next keys: I47, R74
+I47 = create_builtin_item(
+    key_str="I47",
+    R1__has_label="constraint rule",
+    R2__has_description="rule that specifies which constraints a set of entites has to fulfill",
+    R3__is_subclass_of=I41["semantic rule"]
+)
+
+I48 = create_builtin_item(
+    key_str="I48",
+    R1__has_label="constraint violation",
+    R2__has_description="instances of this class specify a concrete constraint violation",
+    R3__is_subclass_of=I2["Metaclass"],
+)
+
+R74 = create_builtin_relation(
+    key_str="R74",
+    R1__has_label="has constraint violation",
+    R2__has_description=("specifies that the subject violates some I47__constraint_rule"),
+    R8__has_domain_of_argument_1=I45["general entity"],
+    R11__has_range_of_result=I48["constraint violation"],
+)
+
+
+I49 = create_builtin_item(
+    key_str="I49",
+    R1__has_label="reification anchor",
+    R2__has_description="instances of this class serve to express statements with arity > 2",
+    R3__is_subclass_of=I2["Metaclass"],
+    R18__has_usage_hint="see example usage in `new_tuple(...)`",
+)
+
+R75 = create_builtin_relation(
+    key_str="R75",
+    R1__has_label="has reification anchor",
+    R2__has_description=("specifies that the subject is described by some reificated statement"),
+    R8__has_domain_of_argument_1=I45["general entity"],
+    R11__has_range_of_result=I48["constraint violation"],
+    R18__has_usage_hint=(
+        "example usage: specify the argument order for I33__tuple instances with R39__has_element "
+        "and R40__has_index"
+    ),
+)
+
+R76 = create_builtin_relation(
+    key_str="R76",
+    R1__has_label="has associated rule",
+    R2__has_description="...",
+    R8__has_domain_of_argument_1=I45["general entity"],
+    R11__has_range_of_result=I41["semantic rule"],
+    R22__is_functional=True,
+)
+
+
+# next keys: I50, R76
 
 # ######################################################################################################################
 # condition functions (to be used in the premise scope of a rule)
@@ -2425,7 +2619,7 @@ def copy_statements(self, rel1: Relation, rel2: Relation):
     res = RuleResult()
     for stm in ds.relation_statements[rel1.uri]:
         stm: Statement
-    #    TODO: handle qualifiers
+        #    TODO: handle qualifiers
         new_stm = stm.subject.set_relation(rel2, stm.object, prevent_duplicate=True)
         res.add_statement(new_stm)
 
@@ -2514,19 +2708,19 @@ def raise_reasoning_goal_reached(self, msg_template, *args):
 # )
 #
 #
-# with I041["subproperty rule 1"].scope("context") as cm:
+# with I041["subproperty rule 1"].scope("setting") as cm:
 #
 #     cm.new_var(P1=instance_of(I11["mathematical property"]))
 #     cm.new_var(P2=instance_of(I11["mathematical property"]))
 #     cm.new_var(P3=instance_of(I11["mathematical property"]))
 # #     # A = cm.new_var(sys=instance_of(I1["general item"]))
 # #
-# with I041["subproperty rule 1"].scope("premises") as cm:
+# with I041["subproperty rule 1"].scope("premise") as cm:
 #     cm.new_rel(cm.P2, R17["is subproperty of"], cm.P1)
 #     cm.new_rel(cm.P3, R17["is subproperty of"], cm.P2)
 #     # todo: state that all variables are different from each other
 #
-# with I041["subproperty rule 1"].scope("assertions") as cm:
+# with I041["subproperty rule 1"].scope("assertion") as cm:
 #     cm.new_rel(cm.P3, R17["is subproperty of"], cm.P1)
 
 # noinspection PyUnresolvedReferences

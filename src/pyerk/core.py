@@ -112,9 +112,7 @@ def check_type(obj, expected_type, strict=True):
     if not mod.data == obj:
         if not strict:
             return False
-        msg = (
-            f"While type-checking: Unexpected inner structure of parsed model. Expected: {expected_type}"
-        )
+        msg = f"While type-checking: Unexpected inner structure of parsed model. Expected: {expected_type}"
         raise TypeError(msg)
     return True
 
@@ -132,6 +130,7 @@ class Entity(abc.ABC):
 
     def __init__(self, base_uri):
         # this will hold mappings like "R1234": EntityRelation(..., R1234)
+        self._is_initialized = False  # will be True after __post_init__
         self.relation_dict = {}
         self._method_prototypes = []
         self._namespaces = {}
@@ -143,7 +142,6 @@ class Entity(abc.ABC):
         self._unlinked = False
 
     def __call__(self, *args, **kwargs):
-
         custom_call_method = getattr(self, "_custom_call", None)
         if custom_call_method is None:
             msg = f"entity {self} has not defined a _custom_call-method and thus cannot be called"
@@ -207,12 +205,39 @@ class Entity(abc.ABC):
             return self.__dict__[attr_name]
         except KeyError:
             pass
+        processed_key = self.__process_attribute_name(attr_name)
+
         try:
-            res = process_key_str(attr_name)
-        except (KeyError, aux.UnknownURIError) as err:
+            # TODO: introduce prefixes here, which are mapped to uris
+            etyrel = self._get_relation_contents(rel_uri=processed_key.uri)
+        except KeyError:
+            msg = f"'{type(self)}' object has no attribute '{processed_key.short_key}'"
+            raise AttributeError(msg)
+        return etyrel
+
+    def __setattr__(self, attr_name: str, attr_value: Any):
+        if attr_name.startswith("_") or not self._is_initialized or attr_name in self.__dict__:
+            # change of existing "real" attribute
+            super().__setattr__(attr_name, attr_value)
+            return
+        try:
+            processed_key = self.__process_attribute_name(attr_name, exception_type=aux.UndefinedRelationError)
+        except aux.UndefinedRelationError:
+            # attr_name could not be resolved to an defined relation
+            super().__setattr__(attr_name, attr_value)
+            return
+        self.set_relation(ds.get_entity_by_uri(processed_key.uri), attr_value)
+
+    def __process_attribute_name(self, attr_name:str, exception_type=AttributeError) -> "ProcessedStmtKey":
+        pass
+        try:
+            processed_key = process_key_str(attr_name)
+        except (aux.ShortKeyNotFoundError) as err:
+            raise
+        except (aux.InvalidGeneralKeyError, aux.InvalidShortKeyError, aux.UnknownURIError) as err:
             # this happens if a syntactically valid key string could not be resolved
-            raise AttributeError(*err.args)
-        if not res.etype == EType.RELATION:
+            raise exception_type(*err.args)
+        if not processed_key.etype == EType.RELATION:
             r3 = getattr(self, "R3", None)
             r4 = getattr(self, "R4", None)
             msg = (
@@ -220,15 +245,8 @@ class Entity(abc.ABC):
                 f"Type hint: self.R3__is_subclass_of: {r3}\n",
                 f"Type hint: self.R4__is_instance_of: {r4}\n",
             )
-            raise AttributeError(msg)
-
-        try:
-            # TODO: introduce prefixes here, which are mapped to uris
-            etyrel = self._get_relation_contents(rel_uri=res.uri)
-        except KeyError:
-            msg = f"'{type(self)}' object has no attribute '{res.short_key}'"
-            raise AttributeError(msg)
-        return etyrel
+            raise exception_type(msg)
+        return processed_key
 
     def __eq__(self, other):
         return id(self) == id(other)
@@ -239,6 +257,7 @@ class Entity(abc.ABC):
         assert self.uri is not None
         self._perform_inheritance()
         self._perform_instantiation()
+        self._is_initialized = True
 
     def _perform_inheritance(self):
         """
@@ -250,7 +269,7 @@ class Entity(abc.ABC):
         parent_class: Union[Entity, None]
         try:
             parent_class = self.R3
-        except AttributeError:
+        except aux.ShortKeyNotFoundError:
             parent_class = None
 
         if parent_class not in (None, []):
@@ -268,7 +287,7 @@ class Entity(abc.ABC):
         parent_class: Union[Entity, None]
         try:
             parent_class = self.R4
-        except AttributeError:
+        except aux.ShortKeyNotFoundError:
             parent_class = None
 
         if parent_class not in (None, []):
@@ -276,7 +295,6 @@ class Entity(abc.ABC):
                 self.add_method(func)
 
     def _get_relation_contents(self, rel_uri: str):
-
         aux.ensure_valid_uri(rel_uri)
 
         statements: List[Statement] = ds.get_statements(self.uri, rel_uri)
@@ -322,7 +340,6 @@ class Entity(abc.ABC):
             filtered_res_explicit_lang = []
             filtered_res_without_lang = []
             for elt in res:
-
                 # if no language is defined (e.g. ordinary string) -> use interpret this as match
                 # (but only if no other result with matching language attribute is available)
                 lng = getattr(elt, "language", None)
@@ -446,7 +463,6 @@ class Entity(abc.ABC):
                 return None
 
         if isinstance(relation, Relation):
-
             if isinstance(obj, (Entity, *allowed_literal_types)) or obj in allowed_literal_types:
                 return self._set_relation(relation.uri, obj, scope=scope, qualifiers=qualifiers, proxyitem=proxyitem)
             # Todo: remove obsolete code:
@@ -471,7 +487,6 @@ class Entity(abc.ABC):
         qualifiers: Optional[list] = None,
         proxyitem: Optional["Item"] = None,
     ) -> "Statement":
-
         aux.ensure_valid_uri(rel_uri)
         rel = ds.relations[rel_uri]
 
@@ -515,7 +530,6 @@ class Entity(abc.ABC):
 
         # if the object is not a literal then also store the inverse relation
         if isinstance(rel_content, Entity):
-
             inv_stm = Statement(
                 relation=rel,
                 relation_tuple=(self, rel, rel_content),
@@ -664,8 +678,28 @@ class Entity(abc.ABC):
         stm.unlink()
         return self.set_relation(rel, new_obj, qualifiers=qualifiers)
 
+    def finalize(self):
+        """
+        Method which is intended to be explicitly called if an (automatically created) entity is finished.
 
-def wrap_function_with_search_uri_context(func, uri):
+        Background: some entities like evaluated mappings are manipulated after creation.
+        Hooks like consistency-checking have to be executed afterwards.
+        """
+
+        run_hooks(self, phase="post-finalize")
+
+
+def wrap_function_with_search_uri_context(func, uri=None):
+    if uri is None:
+        # assume that this function is used as decorator in a module which defines __URI__ globally
+        import inspect
+        frame = inspect.currentframe()
+        uri = frame.f_back.f_globals.get("__URI__")
+        if uri is None:
+            fi = inspect.getframeinfo(frame.f_back)
+            msg = f"could not find `__URI__` in module {fi.filename}"
+            raise aux.PyERKError(msg)
+
     @functools.wraps(func)
     def wrapped_func(*args, **kwargs):
         with search_uri_context(uri=uri):
@@ -683,7 +717,9 @@ class PrefixShortCut:
         mod = ds.uri_mod_dict[uri]
         return mod
 
+
 pf = PrefixShortCut()
+
 
 class DataStore:
     """
@@ -742,11 +778,33 @@ class DataStore:
         # dict like {uri1: <mod1>, ...}
         self.uri_mod_dict = {}
 
+        # this flag (default False) might be changed during erkloader calls
+        self.reuse_loaded_module = False
+
         # this list serves to keep track of nested scopes
         self.scope_stack = []
 
         # store unlinked entities
         self.unlinked_entities = {}
+
+        # store hook functions
+        self.hooks = self.initialize_hooks()
+
+        # data structure to facilitate scope-copying
+        # keys: 2-tuples: (new_scope_uri, old_var_uri)
+        # values: new_var_item
+        self.scope_var_mappings = {}
+
+    def initialize_hooks(self) -> dict:
+        self.hooks = {
+            "post-create-entity": [],
+            "post-create-item": [],
+            "post-create-relation": [],
+            "post-finalize-entity": [],
+            "post-finalize-item": [],
+            "post-finalize-relation": [],
+        }
+        return self.hooks
 
     def get_item_by_label(self, label) -> Entity:
         """
@@ -785,7 +843,6 @@ class DataStore:
         return res
 
     def get_entity_by_uri(self, uri: str, etype=None, strict=True) -> Union[Entity, None]:
-
         if etype is not None:
             # only one lookup is needed
             if etype == EType.ITEM:
@@ -814,7 +871,6 @@ class DataStore:
         return getattr(entity, "R20") is None
 
     def get_subjects_for_relation(self, rel_uri: str, filter=None):
-
         stm_list: List[Statement] = self.relation_statements[rel_uri]
 
         res = []
@@ -1090,10 +1146,10 @@ def process_key_str(
 
     errmsg = f"unxexpected key_str: `{key_str}` (maybe a literal or syntax error)"
     if not match1:
-        raise KeyError(errmsg)
+        raise aux.InvalidGeneralKeyError(errmsg)
 
     if match1.group(3) is None or match1.group(7) is None:
-        raise KeyError(errmsg)
+        raise aux.InvalidGeneralKeyError(errmsg)
 
     res.prefix = match1.group(2)  # this might be None
     res.short_key = match1.group(3) + match1.group(7)
@@ -1106,11 +1162,11 @@ def process_key_str(
     errmsg = f"invalid suffix of key_str `{key_str}` (probably syntax error)"
     if match2 and match3:
         # key seems to mix underscores and square brackets
-        raise KeyError(errmsg)
+        raise aux.InvalidGeneralKeyError(errmsg)
 
     if suffix and (not match2) and (not match3):
         # syntax of suffix seems to be wrong (e., g. missing bracket)
-        raise KeyError(errmsg)
+        raise aux.InvalidGeneralKeyError(errmsg)
 
     if match2:
         res.label = match2.group(1)
@@ -1127,7 +1183,7 @@ def process_key_str(
         res.vtype = VType.ENTITY
     else:
         msg = f"unxexpected shortkey: '{res.short_key}' (maybe a literal)"
-        raise KeyError(msg)
+        raise aux.InvalidShortKeyError(msg)
 
     if resolve_prefix:
         _resolve_prefix(res, passed_mod_uri=mod_uri)
@@ -1173,7 +1229,6 @@ def _resolve_prefix(pr_key: ProcessedStmtKey, passed_mod_uri: str = None) -> Non
 
             # 2a) check search_uri context
             if search_uri:
-
                 candidate_uri = aux.make_uri(search_uri, pr_key.short_key)
                 res_entity = ds.get_entity_by_uri(candidate_uri, strict=False)
 
@@ -1203,7 +1258,7 @@ def _resolve_prefix(pr_key: ProcessedStmtKey, passed_mod_uri: str = None) -> Non
                     f"No entity could be found for short_key {pr_key.short_key}, neither in active module "
                     f"({active_mod_uri}) nor in builin_entities ({settings.BUILTINS_URI})"
                 )
-                raise KeyError(msg)
+                raise aux.ShortKeyNotFoundError(msg)
     else:
         # prefix was not not None
         mod_uri = ds.get_uri_for_prefix(pr_key.prefix)
@@ -1247,10 +1302,12 @@ def check_processed_key_label(pkey: ProcessedStmtKey) -> None:
         )
         raise ValueError(msg)
 
+
 def ilk2nlk(ilk: str) -> str:
     """
     convert index labled key (R1234["my relation"]) to name labled key (R1234__my_relation)
     """
+    assert isinstance(ilk, str)
 
     return ilk.replace(" ", "_").replace("-", "_")
 
@@ -1351,6 +1408,9 @@ def create_item(key_str: str = "", **kwargs) -> Item:
 
     # acces the defaultdict(list)
     ds.entities_created_in_mod[mod_uri].append(itm.uri)
+
+    run_hooks(itm, phase="post-create")
+
     return itm
 
 
@@ -1386,6 +1446,44 @@ class RelationRole(Enum):
     OBJECT = 2
 
 
+VALID_HOOK_PHASES = ["post-create", "post-finalize"]
+VALID_HOOK_TYPES = [
+    "post-create-entity",
+    "post-create-item",
+    "post-create-relation",
+    "post-finalize-entity",
+    "post-finalize-item",
+    "post-finalize-relation",
+]
+
+
+def run_hooks(entity: Entity, phase: str) -> None:
+    """
+    Run (previously registered) hooks after the creation of entities.
+    This can be used for sanity checking etc.
+    """
+
+    assert phase in VALID_HOOK_PHASES
+
+    for hook_func in ds.hooks[f"{phase}-entity"]:
+        hook_func(entity)
+
+    if isinstance(entity, Item):
+        for hook_func in ds.hooks[f"{phase}-item"]:
+            hook_func(entity)
+
+    if isinstance(entity, Relation):
+        for hook_func in ds.hooks[f"{phase}-relation"]:
+            hook_func(entity)
+
+
+def register_hook(type_str: str, func: callable) -> None:
+    assert type_str in VALID_HOOK_TYPES
+    assert callable(func)
+
+    ds.hooks[type_str].append(func)
+
+
 # for now we want unique numbers for keys for relations and items etc (although this is not necessary)
 class KeyManager:
     """
@@ -1413,7 +1511,6 @@ class KeyManager:
         self._generate_key_numbers()
 
     def pop(self, index: int = -1) -> int:
-
         key = self.key_reservoir.pop(index)
         return key
 
@@ -1581,14 +1678,12 @@ class Statement:
         return self.short_key
 
     def __repr__(self):
-
         res = f"{self.short_key}{self.relation_tuple}"
         return res
 
     def _process_qualifiers(
         self, qlist: Union[List[RawQualifier], List["QualifierStatement"]], scope: Optional["Entity"] = None
     ) -> None:
-
         if not qlist:
             # nothing to do
             return
@@ -1599,7 +1694,6 @@ class Statement:
             return
 
         for qf in qlist:
-
             if isinstance(qf.obj, Entity):
                 corresponding_entity = qf.obj
                 corresponding_literal = None
@@ -1635,7 +1729,7 @@ class Statement:
         if key:
             try:
                 uri = process_key_str(key).uri
-            except KeyError:
+            except aux.ShortKeyNotFoundError:
                 if tolerate_key_error:
                     # this allows to ask for qualifiers before they are created
                     return None
@@ -1680,7 +1774,6 @@ class Statement:
                 pass
 
         if self.role == RelationRole.SUBJECT:
-
             subj_rel_edges: Dict[str : List[Statement]] = ds.statements[subj.uri]
             tolerant_removal(subj_rel_edges.get(pred.uri, []), self)
 
@@ -1775,6 +1868,9 @@ def create_relation(key_str: str = "", **kwargs) -> Relation:
         raise aux.InvalidURIError(msg)
     ds.relations[rel.uri] = rel
     ds.entities_created_in_mod[mod_uri].append(rel.uri)
+
+    run_hooks(rel, phase="post-create")
+
     return rel
 
 
@@ -1972,6 +2068,7 @@ class uri_context(abstract_uri_context):
     """
     Context manager for creating entities with a given uri
     """
+
     def __init__(self, uri: str, prefix: str = None):
         super().__init__(_uri_stack, uri, prefix)
 
@@ -1980,6 +2077,7 @@ class search_uri_context(abstract_uri_context):
     """
     uri Context manager for searching for entities with a given key
     """
+
     def __init__(self, uri: str, prefix: str = None):
         super().__init__(_search_uri_stack, uri, prefix)
 
@@ -2102,7 +2200,6 @@ def _unlink_entity(uri: str, remove_from_mod=False) -> None:
         re_list.extend(local_re_list)
 
     if isinstance(entity, Relation):
-
         tmp = ds.relation_statements.pop(uri, [])
         re_list.extend(tmp)
 
@@ -2169,7 +2266,6 @@ def replace_and_unlink_entity(old_entity: Entity, new_entity: Entity):
                 # prevent the creation of a duplicated statement
                 existing_objs = new_entity.get_relations(predicate.uri, return_obj=True)
                 if not obj in existing_objs:
-
                     # it is possible that predicate is functional and new_entitiy.predicate has a value
                     # different from obj. this is OK if one of them is a placeholder
                     if len(existing_objs) == 1 and predicate.R22__is_functional:
@@ -2342,7 +2438,6 @@ class RuleResult:
 
 
 def format_entity_html(e: Entity):
-
     short_txt = f'<span class="entity">{e.R1}</span>'
     detailed_txt = f'<span class="entity">{e.short_key}["{e.R1}"]</span>'
 

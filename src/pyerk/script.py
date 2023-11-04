@@ -12,8 +12,6 @@ except ModuleNotFoundError:
     import tomli as tomllib
 
 
-
-
 from . import core, erkloader, rdfstack
 from . import visualization
 from . import reportgenerator
@@ -131,6 +129,13 @@ def create_parser():
         action="store_true",
     )
 
+    parser.add_argument(
+        "-ik",
+        "--insert-keys-for-placeholders",
+        help="replace `_newitemkey_ = ` with appropriate short keys",
+        metavar="path_to_mod"
+    )
+
     parser.add_argument("--dbg", help="start debug routine", default=None, action="store_true")
 
     parser.add_argument(
@@ -143,7 +148,6 @@ def create_parser():
 
 
 def main():
-
     args = create_parser().parse_args()
 
     if args.dbg:
@@ -155,13 +159,10 @@ def main():
         exit()
 
     if args.load_mod is not None and args.load_package is not None:
-        print(aux.byellow(
-            "The options to load a module and to load a package are mutually exclusive"
-        ))
+        print(aux.byellow("The options to load a module and to load a package are mutually exclusive"))
         exit()
 
     if args.load_mod is not None:
-
         path, prefix = args.load_mod
         loaded_mod = process_mod(path=path, prefix=prefix, relative_to_workdir=True)
     elif args.load_package is not None:
@@ -169,8 +170,6 @@ def main():
     else:
         loaded_mod = None
         prefix = None
-
-
 
     if args.interactive_session:
         interactive_session(loaded_mod, prefix)
@@ -194,7 +193,6 @@ def main():
     elif reportconf_path := args.generate_report:
         reportgenerator.generate_report(reportconf_path)
     elif key := args.visualize:
-
         if key == "__all__":
             visualization.visualize_all_entities(write_tmp_files=True)
             return
@@ -221,13 +219,13 @@ def main():
             # exit(10)
             raise
         pyerkdjango.core.start_django_shell()
+    elif args.insert_keys_for_placeholders:
+        insert_keys_for_placeholders(args.insert_keys_for_placeholders)
     else:
         print("nothing to do, see option `--help` for more info")
 
 
 def process_package(pkg_path: str) -> erkloader.ModuleType:
-
-
     if os.path.isdir(pkg_path):
         pkg_path = os.path.join(pkg_path, "erkpackage.toml")
 
@@ -242,7 +240,6 @@ def process_package(pkg_path: str) -> erkloader.ModuleType:
 
 
 def process_mod(path: str, prefix: str, relative_to_workdir: bool = False) -> erkloader.ModuleType:
-
     if not relative_to_workdir:
         msg = "using mod paths which are not relative to workdir is deprecated since pyerk version 0.6.0"
         raise DeprecationWarning(msg)
@@ -291,7 +288,6 @@ def create_auto_complete_file():
         lines.append(f"{entity.short_key}__{label_str}\n")
 
     for uri, entity in core.ds.relations.items():
-
         label_str = core.ilk2nlk(entity.R1__has_label)
         lines.append(f"{entity.short_key}__{label_str}\n")
         lines.append(f'{entity.short_key}["{entity.R1__has_label}"]\n')
@@ -302,6 +298,69 @@ def create_auto_complete_file():
         fp.writelines(lines)
 
     print(f"File written: {fpath}")
+
+
+def insert_keys_for_placeholders(modpath):
+    """
+    Motivation:
+    When mass-inserting entities, it is easier to use a placeholder instead of unique short_key.
+    This function replaces these placeholders with adequate unique short keys.
+    """
+
+    with open(modpath) as fp:
+        old_txt = fp.read()
+
+    # first write backup
+    fname = os.path.split(modpath)[-1]
+    import tempfile
+    import shutil
+    backup_path = os.path.join(tempfile.mkdtemp(), fname)
+
+    shutil.copy(modpath, backup_path)
+    print(f"Backup: {backup_path}")
+
+    placeholder = "_newitemkey_ = "
+    key_count = old_txt.count(f"\n{placeholder}")
+
+    #
+    # write the module without the placeholder lines
+    old_lines = old_txt.split("\n")
+    tmp_lines = []
+    for line in old_lines:
+        if line.startswith(placeholder):
+            continue
+        else:
+            tmp_lines.append(line)
+
+    tmp_modpath = os.path.join(tempfile.mkdtemp(prefix="pyerk_tmp_"), fname)
+
+    with open(tmp_modpath, "w") as fp:
+        fp.write("\n".join(tmp_lines))
+
+    #
+    # load this temporary module
+    loaded_mod = process_mod(path=tmp_modpath, prefix="mod", relative_to_workdir=True)
+    item_keys = [core.generate_new_key("I", mod_uri=loaded_mod.__URI__) for i in range(key_count)]
+
+    # replace the respective lines in the original module
+    new_lines = []
+    for line in old_lines:
+        if line.startswith(placeholder):
+            key = item_keys.pop()
+            new_line = line.replace(placeholder, f"{key} = ")
+        else:
+            new_line = line
+        new_lines.append(new_line)
+
+    txt = "\n".join(new_lines)
+    with open(modpath, "w") as fp:
+        fp.write(txt)
+        if not txt.endswith("\n"):
+            fp.write("\n")
+
+    print(f"File (over)written {modpath}")
+    with open(modpath, "w") as fp:
+        fp.write(txt)
 
 
 def interactive_session(loaded_mod, prefix):

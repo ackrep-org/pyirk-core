@@ -1387,20 +1387,10 @@ def get_active_mod_uri(strict: bool = True) -> Union[str, None]:
     return res
 
 
-# noinspection PyShadowingNames
-def create_item(key_str: str = "", **kwargs) -> Item:
+def process_kwargs_for_entity_creation(item_key: str, kwargs: dict) ->(dict, dict):
     """
-
-    :param key_str:     "" or unique key of this item (something like `I1234`)
-    :param kwargs:      further relations
-
-    :return:        newly created item
+    :return:    return new_kwargs, lang_related_kwargs
     """
-
-    if key_str == "":
-        item_key = get_key_str_by_inspection()
-    else:
-        item_key = key_str
 
     mod_uri = get_active_mod_uri()
 
@@ -1459,6 +1449,27 @@ def create_item(key_str: str = "", **kwargs) -> Item:
 
         new_kwargs[new_key] = value
 
+    return new_kwargs, lang_related_kwargs
+
+
+def create_item(key_str: str = "", **kwargs) -> Item:
+    """
+
+    :param key_str:     "" or unique key of this item (something like `I1234`)
+    :param kwargs:      further relations
+
+    :return:        newly created item
+    """
+
+    if key_str == "":
+        item_key = get_key_str_by_inspection()
+    else:
+        item_key = key_str
+
+    mod_uri = get_active_mod_uri()
+
+    new_kwargs, lang_related_kwargs = process_kwargs_for_entity_creation(item_key, kwargs)
+
     itm = Item(base_uri=mod_uri, key_str=item_key, **new_kwargs)
     assert itm.uri not in ds.items, f"Problematic (duplicated) uri: {itm.uri}"
     ds.items[itm.uri] = itm
@@ -1472,14 +1483,14 @@ def create_item(key_str: str = "", **kwargs) -> Item:
             if isinstance(value, Literal):
                 if value.language != lang_indicator:
                     msg = (
-                         f"while creating {item_key} ({new_key}-argument) got inconsistent language indicators: "
+                         f"while creating {item_key} ({rel_key}-argument) got inconsistent language indicators: "
                          f"in argument_name: {lang_indicator} but in value (Literal-instance) {value.language}"
                     )
                     raise aux.MultilingualityError(msg)
             elif isinstance(value, str):
                 value = Literal(value, lang=lang_indicator)
             else:
-                msg = f"unexpected type ({type(value)}) while creating {item_key} ({new_key}-argument)"
+                msg = f"unexpected type ({type(value)}) while creating {item_key} ({rel_key}-argument)"
                 raise TypeError(msg)
 
             itm.set_relation(rel_key, value)

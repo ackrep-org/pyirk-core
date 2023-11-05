@@ -366,6 +366,8 @@ def insert_keys_for_placeholders(modpath):
     core.unload_mod(loaded_mod.__URI__)
     os.unlink(tmp_modpath)
 
+    replace_dummy_enties_by_label(modpath)
+
 
 def replace_dummy_enties_by_label(modpath):
     """
@@ -374,7 +376,22 @@ def replace_dummy_enties_by_label(modpath):
     """
 
     loaded_mod = process_mod(path=modpath, prefix="mod", relative_to_workdir=True)
-    pattern = re.compile("""I000\[['"](.*?)['"]\]""")
+    pattern = re.compile("""(p.I000\[['"](.*?)['"]\])""")
+
+    with open(modpath) as fp:
+        txt = fp.read()
+
+    matches = list(pattern.finditer(txt))
+    for match in matches:
+        full_expr = match.group(1)  # the whole string like `p.I000["foo bar"]`
+        label = match.group(2)  # only the label string "foo bar"
+        entity = core.ds.get_item_by_label(label)
+        new_expr = f'{entity.short_key}["{label}"]'
+        txt = txt.replace(full_expr, new_expr)
+
+
+    with open(modpath, "w") as fp:
+        fp.write(txt)
 
 
 def interactive_session(loaded_mod, prefix):

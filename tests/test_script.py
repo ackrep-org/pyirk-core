@@ -28,7 +28,7 @@ class Test_01_Script(HouskeeperMixin, unittest.TestCase):
 
         # make a working copy (this file will be changed)
         modpath = srcpath.replace(".py", "_workcopy.py")
-        # self.files_to_delete.append(modpath)
+        self.files_to_delete.append(modpath)
         shutil.copy(srcpath, modpath)
 
         N = len(os.listdir(TEST_DATA_DIR1))
@@ -47,6 +47,14 @@ class Test_01_Script(HouskeeperMixin, unittest.TestCase):
 
         # ensure that the module is loadable
         mod = p.erkloader.load_mod_from_path(modpath, prefix="tm1")
+
+        # test I000["key insertion by label"]
+        itm3, = mod.I1000.R72__is_generally_related_to
+        itm2 = itm3.R4__is_instance_of
+        itm1 = itm2.R3__is_subclass_of
+
+        self.assertEqual(itm1.R1__has_label, "some new item")
+
 
     @unittest.skipIf(os.environ.get("CI"), "Skipping visualization test on CI to prevent graphviz-dependency")
     def test_c01__visualization(self):

@@ -42,5 +42,7 @@ _newitemkey_ = p.create_item(
 
 #</new_entities>
 
+I1000.R72__is_generally_related_to = p.I000["some other item"]
+
 
 p.end_mod()

@@ -1425,16 +1425,6 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
 
 class Test_03_Multilinguality(HouskeeperMixin, unittest.TestCase):
     def test_a01__label(self):
-        with p.uri_context(uri=TEST_BASE_URI):
-
-            I900 = p.create_item(
-                R1__has_label="test item mit label auf deutsch" @ p.de,
-                R2__has_description="used for testing during development",
-                R4__is_instance_of=p.I2["Metaclass"],
-                R18__has_usage_hint="This item serves only for unittesting labels in different languages",
-            )
-
-            I900.set_relation(p.R1["has label"], "test item with english label" @ p.en)
 
         teststring1 = "this is english text" @ p.en
         teststring2 = "das ist deutsch" @ p.de
@@ -1442,8 +1432,38 @@ class Test_03_Multilinguality(HouskeeperMixin, unittest.TestCase):
         self.assertIsInstance(teststring1, rdflib.Literal)
         self.assertIsInstance(teststring2, rdflib.Literal)
 
+        with p.uri_context(uri=TEST_BASE_URI):
+
+            with self.assertRaises(p.aux.MultilingualityError):
+                # the following is not allowed because the R1 argument is a non-default-language literal
+                # but R1-key has no language indicator
+                I901 = p.create_item(
+                    R1__has_label="deutsches label" @ p.de,
+                )
+
+            with self.assertRaises(p.aux.MultilingualityError):
+                # the following is not allowed because the R1__de argument comes before the default R1 argument
+                I901 = p.create_item(
+                    R1__has_label__de="deutsches label" @ p.de,
+                    R1__has_label="default label",
+                )
+
+            with self.assertRaises(p.aux.MultilingualityError):
+                # the following is not allowed because of inconsistent language specifications
+                I901 = p.create_item(
+                    R1__has_label="default label",
+                    R1__has_label__es="deutsches label" @ p.de,
+                )
+
+            I900 = p.create_item(
+                R1__has_label="default label",
+                R1__has_label__de="deutsches label" @ p.de,
+            )
+
+            I900.set_relation(p.R1["has label"], "english label" @ p.en)
+
         # R1 should return the default
-        self.assertEqual(I900.R1.language, p.settings.DEFAULT_DATA_LANGUAGE)
+        self.assertEqual(I900.R1, "default label")
 
         stored_default_lang = p.settings.DEFAULT_DATA_LANGUAGE
 
@@ -1463,19 +1483,25 @@ class Test_03_Multilinguality(HouskeeperMixin, unittest.TestCase):
 
         # test convenient notation
         with p.uri_context(uri=TEST_BASE_URI):
+
             I1001 = p.create_item(
                 R1__has_label="english label",
                 R1__has_label__de="deutsches label" @ p.de,
+
+                # we do not need to pass a Literal-instance (it is created automatically)
+                R1__has_label__fr="dénomination française",
             )
             I1001.set_relation(p.R1["has label"], "nombre español" @ p.es)
 
         labels = I1001.get_relations("R1", return_obj=True)
 
-        self.assertEqual(labels, ["english label", "deutsches label"@p.de, "nombre español"@p.es])
+        self.assertEqual(labels, ["english label", "deutsches label"@p.de, "dénomination française"@p.fr, "nombre español"@p.es])
 
         r1_default = I1001.R1__has_label
         r1_de = I1001.R1__has_label__de
         r1_es = I1001.R1__has_label__es
+
+        IPS()
 
 
 class Test_Z_Core(HouskeeperMixin, unittest.TestCase):

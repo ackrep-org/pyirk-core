@@ -294,7 +294,7 @@ class Entity(abc.ABC):
             for func in parent_class._method_prototypes:
                 self.add_method(func)
 
-    def _get_relation_contents(self, rel_uri: str):
+    def _get_relation_contents(self, rel_uri: str, lang_indicator=None):
         aux.ensure_valid_uri(rel_uri)
 
         statements: List[Statement] = ds.get_statements(self.uri, rel_uri)
@@ -311,7 +311,7 @@ class Entity(abc.ABC):
         # (note that R22 itself is also a functional relation: only one of {True, False} is meaningful, same holds for
         # R32["is functional for each language"]). R32 also must be handled separately
 
-        relation = ds.relations[rel_uri]
+        relation: Relation = ds.relations[rel_uri]
         hardcoded_functional_relations = [
             aux.make_uri(settings.BUILTINS_URI, "R22"),
             aux.make_uri(settings.BUILTINS_URI, "R32"),
@@ -330,12 +330,10 @@ class Entity(abc.ABC):
 
         #  is a similar situation
         # if rel_key == "R32" this means that self 'is functional for each language'
-
         elif rel_uri in hardcoded_functional_fnc4elang_relations or relation.R32:
-            # TODO: handle multilingual situations more flexible
-
-            # todo: specify currently relevant language here (influences the return value); for now: using default
-            language = settings.DEFAULT_DATA_LANGUAGE
+            if lang_indicator is not None and lang_indicator not in settings.SUPPORTED_LANGUAGES:
+                msg = f"unsupported language ({lang_indicator}) while accessing {self}.{relation.short_key}."
+                raise aux.MultilingualityError(msg)
 
             filtered_res_explicit_lang = []
             filtered_res_without_lang = []
@@ -345,7 +343,7 @@ class Entity(abc.ABC):
                 lng = getattr(elt, "language", None)
                 if lng is None:
                     filtered_res_without_lang.append(elt)
-                elif lng == language:
+                elif lng == lang_indicator:
                     filtered_res_explicit_lang.append(elt)
 
             if filtered_res_explicit_lang:
@@ -360,10 +358,10 @@ class Entity(abc.ABC):
             else:
                 msg = (
                     f"unexpectedly found more then one object for relation {relation.short_key} "
-                    f"and language {language}."
+                    f"and language {lang_indicator}."
                 )
 
-                raise ValueError(msg)
+                raise aux.MultilingualityError(msg)
 
         else:
             return res
@@ -1412,12 +1410,21 @@ def create_item(key_str: str = "", **kwargs) -> Item:
         if new_key in ("R1", "R2"):
             value_list = lang_related_kwargs[new_key]
             if len(value_list) == 0:
-                msg = (
-                    f"while creating {item_key}: the first {new_key}-argument must be with "
-                    "lang_indicator `None` or explicitly using the default language. "
-                    "Got {processed_key.lang_indicator} instead."
-                )
-                if processed_key.lang_indicator not in (None, settings.DEFAULT_DATA_LANGUAGE):
+                valid_languages = (None, settings.DEFAULT_DATA_LANGUAGE)
+                if processed_key.lang_indicator not in valid_languages:
+                    msg = (
+                        f"while creating {item_key}: the first {new_key}-argument must be with "
+                        "lang_indicator `None` or explicitly using the default language. "
+                        f"Got {processed_key.lang_indicator} instead."
+                    )
+                    raise aux.MultilingualityError(msg)
+                value_lang = getattr(value, "language", None)
+                if value_lang not in valid_languages:
+                    msg = (
+                        f"while creating {item_key}: the first {new_key}-argument must be "
+                        f"a flat string or a literal with the default language ({settings.DEFAULT_DATA_LANGUAGE})"
+                        f"Got {value_lang} instead."
+                    )
                     raise aux.MultilingualityError(msg)
 
                 value_list.append((processed_key.lang_indicator, value))
@@ -1439,6 +1446,19 @@ def create_item(key_str: str = "", **kwargs) -> Item:
     for rel_key, value_list in lang_related_kwargs.items():
         # omit the first argument as it was already passed to the Item-constructor
         for lang_indicator, value in value_list[1:]:
+            if isinstance(value, Literal):
+                if value.language != lang_indicator:
+                    msg = (
+                         f"while creating {item_key} ({new_key}-argument) got inconsistent language indicators: "
+                         f"in argument_name: {lang_indicator} but in value (Literal-instance) {value.language}"
+                    )
+                    raise aux.MultilingualityError(msg)
+            elif isinstance(value, str):
+                value = Literal(value, lang=lang_indicator)
+            else:
+                msg = f"unexpected type ({type(value)}) while creating {item_key} ({new_key}-argument)"
+                raise TypeError(msg)
+
             itm.set_relation(rel_key, value)
 
     run_hooks(itm, phase="post-create")

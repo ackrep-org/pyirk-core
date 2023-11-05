@@ -2561,8 +2561,16 @@ R76 = create_builtin_relation(
     R22__is_functional=True,
 )
 
+I50 = create_builtin_item(
+    key_str="I50",
+    R1__has_label="stub",
+    R2__has_description="instances of this class represent incompletly modelled items (like wikipedia stub-articles)",
+    R3__is_subclass_of=I2["Metaclass"],
+    R18__has_usage_hint="This class can be used to preliminarily introduce items and refine them later",
+)
 
-# next keys: I50, R76
+
+# next keys: I51, R76
 
 # ######################################################################################################################
 # condition functions (to be used in the premise scope of a rule)

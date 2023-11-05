@@ -164,8 +164,19 @@ class Test_00_Core(HouskeeperMixin, unittest.TestCase):
         self.assertEqual(rel.uri, f"{TEST_BASE_URI}#{rel.short_key}")
 
     def test_load_multiple_modules(self):
-        _ = p.erkloader.load_mod_from_path(pjoin(TEST_DATA_DIR1, "tmod1.py"), prefix="tm1")
-        # TODO: to be continued where tmod1 itself loads tmod2...
+        mod1 = p.erkloader.load_mod_from_path(pjoin(TEST_DATA_DIR1, "tmod1.py"), prefix="tm1")
+
+        # test recursive module loading
+        self.assertEqual(mod1.foo_mod.__URI__, "erk:/pyerk/testmodule3")
+
+        # test validity of R2000 statements (created in tmod1 with a relation from tmod3)
+        stm1, stm2 = mod1.I1000.get_relations("bar__R2000")
+        self.assertEqual(stm1.object, 42)
+        self.assertEqual(stm2.object, 23)
+
+        # test uri_contexts of R2000 statements
+        self.assertTrue(stm1.uri.startswith(mod1.__URI__))
+        self.assertTrue(stm2.uri.startswith(mod1.__URI__))
 
 
 # noinspection PyPep8Naming

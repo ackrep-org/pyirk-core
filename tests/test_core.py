@@ -1436,6 +1436,11 @@ class Test_03_Multilinguality(HouskeeperMixin, unittest.TestCase):
 
             I900.set_relation(p.R1["has label"], "test item with english label" @ p.en)
 
+            I1001 = p.create_item(
+                R1__has_label="english label",
+                R1__has_label__de="deutsches label" @ p.de,
+            )
+
         teststring1 = "this is english text" @ p.en
         teststring2 = "das ist deutsch" @ p.de
 

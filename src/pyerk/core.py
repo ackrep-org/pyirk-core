@@ -1076,6 +1076,7 @@ class ProcessedStmtKey:
     label: str = None
     prefix: str = None
     uri: str = None
+    lang_indicator: str = None
 
     original_key_str: str = None
 
@@ -1177,6 +1178,16 @@ def process_key_str(
     if resolve_prefix:
         _resolve_prefix(res, passed_mod_uri=mod_uri)
 
+    if res.label:
+        match_list = langcode_end_pattern.findall(res.label)
+        if match_list:
+            assert len(match_list) == 1
+            match, = match_list
+            assert match.startswith("__")
+            res.label = langcode_end_pattern.sub("", res.label)
+
+            res.lang_indicator = match[2:]
+
     if check:
         aux.ensure_valid_short_key(res.short_key)
         check_processed_key_label(res)
@@ -1261,6 +1272,8 @@ def _resolve_prefix(pr_key: ProcessedStmtKey, passed_mod_uri: str = None) -> Non
 
     pr_key.uri = aux.make_uri(mod_uri, pr_key.short_key)
 
+# regex pattern which represents a language indicator
+langcode_end_pattern = re.compile("__[a-z]{2}$")
 
 def check_processed_key_label(pkey: ProcessedStmtKey) -> None:
     """
@@ -1283,7 +1296,10 @@ def check_processed_key_label(pkey: ProcessedStmtKey) -> None:
     label_compare_str1 = entity.R1
     label_compare_str2 = ilk2nlk(entity.R1)
 
-    if pkey.label.lower() not in (label_compare_str1.lower(), label_compare_str2.lower()):
+    label = pkey.label.lower()
+
+    error_condition = label not in (label_compare_str1.lower(), label_compare_str2.lower())
+    if error_condition:
         msg = (
             f"check of label consistency failed for key {pkey.original_key_str}. Expected:  one of "
             f'("{label_compare_str1}", "{label_compare_str2}") but got  "{pkey.label}". '

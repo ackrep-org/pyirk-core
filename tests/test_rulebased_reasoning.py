@@ -108,7 +108,7 @@ class Test_01_rulebased_reasoning(HouskeeperMixin, unittest.TestCase):
         zp = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA02, prefix="zp")
 
         # test base data
-        self.assertEqual(zp.zb.I4037["Englishman"].zb__R8098__has_house_color.R1, "red")
+        self.assertEqual(zp.zb.I4037["Englishman"].zb__R8098__has_house_color.R1.value, "red")
 
         # test hints
         self.assertEqual(zp.zb.I9848["Norwegian"].zb__R3606__lives_next_to[0], zp.person12)

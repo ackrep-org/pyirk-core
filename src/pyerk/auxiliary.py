@@ -154,6 +154,10 @@ class InvalidGeneralKeyError(PyERKError):
     pass
 
 
+class InconsistentLabelError(PyERKError):
+    pass
+
+
 # used for syntactically correct keys which could not be found
 class ShortKeyNotFoundError(PyERKError):
     pass

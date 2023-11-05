@@ -53,7 +53,7 @@ class Test_01_Script(HouskeeperMixin, unittest.TestCase):
         itm2 = itm3.R4__is_instance_of
         itm1 = itm2.R3__is_subclass_of
 
-        self.assertEqual(itm1.R1__has_label, "some new item")
+        self.assertEqual(itm1.R1__has_label.value, "some new item")
 
 
     @unittest.skipIf(os.environ.get("CI"), "Skipping visualization test on CI to prevent graphviz-dependency")

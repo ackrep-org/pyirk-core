@@ -804,7 +804,7 @@ class DataStore:
         Useful during interactive debugging. Not useful for production!
         """
         for uri, itm in self.items.items():
-            if itm.R1 == label:
+            if itm.R1.value == label:
                 return itm
 
     def get_entity_by_key_str(self, key_str, mod_uri=None) -> Entity:
@@ -937,15 +937,16 @@ class DataStore:
                 )
                 raise aux.FunctionalRelationError(msg)
             elif relation.R32 and not exception_flag:
+                if not isinstance(stm.object, Literal):
+                    stm.object = Literal(stm.object, settings.DEFAULT_DATA_LANGUAGE)
                 lang_list = [get_language_of_str_literal(s.object) for s in stm_list]
-                new_lang = get_language_of_str_literal(stm.object)
-                if new_lang in lang_list:
+                if stm.object.language in lang_list:
                     msg = (
                         f"for subject {subj_uri} ({subj_label}) there already exists statements for relation "
                         f"{stm.predicate} with the object languages {lang_list}. This relation is functional for "
-                        f"each language (R32). Thus another statement with language `{new_lang}` is not allowed."
+                        f"each language (R32). Thus another statement with language `{stm.object.language}` is not allowed."
                     )
-                    raise aux.MultilingualityError(msg)
+                    raise aux.FunctionalRelationError(msg)
             stm_list.append(stm)
 
         else:
@@ -986,8 +987,16 @@ class DataStore:
 
                 label = description.replace("_", " ")
 
-                msg = f"Entity label '{entity.R1}' for entity '{e}' and given label '{label}' do not match!"
-                assert entity.R1 == label, msg
+                # TODO!!: remove this once relation labels are literals (not strings)
+                if isinstance(entity.R1, Literal):
+                    r1 = entity.R1.value
+                else:
+                    assert isinstance(entity.R1, str)
+                    r1 = entity.R1
+
+                if r1 != label:
+                    msg = f"Entity label '{r1}' for entity '{e}' and given label '{label}' do not match!"
+                    raise aux.InconsistentLabelError(msg)
 
             new_query = re.sub(r"__[\w]+(?:–_instance)?", "", query)
         else:
@@ -2386,7 +2395,7 @@ def end_mod():
     _uri_stack.pop()
     assert len(_uri_stack) == 0
 
-
+# TODO: obsolete?
 def get_language_of_str_literal(obj: Union[str, Literal]):
     if isinstance(obj, Literal):
         return obj.language
@@ -2408,7 +2417,9 @@ class LangaguageCode:
 
         :return:        Literal instance with `.lang` attribute set
         """
-        assert isinstance(arg, str)
+
+        # note that Literal is a subclass of str
+        assert not isinstance(arg, Literal) and isinstance(arg, str)
 
         res = Literal(arg, lang=self.langtag)
 

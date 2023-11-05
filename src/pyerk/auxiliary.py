@@ -172,6 +172,10 @@ class SemanticRuleError(PyERKError):
     pass
 
 
+class ExcplicitlyTriggeredTestException(PyERKError):
+    pass
+
+
 class InconsistentEdgeRelations(SemanticRuleError):
     pass
 

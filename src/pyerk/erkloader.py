@@ -156,6 +156,9 @@ def _load_mod_from_path(
 
             # remove all added entities, but tolerate errors (due to incomplete loading)
             pyerk.unload_mod(failed_mod_uri, strict=False)
+
+        # ensure that the current module is not lurking in sys.modules
+        sys.modules.pop(modname, None)
         raise
 
     if len(pyerk.core._uri_stack) > old_len:

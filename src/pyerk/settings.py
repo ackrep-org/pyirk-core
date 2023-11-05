@@ -14,7 +14,7 @@ logger = logging.getLogger("pyerk")
 
 # for now we only support a subset of languages with wich the authors are familiar
 # if you miss a language, please consider contributing
-SUPPORTED_LANGUAGES = ["en", "de"]
+SUPPORTED_LANGUAGES = ["en", "de", "fr", "it", "es"]
 # https://en.wikipedia.org/wiki/IETF_language_tag
 
 

@@ -4,6 +4,7 @@ Command line interface for erk package
 import os
 import argparse
 from pathlib import Path
+import re
 
 try:
     # this will be part of standard library for python >= 3.11
@@ -319,28 +320,28 @@ def insert_keys_for_placeholders(modpath):
     shutil.copy(modpath, backup_path)
     print(f"Backup: {backup_path}")
 
+    start_tag = r"#\s*?<new_entities>"
+    end_tag = r"#\s*?</new_entities>"
+
     placeholder = "_newitemkey_ = "
     key_count = old_txt.count(f"\n{placeholder}")
 
-    #
-    # write the module without the placeholder lines
-    old_lines = old_txt.split("\n")
-    tmp_lines = []
-    for line in old_lines:
-        if line.startswith(placeholder):
-            continue
-        else:
-            tmp_lines.append(line)
+    pattern = f"{start_tag}.*?{end_tag}"
+    tmp_txt = re.sub(pattern=pattern, repl="", string=old_txt, flags=re.DOTALL)
+    assert start_tag not in tmp_txt
+    assert end_tag not in tmp_txt
+    assert placeholder not in tmp_txt
 
-    tmp_modpath = os.path.join(tempfile.mkdtemp(prefix="pyerk_tmp_"), fname)
+    tmp_modpath = tempfile.mktemp(prefix=f"{fname[:-3]}_tmp_", suffix=".py", dir=".")
 
     with open(tmp_modpath, "w") as fp:
-        fp.write("\n".join(tmp_lines))
+        fp.write(tmp_txt)
 
-    #
     # load this temporary module
     loaded_mod = process_mod(path=tmp_modpath, prefix="mod", relative_to_workdir=True)
     item_keys = [core.generate_new_key("I", mod_uri=loaded_mod.__URI__) for i in range(key_count)]
+
+    old_lines = old_txt.split("\n")
 
     # replace the respective lines in the original module
     new_lines = []
@@ -359,6 +360,39 @@ def insert_keys_for_placeholders(modpath):
             fp.write("\n")
 
     print(f"File (over)written {modpath}")
+    with open(modpath, "w") as fp:
+        fp.write(txt)
+
+    core.unload_mod(loaded_mod.__URI__)
+    os.unlink(tmp_modpath)
+
+    replace_dummy_enties_by_label(modpath)
+
+
+def replace_dummy_enties_by_label(modpath):
+    """
+    load the module, additionally load its source, replace entities like I000["some label"] with
+    real entities like I7654["some label"].
+    """
+
+    loaded_mod = process_mod(path=modpath, prefix="mod", relative_to_workdir=True)
+    pattern = re.compile("""(p.I000\[['"](.*?)['"]\])""")
+
+    with open(modpath) as fp:
+        txt = fp.read()
+
+    matches = list(pattern.finditer(txt))
+    for match in matches:
+        full_expr = match.group(1)  # the whole string like `p.I000["foo bar"]`
+        label = match.group(2)  # only the label string "foo bar"
+        entity = core.ds.get_item_by_label(label)
+        if entity is None:
+            print(f"could not find entity for label: {label}")
+            continue
+        new_expr = f'{entity.short_key}["{label}"]'
+        txt = txt.replace(full_expr, new_expr)
+
+
     with open(modpath, "w") as fp:
         fp.write(txt)
 

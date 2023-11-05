@@ -1380,9 +1380,8 @@ def create_expression(latex_src: str, r1: str = None, r2: str = None) -> Item:
     return expression
 
 
-# todo: docs: currently ordinary strings can be used where such an Item is expected
-# they are interpreted as in the default language
-# todo: this entity is obsolete, we use a construction with RDF-Literals instead
+# TODO: this item might be obsolete, we use a construction with RDF-Literals instead
+# however currently it is uses for R11__has_range_of_result in the ocse (test data)
 I19 = create_builtin_item(
     key_str="I19",
     R1__has_label="multilingual string literal",
@@ -1683,18 +1682,6 @@ def new_mathematical_relation(lhs: Item, rsgn: str, rhs: Item, doc=None, scope: 
     re = lhs.set_relation(R31["is in mathematical relation with"], rhs, scope=scope, qualifiers=[proxy_item(mr)])
 
     return mr
-
-
-# annoying: pycharm does not recognize that "str"@some_LangaguageCode_obj is valid because str does not
-# implement __matmul__
-# noinspection PyUnresolvedReferences
-I900 = create_builtin_item(
-    key_str="I900",
-    R1__has_label="test item mit label auf deutsch" @ de,
-    R2__has_description="used for testing during development",
-    R4__is_instance_of=I2["Metaclass"],
-    R18__has_usage_hint="This item serves only for unittesting labels in different languages",
-)
 
 
 # reminder that R32["is functional for each language"] already is defined
@@ -2561,8 +2548,41 @@ R76 = create_builtin_relation(
     R22__is_functional=True,
 )
 
+I50 = create_builtin_item(
+    key_str="I50",
+    R1__has_label="stub",
+    R2__has_description="instances of this class represent incompletly modelled items (like wikipedia stub-articles)",
+    R3__is_subclass_of=I2["Metaclass"],
+    R18__has_usage_hint="This class can be used to preliminarily introduce items and refine them later",
+)
 
-# next keys: I50, R76
+
+# next keys: I51, R76
+
+
+# ######################################################################################################################
+# auxilliary entities
+# ######################################################################################################################
+
+
+I000 = create_builtin_item(
+    key_str="I000",
+    R1__has_label="dummy item",
+    R2__has_description="used during development as placeholder for items which will be defined later",
+    R4__is_instance_of=I2["Metaclass"],  # this means: this Item is an ordinary class
+)
+
+R000 = create_builtin_relation(
+    key_str="R000",
+    R1__has_label="dummy relation",
+    R2__has_description="used during development as placeholder for relations which will be defined later",
+)
+
+# this allows to use I000("with any label") witout triggering an exception in I000.idoc
+I000._ignore_mismatching_adhoc_label = True
+# ... same for R000
+R000._ignore_mismatching_adhoc_label = True
+
 
 # ######################################################################################################################
 # condition functions (to be used in the premise scope of a rule)
@@ -2692,74 +2712,6 @@ def raise_contradiction(self, msg_template, *args):
 def raise_reasoning_goal_reached(self, msg_template, *args):
     msg = msg_template.format(*args)
     raise core.aux.ReasoningGoalReached(msg)
-
-
-# ######################################################################################################################
-# Testing and debugging entities
-
-# I041 = create_builtin_item(
-#     key_str="I041",
-#     R1__has_label="subproperty rule 1",
-#     R2__has_description=(
-#         # "specifies the 'transitivity' of I11_mathematical_property-instances via R17_issubproperty_of"
-#         "specifies the 'transitivity' of R17_issubproperty_of"
-#     ),
-#     R4__is_instance_of=I41["semantic rule"],
-# )
-#
-#
-# with I041["subproperty rule 1"].scope("setting") as cm:
-#
-#     cm.new_var(P1=instance_of(I11["mathematical property"]))
-#     cm.new_var(P2=instance_of(I11["mathematical property"]))
-#     cm.new_var(P3=instance_of(I11["mathematical property"]))
-# #     # A = cm.new_var(sys=instance_of(I1["general item"]))
-# #
-# with I041["subproperty rule 1"].scope("premise") as cm:
-#     cm.new_rel(cm.P2, R17["is subproperty of"], cm.P1)
-#     cm.new_rel(cm.P3, R17["is subproperty of"], cm.P2)
-#     # todo: state that all variables are different from each other
-#
-# with I041["subproperty rule 1"].scope("assertion") as cm:
-#     cm.new_rel(cm.P3, R17["is subproperty of"], cm.P1)
-
-# noinspection PyUnresolvedReferences
-I900.set_relation(R1["has label"], "test item with english label" @ en)
-
-
-I000 = create_builtin_item(
-    key_str="I000",
-    R1__has_label="dummy item",
-    R2__has_description="used during development as placeholder for items which will be defined later",
-    R4__is_instance_of=I2["Metaclass"],  # this means: this Item is an ordinary class
-)
-
-R000 = create_builtin_relation(
-    key_str="R000",
-    R1__has_label="dummy relation",
-    R2__has_description="used during development as placeholder for relations which will be defined later",
-)
-
-# this allows to use I000("with any label") witout triggering an exception in I000.idoc
-I000._ignore_mismatching_adhoc_label = True
-# ... same for R000
-R000._ignore_mismatching_adhoc_label = True
-
-
-# TODO: evaluate the necessity of this class (especially in face of IntegerRangeElement (ocse.ma))
-class Sequence:
-    r"""
-    Models a sequence like y, `\dot y, ..., y^(k)`
-    """
-
-    def __init__(self, base, prop, link_op, start, stop):
-        # Sequence item with the respective relations and conveniently create all necessary auxiliary items
-        # runnig index of `prop` and running index of the sequence object have to be connected
-        self.base = base
-        self.prop = prop
-        self.link_op = link_op
-        self.start = start
-        self.stop = stop
 
 
 # this is the inverse operation to `core.start_mod(__URI__)` (see above)

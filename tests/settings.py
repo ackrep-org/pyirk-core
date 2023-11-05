@@ -41,7 +41,7 @@ TEST_MOD_NAME = "control_theory1"
 
 # useful to get the currently latest sha strings:
 # git log --pretty=oneline | head
-TEST_DATA_REPO_COMMIT_SHA = "0df1785dedab592909a9deed8c8fed7ddebb7748"  # (2023-11-03 21:50:41)
+TEST_DATA_REPO_COMMIT_SHA = "8898efd919cfefa959eca59e19dd3888cb1ea9de"  # (2023-11-05 15:29:28)
 
 # TODO: make this more robust (e.g. search for config file or environment variable)
 # TODO: put link to docs here (directory layout)
@@ -74,6 +74,7 @@ class HouskeeperMixin:
         os.environ["UNITTEST_METHOD_NAME"] = method_repr
         self.register_this_module()
         p.ds.initialize_hooks()
+        self.files_to_delete = []
 
     def tearDown(self) -> None:
         # possibility to keep the mods loaded on error for easier interactive debugging
@@ -82,6 +83,8 @@ class HouskeeperMixin:
             self.unload_all_mods()
         self.print_methodnames()
         os.environ.pop("UNITTEST_METHOD_NAME", None)
+        for path in self.files_to_delete:
+            os.unlink(path)
 
     @staticmethod
     def unload_all_mods():

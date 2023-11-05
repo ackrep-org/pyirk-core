@@ -386,6 +386,9 @@ def replace_dummy_enties_by_label(modpath):
         full_expr = match.group(1)  # the whole string like `p.I000["foo bar"]`
         label = match.group(2)  # only the label string "foo bar"
         entity = core.ds.get_item_by_label(label)
+        if entity is None:
+            print(f"could not find entity for label: {label}")
+            continue
         new_expr = f'{entity.short_key}["{label}"]'
         txt = txt.replace(full_expr, new_expr)
 

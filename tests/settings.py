@@ -74,6 +74,7 @@ class HouskeeperMixin:
         os.environ["UNITTEST_METHOD_NAME"] = method_repr
         self.register_this_module()
         p.ds.initialize_hooks()
+        self.files_to_delete = []
 
     def tearDown(self) -> None:
         # possibility to keep the mods loaded on error for easier interactive debugging
@@ -82,6 +83,8 @@ class HouskeeperMixin:
             self.unload_all_mods()
         self.print_methodnames()
         os.environ.pop("UNITTEST_METHOD_NAME", None)
+        for path in self.files_to_delete:
+            os.unlink(path)
 
     @staticmethod
     def unload_all_mods():

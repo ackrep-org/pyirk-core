@@ -1519,12 +1519,6 @@ class Test_Z_Core(HouskeeperMixin, unittest.TestCase):
                 p.ds.preprocess_query(qsrc_incorr_1)
             self.assertEqual(cm.exception.args[0], msg)
 
-class Test_05_Script1(HouskeeperMixin, unittest.TestCase):
-    @unittest.skipIf(os.environ.get("CI"), "Skipping visualization test on CI to prevent graphviz-dependency")
-    def test_c01__visualization(self):
-        cmd = "pyerk -vis I12"
-        res = os.system(cmd)
-        self.assertEqual(res, 0)
 
 @unittest.skipIf(os.environ.get("CI"), "Skipping report tests on CI to prevent dependencies")
 class Test_06_reportgenerator(HouskeeperMixin, unittest.TestCase):

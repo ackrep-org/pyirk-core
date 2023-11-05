@@ -406,7 +406,7 @@ class Test_01_rulebased_reasoning(HouskeeperMixin, unittest.TestCase):
                 cm.uses_external_entities(I702)
 
             with I702.scope("premise") as cm:
-                cm.new_rel(cm.rel1, p.R1["has label"], "another relation", overwrite=True)
+                cm.new_rel(cm.rel1, p.R1["has label"], "another relation"@p.df, overwrite=True)
 
             with I702.scope("assertion") as cm:
                 cm.new_rel(cm.rel1, p.R54["is matched by rule"], I702)

@@ -257,7 +257,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
 
     # noinspection PyUnresolvedReferences
     # (above noinspection is necessary because of the @-operator which is undecleared for strings)
-    def test_b01__core1_basics(self):
+    def test_b00__core1_basics(self):
         mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
         self.assertEqual(mod1.I3749.R1.value, "Cayley-Hamilton theorem")
 
@@ -268,7 +268,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         mod_uri = p.ds.uri_prefix_mapping.b["ct"]
         p.unload_mod(mod_uri)
 
-    def test_b02_builtins1(self):
+    def test_b01_builtins1(self):
         """
         Test the mechanism to endow the Entity class with custom methods (on class and on instance level)
         :return:
@@ -313,6 +313,17 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
 
         # self.assertTrue(len(conf) != 0)
         self.assertTrue(len(conf) >= 0)
+
+    def test_b02_builtins2(self):
+
+        rel = p.R65
+        self.assertIsInstance(rel.R1, p.Literal)
+
+        # do not allow Literal here
+        self.assertEqual(type(rel.R1.value), str)
+
+        k = "R65__allows_alternative_functional_value"
+        pk = p.process_key_str(k)
 
     def test_c01__ct_loads_math(self):
         """
@@ -1420,6 +1431,8 @@ class Test_03_Multilinguality(HouskeeperMixin, unittest.TestCase):
         # (it would need some further work to make it independent of the concrete default lang)
         self.assertEqual(p.settings.DEFAULT_DATA_LANGUAGE, "en")
 
+        self.assertTrue(isinstance(p.R2.R1, str))
+
         with p.uri_context(uri=TEST_BASE_URI):
             itm = p.create_item(
                 key_str=p.pop_uri_based_key("I"),
@@ -1478,7 +1491,6 @@ class Test_03_Multilinguality(HouskeeperMixin, unittest.TestCase):
             tmp5 = itm["wrong label" @ p.en]  # noqa
 
         # change the default language
-
         p.settings.DEFAULT_DATA_LANGUAGE = "de"
 
         new_default_label = itm.R1

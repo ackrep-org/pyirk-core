@@ -1305,6 +1305,14 @@ def check_processed_key_label(pkey: ProcessedStmtKey) -> None:
     except KeyError:
         # entity does not exist -> no label to compare with
         return
+
+    if entity.R1 is None:
+        # no label was set for the default language -> nothing to compare
+        return
+
+    # note: this includes Literal
+    assert isinstance(entity.R1, str)
+
     label_compare_str1 = entity.R1
     label_compare_str2 = ilk2nlk(entity.R1)
 
@@ -1387,7 +1395,7 @@ def get_active_mod_uri(strict: bool = True) -> Union[str, None]:
     return res
 
 
-def process_kwargs_for_entity_creation(item_key: str, kwargs: dict) ->(dict, dict):
+def process_kwargs_for_entity_creation(entity_key: str, kwargs: dict) ->(dict, dict):
     """
     :return:    return new_kwargs, lang_related_kwargs
     """
@@ -1401,7 +1409,7 @@ def process_kwargs_for_entity_creation(item_key: str, kwargs: dict) ->(dict, dic
         processed_key = process_key_str(dict_key)
 
         if processed_key.etype != EType.RELATION:
-            msg = f"unexpected key: {dict_key} during creation of item {item_key}."
+            msg = f"unexpected key: {dict_key} during creation of item {entity_key}."
             raise ValueError(msg)
 
         if processed_key.prefix:
@@ -1417,7 +1425,7 @@ def process_kwargs_for_entity_creation(item_key: str, kwargs: dict) ->(dict, dic
                 valid_languages = (None, settings.DEFAULT_DATA_LANGUAGE)
                 if processed_key.lang_indicator not in valid_languages:
                     msg = (
-                        f"while creating {item_key}: the first {new_key}-argument must be with "
+                        f"while creating {entity_key}: the first {new_key}-argument must be with "
                         "lang_indicator `None` or explicitly using the default language. "
                         f"Got {processed_key.lang_indicator} instead."
                     )
@@ -1425,7 +1433,7 @@ def process_kwargs_for_entity_creation(item_key: str, kwargs: dict) ->(dict, dic
                 value_lang = getattr(value, "language", None)
                 if value_lang not in valid_languages:
                     msg = (
-                        f"while creating {item_key}: the first {new_key}-argument must be "
+                        f"while creating {entity_key}: the first {new_key}-argument must be "
                         f"a flat string or a literal with the default language ({settings.DEFAULT_DATA_LANGUAGE})"
                         f"Got {value_lang} instead."
                     )
@@ -1433,7 +1441,7 @@ def process_kwargs_for_entity_creation(item_key: str, kwargs: dict) ->(dict, dic
 
                 if not isinstance(value, Literal):
                     if not isinstance(value, str):
-                        item_uri = aux.make_uri(mod_uri, item_key)
+                        item_uri = aux.make_uri(mod_uri, entity_key)
                         msg = (
                             f"While creating {item_uri}: the {new_key}-argument must be a string. "
                             f"Got {type(value)} instead."
@@ -1450,6 +1458,27 @@ def process_kwargs_for_entity_creation(item_key: str, kwargs: dict) ->(dict, dic
         new_kwargs[new_key] = value
 
     return new_kwargs, lang_related_kwargs
+
+
+def process_lang_related_kwargs_for_entity_creation(itm: Entity, item_key: str, lang_related_kwargs: dict) -> None:
+    for rel_key, value_list in lang_related_kwargs.items():
+        # omit the first argument as it was already passed to the Item-constructor
+        for lang_indicator, value in value_list[1:]:
+            if isinstance(value, Literal):
+                if value.language != lang_indicator:
+                    msg = (
+                         f"while creating {item_key} ({rel_key}-argument) got inconsistent language indicators: "
+                         f"in argument_name: {lang_indicator} but in value (Literal-instance) {value.language}"
+                    )
+                    raise aux.MultilingualityError(msg)
+            elif isinstance(value, str):
+                value = Literal(value, lang=lang_indicator)
+            else:
+                msg = f"unexpected type ({type(value)}) while creating {item_key} ({rel_key}-argument)"
+                raise TypeError(msg)
+
+            itm.set_relation(rel_key, value)
+
 
 
 def create_item(key_str: str = "", **kwargs) -> Item:
@@ -1477,23 +1506,7 @@ def create_item(key_str: str = "", **kwargs) -> Item:
     # acces the defaultdict(list)
     ds.entities_created_in_mod[mod_uri].append(itm.uri)
 
-    for rel_key, value_list in lang_related_kwargs.items():
-        # omit the first argument as it was already passed to the Item-constructor
-        for lang_indicator, value in value_list[1:]:
-            if isinstance(value, Literal):
-                if value.language != lang_indicator:
-                    msg = (
-                         f"while creating {item_key} ({rel_key}-argument) got inconsistent language indicators: "
-                         f"in argument_name: {lang_indicator} but in value (Literal-instance) {value.language}"
-                    )
-                    raise aux.MultilingualityError(msg)
-            elif isinstance(value, str):
-                value = Literal(value, lang=lang_indicator)
-            else:
-                msg = f"unexpected type ({type(value)}) while creating {item_key} ({rel_key}-argument)"
-                raise TypeError(msg)
-
-            itm.set_relation(rel_key, value)
+    process_lang_related_kwargs_for_entity_creation(itm, item_key, lang_related_kwargs)
 
     run_hooks(itm, phase="post-create")
 
@@ -1814,7 +1827,7 @@ class Statement:
 
         if key:
             try:
-                uri = process_key_str(key).uri
+                uri = process_key_str(key, check=False).uri
             except aux.ShortKeyNotFoundError:
                 if tolerate_key_error:
                     # this allows to ask for qualifiers before they are created
@@ -1935,15 +1948,8 @@ def create_relation(key_str: str = "", **kwargs) -> Relation:
         # "R22": None,  # R22__is_functional
     }
 
-    new_kwargs = {**default_relations}
-    for key, value in kwargs.items():
-        processed_key = process_key_str(key)
+    new_kwargs, lang_related_kwargs = process_kwargs_for_entity_creation(rel_key, kwargs)
 
-        if processed_key.etype != EType.RELATION:
-            msg = f"unexpected key: {key} during creation of item {rel_key}."
-            raise ValueError(msg)
-
-        new_kwargs[processed_key.short_key] = value
 
     rel = Relation(mod_uri, rel_key, **new_kwargs)
     if rel.uri in ds.relations:

@@ -2365,6 +2365,9 @@ class LangaguageCode:
 
 en = LangaguageCode("en")
 de = LangaguageCode("de")
+fr = LangaguageCode("fr")
+it = LangaguageCode("it")
+es = LangaguageCode("es")
 
 
 class RuleResult:

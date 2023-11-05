@@ -314,33 +314,34 @@ def insert_keys_for_placeholders(modpath):
     fname = os.path.split(modpath)[-1]
     import tempfile
     import shutil
+    import re
     backup_path = os.path.join(tempfile.mkdtemp(), fname)
 
     shutil.copy(modpath, backup_path)
     print(f"Backup: {backup_path}")
 
+    start_tag = r"#\s*?<new_entities>"
+    end_tag = r"#\s*?</new_entities>"
+
     placeholder = "_newitemkey_ = "
     key_count = old_txt.count(f"\n{placeholder}")
 
-    #
-    # write the module without the placeholder lines
-    old_lines = old_txt.split("\n")
-    tmp_lines = []
-    for line in old_lines:
-        if line.startswith(placeholder):
-            continue
-        else:
-            tmp_lines.append(line)
+    pattern = f"{start_tag}.*?{end_tag}"
+    tmp_txt = re.sub(pattern=pattern, repl="", string=old_txt, flags=re.DOTALL)
+    assert start_tag not in tmp_txt
+    assert end_tag not in tmp_txt
+    assert placeholder not in tmp_txt
 
-    tmp_modpath = os.path.join(tempfile.mkdtemp(prefix="pyerk_tmp_"), fname)
+    tmp_modpath = tempfile.mktemp(prefix=f"{fname[:-3]}_tmp_", suffix=".py", dir=".")
 
     with open(tmp_modpath, "w") as fp:
-        fp.write("\n".join(tmp_lines))
+        fp.write(tmp_txt)
 
-    #
     # load this temporary module
     loaded_mod = process_mod(path=tmp_modpath, prefix="mod", relative_to_workdir=True)
     item_keys = [core.generate_new_key("I", mod_uri=loaded_mod.__URI__) for i in range(key_count)]
+
+    old_lines = old_txt.split("\n")
 
     # replace the respective lines in the original module
     new_lines = []

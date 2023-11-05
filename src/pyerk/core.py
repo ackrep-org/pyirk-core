@@ -466,6 +466,11 @@ class Entity(abc.ABC):
                 return None
 
         if isinstance(relation, Relation):
+
+            # handle R32__is_functional_for_each_language
+            if relation.R32 and not isinstance(obj, Literal):
+                obj = Literal(obj, lang=settings.DEFAULT_DATA_LANGUAGE)
+
             if isinstance(obj, (Entity, *allowed_literal_types)) or obj in allowed_literal_types:
                 return self._set_relation(relation.uri, obj, scope=scope, qualifiers=qualifiers, proxyitem=proxyitem)
             else:
@@ -987,12 +992,8 @@ class DataStore:
 
                 label = description.replace("_", " ")
 
-                # TODO!!: remove this once relation labels are literals (not strings)
-                if isinstance(entity.R1, Literal):
-                    r1 = entity.R1.value
-                else:
-                    assert isinstance(entity.R1, str)
-                    r1 = entity.R1
+                assert isinstance(entity.R1, Literal)
+                r1 = entity.R1.value
 
                 if r1 != label:
                     msg = f"Entity label '{r1}' for entity '{e}' and given label '{label}' do not match!"
@@ -1460,25 +1461,24 @@ def process_kwargs_for_entity_creation(entity_key: str, kwargs: dict) ->(dict, d
     return new_kwargs, lang_related_kwargs
 
 
-def process_lang_related_kwargs_for_entity_creation(itm: Entity, item_key: str, lang_related_kwargs: dict) -> None:
+def process_lang_related_kwargs_for_entity_creation(entity: Entity, short_key: str, lang_related_kwargs: dict) -> None:
     for rel_key, value_list in lang_related_kwargs.items():
         # omit the first argument as it was already passed to the Item-constructor
         for lang_indicator, value in value_list[1:]:
             if isinstance(value, Literal):
                 if value.language != lang_indicator:
                     msg = (
-                         f"while creating {item_key} ({rel_key}-argument) got inconsistent language indicators: "
+                         f"while creating {short_key} ({rel_key}-argument) got inconsistent language indicators: "
                          f"in argument_name: {lang_indicator} but in value (Literal-instance) {value.language}"
                     )
                     raise aux.MultilingualityError(msg)
             elif isinstance(value, str):
                 value = Literal(value, lang=lang_indicator)
             else:
-                msg = f"unexpected type ({type(value)}) while creating {item_key} ({rel_key}-argument)"
+                msg = f"unexpected type ({type(value)}) while creating {short_key} ({rel_key}-argument)"
                 raise TypeError(msg)
 
-            itm.set_relation(rel_key, value)
-
+            entity.set_relation(rel_key, value)
 
 
 def create_item(key_str: str = "", **kwargs) -> Item:
@@ -1944,12 +1944,12 @@ def create_relation(key_str: str = "", **kwargs) -> Relation:
 
     mod_uri = get_active_mod_uri()
 
+    # TODO: obsolete?
     default_relations = {
         # "R22": None,  # R22__is_functional
     }
 
     new_kwargs, lang_related_kwargs = process_kwargs_for_entity_creation(rel_key, kwargs)
-
 
     rel = Relation(mod_uri, rel_key, **new_kwargs)
     if rel.uri in ds.relations:
@@ -1957,6 +1957,8 @@ def create_relation(key_str: str = "", **kwargs) -> Relation:
         raise aux.InvalidURIError(msg)
     ds.relations[rel.uri] = rel
     ds.entities_created_in_mod[mod_uri].append(rel.uri)
+
+    process_lang_related_kwargs_for_entity_creation(rel, rel_key, lang_related_kwargs)
 
     run_hooks(rel, phase="post-create")
 

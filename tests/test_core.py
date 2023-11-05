@@ -1422,7 +1422,7 @@ class Test_03_Multilinguality(HouskeeperMixin, unittest.TestCase):
         r1_de = I1001.R1__has_label__de
         r1_es = I1001.R1__has_label__es
 
-    def test_c02__multilingual_relations(self):
+    def test_b1__multilingual_relations1(self):
         """
         test how to create items with labels in multiple languages
         """
@@ -1542,6 +1542,17 @@ class Test_03_Multilinguality(HouskeeperMixin, unittest.TestCase):
 
             with self.assertRaises(p.aux.FunctionalRelationError):
                 itm1.set_relation(p.R1["has label"], "new label")
+
+    def test_b2__multilingual_relations2(self):
+        with p.uri_context(uri=TEST_BASE_URI, prefix="ut"):
+            R300 = p.create_relation(
+                R1__has_label="default rel-label",
+                R1__has_label__de="deutsches rel-label",
+            )
+
+            labels = R300.get_relations("R1", return_obj=True)
+            self.assertEqual(labels, ["default rel-label"@p.df, "deutsches rel-label"@p.de])
+
 
 class Test_Z_Core(HouskeeperMixin, unittest.TestCase):
     """
@@ -1719,12 +1730,7 @@ class Test_07_import_export(HouskeeperMixin, unittest.TestCase):
 
         self.assertGreater(len(g), 40)
 
-    # TODO!!: remove once relation labels are multilingual
-    @unittest.expectedFailure
     def test_b02__rdf_import(self):
-
-        # expectedFailure seems not to pardon errors (only false assertions)
-        self.assertTrue(False)
 
         fpath = pjoin(TEST_DATA_DIR1, "test_triples1.nt")
 
@@ -1735,6 +1741,7 @@ class Test_07_import_export(HouskeeperMixin, unittest.TestCase):
 
             c = p.io.import_stms_from_rdf_triples(fpath)
 
+            self.assertIsInstance(c.new_items[0].R1, p.Literal)
             c.new_items.sort(key=lambda itm: itm.R1__has_label.value)
 
             x0, x1, x2 = c.new_items

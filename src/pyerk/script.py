@@ -4,6 +4,7 @@ Command line interface for erk package
 import os
 import argparse
 from pathlib import Path
+import re
 
 try:
     # this will be part of standard library for python >= 3.11
@@ -314,7 +315,6 @@ def insert_keys_for_placeholders(modpath):
     fname = os.path.split(modpath)[-1]
     import tempfile
     import shutil
-    import re
     backup_path = os.path.join(tempfile.mkdtemp(), fname)
 
     shutil.copy(modpath, backup_path)
@@ -362,6 +362,19 @@ def insert_keys_for_placeholders(modpath):
     print(f"File (over)written {modpath}")
     with open(modpath, "w") as fp:
         fp.write(txt)
+
+    core.unload_mod(loaded_mod.__URI__)
+    os.unlink(tmp_modpath)
+
+
+def replace_dummy_enties_by_label(modpath):
+    """
+    load the module, additionally load its source, replace entities like I000["some label"] with
+    real entities like I7654["some label"].
+    """
+
+    loaded_mod = process_mod(path=modpath, prefix="mod", relative_to_workdir=True)
+    pattern = re.compile("""I000\[['"](.*?)['"]\]""")
 
 
 def interactive_session(loaded_mod, prefix):

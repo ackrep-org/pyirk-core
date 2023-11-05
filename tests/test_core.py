@@ -1460,7 +1460,8 @@ class Test_03_Multilinguality(HouskeeperMixin, unittest.TestCase):
                 R1__has_label__de="deutsches label" @ p.de,
             )
 
-            I900.set_relation(p.R1["has label"], "english label" @ p.en)
+            with self.assertRaises(p.aux.MultilingualityError):
+                I900.set_relation(p.R1["has label"], "english label" @ p.en)
 
         # R1 should return the default
         self.assertEqual(I900.R1, "default label")
@@ -1469,7 +1470,7 @@ class Test_03_Multilinguality(HouskeeperMixin, unittest.TestCase):
 
         p.settings.DEFAULT_DATA_LANGUAGE = "de"
         r1_de = I900.R1__has_label.value
-        self.assertEqual(r1_de, "test item mit label auf deutsch")
+        self.assertEqual(r1_de, "deutsches label")
 
         p.settings.DEFAULT_DATA_LANGUAGE = "en"
         r1_en = I900.R1__has_label.value

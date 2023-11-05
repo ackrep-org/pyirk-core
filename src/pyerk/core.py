@@ -940,7 +940,7 @@ class DataStore:
                         f"{stm.predicate} with the object languages {lang_list}. This relation is functional for "
                         f"each language (R32). Thus another statement with language `{new_lang}` is not allowed."
                     )
-                    raise aux.FunctionalRelationError(msg)
+                    raise aux.MultilingualityError(msg)
             stm_list.append(stm)
 
         else:
@@ -1427,6 +1427,8 @@ def create_item(key_str: str = "", **kwargs) -> Item:
                     )
                     raise aux.MultilingualityError(msg)
 
+                if not isinstance(value, Literal):
+                    value = Literal(value, lang=settings.DEFAULT_DATA_LANGUAGE)
                 value_list.append((processed_key.lang_indicator, value))
             else:
                 value_list.append((processed_key.lang_indicator, value))

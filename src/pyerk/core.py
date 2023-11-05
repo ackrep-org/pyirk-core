@@ -1393,6 +1393,7 @@ def create_item(key_str: str = "", **kwargs) -> Item:
     mod_uri = get_active_mod_uri()
 
     new_kwargs = {}
+    lang_related_kwargs = defaultdict(list)
     # prepare the kwargs to set relations
     for dict_key, value in kwargs.items():
         processed_key = process_key_str(dict_key)
@@ -1405,6 +1406,27 @@ def create_item(key_str: str = "", **kwargs) -> Item:
             new_key = f"{processed_key.prefix}__{processed_key.short_key}"
         else:
             new_key = processed_key.short_key
+
+        # handle those relations which might come with multiple languages
+        # (related to R32__is_functional_for_each_language)
+        if new_key in ("R1", "R2"):
+            value_list = lang_related_kwargs[new_key]
+            if len(value_list) == 0:
+                msg = (
+                    f"while creating {item_key}: the first {new_key}-argument must be with "
+                    "lang_indicator `None` or explicitly using the default language. "
+                    "Got {processed_key.lang_indicator} instead."
+                )
+                if processed_key.lang_indicator not in (None, settings.DEFAULT_DATA_LANGUAGE):
+                    raise aux.MultilingualityError(msg)
+
+                value_list.append((processed_key.lang_indicator, value))
+            else:
+                value_list.append((processed_key.lang_indicator, value))
+                # do not pass this key-value-pair to the Item-constructor
+                # it will be handled later
+                continue
+
         new_kwargs[new_key] = value
 
     itm = Item(base_uri=mod_uri, key_str=item_key, **new_kwargs)
@@ -1413,6 +1435,11 @@ def create_item(key_str: str = "", **kwargs) -> Item:
 
     # acces the defaultdict(list)
     ds.entities_created_in_mod[mod_uri].append(itm.uri)
+
+    for rel_key, value_list in lang_related_kwargs.items():
+        # omit the first argument as it was already passed to the Item-constructor
+        for lang_indicator, value in value_list[1:]:
+            itm.set_relation(rel_key, value)
 
     run_hooks(itm, phase="post-create")
 

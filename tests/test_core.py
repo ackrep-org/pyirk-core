@@ -1436,11 +1436,6 @@ class Test_03_Multilinguality(HouskeeperMixin, unittest.TestCase):
 
             I900.set_relation(p.R1["has label"], "test item with english label" @ p.en)
 
-            I1001 = p.create_item(
-                R1__has_label="english label",
-                R1__has_label__de="deutsches label" @ p.de,
-            )
-
         teststring1 = "this is english text" @ p.en
         teststring2 = "das ist deutsch" @ p.de
 
@@ -1465,6 +1460,22 @@ class Test_03_Multilinguality(HouskeeperMixin, unittest.TestCase):
         # ensure that R32["is functional for each language"] works as expected (return str/Literal but not [str] ...)
         self.assertNotIsInstance(p.I12.R2, list)
         self.assertNotIsInstance(I900.R2, list)
+
+        # test convenient notation
+        with p.uri_context(uri=TEST_BASE_URI):
+            I1001 = p.create_item(
+                R1__has_label="english label",
+                R1__has_label__de="deutsches label" @ p.de,
+            )
+            I1001.set_relation(p.R1["has label"], "nombre español" @ p.es)
+
+        labels = I1001.get_relations("R1", return_obj=True)
+
+        self.assertEqual(labels, ["english label", "deutsches label"@p.de, "nombre español"@p.es])
+
+        r1_default = I1001.R1__has_label
+        r1_de = I1001.R1__has_label__de
+        r1_es = I1001.R1__has_label__es
 
 
 class Test_Z_Core(HouskeeperMixin, unittest.TestCase):

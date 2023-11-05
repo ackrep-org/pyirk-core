@@ -178,7 +178,7 @@ class Entity(abc.ABC):
         if adhoc_label != self.R1:
             # due to multilinguality there might be multiple labels. As adhoc label we accept any language
             all_labels = self.get_relations("R1", return_obj=True)
-            all_labels_dict = dict((str(label), None) for label in all_labels)
+            all_labels_dict = dict((str(label.value), None) for label in all_labels)
             adhoc_label_str = str(adhoc_label)
 
             if adhoc_label_str not in all_labels_dict:
@@ -335,8 +335,13 @@ class Entity(abc.ABC):
                 msg = f"unsupported language ({lang_indicator}) while accessing {self}.{relation.short_key}."
                 raise aux.MultilingualityError(msg)
 
+            if lang_indicator is None:
+                lang_indicator = settings.DEFAULT_DATA_LANGUAGE
+
             filtered_res_explicit_lang = []
             filtered_res_without_lang = []
+
+            # TODO: simplify this since now we can be sure that we have only Literal-instances in res
             for elt in res:
                 # if no language is defined (e.g. ordinary string) -> use interpret this as match
                 # (but only if no other result with matching language attribute is available)
@@ -1428,6 +1433,13 @@ def create_item(key_str: str = "", **kwargs) -> Item:
                     raise aux.MultilingualityError(msg)
 
                 if not isinstance(value, Literal):
+                    if not isinstance(value, str):
+                        item_uri = aux.make_uri(mod_uri, item_key)
+                        msg = (
+                            f"While creating {item_uri}: the {new_key}-argument must be a string. "
+                            f"Got {type(value)} instead."
+                        )
+                        raise TypeError(msg)
                     value = Literal(value, lang=settings.DEFAULT_DATA_LANGUAGE)
                 value_list.append((processed_key.lang_indicator, value))
             else:
@@ -2403,6 +2415,7 @@ class LangaguageCode:
         return res
 
 
+df = LangaguageCode(settings.DEFAULT_DATA_LANGUAGE)
 en = LangaguageCode("en")
 de = LangaguageCode("de")
 fr = LangaguageCode("fr")

@@ -259,7 +259,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
     # (above noinspection is necessary because of the @-operator which is undecleared for strings)
     def test_b01__core1_basics(self):
         mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
-        self.assertEqual(mod1.I3749.R1, "Cayley-Hamilton theorem")
+        self.assertEqual(mod1.I3749.R1.value, "Cayley-Hamilton theorem")
 
         def_eq_item = mod1.I6886.R6__has_defining_mathematical_relation
         self.assertEqual(def_eq_item.R4__is_instance_of, p.I18["mathematical expression"])
@@ -663,7 +663,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
             stm_subjects = I0222_setting.get_inv_relations("R20__has_defining_scope", return_subj=True)
 
             x2, y2, z2, V2, f2, LfV2 = stm_subjects[:6]
-            labels = [obj.R1 for obj in stm_subjects[:3]]
+            labels = [obj.R1.value for obj in stm_subjects[:3]]
             self.assertEqual(labels, ["x", "y", "z"])
             self.assertNotEqual(x.uri, x2.uri)
 
@@ -1432,6 +1432,10 @@ class Test_03_Multilinguality(HouskeeperMixin, unittest.TestCase):
         self.assertIsInstance(teststring1, rdflib.Literal)
         self.assertIsInstance(teststring2, rdflib.Literal)
 
+        # this test will break if the default language is not "en"
+        # (it would need some further work to make it independent of the concrete default lang)
+        self.assertEqual(p.settings.DEFAULT_DATA_LANGUAGE, "en")
+
         with p.uri_context(uri=TEST_BASE_URI):
 
             with self.assertRaises(p.aux.MultilingualityError):
@@ -1455,16 +1459,25 @@ class Test_03_Multilinguality(HouskeeperMixin, unittest.TestCase):
                     R1__has_label__es="deutsches label" @ p.de,
                 )
 
+            with self.assertRaises(TypeError):
+                # the following ensures that some old syntax is correctly reported as error
+                I902 = p.create_item(
+                    R1__has_label=["default label", "deutsches label" @ p.de],
+                )
+
             I900 = p.create_item(
                 R1__has_label="default label",
                 R1__has_label__de="deutsches label" @ p.de,
             )
 
-            with self.assertRaises(p.aux.MultilingualityError):
-                I900.set_relation(p.R1["has label"], "english label" @ p.en)
+            if p.settings.DEFAULT_DATA_LANGUAGE == "en":
+                with self.assertRaises(p.aux.MultilingualityError):
+                    # we already have an english label set by specifying R1 without lang_indicator above
+                    I900.set_relation(p.R1["has label"], "english label" @ p.en)
 
         # R1 should return the default
-        self.assertEqual(I900.R1, "default label")
+        r1 = I900.R1
+        self.assertEqual(r1.value, "default label")
 
         stored_default_lang = p.settings.DEFAULT_DATA_LANGUAGE
 
@@ -1472,9 +1485,11 @@ class Test_03_Multilinguality(HouskeeperMixin, unittest.TestCase):
         r1_de = I900.R1__has_label.value
         self.assertEqual(r1_de, "deutsches label")
 
-        p.settings.DEFAULT_DATA_LANGUAGE = "en"
-        r1_en = I900.R1__has_label.value
-        self.assertEqual(r1_en, "test item with english label")
+
+        if p.settings.DEFAULT_DATA_LANGUAGE == "en":
+            p.settings.DEFAULT_DATA_LANGUAGE = "en"
+            r1_en = I900.R1__has_label.value
+            self.assertEqual(r1_en, "default_label")
 
         p.settings.DEFAULT_DATA_LANGUAGE = stored_default_lang
 
@@ -1486,7 +1501,7 @@ class Test_03_Multilinguality(HouskeeperMixin, unittest.TestCase):
         with p.uri_context(uri=TEST_BASE_URI):
 
             I1001 = p.create_item(
-                R1__has_label="english label",
+                R1__has_label="default label",
                 R1__has_label__de="deutsches label" @ p.de,
 
                 # we do not need to pass a Literal-instance (it is created automatically)
@@ -1496,13 +1511,13 @@ class Test_03_Multilinguality(HouskeeperMixin, unittest.TestCase):
 
         labels = I1001.get_relations("R1", return_obj=True)
 
-        self.assertEqual(labels, ["english label", "deutsches label"@p.de, "dénomination française"@p.fr, "nombre español"@p.es])
+        self.assertEqual(labels, ["default label"@p.df, "deutsches label"@p.de, "dénomination française"@p.fr, "nombre español"@p.es])
 
         r1_default = I1001.R1__has_label
         r1_de = I1001.R1__has_label__de
         r1_es = I1001.R1__has_label__es
 
-        IPS()
+        # IPS()
 
 
 class Test_Z_Core(HouskeeperMixin, unittest.TestCase):

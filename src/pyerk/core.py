@@ -465,13 +465,6 @@ class Entity(abc.ABC):
         if isinstance(relation, Relation):
             if isinstance(obj, (Entity, *allowed_literal_types)) or obj in allowed_literal_types:
                 return self._set_relation(relation.uri, obj, scope=scope, qualifiers=qualifiers, proxyitem=proxyitem)
-            # Todo: remove obsolete code:
-            # elif isinstance(obj, Iterable):
-            #     msg = f"Unsupported iterable type ({type(obj)}) of {obj}, while setting relation {relation.short_key}"
-            #     raise TypeError(msg)
-            # elif isinstance(obj, (Entity, str, bool, float, int, complex)):
-            #     # obj is eithter an entity or a literal
-            #     return self._set_relation(relation.short_key, obj, scope=scope, proxyitem=proxyitem)
             else:
                 msg = f"Unsupported type ({type(obj)}) of {obj}, while setting relation {relation.short_key} of {self}"
                 raise TypeError(msg)
@@ -758,10 +751,6 @@ class DataStore:
 
         # dict to store important QualifierFactory instances which are created in builtin_entities but needed in core
         self.qff_dict = {}
-
-        # TODO: obsolete!
-        # list of keys which are released, when unloading a module
-        self.released_keys = []
 
         # mapping like {uri_1: keymanager_1, ...}
         self.uri_keymanager_dict = {}
@@ -1803,9 +1792,6 @@ class Statement:
 
         ds.statement_uri_map.pop(self.uri)
 
-        # TODO: remove obsolete key-recycling
-        ds.released_keys.append(self.short_key)
-
 
 class QualifierStatement(Statement):
     def __init__(self, *args, **kwargs):
@@ -2092,9 +2078,6 @@ def unload_mod(mod_uri: str, strict=True) -> None:
     :return:        list of released keys
     """
 
-    # prepare the list to store the released keys
-    ds.released_keys.clear()
-
     # TODO: This might to check dependencies in the future
 
     entity_uris: List[str] = ds.entities_created_in_mod.pop(mod_uri, [])
@@ -2129,9 +2112,6 @@ def unload_mod(mod_uri: str, strict=True) -> None:
     aux.clean_dict(ds.statements)
     aux.clean_dict(ds.inv_statements)
 
-    # TODO: obsolete
-    res = list(ds.released_keys)
-
     try:
         ds.uri_keymanager_dict.pop(mod_uri)
     except KeyError:
@@ -2148,9 +2128,6 @@ def unload_mod(mod_uri: str, strict=True) -> None:
 
     if modname := ds.modnames.get(mod_uri):
         sys.modules.pop(modname)
-
-    # empty the list again to avoid confusion in future uses
-    ds.released_keys.clear()
 
 
 def _unlink_entity(uri: str, remove_from_mod=False) -> None:
@@ -2212,8 +2189,6 @@ def _unlink_entity(uri: str, remove_from_mod=False) -> None:
     # TODO: obsolete because we clean up the defaultdicts anyway
     ds.statements.pop(entity.uri, None)
     ds.inv_statements.pop(entity.uri, None)
-
-    ds.released_keys.append(uri)
 
 
 def replace_and_unlink_entity(old_entity: Entity, new_entity: Entity):

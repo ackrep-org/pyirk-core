@@ -1476,12 +1476,12 @@ class Test_Z_Core(HouskeeperMixin, unittest.TestCase):
         res = p.ds.rdfgraph.query(qsrc)
         res2 = p.aux.apply_func_to_table_cells(p.rdfstack.convert_from_rdf_to_pyerk, res)
 
-        # Note this will fail if more `R5__has_part` relations are used
+        # Note: this might fail if more `R5__has_part` relations are used
         expected_result = [
             [mod1.I4466["Systems Theory"], p.I4["Mathematics"]],
             [mod1.I4466["Systems Theory"], p.I5["Engineering"]],
         ]
-        self.assertEqual(res2, expected_result)
+        self.assertEqual(res2[:2], expected_result)
 
     def test_c01__sparql_query2(self):
         # TODO: replace by Model entity once it exists

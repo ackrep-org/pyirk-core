@@ -134,7 +134,7 @@ class Test_00_Core(HouskeeperMixin, unittest.TestCase):
         self.assertEqual(L3, len(p.ds.statement_uri_map))
         self.assertEqual(len(p.core._uri_stack), 0)
 
-    def test_key_manager(self):
+    def test_b3__key_manager(self):
         p.KeyManager.instance = None
 
         km = p.KeyManager(minval=100, maxval=105)
@@ -148,7 +148,7 @@ class Test_00_Core(HouskeeperMixin, unittest.TestCase):
         self.assertEqual(k, 104)
         self.assertEqual(km.key_reservoir, [103, 101, 100])
 
-    def test_uri_attr_of_entities(self):
+    def test_b4__uri_attr_of_entities(self):
 
         self.assertEqual(p.I1.uri, f"{p.BUILTINS_URI}#I1")
         self.assertEqual(p.R1.uri, f"{p.BUILTINS_URI}#R1")
@@ -163,7 +163,7 @@ class Test_00_Core(HouskeeperMixin, unittest.TestCase):
         self.assertEqual(itm.uri, f"{TEST_BASE_URI}#{itm.short_key}")
         self.assertEqual(rel.uri, f"{TEST_BASE_URI}#{rel.short_key}")
 
-    def test_load_multiple_modules(self):
+    def test_c1__load_multiple_modules(self):
         mod1 = p.erkloader.load_mod_from_path(pjoin(TEST_DATA_DIR1, "tmod1.py"), prefix="tm1")
 
         # test recursive module loading
@@ -177,6 +177,19 @@ class Test_00_Core(HouskeeperMixin, unittest.TestCase):
         # test uri_contexts of R2000 statements
         self.assertTrue(stm1.uri.startswith(mod1.__URI__))
         self.assertTrue(stm2.uri.startswith(mod1.__URI__))
+
+    def test_c02__exception_handling(self):
+
+        os.environ["PYERK_TRIGGER_TEST_EXCEPTION"] = "True"
+
+        with self.assertRaises(p.aux.ExcplicitlyTriggeredTestException):
+            mod1 = p.erkloader.load_mod_from_path(pjoin(TEST_DATA_DIR1, "tmod1.py"), prefix="tm1")
+
+        # this was a bug: if the module is loaded for the second time exception is not handled correctly
+        with self.assertRaises(p.aux.ExcplicitlyTriggeredTestException):
+            mod1 = p.erkloader.load_mod_from_path(pjoin(TEST_DATA_DIR1, "tmod1.py"), prefix="tm1")
+
+        os.environ.pop("PYERK_TRIGGER_TEST_EXCEPTION")
 
 
 # noinspection PyPep8Naming

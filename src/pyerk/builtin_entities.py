@@ -1685,18 +1685,6 @@ def new_mathematical_relation(lhs: Item, rsgn: str, rhs: Item, doc=None, scope: 
     return mr
 
 
-# annoying: pycharm does not recognize that "str"@some_LangaguageCode_obj is valid because str does not
-# implement __matmul__
-# noinspection PyUnresolvedReferences
-I900 = create_builtin_item(
-    key_str="I900",
-    R1__has_label="test item mit label auf deutsch" @ de,
-    R2__has_description="used for testing during development",
-    R4__is_instance_of=I2["Metaclass"],
-    R18__has_usage_hint="This item serves only for unittesting labels in different languages",
-)
-
-
 # reminder that R32["is functional for each language"] already is defined
 assert R32 is not None
 
@@ -2730,9 +2718,6 @@ def raise_reasoning_goal_reached(self, msg_template, *args):
 #
 # with I041["subproperty rule 1"].scope("assertion") as cm:
 #     cm.new_rel(cm.P3, R17["is subproperty of"], cm.P1)
-
-# noinspection PyUnresolvedReferences
-I900.set_relation(R1["has label"], "test item with english label" @ en)
 
 
 I000 = create_builtin_item(

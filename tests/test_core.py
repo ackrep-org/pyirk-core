@@ -252,19 +252,6 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         self.assertEqual(def_eq_item.R4__is_instance_of, p.I18["mathematical expression"])
         self.assertEqual(def_eq_item.R24__has_LaTeX_string, r"$\dot x = f(x, u)$")
 
-        teststring1 = "this is english text" @ p.en
-        teststring2 = "das ist deutsch" @ p.de
-
-        self.assertIsInstance(teststring1, rdflib.Literal)
-        self.assertIsInstance(teststring2, rdflib.Literal)
-
-        # R1 should return the default
-        self.assertEqual(p.I900.R1.language, p.settings.DEFAULT_DATA_LANGUAGE)
-
-        # ensure that R32["is functional for each language"] works as expected (return str/Literal but not [str] ...)
-        self.assertNotIsInstance(p.I12.R2, list)
-        self.assertNotIsInstance(p.I900.R2, list)
-
         mod_uri = p.ds.uri_prefix_mapping.b["ct"]
         p.unload_mod(mod_uri)
 
@@ -1421,6 +1408,45 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
 
         with p.uri_context(uri=TEST_BASE_URI):
             _ = p.ruleengine.apply_all_semantic_rules()
+
+
+class Test_03_Multilinguality(HouskeeperMixin, unittest.TestCase):
+    def test_a01__label(self):
+        with p.uri_context(uri=TEST_BASE_URI):
+
+            I900 = p.create_item(
+                R1__has_label="test item mit label auf deutsch" @ p.de,
+                R2__has_description="used for testing during development",
+                R4__is_instance_of=p.I2["Metaclass"],
+                R18__has_usage_hint="This item serves only for unittesting labels in different languages",
+            )
+
+            I900.set_relation(p.R1["has label"], "test item with english label" @ p.en)
+
+        teststring1 = "this is english text" @ p.en
+        teststring2 = "das ist deutsch" @ p.de
+
+        self.assertIsInstance(teststring1, rdflib.Literal)
+        self.assertIsInstance(teststring2, rdflib.Literal)
+
+        # R1 should return the default
+        self.assertEqual(I900.R1.language, p.settings.DEFAULT_DATA_LANGUAGE)
+
+        stored_default_lang = p.settings.DEFAULT_DATA_LANGUAGE
+
+        p.settings.DEFAULT_DATA_LANGUAGE = "de"
+        r1_de = I900.R1__has_label.value
+        self.assertEqual(r1_de, "test item mit label auf deutsch")
+
+        p.settings.DEFAULT_DATA_LANGUAGE = "en"
+        r1_en = I900.R1__has_label.value
+        self.assertEqual(r1_en, "test item with english label")
+
+        p.settings.DEFAULT_DATA_LANGUAGE = stored_default_lang
+
+        # ensure that R32["is functional for each language"] works as expected (return str/Literal but not [str] ...)
+        self.assertNotIsInstance(p.I12.R2, list)
+        self.assertNotIsInstance(I900.R2, list)
 
 
 class Test_Z_Core(HouskeeperMixin, unittest.TestCase):

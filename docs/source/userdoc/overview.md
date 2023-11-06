@@ -11,6 +11,8 @@ In Pyerk there are the following kinds of keys:
 - d) prefixed name-labeled key like `"bi__R1234__my_relation"`
 - e) index-labeld key like  `"R1234['my relation']"`
 
+Note: prefixed and name-labled keys can optionally have a language indicator. Examples: ``"bi__R1__de"`` or `"R1__has_label__fr"`.
+
 Also, the leading character indicates the entity type (called `EType` in the code): `I` → item, `R` → relation.
 
 The usage of these syntax variants depens on the context.

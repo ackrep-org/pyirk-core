@@ -118,7 +118,10 @@ class PyERKError(Exception):
     """
     raised in situations where some ERK-specific conditions are violated
     """
+    pass
 
+
+class MultilingualityError(PyERKError):
     pass
 
 
@@ -148,6 +151,10 @@ class InvalidShortKeyError(PyERKError):
 
 
 class InvalidGeneralKeyError(PyERKError):
+    pass
+
+
+class InconsistentLabelError(PyERKError):
     pass
 
 

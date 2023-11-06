@@ -108,7 +108,7 @@ class Test_01_rulebased_reasoning(HouskeeperMixin, unittest.TestCase):
         zp = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA02, prefix="zp")
 
         # test base data
-        self.assertEqual(zp.zb.I4037["Englishman"].zb__R8098__has_house_color.R1, "red")
+        self.assertEqual(zp.zb.I4037["Englishman"].zb__R8098__has_house_color.R1.value, "red")
 
         # test hints
         self.assertEqual(zp.zb.I9848["Norwegian"].zb__R3606__lives_next_to[0], zp.person12)
@@ -406,7 +406,7 @@ class Test_01_rulebased_reasoning(HouskeeperMixin, unittest.TestCase):
                 cm.uses_external_entities(I702)
 
             with I702.scope("premise") as cm:
-                cm.new_rel(cm.rel1, p.R1["has label"], "another relation", overwrite=True)
+                cm.new_rel(cm.rel1, p.R1["has label"], "another relation"@p.df, overwrite=True)
 
             with I702.scope("assertion") as cm:
                 cm.new_rel(cm.rel1, p.R54["is matched by rule"], I702)

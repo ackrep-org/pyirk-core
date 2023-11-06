@@ -257,9 +257,9 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
 
     # noinspection PyUnresolvedReferences
     # (above noinspection is necessary because of the @-operator which is undecleared for strings)
-    def test_b01__core1_basics(self):
+    def test_b00__core1_basics(self):
         mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
-        self.assertEqual(mod1.I3749.R1, "Cayley-Hamilton theorem")
+        self.assertEqual(mod1.I3749.R1.value, "Cayley-Hamilton theorem")
 
         def_eq_item = mod1.I6886.R6__has_defining_mathematical_relation
         self.assertEqual(def_eq_item.R4__is_instance_of, p.I18["mathematical expression"])
@@ -268,14 +268,14 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         mod_uri = p.ds.uri_prefix_mapping.b["ct"]
         p.unload_mod(mod_uri)
 
-    def test_b02_builtins1(self):
+    def test_b01_builtins1(self):
         """
         Test the mechanism to endow the Entity class with custom methods (on class and on instance level)
         :return:
         """
         # class level
         def example_func(slf, a):
-            return f"{slf.R1}--{a}"
+            return f"{slf.R1.value}--{a}"
 
         p.Entity.add_method_to_class(example_func)
 
@@ -291,7 +291,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
             itm2 = p.create_item(key_str=p.pop_uri_based_key("I"), R1="unit test item2")
 
         def example_func2(slf, a):
-            return f"{slf.R1}::{a}"
+            return f"{slf.R1.value}::{a}"
 
         itm.add_method(example_func2)
 
@@ -314,6 +314,17 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         # self.assertTrue(len(conf) != 0)
         self.assertTrue(len(conf) >= 0)
 
+    def test_b02_builtins2(self):
+
+        rel = p.R65
+        self.assertIsInstance(rel.R1, p.Literal)
+
+        # do not allow Literal here
+        self.assertEqual(type(rel.R1.value), str)
+
+        k = "R65__allows_alternative_functional_value"
+        pk = p.process_key_str(k)
+
     def test_c01__ct_loads_math(self):
         """
         test if the control_theory module successfully loads the math module
@@ -324,112 +335,6 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         self.assertIn("ma", p.ds.uri_prefix_mapping.b)
         itm1 = p.ds.get_entity_by_key_str("ma__I5000__scalar_zero")
         self.assertEqual(itm1, mod1.ma.I5000["scalar zero"])
-
-    def test_c02__multilingual_relations(self):
-        """
-        test how to create items with labels in multiple languages
-        """
-
-        with p.uri_context(uri=TEST_BASE_URI):
-            itm = p.create_item(
-                key_str=p.pop_uri_based_key("I"),
-                # multiple values to R1 can be passed using a list
-                R1__has_label=[
-                    "test-label in english" @ p.en,  # `@p.en` is recommended, if you use multiple languages
-                    "test-label auf deutsch" @ p.de,
-                ],
-                R2__has_description="test-description in english",
-            )
-
-        # this returns only one label according to the default language
-        default_label = itm.R1
-
-        # to access all labels use this:
-        label1, label2 = itm.get_relations("R1", return_obj=True)
-        self.assertEqual(default_label, label1)
-        self.assertEqual(label1.value, "test-label in english")
-        self.assertEqual(label1.language, "en")
-        self.assertEqual(label2.value, "test-label auf deutsch")
-        self.assertEqual(label2.language, "de")
-
-        # add another language later
-
-        with p.uri_context(uri=TEST_BASE_URI):
-            itm.set_relation(p.R2, "test-beschreibung auf deutsch" @ p.de)
-
-        desc1, desc2 = itm.get_relations("R2", return_obj=True)
-
-        self.assertTrue(isinstance(desc1, str))
-        self.assertTrue(isinstance(desc2, p.Literal))
-
-        self.assertEqual(desc2.language, "de")
-
-        # use the labels of different languages in index-labeld key notation
-
-        # first: without explicitly specifying the language
-        tmp1 = itm["test-label in english"]
-        self.assertTrue(tmp1 is itm)
-
-        tmp2 = itm["test-label auf deutsch"]
-        self.assertTrue(tmp2 is itm)
-
-        # second: with explicitly specifying the language
-        tmp3 = itm["test-label in english" @ p.en]
-        self.assertTrue(tmp3 is itm)
-
-        tmp4 = itm["test-label auf deutsch" @ p.de]
-        self.assertTrue(tmp4 is itm)
-
-        with self.assertRaises(ValueError):
-            tmp5 = itm["wrong label"]
-
-        with self.assertRaises(ValueError):
-            tmp5 = itm["wrong label" @ p.de]
-
-        with self.assertRaises(ValueError):
-            tmp5 = itm["wrong label" @ p.en]  # noqa
-
-        # change the default language
-
-        p.settings.DEFAULT_DATA_LANGUAGE = "de"
-
-        new_default_label = itm.R1
-        self.assertEqual(new_default_label, label2)
-        self.assertEqual(new_default_label.language, "de")
-
-        new_default_description = itm.R2
-        self.assertEqual(new_default_description, "test-beschreibung auf deutsch" @ p.de)
-
-        with p.uri_context(uri=TEST_BASE_URI):
-            itm2 = p.create_item(
-                key_str=p.pop_uri_based_key("I"),
-                # multiple values to R1 can be passed using a list
-                R1__has_label=["test-label2", "test-label2-de" @ p.de],
-                R2__has_description="test-description2 in english",
-            )
-
-        # in case of ordinary strings they should be used if no value is available for current language
-
-        self.assertEqual(p.settings.DEFAULT_DATA_LANGUAGE, "de")
-        self.assertEqual(itm2.R1, "test-label2-de" @ p.de)
-        self.assertEqual(itm2.R2, "test-description2 in english")
-
-        p.settings.DEFAULT_DATA_LANGUAGE = "en"
-        self.assertEqual(itm2.R1, "test-label2")
-        self.assertEqual(itm2.R2, "test-description2 in english")
-
-        p.settings.DEFAULT_DATA_LANGUAGE = "en"
-
-        # test for correct error message
-        with p.uri_context(uri=TEST_BASE_URI, prefix="ut"):
-
-            itm1 = p.instance_of(p.I1["general item"])
-
-            # this should cause no error (because of differnt language)
-            itm1.set_relation(p.R1["has label"], "neues Label" @ p.de)
-
-            with self.assertRaises(p.aux.FunctionalRelationError):
-                itm1.set_relation(p.R1["has label"], "new label")
 
     def test_c03__nontrivial_metaclasses(self):
         with p.uri_context(uri=TEST_BASE_URI):
@@ -506,7 +411,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         _ = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
         def_itm = p.ds.get_entity_by_key_str("ct__I9907__definition_of_square_matrix")
         matrix_instance = def_itm.M
-        self.assertEqual(matrix_instance.R1, "M")
+        self.assertEqual(matrix_instance.R1.value, "M")
 
     def test_c07b__nested_scopes_of_propositions(self):
         """
@@ -663,7 +568,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
             stm_subjects = I0222_setting.get_inv_relations("R20__has_defining_scope", return_subj=True)
 
             x2, y2, z2, V2, f2, LfV2 = stm_subjects[:6]
-            labels = [obj.R1 for obj in stm_subjects[:3]]
+            labels = [obj.R1.value for obj in stm_subjects[:3]]
             self.assertEqual(labels, ["x", "y", "z"])
             self.assertNotEqual(x.uri, x2.uri)
 
@@ -861,7 +766,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
             )
 
         # this is the verbose way to adress a builtin relation
-        self.assertEqual(e1.bi__R1, "some label")
+        self.assertEqual(e1.bi__R1.value, "some label")
 
         # this is the (necessary) way to adress a relation from an external module
         self.assertEqual(e1.ct__R7641[0], e0)
@@ -1425,16 +1330,6 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
 
 class Test_03_Multilinguality(HouskeeperMixin, unittest.TestCase):
     def test_a01__label(self):
-        with p.uri_context(uri=TEST_BASE_URI):
-
-            I900 = p.create_item(
-                R1__has_label="test item mit label auf deutsch" @ p.de,
-                R2__has_description="used for testing during development",
-                R4__is_instance_of=p.I2["Metaclass"],
-                R18__has_usage_hint="This item serves only for unittesting labels in different languages",
-            )
-
-            I900.set_relation(p.R1["has label"], "test item with english label" @ p.en)
 
         teststring1 = "this is english text" @ p.en
         teststring2 = "das ist deutsch" @ p.de
@@ -1442,24 +1337,224 @@ class Test_03_Multilinguality(HouskeeperMixin, unittest.TestCase):
         self.assertIsInstance(teststring1, rdflib.Literal)
         self.assertIsInstance(teststring2, rdflib.Literal)
 
+        # this test will break if the default language is not "en"
+        # (it would need some further work to make it independent of the concrete default lang)
+        self.assertEqual(p.settings.DEFAULT_DATA_LANGUAGE, "en")
+
+        with p.uri_context(uri=TEST_BASE_URI):
+
+            with self.assertRaises(p.aux.MultilingualityError):
+                # the following is not allowed because the R1 argument is a non-default-language literal
+                # but R1-key has no language indicator
+                I901 = p.create_item(
+                    R1__has_label="deutsches label" @ p.de,
+                )
+
+            with self.assertRaises(p.aux.MultilingualityError):
+                # the following is not allowed because the R1__de argument comes before the default R1 argument
+                I901 = p.create_item(
+                    R1__has_label__de="deutsches label" @ p.de,
+                    R1__has_label="default label",
+                )
+
+            with self.assertRaises(p.aux.MultilingualityError):
+                # the following is not allowed because of inconsistent language specifications
+                I901 = p.create_item(
+                    R1__has_label="default label",
+                    R1__has_label__es="deutsches label" @ p.de,
+                )
+
+            with self.assertRaises(TypeError):
+                # the following ensures that some old syntax is correctly reported as error
+                I902 = p.create_item(
+                    R1__has_label=["default label", "deutsches label" @ p.de],
+                )
+
+            I900 = p.create_item(
+                R1__has_label="default label",
+                R1__has_label__de="deutsches label" @ p.de,
+            )
+
+            if p.settings.DEFAULT_DATA_LANGUAGE == "en":
+                with self.assertRaises(p.aux.FunctionalRelationError):
+                    # we already have an english label set by specifying R1 without lang_indicator above
+                    I900.set_relation(p.R1["has label"], "english label" @ p.en)
+
         # R1 should return the default
-        self.assertEqual(I900.R1.language, p.settings.DEFAULT_DATA_LANGUAGE)
+        self.assertEqual(I900.R1.value, "default label")
 
         stored_default_lang = p.settings.DEFAULT_DATA_LANGUAGE
 
         p.settings.DEFAULT_DATA_LANGUAGE = "de"
         r1_de = I900.R1__has_label.value
-        self.assertEqual(r1_de, "test item mit label auf deutsch")
+        self.assertEqual(r1_de, "deutsches label")
 
-        p.settings.DEFAULT_DATA_LANGUAGE = "en"
-        r1_en = I900.R1__has_label.value
-        self.assertEqual(r1_en, "test item with english label")
+
+        if p.settings.DEFAULT_DATA_LANGUAGE == "en":
+            p.settings.DEFAULT_DATA_LANGUAGE = "en"
+            r1_en = I900.R1__has_label.value
+            self.assertEqual(r1_en, "default_label")
 
         p.settings.DEFAULT_DATA_LANGUAGE = stored_default_lang
 
         # ensure that R32["is functional for each language"] works as expected (return str/Literal but not [str] ...)
         self.assertNotIsInstance(p.I12.R2, list)
         self.assertNotIsInstance(I900.R2, list)
+
+        # test convenient notation
+        with p.uri_context(uri=TEST_BASE_URI):
+
+            I1001 = p.create_item(
+                R1__has_label="default label",
+                R1__has_label__de="deutsches label" @ p.de,
+
+                # we do not need to pass a Literal-instance (it is created automatically)
+                R1__has_label__fr="dénomination française",
+            )
+            I1001.set_relation(p.R1["has label"], "nombre español" @ p.es)
+
+        labels = I1001.get_relations("R1", return_obj=True)
+
+        self.assertEqual(labels, ["default label"@p.df, "deutsches label"@p.de, "dénomination française"@p.fr, "nombre español"@p.es])
+
+        r1_default = I1001.R1__has_label
+        r1_de = I1001.R1__has_label__de
+        r1_es = I1001.R1__has_label__es
+
+        self.assertEqual(r1_default, "default label"@p.df)
+        self.assertEqual(r1_de, "deutsches label"@p.de)
+        self.assertEqual(r1_es, "nombre español"@p.es)
+
+    def test_b1__multilingual_relations1(self):
+        """
+        test how to create items with labels in multiple languages
+        """
+
+        # this test will break if the default language is not "en"
+        # (it would need some further work to make it independent of the concrete default lang)
+        self.assertEqual(p.settings.DEFAULT_DATA_LANGUAGE, "en")
+
+        self.assertTrue(isinstance(p.R2.R1, str))
+
+        with p.uri_context(uri=TEST_BASE_URI):
+            itm = p.create_item(
+                key_str=p.pop_uri_based_key("I"),
+                # multiple values to R1 can be passed using a list
+                R1__has_label="test-label in english",  # specify default language
+                R1__has_label__de="test-label auf deutsch",
+                R2__has_description="test-description in english",
+            )
+
+        # this returns only one label according to the default language
+        default_label = itm.R1
+
+        # to access all labels use this:
+        label1, label2 = itm.get_relations("R1", return_obj=True)
+        self.assertEqual(default_label, label1)
+        self.assertEqual(label1.value, "test-label in english")
+        self.assertEqual(label1.language, "en")
+        self.assertEqual(label2.value, "test-label auf deutsch")
+        self.assertEqual(label2.language, "de")
+
+        # add another language later
+
+        with p.uri_context(uri=TEST_BASE_URI):
+            itm.set_relation(p.R2, "test-beschreibung auf deutsch" @ p.de)
+
+        desc1, desc2 = itm.get_relations("R2", return_obj=True)
+
+        self.assertTrue(isinstance(desc1, str))
+        self.assertTrue(isinstance(desc2, p.Literal))
+
+        self.assertEqual(desc2.language, "de")
+
+        # use the labels of different languages in index-labeld key notation
+
+        # first: without explicitly specifying the language
+        tmp1 = itm["test-label in english"]
+        self.assertTrue(tmp1 is itm)
+
+        tmp2 = itm["test-label auf deutsch"]
+        self.assertTrue(tmp2 is itm)
+
+        # second: with explicitly specifying the language
+        tmp3 = itm["test-label in english" @ p.en]
+        self.assertTrue(tmp3 is itm)
+
+        tmp4 = itm["test-label auf deutsch" @ p.de]
+        self.assertTrue(tmp4 is itm)
+
+        with self.assertRaises(ValueError):
+            tmp5 = itm["wrong label"]
+
+        with self.assertRaises(ValueError):
+            tmp5 = itm["wrong label" @ p.de]
+
+        with self.assertRaises(ValueError):
+            tmp5 = itm["wrong label" @ p.en]  # noqa
+
+        # change the default language
+        p.settings.DEFAULT_DATA_LANGUAGE = "de"
+
+        new_default_label = itm.R1
+        self.assertEqual(new_default_label, label2)
+        self.assertEqual(new_default_label.language, "de")
+
+        new_default_description = itm.R2
+        self.assertEqual(new_default_description, "test-beschreibung auf deutsch" @ p.de)
+
+        with p.uri_context(uri=TEST_BASE_URI):
+            with self.assertRaises(p.aux.FunctionalRelationError):
+                itm_fail = p.create_item(
+                    key_str=p.pop_uri_based_key("I"),
+                    # multiple values to R1 can be passed using a list
+                    R1__has_label="test-label2",  # this is now interpreted as de-label
+                    R1__has_label__de="test-label2-de",  # this causes an error
+                )
+
+            itm2 = p.create_item(
+                key_str=p.pop_uri_based_key("I"),
+                # multiple values to R1 can be passed using a list
+                R1__has_label="test-label2",  # this is now interpreted as de-label
+                R1__has_label__en="test-label2-en",
+                R2__has_description="test beschreibung auf deutsch",
+            )
+
+        # in case of ordinary strings they should be used if no value is available for current language
+
+        self.assertEqual(p.settings.DEFAULT_DATA_LANGUAGE, "de")
+        self.assertEqual(itm2.R1, "test-label2" @ p.de)
+        self.assertEqual(itm2.R2, "test beschreibung auf deutsch" @ p.de)
+
+        p.settings.DEFAULT_DATA_LANGUAGE = "en"
+        self.assertEqual(itm2.R1.value, "test-label2-en")
+
+        # no other description is available
+        self.assertEqual(itm2.R2, None)
+
+        # TODO: decide whether this behavior (returning some other lang) would be better
+        # self.assertEqual(itm2.R2, "test beschreibung auf deutsch" @ p.de)
+
+        # test for correct error message
+        with p.uri_context(uri=TEST_BASE_URI, prefix="ut"):
+
+            itm1 = p.instance_of(p.I1["general item"])
+
+            # this should cause no error (because of differnt language)
+            itm1.set_relation(p.R1["has label"], "neues Label" @ p.de)
+
+            with self.assertRaises(p.aux.FunctionalRelationError):
+                itm1.set_relation(p.R1["has label"], "new label")
+
+    def test_b2__multilingual_relations2(self):
+        with p.uri_context(uri=TEST_BASE_URI, prefix="ut"):
+            R300 = p.create_relation(
+                R1__has_label="default rel-label",
+                R1__has_label__de="deutsches rel-label",
+            )
+
+            labels = R300.get_relations("R1", return_obj=True)
+            self.assertEqual(labels, ["default rel-label"@p.df, "deutsches rel-label"@p.de])
 
 
 class Test_Z_Core(HouskeeperMixin, unittest.TestCase):
@@ -1565,7 +1660,7 @@ class Test_Z_Core(HouskeeperMixin, unittest.TestCase):
                 {condition}
             }}
             """
-            with self.assertRaises(AssertionError) as cm:
+            with self.assertRaises(p.aux.InconsistentLabelError) as cm:
                 p.ds.preprocess_query(qsrc_incorr_1)
             self.assertEqual(cm.exception.args[0], msg)
 
@@ -1649,11 +1744,12 @@ class Test_07_import_export(HouskeeperMixin, unittest.TestCase):
 
             c = p.io.import_stms_from_rdf_triples(fpath)
 
-            c.new_items.sort(key=lambda itm: itm.R1__has_label)
+            self.assertIsInstance(c.new_items[0].R1, p.Literal)
+            c.new_items.sort(key=lambda itm: itm.R1__has_label.value)
 
             x0, x1, x2 = c.new_items
             # test that overwriting worked
-            self.assertEqual(R301.R1__has_label, "relation1")
+            self.assertEqual(R301.R1__has_label.value, "relation1")
 
             # test that a statement has been created
             self.assertEqual(x0.R301__relation1, [x1])

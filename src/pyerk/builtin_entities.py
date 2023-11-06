@@ -1282,7 +1282,12 @@ def _get_subscope(self, name: str):
     assert isinstance(name, str)
     scope_rels: list = self.get_inv_relations("R21__is_scope_of", return_subj=True)
 
-    res = [rel for rel in scope_rels if rel.R1 == name or rel.R1 == f"scp__{name}"]
+    res = []
+    for rel in scope_rels:
+        assert isinstance(rel.R1, core.Literal)
+        r1 = rel.R1.value
+        if r1 == name or r1 == f"scp__{name}":
+            res.append(rel)
 
     if len(res) == 0:
         msg = f"no scope with name {name} could be found"
@@ -2301,7 +2306,7 @@ R59 = create_builtin_relation(
         "specifies that the subject should be threated according to the mode (int number) when constructing the "
         "prototype graph of an I41__semantic_rule; Modes: 0 -> normal; 1 -> ignore node, 2 -> relation statement, "
         "3 -> variable literal, 4 -> function-anchor; 5 -> create_asserted_statement_only_if_new; "
-        "currently '2' is not implemented.",
+        "currently '2' is not implemented."
     ),
     R8__has_domain_of_argument_1=I1["general item"],
     R11__has_range_of_result=int,

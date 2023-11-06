@@ -178,7 +178,7 @@ class Entity(abc.ABC):
         if adhoc_label != self.R1:
             # due to multilinguality there might be multiple labels. As adhoc label we accept any language
             all_labels = self.get_relations("R1", return_obj=True)
-            all_labels_dict = dict((str(label), None) for label in all_labels)
+            all_labels_dict = dict((str(label.value), None) for label in all_labels)
             adhoc_label_str = str(adhoc_label)
 
             if adhoc_label_str not in all_labels_dict:
@@ -205,11 +205,11 @@ class Entity(abc.ABC):
             return self.__dict__[attr_name]
         except KeyError:
             pass
-        processed_key = self.__process_attribute_name(attr_name)
+        processed_key: ProcessedStmtKey = self.__process_attribute_name(attr_name)
 
         try:
             # TODO: introduce prefixes here, which are mapped to uris
-            etyrel = self._get_relation_contents(rel_uri=processed_key.uri)
+            etyrel = self._get_relation_contents(rel_uri=processed_key.uri, lang_indicator=processed_key.lang_indicator)
         except KeyError:
             msg = f"'{type(self)}' object has no attribute '{processed_key.short_key}'"
             raise AttributeError(msg)
@@ -294,7 +294,7 @@ class Entity(abc.ABC):
             for func in parent_class._method_prototypes:
                 self.add_method(func)
 
-    def _get_relation_contents(self, rel_uri: str):
+    def _get_relation_contents(self, rel_uri: str, lang_indicator=None):
         aux.ensure_valid_uri(rel_uri)
 
         statements: List[Statement] = ds.get_statements(self.uri, rel_uri)
@@ -311,7 +311,7 @@ class Entity(abc.ABC):
         # (note that R22 itself is also a functional relation: only one of {True, False} is meaningful, same holds for
         # R32["is functional for each language"]). R32 also must be handled separately
 
-        relation = ds.relations[rel_uri]
+        relation: Relation = ds.relations[rel_uri]
         hardcoded_functional_relations = [
             aux.make_uri(settings.BUILTINS_URI, "R22"),
             aux.make_uri(settings.BUILTINS_URI, "R32"),
@@ -330,22 +330,25 @@ class Entity(abc.ABC):
 
         #  is a similar situation
         # if rel_key == "R32" this means that self 'is functional for each language'
-
         elif rel_uri in hardcoded_functional_fnc4elang_relations or relation.R32:
-            # TODO: handle multilingual situations more flexible
+            if lang_indicator is not None and lang_indicator not in settings.SUPPORTED_LANGUAGES:
+                msg = f"unsupported language ({lang_indicator}) while accessing {self}.{relation.short_key}."
+                raise aux.MultilingualityError(msg)
 
-            # todo: specify currently relevant language here (influences the return value); for now: using default
-            language = settings.DEFAULT_DATA_LANGUAGE
+            if lang_indicator is None:
+                lang_indicator = settings.DEFAULT_DATA_LANGUAGE
 
             filtered_res_explicit_lang = []
             filtered_res_without_lang = []
+
+            # TODO: simplify this since now we can be sure that we have only Literal-instances in res
             for elt in res:
                 # if no language is defined (e.g. ordinary string) -> use interpret this as match
                 # (but only if no other result with matching language attribute is available)
                 lng = getattr(elt, "language", None)
                 if lng is None:
                     filtered_res_without_lang.append(elt)
-                elif lng == language:
+                elif lng == lang_indicator:
                     filtered_res_explicit_lang.append(elt)
 
             if filtered_res_explicit_lang:
@@ -360,10 +363,10 @@ class Entity(abc.ABC):
             else:
                 msg = (
                     f"unexpectedly found more then one object for relation {relation.short_key} "
-                    f"and language {language}."
+                    f"and language {lang_indicator}."
                 )
 
-                raise ValueError(msg)
+                raise aux.MultilingualityError(msg)
 
         else:
             return res
@@ -463,6 +466,11 @@ class Entity(abc.ABC):
                 return None
 
         if isinstance(relation, Relation):
+
+            # handle R32__is_functional_for_each_language
+            if relation.R32 and not isinstance(obj, Literal):
+                obj = Literal(obj, lang=settings.DEFAULT_DATA_LANGUAGE)
+
             if isinstance(obj, (Entity, *allowed_literal_types)) or obj in allowed_literal_types:
                 return self._set_relation(relation.uri, obj, scope=scope, qualifiers=qualifiers, proxyitem=proxyitem)
             else:
@@ -801,7 +809,7 @@ class DataStore:
         Useful during interactive debugging. Not useful for production!
         """
         for uri, itm in self.items.items():
-            if itm.R1 == label:
+            if itm.R1.value == label:
                 return itm
 
     def get_entity_by_key_str(self, key_str, mod_uri=None) -> Entity:
@@ -934,13 +942,14 @@ class DataStore:
                 )
                 raise aux.FunctionalRelationError(msg)
             elif relation.R32 and not exception_flag:
+                if not isinstance(stm.object, Literal):
+                    stm.object = Literal(stm.object, settings.DEFAULT_DATA_LANGUAGE)
                 lang_list = [get_language_of_str_literal(s.object) for s in stm_list]
-                new_lang = get_language_of_str_literal(stm.object)
-                if new_lang in lang_list:
+                if stm.object.language in lang_list:
                     msg = (
                         f"for subject {subj_uri} ({subj_label}) there already exists statements for relation "
                         f"{stm.predicate} with the object languages {lang_list}. This relation is functional for "
-                        f"each language (R32). Thus another statement with language `{new_lang}` is not allowed."
+                        f"each language (R32). Thus another statement with language `{stm.object.language}` is not allowed."
                     )
                     raise aux.FunctionalRelationError(msg)
             stm_list.append(stm)
@@ -983,8 +992,12 @@ class DataStore:
 
                 label = description.replace("_", " ")
 
-                msg = f"Entity label '{entity.R1}' for entity '{e}' and given label '{label}' do not match!"
-                assert entity.R1 == label, msg
+                assert isinstance(entity.R1, Literal)
+                r1 = entity.R1.value
+
+                if r1 != label:
+                    msg = f"Entity label '{r1}' for entity '{e}' and given label '{label}' do not match!"
+                    raise aux.InconsistentLabelError(msg)
 
             new_query = re.sub(r"__[\w]+(?:–_instance)?", "", query)
         else:
@@ -1076,6 +1089,7 @@ class ProcessedStmtKey:
     label: str = None
     prefix: str = None
     uri: str = None
+    lang_indicator: str = None
 
     original_key_str: str = None
 
@@ -1177,6 +1191,16 @@ def process_key_str(
     if resolve_prefix:
         _resolve_prefix(res, passed_mod_uri=mod_uri)
 
+    if res.label:
+        match_list = langcode_end_pattern.findall(res.label)
+        if match_list:
+            assert len(match_list) == 1
+            match, = match_list
+            assert match.startswith("__")
+            res.label = langcode_end_pattern.sub("", res.label)
+
+            res.lang_indicator = match[2:]
+
     if check:
         aux.ensure_valid_short_key(res.short_key)
         check_processed_key_label(res)
@@ -1261,6 +1285,8 @@ def _resolve_prefix(pr_key: ProcessedStmtKey, passed_mod_uri: str = None) -> Non
 
     pr_key.uri = aux.make_uri(mod_uri, pr_key.short_key)
 
+# regex pattern which represents a language indicator
+langcode_end_pattern = re.compile("__[a-z]{2}$")
 
 def check_processed_key_label(pkey: ProcessedStmtKey) -> None:
     """
@@ -1280,10 +1306,21 @@ def check_processed_key_label(pkey: ProcessedStmtKey) -> None:
     except KeyError:
         # entity does not exist -> no label to compare with
         return
+
+    if entity.R1 is None:
+        # no label was set for the default language -> nothing to compare
+        return
+
+    # note: this includes Literal
+    assert isinstance(entity.R1, str)
+
     label_compare_str1 = entity.R1
     label_compare_str2 = ilk2nlk(entity.R1)
 
-    if pkey.label.lower() not in (label_compare_str1.lower(), label_compare_str2.lower()):
+    label = pkey.label.lower()
+
+    error_condition = label not in (label_compare_str1.lower(), label_compare_str2.lower())
+    if error_condition:
         msg = (
             f"check of label consistency failed for key {pkey.original_key_str}. Expected:  one of "
             f'("{label_compare_str1}", "{label_compare_str2}") but got  "{pkey.label}". '
@@ -1359,7 +1396,91 @@ def get_active_mod_uri(strict: bool = True) -> Union[str, None]:
     return res
 
 
-# noinspection PyShadowingNames
+def process_kwargs_for_entity_creation(entity_key: str, kwargs: dict) ->(dict, dict):
+    """
+    :return:    return new_kwargs, lang_related_kwargs
+    """
+
+    mod_uri = get_active_mod_uri()
+
+    new_kwargs = {}
+    lang_related_kwargs = defaultdict(list)
+    # prepare the kwargs to set relations
+    for dict_key, value in kwargs.items():
+        processed_key = process_key_str(dict_key)
+
+        if processed_key.etype != EType.RELATION:
+            msg = f"unexpected key: {dict_key} during creation of item {entity_key}."
+            raise ValueError(msg)
+
+        if processed_key.prefix:
+            new_key = f"{processed_key.prefix}__{processed_key.short_key}"
+        else:
+            new_key = processed_key.short_key
+
+        # handle those relations which might come with multiple languages
+        # (related to R32__is_functional_for_each_language)
+        if new_key in ("R1", "R2"):
+            value_list = lang_related_kwargs[new_key]
+            if len(value_list) == 0:
+                valid_languages = (None, settings.DEFAULT_DATA_LANGUAGE)
+                if processed_key.lang_indicator not in valid_languages:
+                    msg = (
+                        f"while creating {entity_key}: the first {new_key}-argument must be with "
+                        "lang_indicator `None` or explicitly using the default language. "
+                        f"Got {processed_key.lang_indicator} instead."
+                    )
+                    raise aux.MultilingualityError(msg)
+                value_lang = getattr(value, "language", None)
+                if value_lang not in valid_languages:
+                    msg = (
+                        f"while creating {entity_key}: the first {new_key}-argument must be "
+                        f"a flat string or a literal with the default language ({settings.DEFAULT_DATA_LANGUAGE})"
+                        f"Got {value_lang} instead."
+                    )
+                    raise aux.MultilingualityError(msg)
+
+                if not isinstance(value, Literal):
+                    if not isinstance(value, str):
+                        item_uri = aux.make_uri(mod_uri, entity_key)
+                        msg = (
+                            f"While creating {item_uri}: the {new_key}-argument must be a string. "
+                            f"Got {type(value)} instead."
+                        )
+                        raise TypeError(msg)
+                    value = Literal(value, lang=settings.DEFAULT_DATA_LANGUAGE)
+                value_list.append((processed_key.lang_indicator, value))
+            else:
+                value_list.append((processed_key.lang_indicator, value))
+                # do not pass this key-value-pair to the Item-constructor
+                # it will be handled later
+                continue
+
+        new_kwargs[new_key] = value
+
+    return new_kwargs, lang_related_kwargs
+
+
+def process_lang_related_kwargs_for_entity_creation(entity: Entity, short_key: str, lang_related_kwargs: dict) -> None:
+    for rel_key, value_list in lang_related_kwargs.items():
+        # omit the first argument as it was already passed to the Item-constructor
+        for lang_indicator, value in value_list[1:]:
+            if isinstance(value, Literal):
+                if value.language != lang_indicator:
+                    msg = (
+                         f"while creating {short_key} ({rel_key}-argument) got inconsistent language indicators: "
+                         f"in argument_name: {lang_indicator} but in value (Literal-instance) {value.language}"
+                    )
+                    raise aux.MultilingualityError(msg)
+            elif isinstance(value, str):
+                value = Literal(value, lang=lang_indicator)
+            else:
+                msg = f"unexpected type ({type(value)}) while creating {short_key} ({rel_key}-argument)"
+                raise TypeError(msg)
+
+            entity.set_relation(rel_key, value)
+
+
 def create_item(key_str: str = "", **kwargs) -> Item:
     """
 
@@ -1376,20 +1497,7 @@ def create_item(key_str: str = "", **kwargs) -> Item:
 
     mod_uri = get_active_mod_uri()
 
-    new_kwargs = {}
-    # prepare the kwargs to set relations
-    for dict_key, value in kwargs.items():
-        processed_key = process_key_str(dict_key)
-
-        if processed_key.etype != EType.RELATION:
-            msg = f"unexpected key: {dict_key} during creation of item {item_key}."
-            raise ValueError(msg)
-
-        if processed_key.prefix:
-            new_key = f"{processed_key.prefix}__{processed_key.short_key}"
-        else:
-            new_key = processed_key.short_key
-        new_kwargs[new_key] = value
+    new_kwargs, lang_related_kwargs = process_kwargs_for_entity_creation(item_key, kwargs)
 
     itm = Item(base_uri=mod_uri, key_str=item_key, **new_kwargs)
     assert itm.uri not in ds.items, f"Problematic (duplicated) uri: {itm.uri}"
@@ -1397,6 +1505,8 @@ def create_item(key_str: str = "", **kwargs) -> Item:
 
     # acces the defaultdict(list)
     ds.entities_created_in_mod[mod_uri].append(itm.uri)
+
+    process_lang_related_kwargs_for_entity_creation(itm, item_key, lang_related_kwargs)
 
     run_hooks(itm, phase="post-create")
 
@@ -1717,7 +1827,7 @@ class Statement:
 
         if key:
             try:
-                uri = process_key_str(key).uri
+                uri = process_key_str(key, check=False).uri
             except aux.ShortKeyNotFoundError:
                 if tolerate_key_error:
                     # this allows to ask for qualifiers before they are created
@@ -1834,19 +1944,12 @@ def create_relation(key_str: str = "", **kwargs) -> Relation:
 
     mod_uri = get_active_mod_uri()
 
+    # TODO: obsolete?
     default_relations = {
         # "R22": None,  # R22__is_functional
     }
 
-    new_kwargs = {**default_relations}
-    for key, value in kwargs.items():
-        processed_key = process_key_str(key)
-
-        if processed_key.etype != EType.RELATION:
-            msg = f"unexpected key: {key} during creation of item {rel_key}."
-            raise ValueError(msg)
-
-        new_kwargs[processed_key.short_key] = value
+    new_kwargs, lang_related_kwargs = process_kwargs_for_entity_creation(rel_key, kwargs)
 
     rel = Relation(mod_uri, rel_key, **new_kwargs)
     if rel.uri in ds.relations:
@@ -1854,6 +1957,8 @@ def create_relation(key_str: str = "", **kwargs) -> Relation:
         raise aux.InvalidURIError(msg)
     ds.relations[rel.uri] = rel
     ds.entities_created_in_mod[mod_uri].append(rel.uri)
+
+    process_lang_related_kwargs_for_entity_creation(rel, rel_key, lang_related_kwargs)
 
     run_hooks(rel, phase="post-create")
 
@@ -2309,7 +2414,7 @@ def end_mod():
     _uri_stack.pop()
     assert len(_uri_stack) == 0
 
-
+# TODO: obsolete?
 def get_language_of_str_literal(obj: Union[str, Literal]):
     if isinstance(obj, Literal):
         return obj.language
@@ -2331,13 +2436,16 @@ class LangaguageCode:
 
         :return:        Literal instance with `.lang` attribute set
         """
-        assert isinstance(arg, str)
+
+        # note that Literal is a subclass of str
+        assert not isinstance(arg, Literal) and isinstance(arg, str)
 
         res = Literal(arg, lang=self.langtag)
 
         return res
 
 
+df = LangaguageCode(settings.DEFAULT_DATA_LANGUAGE)
 en = LangaguageCode("en")
 de = LangaguageCode("de")
 fr = LangaguageCode("fr")

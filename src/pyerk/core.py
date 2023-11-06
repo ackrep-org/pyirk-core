@@ -205,11 +205,11 @@ class Entity(abc.ABC):
             return self.__dict__[attr_name]
         except KeyError:
             pass
-        processed_key = self.__process_attribute_name(attr_name)
+        processed_key: ProcessedStmtKey = self.__process_attribute_name(attr_name)
 
         try:
             # TODO: introduce prefixes here, which are mapped to uris
-            etyrel = self._get_relation_contents(rel_uri=processed_key.uri)
+            etyrel = self._get_relation_contents(rel_uri=processed_key.uri, lang_indicator=processed_key.lang_indicator)
         except KeyError:
             msg = f"'{type(self)}' object has no attribute '{processed_key.short_key}'"
             raise AttributeError(msg)

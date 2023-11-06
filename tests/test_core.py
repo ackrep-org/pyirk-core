@@ -1417,10 +1417,13 @@ class Test_03_Multilinguality(HouskeeperMixin, unittest.TestCase):
 
         self.assertEqual(labels, ["default label"@p.df, "deutsches label"@p.de, "dénomination française"@p.fr, "nombre español"@p.es])
 
-        # TODO: !!
         r1_default = I1001.R1__has_label
         r1_de = I1001.R1__has_label__de
         r1_es = I1001.R1__has_label__es
+
+        self.assertEqual(r1_default, "default label"@p.df)
+        self.assertEqual(r1_de, "deutsches label"@p.de)
+        self.assertEqual(r1_es, "nombre español"@p.es)
 
     def test_b1__multilingual_relations1(self):
         """

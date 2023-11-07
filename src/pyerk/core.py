@@ -73,7 +73,12 @@ if os.environ.get("IPYDEX_AIOE") == "true":
 
 """
 
-allowed_literal_types = (str, bool, float, int, complex)
+allowed_literal_types = (str, bool, float, int, complex, Literal)
+
+# Relations with R11__has_range_of_result=I19["multilingual string literal"] (due to multilinguality support)
+# Here we should automatically identify those relations which have R11__has_range_of_result=I19["multilingual string literal"]
+# for now these are hardcoded (which is also faster)
+RELKEYS_WITH_LITERAL_RANGE = ("R1", "R2", "R77")
 
 
 # copied from yamlpyowl project
@@ -465,19 +470,24 @@ class Entity(abc.ABC):
             if obj in existing_objects:
                 return None
 
-        if isinstance(relation, Relation):
-
-            # handle R32__is_functional_for_each_language
-            if relation.R32 and not isinstance(obj, Literal):
-                obj = Literal(obj, lang=settings.DEFAULT_DATA_LANGUAGE)
-
-            if isinstance(obj, (Entity, *allowed_literal_types)) or obj in allowed_literal_types:
-                return self._set_relation(relation.uri, obj, scope=scope, qualifiers=qualifiers, proxyitem=proxyitem)
-            else:
-                msg = f"Unsupported type ({type(obj)}) of {obj}, while setting relation {relation.short_key} of {self}"
-                raise TypeError(msg)
-        else:
+        if not isinstance(relation, Relation):
             msg = f"unexpected type: {type(relation)} of relation object {relation}, with {self} as subject"
+            raise TypeError(msg)
+
+        if isinstance(obj, (list, tuple)):
+            msg = f"Sequences like ({type(obj)}) are not allowed in `.set_relation`. Use `.set_multiple_relations`."
+            raise TypeError(msg)
+
+        # handle R32__is_functional_for_each_language
+        enforce_literal_as_type = relation.short_key in RELKEYS_WITH_LITERAL_RANGE or relation.R32
+
+        if enforce_literal_as_type and not isinstance(obj, Literal):
+            obj = Literal(obj, lang=settings.DEFAULT_DATA_LANGUAGE)
+
+        if isinstance(obj, (Entity, *allowed_literal_types)) or obj in allowed_literal_types:
+            return self._set_relation(relation.uri, obj, scope=scope, qualifiers=qualifiers, proxyitem=proxyitem)
+        else:
+            msg = f"Unsupported type ({type(obj)}) of {obj}, while setting relation {relation.short_key} of {self}"
             raise TypeError(msg)
 
     def _set_relation(
@@ -498,12 +508,12 @@ class Entity(abc.ABC):
         if isinstance(rel_content, Entity):
             corresponding_entity = rel_content
             corresponding_literal = None
-        else:
+        elif isinstance(rel_content, allowed_literal_types):
             corresponding_entity = None
-
-            if not isinstance(rel_content, (str, int, float, complex)):
-                rel_content = repr(rel_content)
             corresponding_literal = rel_content
+        else:
+            msg = f"unexpected type: {type(rel_content)} for object {rel_content}"
+            raise TypeError(msg)
 
         if qualifiers is None:
             qualifiers = []
@@ -1419,8 +1429,7 @@ def process_kwargs_for_entity_creation(entity_key: str, kwargs: dict) ->(dict, d
             new_key = processed_key.short_key
 
         # handle those relations which might come with multiple languages
-        # (related to R32__is_functional_for_each_language)
-        if new_key in ("R1", "R2"):
+        if new_key in RELKEYS_WITH_LITERAL_RANGE:
             value_list = lang_related_kwargs[new_key]
             if len(value_list) == 0:
                 valid_languages = (None, settings.DEFAULT_DATA_LANGUAGE)

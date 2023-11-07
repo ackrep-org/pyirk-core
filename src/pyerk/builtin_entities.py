@@ -1337,6 +1337,31 @@ I17 = create_builtin_item(
 )
 
 
+I51 = create_builtin_item(
+    key_str="I51",
+    R1__has_label="data type",
+    R2__has_description="subclasses of this item model data types such as string",
+    R4__is_instance_of=I2["Metaclass"],
+    R18__has_usage_hint="This class is meant to be 'abstract': it is not intended to be instantiated itself",
+)
+
+
+I52 = create_builtin_item(
+    key_str="I52",
+    R1__has_label="string",
+    R2__has_description="equivalent entity of the python datatype `str`",
+    R3__is_subclass_of=I51["data type"],
+)
+
+
+I53 = create_builtin_item(
+    key_str="I53",
+    R1__has_label="bool",
+    R2__has_description="equivalent entity of the python datatype `bool`",
+    R3__is_subclass_of=I51["data type"],
+)
+
+
 I18 = create_builtin_item(
     key_str="I18",
     R1__has_label="mathematical expression",
@@ -1366,7 +1391,7 @@ def get_ui_short_representation(self) -> str:
 I18.add_method(get_ui_short_representation)
 del get_ui_short_representation
 R24["has LaTeX string"].set_relation(R8["has domain of argument 1"], I18["mathematical expression"])
-R24["has LaTeX string"].set_relation(R11["has range of result"], str)
+R24["has LaTeX string"].set_relation(R11["has range of result"], I52["string"])
 
 
 # TODO: how does this relate to I21["mathmatical relation"]?
@@ -1385,14 +1410,15 @@ def create_expression(latex_src: str, r1: str = None, r2: str = None) -> Item:
     return expression
 
 
-# TODO: this item might be obsolete, we use a construction with RDF-Literals instead
-# however currently it is uses for R11__has_range_of_result in the ocse (test data)
 I19 = create_builtin_item(
     key_str="I19",
-    R1__has_label="multilingual string literal",
+    R1__has_label="language-specified string literal",
     R2__has_description="used to encode strings that depend on natural languages",
     R4__is_instance_of=I2["Metaclass"],
 )
+
+R1.set_relation(R11, I19["language-specified string literal"])
+R2.set_relation(R11, I19["language-specified string literal"])
 
 
 I20 = create_builtin_item(
@@ -1956,7 +1982,7 @@ R42 = create_builtin_relation(
         "implies the statement `obj rel subj`"
     ),
     R8__has_domain_of_argument_1=I40["general relation"],
-    R9__has_domain_of_argument_2=bool,
+    R9__has_domain_of_argument_2=I53["bool"],
     R22__is_functional=True,
 )
 
@@ -2004,7 +2030,7 @@ R44 = create_builtin_relation(
         "specifies that the subject represents an universally quantified variable (usually denoted by '∀')"
     ),
     R8__has_domain_of_argument_1=I1["general item"],
-    R11__has_range_of_result=bool,
+    R11__has_range_of_result=I53["bool"],
     R18__has_usage_hint=(
         "should be used as qualifier to specify the free variables in theorems and similar statements; "
         "See also R66__is_existantially_quantified"
@@ -2055,7 +2081,7 @@ R66 = create_builtin_relation(
         "specifies that the subject represents an existentially quantified variable (usually denoted by '∃')"
     ),
     R8__has_domain_of_argument_1=I1["general item"],
-    R11__has_range_of_result=bool,
+    R11__has_range_of_result=I53["bool"],
     R18__has_usage_hint=(
         "should be used as qualifier to specify the free variables in theorems and similar statements; "
         "See also R44__is_universally_quantified"
@@ -2244,7 +2270,7 @@ R53 = create_builtin_relation(
     R1__has_label="is inverse functional",
     R2__has_description=("specifies that the inverse relation of the subject is functional"),
     # R8__has_domain_of_argument_1=I1["general item"],  # unsure here
-    R11__has_range_of_result=bool,
+    R11__has_range_of_result=I53["bool"],
     # TODO: model that this is (probably) equivalent to "owl:InverseFunctionalProperty"
 )
 
@@ -2287,7 +2313,7 @@ R57 = create_builtin_relation(
     R2__has_description="specifies that the subject is a placeholder and might be replaced by other itmes",
     # TODO:
     # R8__has_domain_of_argument_1=<any ordinary instance>,
-    R11__has_range_of_result=bool,
+    R11__has_range_of_result=I53["bool"],
     R22__is_functional=True,
 )
 
@@ -2309,7 +2335,7 @@ R59 = create_builtin_relation(
         "currently '2' is not implemented."
     ),
     R8__has_domain_of_argument_1=I1["general item"],
-    R11__has_range_of_result=int,
+    R11__has_range_of_result=I37["integer number"],
     R18__has_usage_hint="used to adjust the meaning of a statement in the scopes of a I41__semantinc_rule",
 )
 
@@ -2323,7 +2349,7 @@ R60 = create_builtin_relation(
         "`B rel C` also implies the statement `A rel C`"
     ),
     R8__has_domain_of_argument_1=I40["general relation"],
-    R9__has_domain_of_argument_2=bool,
+    R9__has_domain_of_argument_2=I53["bool"],
     R22__is_functional=True,
 )
 
@@ -2337,7 +2363,7 @@ R62 = create_builtin_relation(
         "by edge matching."
     ),
     R8__has_domain_of_argument_1=I40["general relation"],
-    R11__has_range_of_result=bool,
+    R11__has_range_of_result=I53["bool"],
     R22__is_functional=True,
 )
 
@@ -2384,7 +2410,7 @@ R63 = create_builtin_relation(
     R1__has_label="has SPARQL source",
     R2__has_description=("specifies that the subject (a scope) is featured by some unique SPARQL source code"),
     R8__has_domain_of_argument_1=I16["scope"],
-    R11__has_range_of_result=str,
+    R11__has_range_of_result=I52["string"],
     R22__is_functional=True,
 )
 
@@ -2403,7 +2429,7 @@ R64 = create_builtin_relation(
     R1__has_label="has scope type",
     R2__has_description=("specifies the subject (a scope) has a certain type (currently 'OR', 'AND')"),
     R8__has_domain_of_argument_1=I16["scope"],
-    R11__has_range_of_result=str,
+    R11__has_range_of_result=I52["string"],
     R22__is_functional=True,
 )
 
@@ -2416,7 +2442,7 @@ R65 = create_builtin_relation(
         "relation."
     ),
     R8__has_domain_of_argument_1=I16["scope"],
-    R11__has_range_of_result=str,
+    R11__has_range_of_result=I52["string"],
     R22__is_functional=True,
     R18__has_usage_hint="used inside OR-subscopes of semantic rules",
 )
@@ -2434,7 +2460,7 @@ R69 = create_builtin_relation(
         "associates a template text to the subject (a rule), which can be processed by the ruleengine."
     ),
     R8__has_domain_of_argument_1=I41["semantic rule"],
-    R11__has_range_of_result=str,
+    R11__has_range_of_result=I52["string"],
     R32__is_functional_for_each_language=True,
     R18__has_usage_hint="used to generate explaining reports of rule results",
 )
@@ -2447,7 +2473,7 @@ R70 = create_builtin_relation(
         "specifies the number of weakly connected 'main components' of the prototype graph of a semantic rule"
     ),
     R8__has_domain_of_argument_1=I41["semantic rule"],
-    R11__has_range_of_result=int,
+    R11__has_range_of_result=I37["integer number"],
     R22__is_functional=True,
 )
 
@@ -2459,7 +2485,7 @@ R71 = create_builtin_relation(
         "of the subjects (first) R11-value; to be used in rules"
     ),
     R8__has_domain_of_argument_1=I40["general relation"],
-    R11__has_range_of_result=bool,
+    R11__has_range_of_result=I53["bool"],
     R18__has_usage_hint="used to to control the behavior of rules with subjectivized predicates",
     R22__is_functional=True,
 )
@@ -2482,7 +2508,7 @@ R72 = create_builtin_relation(
     R1__has_label="is generally related to",
     R2__has_description=("specifies that the subject is 'somehow' related to the object"),
     R8__has_domain_of_argument_1=I45["general entity"],
-    R11__has_range_of_result=bool,
+    R11__has_range_of_result=I53["bool"],
     R18__has_usage_hint="used to model relationships which are not (yet) possible to model otherwise",
 )
 
@@ -2491,7 +2517,7 @@ R73 = create_builtin_relation(
     R1__has_label="conceptually dependends",
     R2__has_description=("specifies that the object is needed to define the subject"),
     R8__has_domain_of_argument_1=I45["general entity"],
-    R11__has_range_of_result=bool,
+    R11__has_range_of_result=I53["bool"],
     R18__has_usage_hint=(
         "Used to model directed relationships which are not (yet) possible to model otherwise. "
         "See R72__is_generally_related_to."
@@ -2557,12 +2583,23 @@ I50 = create_builtin_item(
     key_str="I50",
     R1__has_label="stub",
     R2__has_description="instances of this class represent incompletly modelled items (like wikipedia stub-articles)",
-    R3__is_subclass_of=I2["Metaclass"],
+    R3__is_subclass_of=I2["Metaclass"],  # could be also R4 here but does not matter because stubs are very unspecific
     R18__has_usage_hint="This class can be used to preliminarily introduce items and refine them later",
 )
 
 
-# next keys: I51, R76
+R77 = create_builtin_relation(
+    key_str="R77",
+    R1__has_label="has alternative label",
+    R2__has_description="specifies alternative lables for entities in the sense of 'also called ...'",
+    R8__has_domain_of_argument_1=I45["general entity"],
+    R11__has_range_of_result=I19["language-specified string literal"],  # the labels should have a language specified
+    R18__has_usage_hint="allows multiple values per language (in contrast to R1__has_label)"
+)
+
+# I51, I52, I53, are defined above
+
+# next keys: I54, R78
 
 
 # ######################################################################################################################

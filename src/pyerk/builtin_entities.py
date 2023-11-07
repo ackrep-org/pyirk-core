@@ -296,6 +296,11 @@ R8 = create_builtin_relation("R8", R1="has domain of argument 1")
 R9 = create_builtin_relation("R9", R1="has domain of argument 2")
 R10 = create_builtin_relation("R10", R1="has domain of argument 3")
 R11 = create_builtin_relation("R11", R1="has range of result", R2="specifies the range of the result (last arg)")
+
+R1.set_relation(R11, core.Literal)
+R2.set_relation(R11, core.Literal)
+
+
 R12 = create_builtin_relation("R12", R1="is defined by means of")
 R13 = create_builtin_relation("R13", R1="has canonical symbol", R22__is_functional=True)
 R14 = create_builtin_relation("R14", R1="is subset of")

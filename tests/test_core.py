@@ -1556,6 +1556,11 @@ class Test_03_Multilinguality(HouskeeperMixin, unittest.TestCase):
             labels = R300.get_relations("R1", return_obj=True)
             self.assertEqual(labels, ["default rel-label"@p.df, "deutsches rel-label"@p.de])
 
+            # ensure the correct range for the hardcoded relations
+            for short_key in p.RELKEYS_WITH_LITERAL_RANGE:
+                rel = p.ds.get_entity_by_uri(p.aux.make_uri(p.builtin_entities.__URI__, short_key))
+                self.assertIn(p.Literal, rel.R11__has_range_of_result)
+
             # test R77__has_alternative_label
 
             I1000 =  p.create_item(
@@ -1566,6 +1571,19 @@ class Test_03_Multilinguality(HouskeeperMixin, unittest.TestCase):
                 )
 
             self.assertEqual(I1000.R77__has_alternative_label, ["bar"@p.df, "baz"@p.de])
+
+            # TODO: this should be automatically converted to default language
+            # I1000.R77__has_alternative_label = "more foo"
+
+            I1000.R77__has_alternative_label = "more foo"@p.en
+            self.assertEqual(I1000.R77__has_alternative_label, ["bar"@p.df, "baz"@p.de, "more foo"@p.df])
+
+
+            I1000.set_relation("R77__has_alternative_label", ["foo-it"@p.it, "bar-es"@p.es])
+            self.assertEqual(
+                I1000.R77__has_alternative_label,
+                ["bar"@p.df, "baz"@p.de, "more foo"@p.df, "foo-it"@p.it, "bar-es"@p.es]
+            )
 
 
 class Test_Z_Core(HouskeeperMixin, unittest.TestCase):

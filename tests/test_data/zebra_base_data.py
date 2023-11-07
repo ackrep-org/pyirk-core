@@ -258,7 +258,7 @@ R2850 = p.create_relation(
     R1__has_label="is functional activity",
     R2__has_description="specifies that a relation is functional in the context of the zebra puzzle",
     R8__has_domain_of_argument_1=p.I40["general relation"],
-    R11__has_range_of_result=bool,
+    R11__has_range_of_result=p.I53["bool"],
     R22__is_functional=True,
     R62__is_relation_property=True,
 )
@@ -430,7 +430,7 @@ R6020 = p.create_relation(
         "specifies that the subject (a relation) is the opposite of a relation with R2850__is_functional_activity=True"
     ),
     R8__has_domain_of_argument_1=p.I40["general relation"],
-    R11__has_range_of_result=bool,
+    R11__has_range_of_result=p.I53["bool"],
     R22__is_functional=True,
     R62__is_relation_property=True,
 )

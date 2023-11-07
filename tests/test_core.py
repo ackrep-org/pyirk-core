@@ -589,9 +589,9 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         with p.uri_context(uri=TEST_BASE_URI):
             Ia001 = p.create_item(R1__has_label="test item")
 
-        # check that assigning sequences is not allowed
-        with self.assertRaises(TypeError):
-            Ia001.set_relation(p.R5["is part of"], [p.I4["Mathematics"], p.I5["Engineering"]])
+            # check that assigning sequences is not allowed
+            with self.assertRaises(TypeError):
+                Ia001.set_relation(p.R5["is part of"], [p.I4["Mathematics"], p.I5["Engineering"]])
 
         with p.uri_context(uri=TEST_BASE_URI):
             # check that assigning sequences is possible with explicit method.
@@ -1559,7 +1559,7 @@ class Test_03_Multilinguality(HouskeeperMixin, unittest.TestCase):
             # ensure the correct range for the hardcoded relations
             for short_key in p.RELKEYS_WITH_LITERAL_RANGE:
                 rel = p.ds.get_entity_by_uri(p.aux.make_uri(p.builtin_entities.__URI__, short_key))
-                self.assertIn(p.Literal, rel.R11__has_range_of_result)
+                self.assertIn(p.I19["language-specified string literal"], rel.R11__has_range_of_result)
 
             # test R77__has_alternative_label
 
@@ -1579,7 +1579,7 @@ class Test_03_Multilinguality(HouskeeperMixin, unittest.TestCase):
             self.assertEqual(I1000.R77__has_alternative_label, ["bar"@p.df, "baz"@p.de, "more foo"@p.df])
 
 
-            I1000.set_relation("R77__has_alternative_label", ["foo-it"@p.it, "bar-es"@p.es])
+            I1000.set_mutliple_relations("R77__has_alternative_label", ["foo-it"@p.it, "bar-es"@p.es])
             self.assertEqual(
                 I1000.R77__has_alternative_label,
                 ["bar"@p.df, "baz"@p.de, "more foo"@p.df, "foo-it"@p.it, "bar-es"@p.es]

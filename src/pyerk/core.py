@@ -75,8 +75,8 @@ if os.environ.get("IPYDEX_AIOE") == "true":
 
 allowed_literal_types = (str, bool, float, int, complex, Literal)
 
-# Relations with R11__has_range_of_result=Literal (due to multilinguality support)
-# Here we should automatically identify those relations which have R11__has_range_of_result=Literal
+# Relations with R11__has_range_of_result=I19["multilingual string literal"] (due to multilinguality support)
+# Here we should automatically identify those relations which have R11__has_range_of_result=I19["multilingual string literal"]
 # for now these are hardcoded (which is also faster)
 RELKEYS_WITH_LITERAL_RANGE = ("R1", "R2", "R77")
 
@@ -474,11 +474,9 @@ class Entity(abc.ABC):
             msg = f"unexpected type: {type(relation)} of relation object {relation}, with {self} as subject"
             raise TypeError(msg)
 
-        # handle sequences (allowed for convenience)
         if isinstance(obj, (list, tuple)):
-            for elt in obj:
-                self.set_relation(relation, elt)
-            return
+            msg = f"Sequences like ({type(obj)}) are not allowed in `.set_relation`. Use `.set_multiple_relations`."
+            raise TypeError(msg)
 
         # handle R32__is_functional_for_each_language
         enforce_literal_as_type = relation.short_key in RELKEYS_WITH_LITERAL_RANGE or relation.R32
@@ -510,18 +508,12 @@ class Entity(abc.ABC):
         if isinstance(rel_content, Entity):
             corresponding_entity = rel_content
             corresponding_literal = None
-        elif rel_content in allowed_literal_types:
-            # object is a type -> currently a special case (neither entity nor literal)
-            # this is uses to specify allowed types e.g. in R11__has_range_of_result, ...
+        elif isinstance(rel_content, allowed_literal_types):
             corresponding_entity = None
-            corresponding_literal = None
-        else:
-            # the object is not an entity -> it is a literal
-            corresponding_entity = None
-
-            if not isinstance(rel_content, allowed_literal_types):
-                rel_content = repr(rel_content)
             corresponding_literal = rel_content
+        else:
+            msg = f"unexpected type: {type(rel_content)} for object {rel_content}"
+            raise TypeError(msg)
 
         if qualifiers is None:
             qualifiers = []

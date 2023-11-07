@@ -73,7 +73,7 @@ if os.environ.get("IPYDEX_AIOE") == "true":
 
 """
 
-allowed_literal_types = (str, bool, float, int, complex)
+allowed_literal_types = (str, bool, float, int, complex, Literal)
 
 
 # copied from yamlpyowl project
@@ -1420,7 +1420,9 @@ def process_kwargs_for_entity_creation(entity_key: str, kwargs: dict) ->(dict, d
 
         # handle those relations which might come with multiple languages
         # (related to R32__is_functional_for_each_language)
-        if new_key in ("R1", "R2"):
+        # TODO: here we should use those relations which have R11__has_range_of_result=Literal
+        # for now these are hardcoded (which is also faster)
+        if new_key in ("R1", "R2", "R77"):
             value_list = lang_related_kwargs[new_key]
             if len(value_list) == 0:
                 valid_languages = (None, settings.DEFAULT_DATA_LANGUAGE)

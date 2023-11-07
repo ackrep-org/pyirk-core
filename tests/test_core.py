@@ -1556,6 +1556,17 @@ class Test_03_Multilinguality(HouskeeperMixin, unittest.TestCase):
             labels = R300.get_relations("R1", return_obj=True)
             self.assertEqual(labels, ["default rel-label"@p.df, "deutsches rel-label"@p.de])
 
+            # test R77__has_alternative_label
+
+            I1000 =  p.create_item(
+                    R1__has_label="foo",
+                    R1__has_label__de="foo-de",
+                    R77__has_alternative_label="bar",
+                    R77__has_alternative_label__de="baz",
+                )
+
+            self.assertEqual(I1000.R77__has_alternative_label, ["bar"@p.df, "baz"@p.de])
+
 
 class Test_Z_Core(HouskeeperMixin, unittest.TestCase):
     """

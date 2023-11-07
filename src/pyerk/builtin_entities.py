@@ -2562,7 +2562,16 @@ I50 = create_builtin_item(
 )
 
 
-# next keys: I51, R76
+R77 = create_builtin_relation(
+    key_str="R77",
+    R1__has_label="has alternative label",
+    R2__has_description="specifies alternative lables for entities in the sense of 'also called ...'",
+    R8__has_domain_of_argument_1=I45["general entity"],
+    R11__has_range_of_result=core.Literal,  # the labels should have a language specified
+    R18__has_usage_hint="allows multiple values per language (in contrast to R1__has_label)"
+)
+
+# next keys: I51, R78
 
 
 # ######################################################################################################################

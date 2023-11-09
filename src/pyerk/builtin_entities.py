@@ -2597,9 +2597,24 @@ R77 = create_builtin_relation(
     R18__has_usage_hint="allows multiple values per language (in contrast to R1__has_label)"
 )
 
+
+R78 = create_builtin_relation(
+    key_str="R78",
+    R1__has_label="is applicable to",
+    R2__has_description="specifies some property can be applied to some entity",
+    R8__has_domain_of_argument_1=I11["mathematical property"],
+    # TODO: introduce some mechanism to distinguish whether a relation referes to the class in a direct or abstract sense
+    # (where abstract means that it actually refers to the instances of the class)
+    # example the mathematical property of symmetry might applicable to the class item ma.I9904["matrix"] but this statement
+    # acutally means that an individual matrix might have this property
+    R11__has_range_of_result=I45["general entity"],
+)
+
+
 # I51, I52, I53, are defined above
 
-# next keys: I54, R78
+
+# next keys: I54, R79
 
 
 # ######################################################################################################################

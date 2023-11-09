@@ -424,7 +424,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
             )
 
             my_set = p.instance_of(p.I13["mathematical set"])
-            my_prop = p.instance_of(p.I11["mathematical property"])
+            my_prop = p.instance_of(p.I54["mathematical property"])
 
             with I7324["definition of something"].scope("setting") as cm:
                 x = cm.new_var(x=p.instance_of(p.I39["positive integer"]))
@@ -533,7 +533,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
             )
 
             my_set = p.instance_of(p.I13["mathematical set"])
-            my_prop = p.instance_of(p.I11["mathematical property"])
+            my_prop = p.instance_of(p.I54["mathematical property"])
 
             # create some variables and relations
             with I0111["definition of something"].scope("setting") as cm:
@@ -1211,16 +1211,16 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
                 key_str="I400",
                 R1__has_label="subproperty rule 1",
                 R2__has_description=(
-                    # "specifies the 'transitivity' of I11_mathematical_property-instances via R17_issubproperty_of"
+                    # "specifies the 'transitivity' of I54_mathematical_property-instances via R17_issubproperty_of"
                     "specifies the 'transitivity' of R17_is_subproperty_of"
                 ),
                 R4__is_instance_of=p.I41["semantic rule"],
             )
 
             with self.rule1["subproperty rule 1"].scope("setting") as cm:
-                cm.new_var(P1=p.instance_of(p.I11["mathematical property"]))
-                cm.new_var(P2=p.instance_of(p.I11["mathematical property"]))
-                cm.new_var(P3=p.instance_of(p.I11["mathematical property"]))
+                cm.new_var(P1=p.instance_of(p.I54["mathematical property"]))
+                cm.new_var(P2=p.instance_of(p.I54["mathematical property"]))
+                cm.new_var(P3=p.instance_of(p.I54["mathematical property"]))
             #     # A = cm.new_var(sys=instance_of(I1["general item"]))
             #
             with self.rule1["subproperty rule 1"].scope("premise") as cm:

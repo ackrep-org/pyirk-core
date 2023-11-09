@@ -438,8 +438,8 @@ I10 = create_builtin_item(
 )
 I11 = create_builtin_item(
     key_str="I11",
-    R1="mathematical property",
-    R2__has_description="base class for all mathematical properties",
+    R1="general property",
+    R2__has_description="base class for all properties",
     R4__is_instance_of=I2["Metaclass"],
     R18__has_usage_hint=(
         "Actual properties are instances of this class (not subclasses). "
@@ -2602,7 +2602,7 @@ R78 = create_builtin_relation(
     key_str="R78",
     R1__has_label="is applicable to",
     R2__has_description="specifies some property can be applied to some entity",
-    R8__has_domain_of_argument_1=I11["mathematical property"],
+    R8__has_domain_of_argument_1=I11["general property"],
     # TODO: introduce some mechanism to distinguish whether a relation referes to the class in a direct or abstract sense
     # (where abstract means that it actually refers to the instances of the class)
     # example the mathematical property of symmetry might applicable to the class item ma.I9904["matrix"] but this statement
@@ -2612,6 +2612,14 @@ R78 = create_builtin_relation(
 
 
 # I51, I52, I53, are defined above
+
+
+I54 = create_builtin_item(
+    key_str="I54",
+    R1__has_label="mathematical property",
+    R2__has_description="base class for all mathematical properties",
+    R3__is_subclass_of=I11["general property"],
+)
 
 
 # next keys: I54, R79

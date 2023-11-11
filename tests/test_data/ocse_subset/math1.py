@@ -189,11 +189,34 @@ I5807 = p.create_item(
     R11__has_range_of_result=p.I37["integer number"],
 )
 
+I9906 = p.create_item(
+    R1__has_label="square matrix",
+    R2__has_description="a matrix for which the number of rows and columns are equal",
+    R3__is_subclass_of=I9904["matrix"],
+    # TODO: formalize the condition inspired by OWL
+)
+
 I9907 = p.create_item(
     R1__has_label="definition of square matrix",
     R2__has_description="the defining statement of what a square matrix is",
     R4__is_instance_of=p.I20["mathematical definition"],
 )
+
+with I9907.scope("setting") as cm:
+    cm.new_var(M=p.uq_instance_of(I9904["matrix"]))
+    cm.new_var(nr=p.uq_instance_of(p.I39["positive integer"]))
+
+    cm.new_var(nc=p.instance_of(p.I39["positive integer"]))
+
+    cm.new_rel(cm.M, R5938["has row number"], cm.nr)
+    cm.new_rel(cm.M, R5939["has column number"], cm.nc)
+
+with I9907.scope("premise") as cm:
+    # number of rows == number of columns
+    cm.new_equation(lhs=cm.nr, rhs=cm.nc)
+
+with I9907.scope("assertion") as cm:
+    cm.new_rel(cm.M, p.R30["is secondary instance of"], I9906["square matrix"])
 
 
 p.end_mod()

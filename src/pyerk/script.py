@@ -457,18 +457,24 @@ def process_template(template_path):
         line = line.strip().strip(",")
         if not line:
             continue
-        if line.startswith("raw__"):
+        elif line.startswith("raw__"):
+            # handle raw lines
             lines_to_insert.append(line[len("raw__"):])
             lines_to_insert.append("\n"*3)
             continue
-
-        if line.startswith("func__"):
+        elif line.startswith("with__"):
+            # handle context managers
+            short_key = line.strip().strip(",")
+        elif line.startswith("func__"):
             short_key = line[len("func__"):]
         else:
             # assume pyerk entity
             short_key = core.process_key_str(line, check=False).short_key
 
-        lines_to_insert.append(mod_ast_cont.line_data[short_key])
+        original_content = mod_ast_cont.line_data[short_key]
+        assert isinstance(original_content, str)
+        assert original_content != ""
+        lines_to_insert.append(original_content)
         lines_to_insert.append("\n")
 
     new_insert_txt = "".join(lines_to_insert)
@@ -490,6 +496,12 @@ def path_to_ast_container(mod_path: str) -> core.aux.Container:
             name = elt.targets[0].id
         elif isinstance(elt, (ast.FunctionDef, ast.ClassDef)):
             name = elt.name
+        elif isinstance(elt, ast.With):
+            first_line = lines[elt.lineno-1]
+            # assume form like `with I9907.scope("setting") as cm:`
+            idx = first_line.index(" as ")
+            # create name string like `with__I9907.scope("setting")`
+            name = f"with__{first_line[len('with '):idx]}"
         else:
             continue
 

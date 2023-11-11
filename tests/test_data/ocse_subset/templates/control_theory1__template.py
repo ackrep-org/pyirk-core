@@ -40,6 +40,14 @@ I2562["general property of pde"],
 I2557["quasilinearity"],
 I3114["semilinearity"],
 I3863["linearity"],
+I5236["general trajectory property"],
+I7207["stability"],
+I5082["local attractiveness"],
+I2931["local Lyapunov stability"],
+I4900["local asymptotical stability"],
+I9642["local exponential stability"],
+I9210["stabilizability"],
+I7864["controllability"],
 ]
 
 

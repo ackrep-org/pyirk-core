@@ -122,5 +122,7 @@ R6876 = p.create_relation(
     R33__has_corresponding_wikidata_entity="https://www.wikidata.org/entity/P138",
 )
 
+I2151 = create_person("Aleksandr", "Lyapunov", "mathematician and physicist")
+
 
 p.end_mod()

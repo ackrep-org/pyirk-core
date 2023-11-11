@@ -173,6 +173,65 @@ I3863 = p.create_item(
     R17__is_subproperty_of=I3114["semilinearity"],
 )
 
+I5236 = p.create_item(
+    R1__has_label="general trajectory property",
+    R2__has_description="general property of a trajectory",
+    R4__is_instance_of=p.I54["mathematical property"],
+)
+
+I7207 = p.create_item(
+    R1__has_label="stability",
+    R2__has_description="tendency to stay close to some distinguished trajectory (e.g. equilibrium)",
+    R4__is_instance_of=p.I54["mathematical property"],
+)
+
+I5082 = p.create_item(
+    R1__has_label="local attractiveness",
+    R2__has_description="states that all trajectories that start close enough to the trajectory in consideration will \
+        converge to it",
+    R4__is_instance_of=I5236["general trajectory property"],
+)
+
+I2931 = p.create_item(
+    R1__has_label="local Lyapunov stability",
+    R2__has_description="states that all trajectories that start close enough to the equilibrium will not leave a \
+        certain neighborhood",
+    R4__is_instance_of=I5236["general trajectory property"],
+    R17__is_subproperty_of=I7207["stability"],
+    ag__R6876__is_named_after=ag.I2151["Aleksandr Lyapunov"],
+)
+
+I4900 = p.create_item(
+    R1__has_label="local asymptotical stability",
+    R2__has_description="states that all trajectories that start close enough to the equilibrium remain close enough \
+        and will converge to it",
+    R4__is_instance_of=I5236["general trajectory property"],
+    R17__is_subproperty_of=[I2931["local Lyapunov stability"], I5082["local attractiveness"]],
+)
+
+I9642 = p.create_item(
+    R1__has_label="local exponential stability",
+    R2__has_description="states that an equilibrium is locally asymptotically stable and all trajectories converge at \
+        least exponentially fast",
+    R4__is_instance_of=I5236["general trajectory property"],
+    R17__is_subproperty_of=I4900["local asymptotical stability"],
+)
+
+I9210 = p.create_item(
+    R1__has_label="stabilizability",
+    R2__has_description="states that for the model of a dynamical system there exists a state feedback such that the \
+        system is asymptotically stable",
+    R4__is_instance_of=I5356["general system property"],
+)
+
+I7864 = p.create_item(
+    R1__has_label="controllability",
+    R2__has_description="states that the state of the model of a dynamical system can be changed from any arbitrary \
+        starting state to any desired state in a finite amount of time using an external input",
+    R4__is_instance_of=I5356["general system property"],
+    R17__is_subproperty_of=I9210["stabilizability"],
+)
+
 
 
 

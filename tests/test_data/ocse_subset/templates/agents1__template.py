@@ -30,6 +30,7 @@ insert_entities = [
     raw__I2746["Rudolf Kalman"].set_relation(R1833["has employer"], I7301["ETH Zürich"], qualifiers=[start_time("1973"), end_time("1997")]),
     I4853["Sophus Lie"],
     R6876["is named after"],
+    I2151["Aleksandr Lyapunov"],
 ]
 
 p.end_mod()

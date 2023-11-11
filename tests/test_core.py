@@ -1286,7 +1286,6 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         ra = p.ruleengine.RuleApplicator(self.rule1)
         ra_worker = ra.ra_workers[0]
         res_graph = ra_worker.match_subgraph_P()
-        IPS()
         self.assertGreater(len(res_graph), 5)
 
     def test_c05__ruleengine04(self):

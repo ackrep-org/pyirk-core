@@ -440,3 +440,19 @@ def get_erk_root_dir() -> str:
     dir_of_this_file = os.path.dirname(os.path.abspath(sys.modules.get(__name__).__file__))
     erk_root = os.path.abspath(os.path.join(dir_of_this_file, "..", "..", ".."))
     return erk_root
+
+
+def get_erk_path(dirname=None):
+
+    if dirname is None:
+        return get_erk_root_dir()
+
+    dir_of_this_file = os.path.dirname(os.path.abspath(sys.modules.get(__name__).__file__))
+
+    # this assumes pyerk is installed with `pip install -e .` from the repo
+    pyerk_root = os.path.abspath(os.path.join(dir_of_this_file, "..", ".."))
+    if dirname == "pyerk-core-test_data":
+        return os.path.join(pyerk_root, "tests", "test_data")
+
+    msg = f"unexpected dirname: {dirname}"
+    raise ValueError(msg)

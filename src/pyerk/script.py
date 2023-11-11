@@ -5,6 +5,9 @@ import os
 import argparse
 from pathlib import Path
 import re
+from typing import Tuple
+import ast
+import inspect
 
 try:
     # this will be part of standard library for python >= 3.11
@@ -137,6 +140,13 @@ def create_parser():
         metavar="path_to_mod"
     )
 
+    parser.add_argument(
+        "-utd",
+        "--update-test-data",
+        help="create a subset of the erkpackage (e.g. OCSE) and store it in the `test_data` dir of pyerk-core",
+        metavar="path_to_erk_package"
+    )
+
     parser.add_argument("--dbg", help="start debug routine", default=None, action="store_true")
 
     parser.add_argument(
@@ -222,21 +232,23 @@ def main():
         pyerkdjango.core.start_django_shell()
     elif args.insert_keys_for_placeholders:
         insert_keys_for_placeholders(args.insert_keys_for_placeholders)
+    elif args.update_test_data:
+        update_test_data(args.update_test_data)
     else:
         print("nothing to do, see option `--help` for more info")
 
 
-def process_package(pkg_path: str) -> erkloader.ModuleType:
+def process_package(pkg_path: str) -> Tuple[erkloader.ModuleType, str]:
     if os.path.isdir(pkg_path):
         pkg_path = os.path.join(pkg_path, "erkpackage.toml")
 
     with open(pkg_path, "rb") as fp:
         erk_conf_dict = tomllib.load(fp)
-    ocse_main_rel_path = erk_conf_dict["main_module"]
+    main_rel_path = erk_conf_dict["main_module"]
     main_module_prefix = erk_conf_dict["main_module_prefix"]
-    ocse_main_mod_path = Path(pkg_path).parent.joinpath(ocse_main_rel_path).as_posix()
+    main_mod_path = Path(pkg_path).parent.joinpath(main_rel_path).as_posix()
 
-    mod = erkloader.load_mod_from_path(modpath=ocse_main_mod_path, prefix=main_module_prefix)
+    mod = erkloader.load_mod_from_path(modpath=main_mod_path, prefix=main_module_prefix)
     return mod, main_module_prefix
 
 
@@ -395,6 +407,50 @@ def replace_dummy_enties_by_label(modpath):
 
     with open(modpath, "w") as fp:
         fp.write(txt)
+
+
+def update_test_data(pkg_path):
+    """
+    Background: see devdocs
+    """
+    import glob
+    mod, prefix = process_package(pkg_path)
+    mod_cont = path_to_ast_container(inspect.getfile(mod))
+
+    test_data_root = core.aux.get_erk_path("pyerk-core-test_data")
+    target_dir = os.path.join(test_data_root, "ocse_subset")
+    template_dir = os.path.join(target_dir, "templates")
+
+    template_files = glob.glob(os.path.join(template_dir, "*__template.py"))
+
+    IPS()
+
+
+def path_to_ast_container(mod_path: str) -> core.aux.Container:
+
+    with open(mod_path) as fp:
+        lines = fp.readlines()
+
+    txt = "".join(lines)
+    c = core.aux.Container(ast=ast.parse(txt), lines=lines, line_data={})
+
+    for elt in c.ast.body:
+        if not isinstance(elt, ast.Assign):
+            continue
+
+        var_name = elt.targets[0].id
+        assert isinstance(var_name, str)
+
+        # subtract 1 because the line numberse are human-oriented (1-indexed)
+        src_txt = "".join(lines[elt.lineno-1:elt.end_lineno-1])
+        c.line_data[var_name] = src_txt
+
+    return c
+
+
+def get_lines_for_short_key(short_key: str) -> str:
+    pass
+
 
 
 def interactive_session(loaded_mod, prefix):

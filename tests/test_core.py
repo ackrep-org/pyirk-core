@@ -666,10 +666,10 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
 
         # get item via prefix and key
-        itm1: p.Item = p.ds.get_entity_by_key_str("ct__I3749__Cayley_Hamilton_theorem")
+        itm1: p.Item = p.ds.get_entity_by_key_str("ma__I3749__Cayley_Hamilton_theorem")
 
         # get item via key and uri
-        itm2: p.Item = p.ds.get_entity_by_key_str("I3749__Cayley_Hamilton_theorem", mod_uri=mod1.__URI__)
+        itm2: p.Item = p.ds.get_entity_by_key_str("I3749__Cayley_Hamilton_theorem", mod_uri=mod1.ma.__URI__)
 
         self.assertEqual(itm1, itm2)
 
@@ -814,7 +814,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, TEST_MOD_NAME)
 
         # do not use something like "Ia3699" here directly because this might change when mod1 changes
-        auto_item: p.Item = mod1.I3749["Cayley-Hamilton theorem"].A
+        auto_item: p.Item = mod1.ma.I3749["Cayley-Hamilton theorem"].A
         res_graph: visualization.nx.DiGraph = visualization.create_nx_graph_from_entity(auto_item.uri)
         self.assertGreater(res_graph.number_of_nodes(), 7)
 
@@ -825,7 +825,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         res = visualization.visualize_entity(p.u("I21__mathematical_relation"), write_tmp_files=WRITE_TMP_FILES)
 
         mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, TEST_MOD_NAME)
-        auto_item: p.Item = mod1.I3749["Cayley-Hamilton theorem"].P
+        auto_item: p.Item = mod1.ma.I3749["Cayley-Hamilton theorem"].P
         res = visualization.visualize_entity(auto_item.uri, write_tmp_files=WRITE_TMP_FILES)
 
         s1 = '<a href="">R35</a>'
@@ -1286,6 +1286,7 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         ra = p.ruleengine.RuleApplicator(self.rule1)
         ra_worker = ra.ra_workers[0]
         res_graph = ra_worker.match_subgraph_P()
+        IPS()
         self.assertGreater(len(res_graph), 5)
 
     def test_c05__ruleengine04(self):

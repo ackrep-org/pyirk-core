@@ -457,6 +457,8 @@ def process_template(template_path):
         line = line.strip().strip(",")
         if not line:
             continue
+        elif line.startswith("#"):
+            continue
         elif line.startswith("raw__"):
             # handle raw lines
             lines_to_insert.append(line[len("raw__"):])
@@ -464,16 +466,23 @@ def process_template(template_path):
             continue
         elif line.startswith("with__"):
             # handle context managers
-            short_key = line.strip().strip(",")
-        elif line.startswith("func__"):
-            short_key = line[len("func__"):]
+            short_key = line
+        elif line.startswith("def__"):
+            short_key = line[len("def__"):]
         else:
             # assume pyerk entity
             short_key = core.process_key_str(line, check=False).short_key
 
         original_content = mod_ast_cont.line_data[short_key]
-        assert isinstance(original_content, str)
-        assert original_content != ""
+        if not isinstance(original_content, str) or original_content == "":
+            short_template_path, fname = os.path.split(template_path)
+            short_template_path = os.path.split(short_template_path)[-1]
+            short_template_path = os.path.join(short_template_path, fname)
+            msg = (
+            f"could not find associated data for short_key {short_key} while processing "
+            f"template line `{line}` in template {short_template_path}."
+            )
+            raise KeyError(msg)
         lines_to_insert.append(original_content)
         lines_to_insert.append("\n")
 

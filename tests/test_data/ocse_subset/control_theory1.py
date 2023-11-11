@@ -58,6 +58,121 @@ I1168 = p.create_item(
     R41__has_required_instance_relation=R5405["has associated state space"],
 )
 
+I4466 = p.create_item(
+    R1__has_label="Systems Theory",
+    R2__has_description="academic field; might be regarded as part of applied mathematics",
+    R4__is_instance_of=p.I3["Field of science"],
+    R5__is_part_of=[p.I4["Mathematics"], p.I5["Engineering"]],
+)
+
+I7641 = p.create_item(
+    R1__has_label="general system model",
+    R2__has_description="model of a dynamical system",
+    R4__is_instance_of=p.I2["Metaclass"],
+)
+
+I5948 = p.create_item(
+    R1__has_label="dynamical system",
+    R2__has_description="system with the capability to change over time, optionally with explicit input and/or output",
+    R4__is_instance_of=p.I2["Metaclass"],  # this means: this Item is an ordinary class
+)
+
+R7641 = p.create_relation(
+    R1__has_label="has approximation",
+    R2__has_description="object or class which is an approximation of a dynamical system",
+    R8__has_domain_of_argument_1=I5948["dynamical system"],
+    R11__has_range_of_result=I7641["general system model"],
+)
+
+I5356 = p.create_item(
+    R1__has_label="general system property",
+    R2__has_description="general property of a model of a dynamical system (not of its representation)",
+    R4__is_instance_of=p.I2["Metaclass"],
+)
+
+I4101 = p.create_item(
+    R1__has_label="general time variance",
+    R2__has_description="states that the model of a dynamical system (i.e. its parameters) might change over time",
+    R4__is_instance_of=I5356["general system property"],
+)
+
+I7733 = p.create_item(
+    R1__has_label="time invariance",
+    R2__has_description="states that the model of a dynamical system (i.e. its parameters) does not change over time",
+    R4__is_instance_of=I5356["general system property"],
+    R17__is_subproperty_of=I4101["general time variance"],
+    R77__has_alternative_label="autonomy",
+)
+
+I1793 = p.create_item(
+    R1__has_label="general model representation property",
+    R2__has_description="general property of the representation of a model of a dynamical system \
+        (not an intrinsic system property)",
+    R4__is_instance_of=p.I54["mathematical property"],
+)
+
+I2827 = p.create_item(
+    R1__has_label="general nonlinearity",
+    R2__has_description="states that the system model equations might not be linear",
+    R4__is_instance_of=I1793["general model representation property"],
+)
+
+I6091 = p.create_item(
+    R1__has_label="control affine",
+    R2__has_description="states that in the system model equations the input only appears linearly",
+    R4__is_instance_of=I1793["general model representation property"],
+    R6__has_defining_mathematical_relation=p.create_expression(r"$\dot{x}=f(x)+g(x)u$"),
+    R17__is_subproperty_of=I2827["general nonlinearity"],
+)
+
+I5247 = p.create_item(
+    R1__has_label="polynomial",
+    R2__has_description="states that the system model equations are polynomial w.r.t. the state components",
+    R4__is_instance_of=I1793["general model representation property"],
+    R17__is_subproperty_of=I6091["control affine"],
+)
+
+I4761 = p.create_item(
+    R1__has_label="linearity",
+    R2__has_description="states that the system model equations are linear",
+    R4__is_instance_of=I1793["general model representation property"],
+    R17__is_subproperty_of=I5247["polynomial"],
+)
+
+I1898 = p.create_item(
+    R1__has_label="lti",
+    R2__has_description="states that the system model is linear and time-invariant",
+    R4__is_instance_of=I5356["general system property"],
+    R17__is_subproperty_of=[I4761["linearity"], I7733["time invariance"]],
+)
+
+I2562 = p.create_item(
+    R1__has_label="general property of pde",
+    R2__has_description="general property of partial differential equations",
+    R3__is_subclass_of=I1793["general model representation property"],
+)
+
+I2557 = p.create_item(
+    R1__has_label="quasilinearity",
+    R2__has_description="states that in a pde the highest order derivatives appear linearly, with their coeffitients \
+        being functions of the independant variables and their (lower order) derivatives",
+    R17__is_subproperty_of=I2562["general property of pde"],
+)
+
+I3114 = p.create_item(
+    R1__has_label="semilinearity",
+    R2__has_description="states that in a pde the highest order derivatives appear linearly, with their coeffitients \
+        being functions of only the independant variables",
+    R17__is_subproperty_of=I2557["quasilinearity"],
+)
+
+I3863 = p.create_item(
+    R1__has_label="linearity",
+    R2__has_description="states that in a pde the unknown function and all its derivatives appear linearly, with their coeffitients \
+        being functions of only the independant variables",
+    R17__is_subproperty_of=I3114["semilinearity"],
+)
+
 
 
 

@@ -10,6 +10,10 @@ keymanager = p.KeyManager(keyseed=1239)
 p.register_mod(__URI__, keymanager)
 p.start_mod(__URI__)
 
+start_time = p.QualifierFactory(p.R48["has start time"])
+end_time = p.QualifierFactory(p.R49["has end time"])
+
+
 def create_person(given_name: str, family_name: str, r2: str, r33=None, r3474=None, r3475=None):
     """
     This is a convenience function that simplifies the creation of items for humans
@@ -82,6 +86,33 @@ R1833 = p.create_relation(
     R2__has_description="specifies for which entity (organisation/person) the subject works",
     R33__has_corresponding_wikidata_entity="https://www.wikidata.org/entity/P108",
 )
+
+I1342 = p.create_item(
+    R1__has_label="academic institution",
+    R2__has_description="educational institution dedicated to education and research",
+    R4__is_instance_of=p.I2["Metaclass"],
+    R33__has_corresponding_wikidata_entity="https://www.wikidata.org/entity/Q4671277",
+)
+
+I9942 = p.create_item(
+    R1__has_label="Stanford University",
+    R2__has_description="private research university in California, USA",
+    R4__is_instance_of=I1342["academic institution"],
+    R33__has_corresponding_wikidata_entity="https://www.wikidata.org/entity/Q41506",
+)
+
+I7301 = p.create_item(
+    R1__has_label="ETH Zürich",
+    R2__has_description="Swiss Federal Institute of Technology in Zürich",
+    R4__is_instance_of=I1342["academic institution"],
+    R33__has_corresponding_wikidata_entity="https://www.wikidata.org/entity/Q11942",
+)
+
+I2746["Rudolf Kalman"].set_relation(R1833["has employer"], I9942["Stanford University"], qualifiers=[start_time("1964"), end_time("1971")])
+
+
+I2746["Rudolf Kalman"].set_relation(R1833["has employer"], I7301["ETH Zürich"], qualifiers=[start_time("1973"), end_time("1997")])
+
 
 I4853 = create_person("Sophus", "Lie", "mathematician", r33="https://www.wikidata.org/wiki/Q30769")
 

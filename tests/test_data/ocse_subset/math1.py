@@ -118,6 +118,12 @@ I9904 = p.create_item(
     R3__is_subclass_of=p.I12["mathematical object"],
 )
 
+I9905 = p.create_item(
+    R1__has_label="zero matrix",
+    R2__has_description="like its superclass but with all entries equal to zero",
+    R3__is_subclass_of=I9904["matrix"],
+)
+
 R5939 = p.create_relation(
     R1__has_label="has column number",
     R2__has_description="specifies the number of columns of a matrix",
@@ -141,12 +147,6 @@ I5177 = p.create_item(
     R8__has_domain_of_argument_1=I9904["matrix"],
     R9__has_domain_of_argument_2=I9904["matrix"],
     R11__has_range_of_result=I9904["matrix"],
-)
-
-I3749 = p.create_item(
-    R1__has_label="Cayley-Hamilton theorem",
-    R2__has_description="establishes that every square matrix is a root of its own characteristic polynomial",
-    R4__is_instance_of=p.I15["implication proposition"],
 )
 
 I5000 = p.create_item(
@@ -217,6 +217,153 @@ with I9907.scope("premise") as cm:
 
 with I9907.scope("assertion") as cm:
     cm.new_rel(cm.M, p.R30["is secondary instance of"], I9906["square matrix"])
+
+I6259 = p.create_item(
+    R1__has_label="sequence",
+    R2__has_description="common (secondary) base class of sequence of mathematical objects",
+    R3__is_subclass_of=p.I12["mathematical object"],
+)
+
+I9739 = p.create_item(
+    R1__has_label="finite scalar sequence",
+    R2__has_description="base class of a finite sequence of (in general) complex numbers; can be indexed",
+    R3__is_subclass_of=I6259["sequence"],
+)
+
+I4240 = p.create_item(
+    R1__has_label="matrix polynomial",
+    R2__has_description="monovariate polynomial of quadratic matrices",
+    R3__is_subclass_of=I4239["abstract monovariate polynomial"],
+    R8__has_domain_of_argument_1=I9906["square matrix"],
+    R11__has_range_of_result=I9906["square matrix"],
+)
+
+R5940 = p.create_relation(
+    R1__has_label="has characteristic polynomial",
+    R2__has_description="specifies the characteristic polynomial of a square matrix A, i.e. det(s·I-A)",
+    R8__has_domain_of_argument_1=I9906["square matrix"],
+    R11__has_range_of_result=I4239["abstract monovariate polynomial"],
+)
+
+I3058 = p.create_item(
+    R1__has_label="coefficients of characteristic polynomial",
+    R2__has_description="...",
+    R4__is_instance_of=I4895["mathematical operator"],
+    R8__has_domain_of_argument_1=I9906["square matrix"],
+    R11__has_range_of_result=I9739["finite scalar sequence"],
+)
+
+I3749 = p.create_item(
+    R1__has_label="Cayley-Hamilton theorem",
+    R2__has_description="establishes that every square matrix is a root of its own characteristic polynomial",
+    R4__is_instance_of=p.I15["implication proposition"],
+)
+
+with I3749["Cayley-Hamilton theorem"].scope("setting") as cm:
+    cm.new_var(A=p.uq_instance_of(I9906["square matrix"]))
+    cm.new_var(n=p.uq_instance_of(p.I39["positive integer"]))
+    cm.new_var(coeffs_cp_A=I3058["coefficients of characteristic polynomial"](cm.A))
+
+    cm.new_var(P=p.instance_of(I4240["matrix polynomial"]))
+
+    cm.new_var(Z=p.instance_of(I9905["zero matrix"]))
+
+    cm.new_rel(cm.A, R5938["has row number"], cm.n)
+    cm.new_rel(cm.A, R5940["has characteristic polynomial"], cm.P)
+    cm.new_rel(cm.Z, R5938["has row number"], cm.n)
+    cm.new_rel(cm.Z, R5939["has column number"], cm.n)
+    cm.new_rel(cm.Z, p.R24["has LaTeX string"], r"\mathbf{0}")
+
+with I3749["Cayley-Hamilton theorem"].scope("assertion") as cm:
+    cm.new_equation(lhs=cm.P(cm.A), rhs=cm.Z)
+
+I5030 = p.create_item(
+    R1__has_label="variable",
+    R2__has_description="symbol which can represent another mathematical object",
+    R3__is_subclass_of=p.I12["mathematical object"],
+)
+
+R8736 = p.create_relation(
+    R1__has_label="depends polyonomially on",
+    R2__has_description="subject has a polynomial dependency object",
+    R8__has_domain_of_argument_1=p.I12["mathematical object"],
+    R11__has_range_of_result=I5030["variable"],
+    R18__has_usage_hint=("This relation is intentionally not functional to model multivariate polynomoial dependency"),
+)
+
+I1935 = p.create_item(
+    R1__has_label="polynomial matrix",
+    R2__has_description="matrix whose entries contain (scalar) polynomials",
+    R3__is_subclass_of=I9904["matrix"],
+    R50__is_different_from=I4240["matrix polynomial"],
+)
+
+I7765 = p.create_item(
+    R1__has_label="scalar mathematical object",
+    R2__has_description="mathematical object which is or can be evaluated to a single (complex number)",
+    R3__is_subclass_of=p.I12["mathematical object"],
+)
+
+I5359 = p.create_item(
+    R1__has_label="determinant",
+    R2__has_description="returns the determinant of a square matrix",
+    R4__is_instance_of=I4895["mathematical operator"],
+    R8__has_domain_of_argument_1=I9906["square matrix"],
+    R11__has_range_of_result=I7765["scalar mathematical object"],
+)
+
+def I5359_cc_pp(self, res, *args, **kwargs):
+    """
+    Function which will be attached as custom-call-post-process-method to I5359["determinant"].
+
+    The I5359["determinant"] is an I4895__mathematical_operator. If it is called it creates an instance of
+    I32__evaluated_mapping. The the `_custom_call_post_process`-method (i.e. this function) of the operator is called.
+
+    :param self:    determinant operator item (to which this function will be attached)
+    :param res:     instance of I7765["scalar mathematical object"] (determined by R11__has_range_of_result)
+    :param args:    arg tuple (<matrix>) with which the mapping is called
+    """
+
+    assert len(args) == 1
+    (matrix,) = args
+
+    if poly_vars := matrix.R8736__depends_polyonomially_on:
+        for var in poly_vars:
+            assert ("R4", I5030["variable"]) in p.get_taxonomy_tree(var)
+            res.set_relation(R8736["depends polyonomially on"], var)
+
+    return res
+
+I5359["determinant"].add_method(I5359_cc_pp, "_custom_call_post_process")
+
+
+I6324 = p.create_item(
+    R1__has_label="canonical first order monic polynomial matrix",
+    R2__has_description="for a given square matrix A returns the polynomial matrix (s·I - A)",
+    R4__is_instance_of=I4895["mathematical operator"],
+    R8__has_domain_of_argument_1=I9906["square matrix"],
+    R9__has_domain_of_argument_2=I5030["variable"],
+    R11__has_range_of_result=I1935["polynomial matrix"],
+)
+
+def I6324_cc_pp(self, res, *args, **kwargs):
+    """
+    :param self:    mapping item (to which this function will be attached)
+    :param res:     instance of I1935["polynomial matrix"] (determined by R11__has_range_of_result)
+    :param args:    arg tuple (<matrix>, <variable>) with which the mapping is called
+    """
+
+    assert len(args) == 2
+    matrix, var = args
+
+    # check that `var` is an instance of I5030["variable"]
+    assert ("R4", I5030["variable"]) in p.get_taxonomy_tree(var)
+    res.set_relation(R8736["depends polyonomially on"], var)
+
+    return res
+
+I6324["canonical first order monic polynomial matrix"].add_method(I6324_cc_pp, "_custom_call_post_process")
+
 
 
 p.end_mod()

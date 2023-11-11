@@ -2388,7 +2388,7 @@ def replace_and_unlink_entity(old_entity: Entity, new_entity: Entity):
     return res
 
 
-def register_mod(uri: str, keymanager: KeyManager, check_uri=True):
+def register_mod(uri: str, keymanager: KeyManager, check_uri=True, prefix=None):
     frame = get_caller_frame(upcount=1)
     path = os.path.abspath(frame.f_globals["__file__"])
     if check_uri:
@@ -2404,6 +2404,11 @@ def register_mod(uri: str, keymanager: KeyManager, check_uri=True):
 
     # all modules should have their own key manager
     ds.uri_keymanager_dict[uri] = keymanager
+
+    # currently this is only used from within unittests as they create test data on the fly and
+    # not use erkloader for every tiny item
+    if prefix:
+        ds.uri_prefix_mapping.add_pair(key_a=uri, key_b=prefix)
 
 
 def start_mod(uri):

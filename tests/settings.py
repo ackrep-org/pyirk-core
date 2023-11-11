@@ -29,10 +29,9 @@ TEST_DATA_DIR1 = pjoin(ERK_ROOT_DIR, "pyerk-core", "tests", "test_data")
 TEST_DATA_PARENT_PATH = os.getenv("PYERK_TEST_DATA_PARENT_PATH", default=pjoin(ERK_ROOT_DIR, "erk-data-for-unittests"))
 
 
-TEST_DATA_REPO_PATH = pjoin(TEST_DATA_PARENT_PATH, "ocse")
-TEST_DATA_PATH2 = pjoin(TEST_DATA_REPO_PATH, "control_theory1.py")
-TEST_DATA_PATH_MA = pjoin(TEST_DATA_REPO_PATH, "math1.py")
-TEST_DATA_PATH3 = pjoin(TEST_DATA_REPO_PATH, "agents1.py")
+TEST_DATA_PATH2 = pjoin(TEST_DATA_DIR1, "ocse_subset", "control_theory1.py")
+TEST_DATA_PATH_MA = pjoin(TEST_DATA_DIR1, "ocse_subset", "math1.py")
+TEST_DATA_PATH3 = pjoin(TEST_DATA_DIR1, "ocse_subset", "agents1.py")
 TEST_DATA_PATH_ZEBRA01 = pjoin(TEST_DATA_DIR1, "zebra01.py")
 TEST_DATA_PATH_ZEBRA02 = pjoin(TEST_DATA_DIR1, "zebra02.py")
 TEST_DATA_PATH_ZEBRA_BASE_DATA = pjoin(TEST_DATA_DIR1, "zebra_base_data.py")

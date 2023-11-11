@@ -5,6 +5,9 @@ import os
 import argparse
 from pathlib import Path
 import re
+from typing import Tuple
+import ast
+import inspect
 
 try:
     # this will be part of standard library for python >= 3.11
@@ -137,6 +140,13 @@ def create_parser():
         metavar="path_to_mod"
     )
 
+    parser.add_argument(
+        "-utd",
+        "--update-test-data",
+        help="create a subset of the erkpackage (e.g. OCSE) and store it in the `test_data` dir of pyerk-core",
+        metavar="path_to_erk_package"
+    )
+
     parser.add_argument("--dbg", help="start debug routine", default=None, action="store_true")
 
     parser.add_argument(
@@ -222,21 +232,23 @@ def main():
         pyerkdjango.core.start_django_shell()
     elif args.insert_keys_for_placeholders:
         insert_keys_for_placeholders(args.insert_keys_for_placeholders)
+    elif args.update_test_data:
+        update_test_data(args.update_test_data)
     else:
         print("nothing to do, see option `--help` for more info")
 
 
-def process_package(pkg_path: str) -> erkloader.ModuleType:
+def process_package(pkg_path: str) -> Tuple[erkloader.ModuleType, str]:
     if os.path.isdir(pkg_path):
         pkg_path = os.path.join(pkg_path, "erkpackage.toml")
 
     with open(pkg_path, "rb") as fp:
         erk_conf_dict = tomllib.load(fp)
-    ocse_main_rel_path = erk_conf_dict["main_module"]
+    main_rel_path = erk_conf_dict["main_module"]
     main_module_prefix = erk_conf_dict["main_module_prefix"]
-    ocse_main_mod_path = Path(pkg_path).parent.joinpath(ocse_main_rel_path).as_posix()
+    main_mod_path = Path(pkg_path).parent.joinpath(main_rel_path).as_posix()
 
-    mod = erkloader.load_mod_from_path(modpath=ocse_main_mod_path, prefix=main_module_prefix)
+    mod = erkloader.load_mod_from_path(modpath=main_mod_path, prefix=main_module_prefix)
     return mod, main_module_prefix
 
 
@@ -395,6 +407,125 @@ def replace_dummy_enties_by_label(modpath):
 
     with open(modpath, "w") as fp:
         fp.write(txt)
+
+
+def update_test_data(pkg_path):
+    """
+    Background: see devdocs
+    """
+    import glob
+    mod, prefix = process_package(pkg_path)
+    mod_cont = path_to_ast_container(inspect.getfile(mod))
+
+    test_data_root = core.aux.get_erk_path("pyerk-core-test_data")
+    target_dir = os.path.join(test_data_root, "ocse_subset")
+    template_dir = os.path.join(target_dir, "templates")
+
+    template_files = glob.glob(os.path.join(template_dir, "*__template.py"))
+    for template_path in template_files:
+        rendered_template_txt = process_template(template_path)
+        fname = os.path.split(template_path)[-1].replace("__template", "")
+        target_path = os.path.join(target_dir, fname)
+        with open(target_path, "w") as fp:
+            fp.write(rendered_template_txt)
+            print(f"File written: {target_path}")
+
+
+def process_template(template_path):
+
+    templ_ast_cont = path_to_ast_container(template_path)
+
+    # extract the uri-line
+    uri_line = templ_ast_cont.line_data["__URI__"]
+    tmp_locals = {}
+    exec(uri_line, {}, tmp_locals)
+    uri = tmp_locals["__URI__"]
+
+    original_mod_path = inspect.getfile(core.ds.uri_mod_dict[uri])
+
+    mod_ast_cont = path_to_ast_container(original_mod_path)
+
+    insert_key_lines = templ_ast_cont.line_data["insert_entities"].strip().split("\n")
+    assert insert_key_lines[0].strip() == "insert_entities = ["
+    assert insert_key_lines[-1].strip() == "]"
+
+    insert_key_lines = insert_key_lines[1:-1]
+
+    lines_to_insert = []
+
+    for line in insert_key_lines:
+        line = line.strip().strip(",")
+        if not line:
+            continue
+        elif line.startswith("#"):
+            continue
+        elif line.startswith("raw__"):
+            # handle raw lines
+            lines_to_insert.append(line[len("raw__"):])
+            lines_to_insert.append("\n"*3)
+            continue
+        elif line.startswith("with__"):
+            # handle context managers
+            short_key = line
+        elif line.startswith("def__"):
+            short_key = line[len("def__"):]
+        else:
+            # assume pyerk entity
+            short_key = core.process_key_str(line, check=False).short_key
+
+        original_content = mod_ast_cont.line_data[short_key]
+        if not isinstance(original_content, str) or original_content == "":
+            short_template_path, fname = os.path.split(template_path)
+            short_template_path = os.path.split(short_template_path)[-1]
+            short_template_path = os.path.join(short_template_path, fname)
+            msg = (
+            f"could not find associated data for short_key {short_key} while processing "
+            f"template line `{line}` in template {short_template_path}."
+            )
+            raise KeyError(msg)
+        lines_to_insert.append(original_content)
+        lines_to_insert.append("\n")
+
+    new_insert_txt = "".join(lines_to_insert)
+
+    rendered_template = templ_ast_cont.txt.replace(templ_ast_cont.line_data["insert_entities"], new_insert_txt)
+    return rendered_template
+
+
+def path_to_ast_container(mod_path: str) -> core.aux.Container:
+
+    with open(mod_path) as fp:
+        lines = fp.readlines()
+
+    txt = "".join(lines)
+    c = core.aux.Container(ast=ast.parse(txt), lines=lines, line_data={}, txt=txt)
+
+    for elt in c.ast.body:
+        if isinstance(elt, ast.Assign):
+            name = elt.targets[0].id
+        elif isinstance(elt, (ast.FunctionDef, ast.ClassDef)):
+            name = elt.name
+        elif isinstance(elt, ast.With):
+            first_line = lines[elt.lineno-1]
+            # assume form like `with I9907.scope("setting") as cm:`
+            idx = first_line.index(" as ")
+            # create name string like `with__I9907.scope("setting")`
+            name = f"with__{first_line[len('with '):idx]}"
+        else:
+            continue
+
+        assert isinstance(name, str)
+
+        # subtract 1 because the line numberse are human-oriented (1-indexed)
+        src_txt = "".join(lines[elt.lineno-1:elt.end_lineno])
+        c.line_data[name] = src_txt
+
+    return c
+
+
+def get_lines_for_short_key(short_key: str) -> str:
+    pass
+
 
 
 def interactive_session(loaded_mod, prefix):

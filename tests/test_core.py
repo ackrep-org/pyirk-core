@@ -21,14 +21,12 @@ from .settings import (
     ERK_ROOT_DIR,
     TEST_DATA_DIR1,
     TEST_DATA_PARENT_PATH,
-    TEST_DATA_REPO_PATH,
     TEST_DATA_PATH2,
     TEST_DATA_PATH_MA,
     TEST_DATA_PATH3,
     TEST_DATA_PATH_ZEBRA_BASE_DATA,
     TEST_DATA_PATH_ZEBRA02,
     TEST_MOD_NAME,
-    TEST_DATA_REPO_COMMIT_SHA,
     # TEST_ACKREP_DATA_FOR_UT_PATH,
     TEST_BASE_URI,
     WRITE_TMP_FILES,
@@ -40,19 +38,6 @@ from .settings import (
 
 
 class Test_00_Core(HouskeeperMixin, unittest.TestCase):
-    def test_a0__ensure_expected_test_data(self):
-        """
-        Construct a list of all sha-strings which where commited in the current branch and assert that
-        the expected string is among them. This heuristics assumes that it is OK if the data-repo is newer than
-        expected. But the tests fails if it is older (or on a unexpeced branch).
-        """
-
-        repo = git.Repo(TEST_DATA_REPO_PATH)
-        log_list = repo.git.log("--pretty=oneline").split("\n")
-        msg = f"Unexpected: could not find commit hash {TEST_DATA_REPO_COMMIT_SHA} in repo {TEST_DATA_REPO_PATH}"
-        sha_list = [line.split(" ")[0] for line in log_list]
-
-        self.assertIn(TEST_DATA_REPO_COMMIT_SHA, sha_list, msg=msg)
 
     def test_a1__dependencyies(self):
         # this tests checks some dependencies which are prone to cause problems (e.g. due to recent api-changes)
@@ -259,7 +244,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
     # (above noinspection is necessary because of the @-operator which is undecleared for strings)
     def test_b00__core1_basics(self):
         mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
-        self.assertEqual(mod1.I3749.R1.value, "Cayley-Hamilton theorem")
+        self.assertEqual(mod1.ma.I3749.R1.value, "Cayley-Hamilton theorem")
 
         def_eq_item = mod1.I6886.R6__has_defining_mathematical_relation
         self.assertEqual(def_eq_item.R4__is_instance_of, p.I18["mathematical expression"])
@@ -373,8 +358,8 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
 
         with p.uri_context(uri=TEST_BASE_URI):
-            h = p.instance_of(mod1.I9923["scalar field"])
-            f = p.instance_of(mod1.I9841["vector field"])
+            h = p.instance_of(mod1.ma.I9923["scalar field"])
+            f = p.instance_of(mod1.ma.I9841["vector field"])
             x = p.instance_of(mod1.I1168["point in state space"])
 
             Lderiv = mod1.I1347["Lie derivative of scalar field"]
@@ -382,7 +367,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
             # this creates a new item (and thus must be executed with a non-empty uri stack, i.e. within this context)
             h2 = Lderiv(h, f, x)
 
-        self.assertEqual(h2.R4__is_instance_of, mod1.I9923["scalar field"])
+        self.assertEqual(h2.R4__is_instance_of, mod1.ma.I9923["scalar field"])
 
         arg_tup = h2.R36__has_argument_tuple
         self.assertEqual(arg_tup.R4__is_instance_of, p.I33["tuple"])
@@ -409,7 +394,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
 
         # this tests for a bug with labels of scope vars
         _ = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
-        def_itm = p.ds.get_entity_by_key_str("ct__I9907__definition_of_square_matrix")
+        def_itm = p.ds.get_entity_by_key_str("ma__I9907__definition_of_square_matrix")
         matrix_instance = def_itm.M
         self.assertEqual(matrix_instance.R1.value, "M")
 
@@ -681,10 +666,10 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
 
         # get item via prefix and key
-        itm1: p.Item = p.ds.get_entity_by_key_str("ct__I3749__Cayley_Hamilton_theorem")
+        itm1: p.Item = p.ds.get_entity_by_key_str("ma__I3749__Cayley_Hamilton_theorem")
 
         # get item via key and uri
-        itm2: p.Item = p.ds.get_entity_by_key_str("I3749__Cayley_Hamilton_theorem", mod_uri=mod1.__URI__)
+        itm2: p.Item = p.ds.get_entity_by_key_str("I3749__Cayley_Hamilton_theorem", mod_uri=mod1.ma.__URI__)
 
         self.assertEqual(itm1, itm2)
 
@@ -829,7 +814,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, TEST_MOD_NAME)
 
         # do not use something like "Ia3699" here directly because this might change when mod1 changes
-        auto_item: p.Item = mod1.I3749["Cayley-Hamilton theorem"].A
+        auto_item: p.Item = mod1.ma.I3749["Cayley-Hamilton theorem"].A
         res_graph: visualization.nx.DiGraph = visualization.create_nx_graph_from_entity(auto_item.uri)
         self.assertGreater(res_graph.number_of_nodes(), 7)
 
@@ -840,7 +825,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         res = visualization.visualize_entity(p.u("I21__mathematical_relation"), write_tmp_files=WRITE_TMP_FILES)
 
         mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, TEST_MOD_NAME)
-        auto_item: p.Item = mod1.I3749["Cayley-Hamilton theorem"].P
+        auto_item: p.Item = mod1.ma.I3749["Cayley-Hamilton theorem"].P
         res = visualization.visualize_entity(auto_item.uri, write_tmp_files=WRITE_TMP_FILES)
 
         s1 = '<a href="">R35</a>'

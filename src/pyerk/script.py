@@ -422,8 +422,47 @@ def update_test_data(pkg_path):
     template_dir = os.path.join(target_dir, "templates")
 
     template_files = glob.glob(os.path.join(template_dir, "*__template.py"))
+    for template_path in template_files:
+        rendered_template_txt = process_template(template_path)
+        fname = os.path.split(template_path)[-1].replace("__template", "")
+        target_path = os.path.join(target_dir, fname)
+        with open(target_path, "w") as fp:
+            fp.write(rendered_template_txt)
+            print(f"File written: {target_path}")
 
-    IPS()
+
+def process_template(template_path):
+
+    templ_ast_cont = path_to_ast_container(template_path)
+
+    # extract the uri-line
+    uri_line = templ_ast_cont.line_data["__URI__"]
+    tmp_locals = {}
+    exec(uri_line, {}, tmp_locals)
+    uri = tmp_locals["__URI__"]
+
+    original_mod_path = inspect.getfile(core.ds.uri_mod_dict[uri])
+
+    mod_ast_cont = path_to_ast_container(original_mod_path)
+
+    insert_key_lines = templ_ast_cont.line_data["insert_entities"].strip().split("\n")
+    assert insert_key_lines[0].strip() == "insert_entities = ["
+    assert insert_key_lines[-1].strip() == "]"
+
+    insert_key_lines = insert_key_lines[1:-1]
+
+    lines_to_insert = []
+
+    for line in insert_key_lines:
+        short_key = core.process_key_str(line, check=False).short_key
+
+        lines_to_insert.append(mod_ast_cont.line_data[short_key])
+        lines_to_insert.append("\n")
+
+    new_insert_txt = "".join(lines_to_insert)
+
+    rendered_template = templ_ast_cont.txt.replace(templ_ast_cont.line_data["insert_entities"], new_insert_txt)
+    return rendered_template
 
 
 def path_to_ast_container(mod_path: str) -> core.aux.Container:
@@ -432,7 +471,7 @@ def path_to_ast_container(mod_path: str) -> core.aux.Container:
         lines = fp.readlines()
 
     txt = "".join(lines)
-    c = core.aux.Container(ast=ast.parse(txt), lines=lines, line_data={})
+    c = core.aux.Container(ast=ast.parse(txt), lines=lines, line_data={}, txt=txt)
 
     for elt in c.ast.body:
         if not isinstance(elt, ast.Assign):
@@ -442,7 +481,7 @@ def path_to_ast_container(mod_path: str) -> core.aux.Container:
         assert isinstance(var_name, str)
 
         # subtract 1 because the line numberse are human-oriented (1-indexed)
-        src_txt = "".join(lines[elt.lineno-1:elt.end_lineno-1])
+        src_txt = "".join(lines[elt.lineno-1:elt.end_lineno])
         c.line_data[var_name] = src_txt
 
     return c

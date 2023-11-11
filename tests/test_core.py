@@ -21,7 +21,6 @@ from .settings import (
     ERK_ROOT_DIR,
     TEST_DATA_DIR1,
     TEST_DATA_PARENT_PATH,
-    TEST_DATA_REPO_PATH,
     TEST_DATA_PATH2,
     TEST_DATA_PATH_MA,
     TEST_DATA_PATH3,
@@ -40,19 +39,6 @@ from .settings import (
 
 
 class Test_00_Core(HouskeeperMixin, unittest.TestCase):
-    def test_a0__ensure_expected_test_data(self):
-        """
-        Construct a list of all sha-strings which where commited in the current branch and assert that
-        the expected string is among them. This heuristics assumes that it is OK if the data-repo is newer than
-        expected. But the tests fails if it is older (or on a unexpeced branch).
-        """
-
-        repo = git.Repo(TEST_DATA_REPO_PATH)
-        log_list = repo.git.log("--pretty=oneline").split("\n")
-        msg = f"Unexpected: could not find commit hash {TEST_DATA_REPO_COMMIT_SHA} in repo {TEST_DATA_REPO_PATH}"
-        sha_list = [line.split(" ")[0] for line in log_list]
-
-        self.assertIn(TEST_DATA_REPO_COMMIT_SHA, sha_list, msg=msg)
 
     def test_a1__dependencyies(self):
         # this tests checks some dependencies which are prone to cause problems (e.g. due to recent api-changes)

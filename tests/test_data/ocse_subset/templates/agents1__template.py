@@ -11,6 +11,8 @@ p.register_mod(__URI__, keymanager)
 p.start_mod(__URI__)
 
 insert_entities = [
+I2746["Rudolf Kalman"],
+R1833["has employer"],
 ]
 
 p.end_mod()

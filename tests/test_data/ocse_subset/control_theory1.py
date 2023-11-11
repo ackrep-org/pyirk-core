@@ -26,13 +26,36 @@ I1347 = p.create_item(
         "in other words: along the flow of f"
     ),
     R4__is_instance_of=ma.I4895["mathematical operator"],
-    R8__has_domain_of_argument_1=I9923["scalar field"],
-    R9__has_domain_of_argument_2=I9841["vector field"],
-    R10__has_domain_of_argument_3=I1168["point in state space"],
-    R11__has_range_of_result=I9923["scalar field"],
+    R8__has_domain_of_argument_1=ma.I9923["scalar field"],
+    R9__has_domain_of_argument_2=ma.I9841["vector field"],
+    R10__has_domain_of_argument_3=ma.I1168["point in state space"],
+    R11__has_range_of_result=ma.I9923["scalar field"],
     R13__has_canonical_symbol=r"$L$",
     # TODO: complete defining equation
     ag__R6876__is_named_after=ag.I4853["Sophus Lie"],
+)
+
+I2928 = p.create_item(
+    R1__has_label="general model representation",
+    R2__has_description="general (mathematical) representation of a model of a dynamical system",
+    R4__is_instance_of=p.I2["Metaclass"],
+)
+
+I6886 = p.create_item(
+    R1__has_label="general ode state space representation",
+    R2__has_description="explicit ODE system description of a dynamical system",
+    R3__is_subclass_of=I2928["general model representation"],
+    # TODO: this has to use create_equation (to be implemented)
+    R6__has_defining_mathematical_relation=p.create_expression(r"$\dot x = f(x, u)$"),
+)
+
+R5405 = ma.R5405["has associated state space"]
+
+I1168 = p.create_item(
+    R1__has_label="point in state space",
+    R2__has_description="type for a point in a given state space",
+    R3__is_subclass_of=p.I12["mathematical object"],
+    R41__has_required_instance_relation=R5405["has associated state space"],
 )
 
 

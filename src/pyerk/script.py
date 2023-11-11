@@ -454,7 +454,19 @@ def process_template(template_path):
     lines_to_insert = []
 
     for line in insert_key_lines:
-        short_key = core.process_key_str(line, check=False).short_key
+        line = line.strip().strip(",")
+        if not line:
+            continue
+        if line.startswith("raw__"):
+            lines_to_insert.append(line[len("raw__"):])
+            lines_to_insert.append("\n"*3)
+            continue
+
+        if line.startswith("func__"):
+            short_key = line[len("func__"):]
+        else:
+            # assume pyerk entity
+            short_key = core.process_key_str(line, check=False).short_key
 
         lines_to_insert.append(mod_ast_cont.line_data[short_key])
         lines_to_insert.append("\n")
@@ -474,15 +486,18 @@ def path_to_ast_container(mod_path: str) -> core.aux.Container:
     c = core.aux.Container(ast=ast.parse(txt), lines=lines, line_data={}, txt=txt)
 
     for elt in c.ast.body:
-        if not isinstance(elt, ast.Assign):
+        if isinstance(elt, ast.Assign):
+            name = elt.targets[0].id
+        elif isinstance(elt, (ast.FunctionDef, ast.ClassDef)):
+            name = elt.name
+        else:
             continue
 
-        var_name = elt.targets[0].id
-        assert isinstance(var_name, str)
+        assert isinstance(name, str)
 
         # subtract 1 because the line numberse are human-oriented (1-indexed)
         src_txt = "".join(lines[elt.lineno-1:elt.end_lineno])
-        c.line_data[var_name] = src_txt
+        c.line_data[name] = src_txt
 
     return c
 

@@ -27,7 +27,6 @@ from .settings import (
     TEST_DATA_PATH_ZEBRA_BASE_DATA,
     TEST_DATA_PATH_ZEBRA02,
     TEST_MOD_NAME,
-    TEST_DATA_REPO_COMMIT_SHA,
     # TEST_ACKREP_DATA_FOR_UT_PATH,
     TEST_BASE_URI,
     WRITE_TMP_FILES,
@@ -245,7 +244,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
     # (above noinspection is necessary because of the @-operator which is undecleared for strings)
     def test_b00__core1_basics(self):
         mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
-        self.assertEqual(mod1.I3749.R1.value, "Cayley-Hamilton theorem")
+        self.assertEqual(mod1.ma.I3749.R1.value, "Cayley-Hamilton theorem")
 
         def_eq_item = mod1.I6886.R6__has_defining_mathematical_relation
         self.assertEqual(def_eq_item.R4__is_instance_of, p.I18["mathematical expression"])
@@ -359,8 +358,8 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
 
         with p.uri_context(uri=TEST_BASE_URI):
-            h = p.instance_of(mod1.I9923["scalar field"])
-            f = p.instance_of(mod1.I9841["vector field"])
+            h = p.instance_of(mod1.ma.I9923["scalar field"])
+            f = p.instance_of(mod1.ma.I9841["vector field"])
             x = p.instance_of(mod1.I1168["point in state space"])
 
             Lderiv = mod1.I1347["Lie derivative of scalar field"]
@@ -368,7 +367,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
             # this creates a new item (and thus must be executed with a non-empty uri stack, i.e. within this context)
             h2 = Lderiv(h, f, x)
 
-        self.assertEqual(h2.R4__is_instance_of, mod1.I9923["scalar field"])
+        self.assertEqual(h2.R4__is_instance_of, mod1.ma.I9923["scalar field"])
 
         arg_tup = h2.R36__has_argument_tuple
         self.assertEqual(arg_tup.R4__is_instance_of, p.I33["tuple"])
@@ -395,7 +394,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
 
         # this tests for a bug with labels of scope vars
         _ = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
-        def_itm = p.ds.get_entity_by_key_str("ct__I9907__definition_of_square_matrix")
+        def_itm = p.ds.get_entity_by_key_str("ma__I9907__definition_of_square_matrix")
         matrix_instance = def_itm.M
         self.assertEqual(matrix_instance.R1.value, "M")
 

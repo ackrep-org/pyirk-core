@@ -15,8 +15,35 @@ p.register_mod(__URI__, keymanager)
 p.start_mod(__URI__)
 
 insert_entities = [
+I4895["mathematical operator"],
+raw__I4895["mathematical operator"].add_method(p.create_evaluated_mapping, "_custom_call"),
 I9923["scalar field"],
 I9841["vector field"],
+I4236["mathematical expression"],
+I1060["general function"],
+I1063["scalar function"],
+I4237["monovariate rational function"],
+raw__I4237["monovariate rational function"].add_method(p.create_evaluated_mapping, "_custom_call"),
+I4239["abstract monovariate polynomial"],
+R3326["has dimension"],
+I5166["vector space"],
+I5167["state space"],
+R5405["has associated state space"],
+I1168["point in state space"],
+I9904["matrix"],
+R5939["has column number"],
+R5938["has row number"],
+I5177["matmul"],
+I3749["Cayley-Hamilton theorem"],
+I5000["scalar zero"],
+R3033["has type of elements"],
+I8133["field of numbers"],
+I2738["field of complex numbers"],
+I5807["sign"],
+I9907["definition of square matrix"],
+with__I9907.scope("setting"),
+with__I9907.scope("premise"),
+with__I9907.scope("assertion"),
 ]
 
 p.end_mod()

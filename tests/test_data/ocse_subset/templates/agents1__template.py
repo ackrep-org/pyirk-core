@@ -11,8 +11,16 @@ p.register_mod(__URI__, keymanager)
 p.start_mod(__URI__)
 
 insert_entities = [
-I2746["Rudolf Kalman"],
-R1833["has employer"],
+    func__create_person,
+    I7435["human"],
+    R7781["has family name"],
+    R7782["has given name"],
+    R3474["has ORCID"],
+    R3475["has DBLP author ID"],
+    I2746["Rudolf Kalman"],
+    R1833["has employer"],
+    I4853["Sophus Lie"],
+    R6876["is named after"],
 ]
 
 p.end_mod()

@@ -20,7 +20,6 @@ import pyerk.reportgenerator as rgen
 from .settings import (
     ERK_ROOT_DIR,
     TEST_DATA_DIR1,
-    TEST_DATA_PARENT_PATH,
     TEST_DATA_PATH2,
     TEST_DATA_PATH_MA,
     TEST_DATA_PATH3,
@@ -177,17 +176,14 @@ class Test_00_Core(HouskeeperMixin, unittest.TestCase):
         os.environ.pop("PYERK_TRIGGER_TEST_EXCEPTION")
 
 
-# noinspection PyPep8Naming
+@unittest.skipIf(os.environ.get("CI"), "Skipping directory structure tests on CI")
 class Test_01_Core(HouskeeperMixin, unittest.TestCase):
     def test_a01__directory_structure(self):
         pyerk_dir = pjoin(ERK_ROOT_DIR, "pyerk-core")
         django_gui_dir = pjoin(ERK_ROOT_DIR, "pyerk-django")
 
         self.assertTrue(os.path.isdir(pyerk_dir))
-        # since there is no reason to have the django gui in this repos CI:
-        if os.environ.get("CI") != "true":
-            self.assertTrue(os.path.isdir(django_gui_dir))
-        self.assertTrue(os.path.isdir(TEST_DATA_PARENT_PATH))
+        self.assertTrue(os.path.isdir(django_gui_dir))
 
     def test_a01__test_independence(self):
         """

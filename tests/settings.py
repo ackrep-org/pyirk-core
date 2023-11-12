@@ -23,11 +23,6 @@ ERK_ROOT_DIR = p.aux.get_erk_root_dir()
 # path for basic (staged) test data
 TEST_DATA_DIR1 = pjoin(ERK_ROOT_DIR, "pyerk-core", "tests", "test_data")
 
-# path for "realistic" test data
-
-# taking this from envvar allows to flexibly use other test-data during debugging
-TEST_DATA_PARENT_PATH = os.getenv("PYERK_TEST_DATA_PARENT_PATH", default=pjoin(ERK_ROOT_DIR, "erk-data-for-unittests"))
-
 
 TEST_DATA_PATH2 = pjoin(TEST_DATA_DIR1, "ocse_subset", "control_theory1.py")
 TEST_DATA_PATH_MA = pjoin(TEST_DATA_DIR1, "ocse_subset", "math1.py")

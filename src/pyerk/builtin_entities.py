@@ -1364,11 +1364,11 @@ I53 = create_builtin_item(
 
 I18 = create_builtin_item(
     key_str="I18",
-    R1__has_label="mathematical expression",
+    R1__has_label="mathematical expression", # = math. term
     R2__has_description=(
         "mathematical expression, e.g. represented by a LaTeX-string; this might change in the future to MathMl"
     ),
-    R4__is_instance_of=I2["Metaclass"],
+    R3__is_subclass_of=I12["mathematical object"],
 )
 
 

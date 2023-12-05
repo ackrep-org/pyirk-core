@@ -51,6 +51,16 @@ Then, you have `ct` as variable in your namespace and can e.g. run `print(ct.I51
 
 (The above command assumes that the file `control_theory1.py` is in your current working directory.)
 
+
+### Update Test Data
+
+```
+pyerk --update-test-data
+```
+
+For details see [devdoc#test_data](sec_test_data)
+
+
 ## Multilinguality
 
 Pyerk aims to support an arbitrary number of languages by so called *language specified strings*. Currently support for English and German is preconfigured in `pyerk.settings`. These language specified strings are instances of the class `rdflib.Literal` where the `.language`-attribute is set to one of the values from `pyerk.setting.SUPPORTED_LANGUAGES` and can be created like:

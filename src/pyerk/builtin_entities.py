@@ -359,7 +359,7 @@ R68 = create_builtin_relation(
 R20 = create_builtin_relation(
     key_str="R20",
     R1="has defining scope",
-    R2="specifies the scope *in* which an entity or relation edge is defined (e.g. the premise of a theorem)",
+    R2="specifies the scope *in* which an entity or statement is defined (e.g. the premise of a theorem)",
     R18=(
         "Notes: This relation is functional. But an Entity (e.g. a theorem) can be parent (via R21) of multiple "
         "scopes, (e.g. 'setting', 'premise', 'assertion'). Each of these items can 'contain' other items in the sense, "
@@ -1611,7 +1611,7 @@ def create_evaluated_mapping(mapping: Item, *args) -> Item:
     args_repr = ", ".join(arg_repr_list)
 
     target_class = mapping.R11__has_range_of_result
-    # TODO: this should be ensured by consistency check: for operatators R11 should be functional
+    # TODO: this should be ensured by consistency check: for operators R11 should be functional
     if target_class:
         assert len(target_class) == 1
         target_class = target_class[0]

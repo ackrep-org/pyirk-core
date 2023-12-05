@@ -378,6 +378,10 @@ class Entity(abc.ABC):
 
     @classmethod
     def add_method_to_class(cls, func):
+        """
+        Used to add methods to the class from the builtin_entities module.
+        This mechanism (adding the method later) allows to keep the dependency monodirectional
+        """
         setattr(cls, func.__name__, func)
 
     def add_method(self, func: callable, name: Optional[str] = None):
@@ -1723,6 +1727,8 @@ class QualifierFactory:
 
 
 class Statement:
+    # Note: in earlier versions this class was called "RelationEdge";
+    # some old comments might refer to this
     """
     Models a conrete (instantiated/applied) relation between entities. This is basically a dict.
     """
@@ -1742,7 +1748,7 @@ class Statement:
 
         :param relation:
         :param relation_tuple:
-        :param role:                    RelationRole.SUBJECT for normal and RelationRole.OBJECT for inverse edges
+        :param role:                    RelationRole.SUBJECT for normal and RelationRole.OBJECT for inverse statements
         :param corresponding_entity:    This is the entity on the "other side" of the relation (depending of `role`) or
                                         None in case that other side is a literal
         :param corresponding_literal:   This is the literal on the "other side" of the relation (depending of `role`) or

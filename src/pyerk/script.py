@@ -469,6 +469,8 @@ def process_template(template_path):
             short_key = line
         elif line.startswith("def__"):
             short_key = line[len("def__"):]
+        elif line.startswith("class__"):
+            short_key = line[len("class__"):]
         else:
             # assume pyerk entity
             short_key = core.process_key_str(line, check=False).short_key

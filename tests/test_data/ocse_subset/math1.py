@@ -365,5 +365,88 @@ def I6324_cc_pp(self, res, *args, **kwargs):
 I6324["canonical first order monic polynomial matrix"].add_method(I6324_cc_pp, "_custom_call_post_process")
 
 
+I6012 = p.create_item(
+    R1__has_label="integer range element",
+    R2__has_description="class whose instances represent an element from a specified range (I1195)",
+    R3__is_subclass_of=p.I37["integer number"],
+    R18__has_usage_hint=(
+        "Should always have an R3240__has_associated_range relation; "
+        "should be created via the context manager IntegerRangeElement (see below)"
+    ),
+)
+
+class IntegerRangeElement:
+    """
+    Context manager to model that a statement (or more) have an assertive claim for all elements of a sequence.
+
+    ```
+    with RangeElement(start=1, end=3) as i:
+        I456["some item"].R789_has_some_property(i)
+    ```
+
+    Has (roughly) the same meaning as
+
+    ```
+    I456["some item"].R789_has_some_property(1)
+    I456["some item"].R789_has_some_property(2)
+    I456["some item"].R789_has_some_property(3)
+    ```
+
+    Note, however, that the defining attributes of RangeElement, i.e. `start`, `stop`, `step` can be also variables.
+
+    Behind the sc
+
+    """
+
+    def __init__(self, start: Union[int, p.Item], stop: Union[int, p.Item], step: Union[int, p.Item] = 1):
+        self.start = start
+        self.stop = stop
+        self.step = step
+
+        # these might serve to provide optional information to the range_element_item
+        self.r1 = None
+        self.r2 = None
+
+    @staticmethod
+    def is_positive(i: Union[int, p.Item]) -> bool:
+        if isinstance(i, int):
+            return i > 0
+        else:
+            return p.is_instance_of(i, p.I39["positive integer"])
+
+    @staticmethod
+    def is_nonnegative(i: Union[int, p.Item]) -> bool:
+        if isinstance(i, int):
+            return i >= 0
+        else:
+            return p.is_instance_of(i, p.I38["non-negative integer"])
+
+    def __enter__(self):
+        """
+        implicitly called in the head of the with statemet
+        :return:
+        """
+
+        if self.is_positive(self.start) and self.is_positive(self.step):
+            class_item = p.I39["positive integer"]
+        elif self.is_nonnegative(self.start) and self.is_nonnegative(self.step):
+            class_item = p.I38["non-negative integer"]
+        else:
+            class_item = p.I37["integer number"]
+
+        element = p.instance_of(class_item, self.r1, self.r2)
+        element.R30__is_secondary_instance_of = I6012["integer range element"]
+
+        element.R1616__has_start_value = self.start
+        element.R1617__has_stop_value = self.stop
+        element.R1618__has_step_value = self.step
+
+        element.finalize()
+        return element
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        # this is the place to handle exceptions
+        pass
+
 
 p.end_mod()

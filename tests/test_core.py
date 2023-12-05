@@ -1165,6 +1165,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         # ensure expected number of hooks (after re-initialization)
         self.assertEqual(sum([len(lst) for lst in p.ds.hooks.values()]), 0)
 
+    # TODO: obsolete?
     def test_d15__setattr(self):
 
         return
@@ -1176,6 +1177,29 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
             itm1.R301 = "success"
 
             self.assertTrue(R301.uri in itm1.get_relations())
+
+    def test_d16__IntegerRangeElement(self):
+        # the original definition of the IRE had the problem that it only was
+        # aplicable in the same module where it was defined
+        ma = p.erkloader.load_mod_from_path(TEST_DATA_PATH_MA, prefix="ma")
+
+        with p.uri_context(uri=TEST_BASE_URI, prefix="ut"):
+            I9223 = p.create_item(
+                R1__has_label="definition of zero matrix",
+                R2__has_description="the defining statement of what a zero matrix is",
+                R4__is_instance_of=p.I20["mathematical definition"],
+            )
+
+            with I9223["definition of zero matrix"].scope("setting") as cm:
+                cm.new_var(M=p.uq_instance_of(ma.I9904["matrix"]))
+
+            with I9223["definition of zero matrix"].scope("premise") as cm:
+                with ma.IntegerRangeElement(start=1, stop=10) as i:
+                    with ma.IntegerRangeElement(start=1, stop=10) as j:
+
+                        # create an auxiliary variable (not part part of the graph)
+                        M_ij = ma.I3240["matrix element"](cm.M, i, j)
+                        cm.new_equation(lhs=M_ij, rhs=ma.I5000["scalar zero"])
 
 
 class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):

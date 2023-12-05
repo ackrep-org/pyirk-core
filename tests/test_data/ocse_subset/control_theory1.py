@@ -16,8 +16,6 @@ p.register_mod(__URI__, keymanager)
 p.start_mod(__URI__)
 
 
-I4239 = ma.I4239["abstract monovariate polynomial"]
-
 I1347 = p.create_item(
     R1__has_label="Lie derivative of scalar field",
     R2__has_description=(
@@ -47,15 +45,6 @@ I6886 = p.create_item(
     R3__is_subclass_of=I2928["general model representation"],
     # TODO: this has to use create_equation (to be implemented)
     R6__has_defining_mathematical_relation=p.create_expression(r"$\dot x = f(x, u)$"),
-)
-
-R5405 = ma.R5405["has associated state space"]
-
-I1168 = p.create_item(
-    R1__has_label="point in state space",
-    R2__has_description="type for a point in a given state space",
-    R3__is_subclass_of=p.I12["mathematical object"],
-    R41__has_required_instance_relation=R5405["has associated state space"],
 )
 
 I4466 = p.create_item(

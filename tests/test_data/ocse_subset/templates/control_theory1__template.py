@@ -17,12 +17,9 @@ p.start_mod(__URI__)
 
 
 insert_entities = [
-I4239["abstract monovariate polynomial"],
 I1347["Lie derivative of scalar field"],
 I2928["general model representation"],
 I6886["general ode state space representation"],
-R5405["has associated state space"],
-I1168["point in state space"],
 I4466["Systems Theory"],
 I7641["general system model"],
 I5948["dynamical system"],

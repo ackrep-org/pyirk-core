@@ -330,7 +330,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
 
         ct = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
         with p.uri_context(uri=TEST_BASE_URI):
-            poly1 = p.instance_of(ct.I4239["abstract monovariate polynomial"])
+            poly1 = p.instance_of(ct.ma.I4239["abstract monovariate polynomial"])
 
         # test that an arbitrary item is *not* callable
         self.assertRaises(TypeError, ct.ma.I2738["field of complex numbers"], 0)
@@ -356,7 +356,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         with p.uri_context(uri=TEST_BASE_URI):
             h = p.instance_of(mod1.ma.I9923["scalar field"])
             f = p.instance_of(mod1.ma.I9841["vector field"])
-            x = p.instance_of(mod1.I1168["point in state space"])
+            x = p.instance_of(mod1.ma.I1168["point in state space"])
 
             Lderiv = mod1.I1347["Lie derivative of scalar field"]
 

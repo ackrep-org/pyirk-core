@@ -1335,8 +1335,13 @@ I15 = create_builtin_item(
 I17 = create_builtin_item(
     key_str="I17",
     R1__has_label="equivalence proposition",
-    R2__has_description="proposition, which establishes the equivalence of two or more statements",
+    R2__has_description="proposition, which establishes the equivalence of two sets of statements (premise and assertion)",
     R3__is_subclass_of=I14["mathematical proposition"],
+    R18__has_usage_hint=(
+        "While for I15__implication_proposition the border between scopes 'setting' and premise is somewhat arbitrary "
+        "this is not the case for I17__equivalence_proposition because assertion and premise here are interchangeable. "
+        "The implication must be true in the other direction as well."
+    ),
 )
 
 

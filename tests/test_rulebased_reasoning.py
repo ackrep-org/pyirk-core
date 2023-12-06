@@ -939,7 +939,7 @@ class Test_01_rulebased_reasoning(HousekeeperMixin, unittest.TestCase):
 
         with p.uri_context(uri=TEST_BASE_URI):
 
-            zp.person1.set_mutliple_relations(p.R50["is different from"], ph_list)
+            zp.person1.set_multiple_relations(p.R50["is different from"], ph_list)
 
             # this does nothing because we only have 'meaningless' R50-statements
             res = p.ruleengine.apply_semantic_rules(
@@ -947,7 +947,7 @@ class Test_01_rulebased_reasoning(HousekeeperMixin, unittest.TestCase):
             )
             self.assertEqual(len(res.new_statements), 0)
 
-            zp.person1.set_mutliple_relations(p.R50["is different from"], h_list)
+            zp.person1.set_multiple_relations(p.R50["is different from"], h_list)
 
             with self.assertRaises(p.aux.LogicalContradiction) as err:
                 res = p.ruleengine.apply_semantic_rules(

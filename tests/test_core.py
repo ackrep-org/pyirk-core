@@ -1642,7 +1642,7 @@ class Test_Z_Core(HousekeeperMixin, unittest.TestCase):
             m1 = p.instance_of(mod1.I7641["general system model"], r1="test_model 1", r2="a test model")
             m2 = p.instance_of(mod1.I7641["general system model"], r1="test_model 2", r2="a test model")
 
-            m1.set_relation(p.R16["has property"], mod1.I9210["stabilizility"])
+            m1.set_relation(p.R16["has property"], mod1.I9210["stabilizability"])
             m2.set_relation(p.R16["has property"], mod1.I7864["controllability"])
 
         # graph has to be created after the entities

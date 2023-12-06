@@ -259,7 +259,7 @@ class RuleApplicator:
 
     def _apply(self) -> core.RuleResult:
         """
-        Perform the actual application of the rule (either via aubgraph monomorphism or via SPARQL query)
+        Perform the actual application of the rule (either via subgraph monomorphism or via SPARQL query)
         """
 
         # TODO: remove this when implementing the AlgorithmicRuleApplicationWorker
@@ -368,7 +368,7 @@ class RuleApplicator:
 
     def _make_literal(self, value) -> str:
         """
-        create (if neccessary) and return an uri for an literal value
+        create (if necessary) and return an uri for an literal value
         """
 
         if uri := self.literals.b.get(value):
@@ -509,8 +509,8 @@ class RuleApplicatorWorker:
             # res_dict represents one situation where the assertions should be applied
             # it's a dict {<node-number>: <item>, ...} like
             # {
-            #       0: <Item I2931["local ljapunov stability"]>,
-            #       1: <Item I4900["local asymtotical stability"]>,
+            #       0: <Item I2931["local Lyapunov stability"]>,
+            #       1: <Item I4900["local asymptotical stability"]>,
             #       2: <Item I9642["local exponential stability"]>
             #  }
 
@@ -564,7 +564,7 @@ class RuleApplicatorWorker:
                 else:
                     asserted_new_items.append(None)
 
-            # some of the functions might have returned None (called becaus of their side effects)
+            # some of the functions might have returned None (called because of their side effects)
             # these pairs are sorted out below (via continue)
 
             # augment the dict with entries like {"fiat0": <Item Ia6733["some item"]>}
@@ -598,7 +598,7 @@ class RuleApplicatorWorker:
                     # rules should not affect items inside scopes (maybe this will be more precise in the future)
                     continue
 
-                # check if relation already exists and should be ommitted
+                # check if relation already exists and should be omitted
                 if cntnr.omit_if_existing:
                     if new_obj in new_subj.get_relations(rel.uri, return_obj=True):
                         continue
@@ -720,7 +720,7 @@ class RuleApplicatorWorker:
                 raise core.aux.SemanticRuleError(msg)
             func_list.append(fiat_factory)
 
-            # now pepare the arguments
+            # now prepare the arguments
             arg_nodes = []
             for arg in call_args:
                 if isinstance(arg, p.allowed_literal_types):
@@ -833,7 +833,7 @@ class RuleApplicatorWorker:
             if i >= self.max_subgraph_monomorphisms:
                 break
         # res is a list of dicts like:[{'erk:/test/zebra02#Ia1158': 0, 'erk:/tmp/literals#0': 1}, ...]
-        # for some reason the order of that list is not stable accross multiple runs
+        # for some reason the order of that list is not stable across multiple runs
         # ensure stable order for stable test results; for comparing dicts they are converted to json-strings
         res.sort(key=json.dumps)
 
@@ -846,8 +846,8 @@ class RuleApplicatorWorker:
 
         # new_res is a list of dicts like
         # [{
-        #   0: <Item I2931["local ljapunov stability"]>,
-        #   1: <Item I4900["local asymtotical stability"]>,
+        #   0: <Item I2931["local Lyapunov stability"]>,
+        #   1: <Item I4900["local asymptotical stability"]>,
         #   2: <Item I9642["local exponential stability"]>
         #  }, ... ]
 
@@ -882,7 +882,7 @@ class RuleApplicatorWorker:
         :return:        boolean matching result
 
         a pair of nodes should match if
-            - n2 is an external entitiy for self and the uris match
+            - n2 is an external entity for self and the uris match
             - n2 is not an external entity (no further restrictions)
 
         see also: function edge_matcher
@@ -1063,7 +1063,7 @@ class RuleApplicatorWorker:
                     self.ensure_node_of_P(n2)
             elif isinstance(obj, core.allowed_literal_types):
                 if subjectivized_predicate:
-                    # Note: if subjectivized_predicate the literal should occur in the prototype graphe
+                    # Note: if subjectivized_predicate the literal should occur in the prototype graph
                     pass
                 else:
                     # normally handle the literal -> create a wrapper node
@@ -1178,8 +1178,8 @@ AtlasView = nx.coreviews.AtlasView
 def edge_matcher(e1d: AtlasView, e2d: AtlasView) -> bool:
     """
 
-    :param e1d:     attribute data of edgees from "main graph" (see RuleApplicator)
-    :param e2d:     attribute data of edgees from "prototype graph" (see RuleApplicator)
+    :param e1d:     attribute data of edges from "main graph" (see RuleApplicator)
+    :param e2d:     attribute data of edges from "prototype graph" (see RuleApplicator)
 
     because we compare MultiDigraphs we get `AtlasView`-instances, i.e. read-only dicts like
     AtlasView({0: inner_dict0, 1: inner_dict1, ...}). Keys are edge-indices for that 'multi-edge', values are like
@@ -1301,7 +1301,7 @@ class ReportingRuleResult(core.RuleResult):
 
         The bindinfo contains pairs of (<placeholder-item>, <real-item>) tuples. This function uses this information
         together with the rule-specific explanation_text_template (like "{p1}  {rel1}  {p2}") to create strings like:
-        "person1  has_neighbour  person2".
+        "person1  has_neighbor  person2".
         """
         if self.explanation_text_template:
             format_kwargs = {}
@@ -1416,7 +1416,7 @@ def crpr(obj):
 jinja_FILTERS["crpr"] = crpr
 
 
-# Note this function will be called very often -> check for speedup possibilites
+# Note this function will be called very often -> check for speedup possibilities
 def compare_relation_statements(rel1: core.Relation, stm_list: List[core.Statement], stm_data: Container = None):
     """
     decide whether a given relation fulfills all given statements
@@ -1469,7 +1469,7 @@ def is_node_for_simple_graph(entity: core.Entity) -> bool:
     obj = r20_rels[0].relation_tuple[-1]
     assert obj.R4__is_instance_of == bi.I16["scope"]
 
-    # TODO: maybe add some exceptions (allowed scopes for inferrencing) here
+    # TODO: maybe add some exceptions (allowed scopes for inferencing) here
 
     return False
 
@@ -1568,7 +1568,7 @@ class AlgorithmicRuleApplicationWorker:
         final_result = p.core.RuleResult()
 
         for result_args in result_list:
-            assert len(args) == 1  # this is like ("{} has too many `R50__is_differnt_from` statements",)
+            assert len(args) == 1  # this is like ("{} has too many `R50__is_different_from` statements",)
             tmp_res = consequent_function(None, *args, result_args[0])
 
             # TODO: add result.extend_with_binding_info(cfr, res_dict), see above
@@ -1584,7 +1584,7 @@ class AlgorithmicRuleApplicationWorker:
         h_list = p.get_instances_of(zb.I7435["human"], filter=p.is_relevant_item)
         rel_list = p.ds.get_subjects_for_relation(zb.R2850["is functional activity"].uri, filter=True)
 
-        # filter out the two person-person-activities (TODO: test if this is neccessary)
+        # filter out the two person-person-activities (TODO: test if this is necessary)
         # otherwise we would have 7 statements per person
         rel_list = [
             r
@@ -1651,8 +1651,9 @@ class AlgorithmicRuleApplicationWorker:
 
     def get_predicates_report(self, predicate_list):
         """
-        Gather data for each relevant predicate how many possibilities of subject-object-pairs exisit, which do
+        Gather data for each relevant predicate how many possibilities of subject-object-pairs exist, which do
         not contradict an `oppo_pred`-statement, where `oppo_pred` is 'R43__is_opposite_of' the considered predicate.
+        ("oppo" means opposite)
         """
 
         pred_report = Container()
@@ -1698,11 +1699,11 @@ class HypothesisReasoner:
     def __init__(self, zb, base_uri):
         self.zb = zb  # the base module (currently zebra-puzzle base data)
         self.base_uri = base_uri
-        self.contex_uri = f"{base_uri}/{self.uri_suffix}"
+        self.context_uri = f"{base_uri}/{self.uri_suffix}"
 
     def register_module(self):
         keymanager = p.KeyManager()
-        p.register_mod(self.contex_uri, keymanager, check_uri=False)
+        p.register_mod(self.context_uri, keymanager, check_uri=False)
 
     def hypothesis_reasoning_step(self, rule_list):
         # generate hypothesis
@@ -1733,7 +1734,7 @@ class HypothesisReasoner:
         for subj, pred, obj in result.stm_triples[1:]:
             # test the consequences of an hypothesis inside an isolated module (which can be deleted if it failed)
             self.register_module()
-            with p.uri_context(uri=self.contex_uri):
+            with p.uri_context(uri=self.context_uri):
                 stm = subj.set_relation(pred, obj)
                 k = 0
                 if VERBOSITY:
@@ -1753,4 +1754,4 @@ class HypothesisReasoner:
                 print(p.aux.byellow("This hypothesis led to a contradiction:"), stm)
 
                 # delete all statements from this context
-                p.unload_mod(self.contex_uri)
+                p.unload_mod(self.context_uri)

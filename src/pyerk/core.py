@@ -426,7 +426,7 @@ class Entity(abc.ABC):
             else:
                 self.set_relation(key, value)
 
-    def set_mutliple_relations(
+    def set_multiple_relations(
         self, relation: Union["Relation", str], obj_seq: Union[tuple, list], *args, **kwargs
     ) -> List["Statement"]:
         """

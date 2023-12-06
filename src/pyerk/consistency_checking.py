@@ -1,5 +1,5 @@
 """
-pyerk module for consitency checking.
+pyerk module for consistency checking.
 
 
 """
@@ -175,7 +175,7 @@ def get_expected_arg_types(itm: Item) -> Tuple[Item]:
     return res
 
 
-def enable_consitency_checking():
+def enable_consistency_checking():
     core.register_hook("post-finalize-item", check)
 
 

@@ -24,12 +24,12 @@ from .settings import (
     TEST_MOD_NAME,
     # TEST_ACKREP_DATA_FOR_UT_PATH,
     TEST_BASE_URI,
-    HouskeeperMixin,
+    HousekeeperMixin,
 
 )
 
 
-class Test_01_rulebased_reasoning(HouskeeperMixin, unittest.TestCase):
+class Test_01_rulebased_reasoning(HousekeeperMixin, unittest.TestCase):
     def setUp(self):
         super().setUp()
 
@@ -1478,7 +1478,7 @@ class Test_01_rulebased_reasoning(HouskeeperMixin, unittest.TestCase):
 
 
         # manually unload internal module:
-        p.unload_mod(hyre.contex_uri, strict=False)
+        p.unload_mod(hyre.context_uri, strict=False)
 
 
         # IPS() # WIP

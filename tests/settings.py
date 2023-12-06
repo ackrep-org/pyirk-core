@@ -57,7 +57,7 @@ PRINT_TEST_METHODNAMES = True
 WRITE_TMP_FILES = False
 
 
-class HouskeeperMixin:
+class HousekeeperMixin:
     """
     Class to provide common functions for all our TestCase subclasses
     """

@@ -14,14 +14,14 @@ import pyerk as p
 from .settings import (
     TEST_BASE_URI,
     TEST_DATA_DIR1,
-    HouskeeperMixin,
+    HousekeeperMixin,
     TEST_DATA_PATH2,
 
     )
 
 
 # noinspection PyPep8Naming
-class Test_01_Script(HouskeeperMixin, unittest.TestCase):
+class Test_01_Script(HousekeeperMixin, unittest.TestCase):
     def test_a01__insert_keys(self):
 
         srcpath = pjoin(TEST_DATA_DIR1, "tmod2_with_new_items.py")

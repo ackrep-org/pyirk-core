@@ -58,26 +58,54 @@ def check_applied_operator(itm: Item):
 
     # the lengths match, now check the types
 
-    for i, (actual_type, expected_type) in enumerate(zip(arg_type_items, expected_arg_types)):
-        if bi.is_subclass_of(actual_type, expected_type, allow_id=True):
-            continue
-
-        # the main type does not match. One of the secondary types might still match
-        continue_outer_loop = False
-        for secondary_class_item in args[i].R30__is_secondary_instance_of:
-            if bi.is_subclass_of(secondary_class_item, expected_type, allow_id=True):
-                continue_outer_loop = True
+    for i, (actual_type, expected_type_list) in enumerate(zip(arg_type_items, expected_arg_types)):
+        secondary_class_items = args[i].R30__is_secondary_instance_of
+        for expected_type in expected_type_list:
+            res = check_type(actual_type, secondary_class_items, expected_type, raise_exception=False)
+            if res:
+                # typechecking was successful
                 break
-        if continue_outer_loop:
-            continue
+        else:
+            # for loop did terminate without break none of the types where correct
+            msg = (
+                f"expected one of {expected_type_list} but got {actual_type}, while checking type of "
+                f"arg{i+1} for {itm}\n{get_error_location()}"
+            )
+            raise WrongArgType(msg)
 
-        # handle some special cases (TODO: I41["semantic rule"]-instances for this, see zebra puzzle test data)
-        if bi.is_subclass_of(actual_type, bi.I34["complex number"], allow_id=True) and expected_type == bi.I18["mathematical expression"]:
-            continue
 
-        # if we reach this there was no match -> error
-        msg = f"expected {expected_type} but got {actual_type}, while checking type of arg{i+1} for {itm}\n{get_error_location()}"
+def check_type(actual_type, secondary_class_items, expected_type, raise_exception=True) -> bool:
+    """
+    :param actual_type:             core.Item
+    :param secondary_class_items:   List[core.Item]
+    :param expected_type:           core.Item;
+    """
+    if bi.is_subclass_of(actual_type, expected_type, allow_id=True):
+        return True
+
+    # the main type does not match. One of the secondary types might still match
+    continue_outer_loop = False
+    for secondary_class_item in secondary_class_items:
+        if bi.is_subclass_of(secondary_class_item, expected_type, allow_id=True):
+            continue_outer_loop = True
+            break
+    if continue_outer_loop:
+        return True
+
+    # handle some special cases (TODO: I41["semantic rule"]-instances for this, see zebra puzzle test data)
+    if bi.is_subclass_of(actual_type, bi.I34["complex number"], allow_id=True) and expected_type == bi.I18["mathematical expression"]:
+        return True
+
+    # if we reach this there was no match -> error
+    if raise_exception:
+
+        # no information available about the item where we check the types
+        # if needed this exception should be caught and re-raised
+        msg = f"expected {expected_type} but got {actual_type}, while checking type"
         raise WrongArgType(msg)
+
+    return False
+
 
 
 def get_error_location():
@@ -137,10 +165,12 @@ def get_expected_arg_types(itm: Item) -> Tuple[Item]:
     res = []
     for i, dom in enumerate(domains):
         assert isinstance(dom, list)
-        if len(dom) != 1:
-            msg = f"multi-valued domains are not yet supported (arg {i+1}) " f"of {itm}"
-            raise core.aux.NotYetFinishedError(msg)
-        res.append(dom[0])
+        if len(dom) == 0:
+            f"empty list is not allowed in domain specification (R8/R9/R10) of {itm}"
+            raise core.aux.InvalidObjectValue(msg)
+        else:
+            # append the list (multi valued domain)
+            res.append(dom)
 
     return res
 

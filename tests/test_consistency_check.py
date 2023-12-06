@@ -300,8 +300,18 @@ class Test_01_CC(HouskeeperMixin, unittest.TestCase):
                 R11__has_range_of_result=ma.I9904["matrix"],
             )
 
-            i = p.instance_of(p.I35["real number"])
+            x = p.instance_of(p.I35["real number"])
+            r = p.instance_of(p.I36["rational number"])
+            i = p.instance_of(p.I37["integer number"])
+            c = p.instance_of(p.I34["complex number"])
             M = p.instance_of(ma.I9904["matrix"])
+            S = p.instance_of(ma.I9906["square matrix"])
 
+            p.cc.check(I1000(x))
+            p.cc.check(I1000(r))
             p.cc.check(I1000(i))
             p.cc.check(I1000(M))
+
+            with self.assertRaises(p.cc.WrongArgType):
+                # type error for arg2
+                p.cc.check(I1000(c))

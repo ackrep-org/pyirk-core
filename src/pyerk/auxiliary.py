@@ -186,6 +186,9 @@ class ExcplicitlyTriggeredTestException(PyERKError):
 class InconsistentEdgeRelations(SemanticRuleError):
     pass
 
+class InvalidObjectValue(SemanticRuleError):
+    pass
+
 
 class MissingQualifierError(PyERKError):
     pass

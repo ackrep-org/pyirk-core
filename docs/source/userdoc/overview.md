@@ -47,7 +47,7 @@ To open an IPython shell with a loaded module run e.g.
 pyerk -i -l control_theory1.py ct
 ```
 
-Then, you have `ct` as variable in your namespace and can e.g. run `print(ct.I5167.R1`).
+Then, you have `ct` as variable in your namespace and can e.g. run `print(ct.I5167.R1)`.
 
 (The above command assumes that the file `control_theory1.py` is in your current working directory.)
 
@@ -306,7 +306,7 @@ C = mul(A, B)
 
 ### Convenience-Expressions
 
-While the operator approach is suitable to create the appropriate notes and edges in the knowledge graph it is not very convenient to write more complex formulas in that way. Thus pyerk offers a convenience mechanism based on the computer algebra package [Sympy](). The function `builtin_entities.items_to_symbols()` creates a sympy symbol for every passed item (and keeps track of the associations). Then, a formula can be denoted using "usual" python syntax with operator signs `+`, `-`, `*`, `/`, and `**` which results in an instance of `sympy.core.expr.Expr`. These expressions can be passed, e.g., to `cm.new_equation` where they are converted back to pyerk-items. In other words the following two snippets are equivalent:
+While the operator approach is suitable to create the appropriate notes and edges in the knowledge graph it is not very convenient to write more complex formulas in that way. Thus pyerk offers a convenience mechanism based on the computer algebra package [Sympy](https://docs.sympy.org/dev/install.html). The function `builtin_entities.items_to_symbols()` creates a sympy symbol for every passed item (and keeps track of the associations). Then, a formula can be denoted using "usual" python syntax with operator signs `+`, `-`, `*`, `/`, and `**` which results in an instance of `sympy.core.expr.Expr`. These expressions can be passed, e.g., to `cm.new_equation` where they are converted back to pyerk-items. In other words the following two snippets are equivalent:
 
 ```python
 # approach 1: using intermediate symbolic expressions

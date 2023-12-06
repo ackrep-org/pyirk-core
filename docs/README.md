@@ -7,3 +7,8 @@ Run `make html` in this directory to build the docs on your system. See `build/h
 
 
 Automatically generated documentation is available at: <https://pyerk-core.readthedocs.io>. (Be sure to select the branch of interest from the menu in the lower right).
+
+
+### Debug Readthedocs Build
+
+In `/docs/source` run `python -m sphinx -T -E -W --keep-going -b html -d _build/doctrees -D language=en . build/html`.

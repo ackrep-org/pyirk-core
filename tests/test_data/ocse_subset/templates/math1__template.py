@@ -64,8 +64,13 @@ raw__I5359["determinant"].add_method(I5359_cc_pp, "_custom_call_post_process"),
 I6324["canonical first order monic polynomial matrix"],
 def__I6324_cc_pp,
 raw__I6324["canonical first order monic polynomial matrix"].add_method(I6324_cc_pp, "_custom_call_post_process"),
+I1195["integer range"],
+R1616["has start value"],
+R1617["has stop value"],
+R1618["has step value"],
 I6012["integer range element"],
 class__IntegerRangeElement,
+I3240["matrix element"],
 ]
 
 p.end_mod()

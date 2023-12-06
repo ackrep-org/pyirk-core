@@ -365,6 +365,36 @@ def I6324_cc_pp(self, res, *args, **kwargs):
 I6324["canonical first order monic polynomial matrix"].add_method(I6324_cc_pp, "_custom_call_post_process")
 
 
+I1195 = p.create_item(
+    R1__has_label="integer range",
+    R2__has_description="represents an integer range with start-, stop- and step-value",
+    R4__is_instance_of=p.I2["Metaclass"],
+)
+
+R1616 = p.create_relation(
+    R1__has_label="has start value",
+    R2__has_description="...",
+    R8__has_domain_of_argument_1=I1195["integer range"],
+    R11__has_range_of_result=p.I37["integer number"],
+    R22__is_functional=True,
+)
+
+R1617 = p.create_relation(
+    R1__has_label="has stop value",
+    R2__has_description="...",
+    R8__has_domain_of_argument_1=I1195["integer range"],
+    R11__has_range_of_result=p.I37["integer number"],
+    R22__is_functional=True,
+)
+
+R1618 = p.create_relation(
+    R1__has_label="has step value",
+    R2__has_description="...",
+    R8__has_domain_of_argument_1=I1195["integer range"],
+    R11__has_range_of_result=p.I37["integer number"],
+    R22__is_functional=True,
+)
+
 I6012 = p.create_item(
     R1__has_label="integer range element",
     R2__has_description="class whose instances represent an element from a specified range (I1195)",
@@ -437,9 +467,11 @@ class IntegerRangeElement:
         element = p.instance_of(class_item, self.r1, self.r2)
         element.R30__is_secondary_instance_of = I6012["integer range element"]
 
-        element.R1616__has_start_value = self.start
-        element.R1617__has_stop_value = self.stop
-        element.R1618__has_step_value = self.step
+        # run this explicitly in the context of this module (otherwise R1616 etc. is not defined)
+        with p.uri_context(uri=__URI__):
+            element.R1616__has_start_value = self.start
+            element.R1617__has_stop_value = self.stop
+            element.R1618__has_step_value = self.step
 
         element.finalize()
         return element
@@ -447,6 +479,23 @@ class IntegerRangeElement:
     def __exit__(self, exc_type, exc_val, exc_tb):
         # this is the place to handle exceptions
         pass
+
+I3240 = p.create_item(
+    R1__has_label="matrix element",
+    R2__has_description=(
+        "mathematical operation wich maps a Matrix A, and two integers i, j to the scalar matrix entry A[i, j]. "
+        "Index counting starts at 1"
+    ),
+    R4__is_instance_of=I4895["mathematical operator"],
+    R8__has_domain_of_argument_1=I9904["matrix"],
+    R9__has_domain_of_argument_2=p.I39["positive integer"],
+    R10__has_domain_of_argument_3=p.I39["positive integer"],
+    R11__has_range_of_result=p.I34["complex number"],
+    R13__has_canonical_symbol=r"$\mathrm{elt}$",
+    R18__has_usage_hint=(
+        "This operator is assumed be used as callable , e.g. `A_3_6 = I3240['matrix element'](A, 3, 6)`"
+    ),
+)
 
 
 p.end_mod()

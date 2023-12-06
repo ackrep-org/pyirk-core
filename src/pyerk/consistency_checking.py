@@ -50,6 +50,7 @@ def check_applied_operator(itm: Item):
     arg_type_items = [arg.R4__is_instance_of for arg in args]
 
     expected_arg_types = get_expected_arg_types(operator_itm)
+    # IPS()
 
     if len(arg_type_items) != len(expected_arg_types):
         msg = f"While checking {itm}: got {len(arg_type_items)} arg(s) but " f"{len(expected_arg_types)} where expected"

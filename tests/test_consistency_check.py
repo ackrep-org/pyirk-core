@@ -288,3 +288,20 @@ class Test_01_CC(HouskeeperMixin, unittest.TestCase):
         self.assertTrue(p.is_instance_of, p.I48["constraint violation"])
 
         self.assertEqual(A2B.R74__has_constraint_violation, [])
+
+    def test_c02__cc_multi_valued_domain(self):
+        ma = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct").ma
+        with p.uri_context(uri=TEST_BASE_URI):
+            I1000 = p.create_item(
+                R1__has_label="negation",
+                R2__has_description="negation operator",
+                R4__is_instance_of=ma.I4895["mathematical operator"],
+                R8__has_domain_of_argument_1=(ma.I9904["matrix"], p.I35["real number"]),
+                R11__has_range_of_result=ma.I9904["matrix"],
+            )
+
+            i = p.instance_of(p.I35["real number"])
+            M = p.instance_of(ma.I9904["matrix"])
+
+            p.cc.check(I1000(i))
+            p.cc.check(I1000(M))

@@ -471,12 +471,7 @@ I14 = create_builtin_item(
 )
 
 
-I15 = create_builtin_item(
-    key_str="I15",
-    R1__has_label="implication proposition",
-    R2__has_description="proposition, where the premise (if-part) implies the assertion (then-part)",
-    R3__is_subclass_of=I14["mathematical proposition"],
-)
+# I15 is defined below
 
 
 I16 = create_builtin_item(
@@ -1263,7 +1258,7 @@ def _rule__scope(self: Item, scope_name: str):
     return cm
 
 
-I15["implication proposition"].add_method(_proposition__scope, name="scope")
+I14["mathematical proposition"].add_method(_proposition__scope, name="scope")
 
 
 def _get_subscopes(self):
@@ -1274,7 +1269,7 @@ def _get_subscopes(self):
     return scope_rels
 
 
-I15["implication proposition"].add_method(_get_subscopes, name="get_subscopes")
+I14["mathematical proposition"].add_method(_get_subscopes, name="get_subscopes")
 I16["scope"].add_method(_get_subscopes, name="get_subscopes")
 
 
@@ -1299,7 +1294,7 @@ def _get_subscope(self, name: str):
         return res[0]
 
 
-I15["implication proposition"].add_method(_get_subscope, name="get_subscope")
+I14["mathematical proposition"].add_method(_get_subscope, name="get_subscope")
 I16["scope"].add_method(_get_subscope, name="get_subscope")
 
 
@@ -1327,6 +1322,14 @@ def _get_items_for_scope(self):
 
 
 I16["scope"].add_method(_get_items_for_scope, name="get_items_for_scope")
+
+
+I15 = create_builtin_item(
+    key_str="I15",
+    R1__has_label="implication proposition",
+    R2__has_description="proposition, where the premise (if-part) implies the assertion (then-part)",
+    R3__is_subclass_of=I14["mathematical proposition"],
+)
 
 
 I17 = create_builtin_item(

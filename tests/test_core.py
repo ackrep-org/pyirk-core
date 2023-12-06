@@ -1201,6 +1201,27 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
                         M_ij = ma.I3240["matrix element"](cm.M, i, j)
                         cm.new_equation(lhs=M_ij, rhs=ma.I5000["scalar zero"])
 
+    def test_e01__I14_subclass_scopes(self):
+        # test whether the scope method is inherited correctly
+        with p.uri_context(uri=TEST_BASE_URI, prefix="ut"):
+            prop = p.instance_of(p.I17["equivalence proposition"])
+            scp1 = prop.scope("setting")
+            scp2 = prop.scope("premise")
+            scp3 = prop.scope("assertion")
+
+            I1000 = p.create_item(
+                R1__has_label="Cayley-Hamilton theorem",
+                R4__is_instance_of=p.I15["implication proposition"],
+            )
+
+            scp1 = I1000.scope("setting")
+
+            I1001 = p.create_item(
+                R1__has_label="Cayley-Hamilton theorem",
+                R4__is_instance_of=p.I17["equivalence proposition"],
+            )
+            scp1 = I1001.scope("setting")
+
 
 class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
     def setUp(self):

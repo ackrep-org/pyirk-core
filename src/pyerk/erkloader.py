@@ -40,9 +40,9 @@ def load_mod_from_path(
     """
 
     :param modpath:         file system path for the module to be loaded
-    :param prefix:          prefix which can be used to replace the URI for convenice
+    :param prefix:          prefix which can be used to replace the URI for convenience
     :param modname:
-    :param allow_reload:    flag; if False, an error is raised if the module was already loades
+    :param allow_reload:    flag; if False, an error is raised if the module was already loaded
     :param smart_relative:  flag; if True, relative paths are interpreted w.r.t. the calling module
                             (not w.r.t. current working path)
     :param reuse_loaded:    flag; if True and the module was already loaded before, then just use this
@@ -60,7 +60,7 @@ def load_mod_from_path(
             reuse_loaded__actual = False
             pyerk.ds.reuse_loaded_module = False
         case None:
-            # use the (unchange) default
+            # use the (unchanged) default
             reuse_loaded__actual = pyerk.ds.reuse_loaded_module
 
     try:

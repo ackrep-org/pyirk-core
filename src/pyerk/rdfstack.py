@@ -134,10 +134,9 @@ def check_uri_in_modfilter(uri, modfilter):
 
 
 def check_subclass(entity, class_item):
-    # wip!
 
-    # Hier müsste man prüfen ob es eine instanz-subklassen*-Beziehung gibt
-    # das wird insbesondere dann spannend, wenn es sowas wie pseudo-mehrfachvererbung gibt
+    # TODO (use the implemented functionality)
+    # Here we should check wether there is an instance subclass-relation
     res = []
     res.extend(aux.ensure_list(entity.R4__is_instance_of))
     res.extend(aux.ensure_list(entity.R3__is_subclass_of))

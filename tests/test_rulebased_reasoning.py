@@ -41,7 +41,7 @@ class Test_01_rulebased_reasoning(HousekeeperMixin, unittest.TestCase):
 
     def test_c07__zebra_puzzle01(self):
         """
-        Test one special rule I901, with new features from builin_entities
+        Test one special rule I901, with new features from builtin_entities
         """
 
         self._apply_and__t_e_s_t__matching_rule("zb__I901")
@@ -69,14 +69,14 @@ class Test_01_rulebased_reasoning(HousekeeperMixin, unittest.TestCase):
 
     def test_c08__zebra_puzzle02(self):
         """
-        Test one special rule I902, with new features from builin_entities
+        Test one special rule I902, with new features from builtin_entities
         """
 
         self._apply_and__t_e_s_t__matching_rule("zb__I902")
 
     def test_c09__zebra_puzzle03(self):
         """
-        Test one special rule I903 with new features from builin_entities
+        Test one special rule I903 with new features from builtin_entities
         """
 
         c = self._apply_and__t_e_s_t__matching_rule("zb__I903", nbr_of_new_stms=2)
@@ -120,12 +120,12 @@ class Test_01_rulebased_reasoning(HousekeeperMixin, unittest.TestCase):
 
         zp = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA02, prefix="zp")
 
-        neighbour = zp.person1.zb__R2353__lives_immediately_right_of
-        self.assertIsNone(neighbour)
+        neighbor = zp.person1.zb__R2353__lives_immediately_right_of
+        self.assertIsNone(neighbor)
 
         res = p.ruleengine.apply_semantic_rule(zp.zr.I710, mod_context_uri=zp.__URI__)
 
-        # assert that both statemens have been created:
+        # assert that both statements have been created:
         # S(person1,  p.R47["is same as"], person2)
         # S(person2,  p.R47["is same as"], person1)
         counter = 0
@@ -145,8 +145,8 @@ class Test_01_rulebased_reasoning(HousekeeperMixin, unittest.TestCase):
         with p.uri_context(uri=TEST_BASE_URI):
             p.replace_and_unlink_entity(zp.person2, zp.person1)
 
-        neighbour = zp.person1.zb__R2353__lives_immediately_right_of
-        self.assertEqual(neighbour, zp.person3)
+        neighbor = zp.person1.zb__R2353__lives_immediately_right_of
+        self.assertEqual(neighbor, zp.person3)
 
     def test_d03__zebra_puzzle_stage02(self):
         """
@@ -288,7 +288,7 @@ class Test_01_rulebased_reasoning(HousekeeperMixin, unittest.TestCase):
 
         premise_stms = I702.scp__premise.get_inv_relations("R20")
 
-        # there are two premisie statements: 1.: R4, 2. R38
+        # there are two premise statements: 1.: R4, 2. R38
         self.assertEqual(len(premise_stms), 2)
 
     def test_d04b__zebra_puzzle_stage02(self):
@@ -338,8 +338,8 @@ class Test_01_rulebased_reasoning(HousekeeperMixin, unittest.TestCase):
 
         zp = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA02, prefix="zp")
 
-        neighbour_before = zp.person1.zb__R2353__lives_immediately_right_of
-        self.assertEqual(neighbour_before, None)
+        neighbor_before = zp.person1.zb__R2353__lives_immediately_right_of
+        self.assertEqual(neighbor_before, None)
 
         res = p.ruleengine.apply_semantic_rule(
             zp.zr.I710["rule: identify same items via zb__R2850__is_functional_activity"], mod_context_uri=zp.__URI__
@@ -354,8 +354,8 @@ class Test_01_rulebased_reasoning(HousekeeperMixin, unittest.TestCase):
 
         self.assertIn((zp.person9, zp.person5), res.replacements)
         self.assertIn((zp.person2, zp.person1), res.replacements)
-        neighbour_after = zp.person1.zb__R2353__lives_immediately_right_of
-        self.assertEqual(neighbour_after, zp.person3)
+        neighbor_after = zp.person1.zb__R2353__lives_immediately_right_of
+        self.assertEqual(neighbor_after, zp.person3)
 
     def test_d06__zebra_puzzle_stage02(self):
         """
@@ -956,7 +956,7 @@ class Test_01_rulebased_reasoning(HousekeeperMixin, unittest.TestCase):
                 if res.exception:
                     raise res.exception
 
-            msg = '<Item Ia1158["person1"]> has too many `R50__is_differnt_from` statements'
+            msg = '<Item Ia1158["person1"]> has too many `R50__is_different_from` statements'
             self.assertEqual(err.exception.args[0], msg)
 
     @unittest.skip("currently too slow")
@@ -1018,7 +1018,7 @@ class Test_01_rulebased_reasoning(HousekeeperMixin, unittest.TestCase):
         self.assertIn(p.R43["is opposite of"].uri, res.rel_map)
         self.assertIn(p.R68["is inverse of"].uri, res.rel_map)
 
-        # load the hints and perform basic inferrence
+        # load the hints and perform basic inference
         zp = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA02, prefix="zp")
         res_I702 = res = p.ruleengine.apply_semantic_rules(
             zp.zr.I701["rule: imply parent relation of a subrelation"],
@@ -1027,7 +1027,7 @@ class Test_01_rulebased_reasoning(HousekeeperMixin, unittest.TestCase):
         )
         result_history.append(res)
 
-        # only inferrence until now: 5 R3606["lives next to"]-statements
+        # only inference until now: 5 R3606["lives next to"]-statements
         self.assertEqual(len(res.new_statements), 5)
         self.assertEqual(len(res.rel_map), 1)
         self.assertIn(zp.zb.R3606["lives next to"].uri, res.rel_map)
@@ -1065,7 +1065,7 @@ class Test_01_rulebased_reasoning(HousekeeperMixin, unittest.TestCase):
         self.assertIn(zb.R2693["is located immediately right of"].uri, res.rel_map)
 
         res_I730 = res = p.ruleengine.apply_semantic_rule(
-            zp.zr.I730["rule: deduce negative facts for neighbours"], mod_context_uri=TEST_BASE_URI
+            zp.zr.I730["rule: deduce negative facts for neighbors"], mod_context_uri=TEST_BASE_URI
         )
         reports.append(zb.report(display=False, title="I730"))
         result_history.append(res)
@@ -1097,12 +1097,12 @@ class Test_01_rulebased_reasoning(HousekeeperMixin, unittest.TestCase):
         self.assertEqual(new_houses_nbr, 13)
         self.assertEqual(len(res.new_statements), new_houses_nbr * 2)  # including placeholder-statements
 
-        # revist the  example from above
+        # revisit the  example from above
         self.assertNotEqual(zb.I4037["Englishman"].zb__R9040__lives_in_numbered_house, None)
 
         # apply next rule:
         res_I760 = res = p.ruleengine.apply_semantic_rule(
-            zp.zr.I760["rule: deduce impossible house indices of neighbour"], mod_context_uri=TEST_BASE_URI
+            zp.zr.I760["rule: deduce impossible house indices of neighbor"], mod_context_uri=TEST_BASE_URI
         )
         reports.append(zb.report(display=False, title="I760"))
         result_history.append(res)
@@ -1113,7 +1113,7 @@ class Test_01_rulebased_reasoning(HousekeeperMixin, unittest.TestCase):
 
         # apply next rule:
         res_I763 = res = p.ruleengine.apply_semantic_rule(
-            zp.zr.I763["rule: deduce impossible house index for left-right neighbours"], mod_context_uri=TEST_BASE_URI
+            zp.zr.I763["rule: deduce impossible house index for left-right neighbors"], mod_context_uri=TEST_BASE_URI
         )
         reports.append(zb.report(display=False, title="I763"))
         result_history.append(res)
@@ -1135,7 +1135,7 @@ class Test_01_rulebased_reasoning(HousekeeperMixin, unittest.TestCase):
 
         # apply next rule:
         res_I780 = res = p.ruleengine.apply_semantic_rule(
-            zp.zr.I780["rule: infere from 'is none of' -> 'is one of'"], mod_context_uri=TEST_BASE_URI
+            zp.zr.I780["rule: infer from 'is none of' -> 'is one of'"], mod_context_uri=TEST_BASE_URI
         )
         reports.append(zb.report(display=False, title="I780"))
         result_history.append(res)
@@ -1145,7 +1145,7 @@ class Test_01_rulebased_reasoning(HousekeeperMixin, unittest.TestCase):
 
         # apply next rule:
         res_I790 = res = p.ruleengine.apply_semantic_rule(
-            zp.zr.I790["rule: infere from 'is one of' -> 'is same as'"], mod_context_uri=TEST_BASE_URI
+            zp.zr.I790["rule: infer from 'is one of' -> 'is same as'"], mod_context_uri=TEST_BASE_URI
         )
         reports.append(zb.report(display=False, title="I790"))
         result_history.append(res)
@@ -1178,14 +1178,14 @@ class Test_01_rulebased_reasoning(HousekeeperMixin, unittest.TestCase):
         self.assertGreaterEqual(len(res.new_statements), 65)
 
         res_I794 = res = p.ruleengine.apply_semantic_rule(
-            zp.zr.I794["rule: deduce neighbour-facts from house indices"], mod_context_uri=TEST_BASE_URI
+            zp.zr.I794["rule: deduce neighbor-facts from house indices"], mod_context_uri=TEST_BASE_URI
         )
         reports.append(zb.report(display=False, title="I794"))
         result_history.append(res)
         self.assertGreaterEqual(len(res.new_statements), 2)
 
         res_I796 = res = p.ruleengine.apply_semantic_rule(
-            zp.zr.I796["rule: deduce different-from facts for neighbour-pairs"], mod_context_uri=TEST_BASE_URI
+            zp.zr.I796["rule: deduce different-from facts for neighbor-pairs"], mod_context_uri=TEST_BASE_URI
         )
         reports.append(zb.report(display=False, title="I796"))
         result_history.append(res)
@@ -1304,7 +1304,7 @@ class Test_01_rulebased_reasoning(HousekeeperMixin, unittest.TestCase):
         result_history.append(res)
 
         res = p.ruleengine.apply_semantic_rule(
-            zp.zr.I760["rule: deduce impossible house indices of neighbour"], mod_context_uri=TEST_BASE_URI
+            zp.zr.I760["rule: deduce impossible house indices of neighbor"], mod_context_uri=TEST_BASE_URI
         )
 
         # contains 2 trivial facts of non-placeholder houses, but on good fact
@@ -1323,13 +1323,13 @@ class Test_01_rulebased_reasoning(HousekeeperMixin, unittest.TestCase):
         result_history.append(res)
 
         res = p.ruleengine.apply_semantic_rule(
-            zp.zr.I780["rule: infere from 'is none of' -> 'is one of'"], mod_context_uri=TEST_BASE_URI
+            zp.zr.I780["rule: infer from 'is none of' -> 'is one of'"], mod_context_uri=TEST_BASE_URI
         )
         reports.append(zb.report(display=False, title="I780_(2)"))
         result_history.append(res)
 
         res = p.ruleengine.apply_semantic_rule(
-            zp.zr.I790["rule: infere from 'is one of' -> 'is same as'"], mod_context_uri=TEST_BASE_URI
+            zp.zr.I790["rule: infer from 'is one of' -> 'is same as'"], mod_context_uri=TEST_BASE_URI
         )
         reports.append(zb.report(display=False, title="I790_(2)"))
         result_history.append(res)
@@ -1440,18 +1440,18 @@ class Test_01_rulebased_reasoning(HousekeeperMixin, unittest.TestCase):
             zr.I710["rule: identify same items via zb__R2850__is_functional_activity"],
             zr.I720["rule: replace (some) same_as-items"],
             zr.I725["rule: deduce facts from inverse relations"],
-            zr.I730["rule: deduce negative facts for neighbours"],
+            zr.I730["rule: deduce negative facts for neighbors"],
             zr.I740["rule: deduce more negative facts from negative facts"],
             zr.I741["rule: deduce more negative facts from negative facts"],
             zr.I750["rule: every human lives in one house"],
-            zr.I760["rule: deduce impossible house indices of neighbour"],
-            zr.I763["rule: deduce impossible house index for left-right neighbours"],
+            zr.I760["rule: deduce impossible house indices of neighbor"],
+            zr.I763["rule: deduce impossible house index for left-right neighbors"],
             zr.I770["rule: deduce impossible house_number items from impossible indices"],
-            # zr.I780["rule: infere from 'is none of' -> 'is one of'"],  # not useful for iterating
-            zr.I790["rule: infere from 'is one of' -> 'is same as'"],
+            # zr.I780["rule: infer from 'is none of' -> 'is one of'"],  # not useful for iterating
+            zr.I790["rule: infer from 'is one of' -> 'is same as'"],
             #  zr.I792["rule: deduce different-from-facts from negative facts"],  # slow
-            zr.I794["rule: deduce neighbour-facts from house indices"],
-            zr.I796["rule: deduce different-from facts for neighbour-pairs"],
+            zr.I794["rule: deduce neighbor-facts from house indices"],
+            zr.I796["rule: deduce different-from facts for neighbor-pairs"],
             zr.I798["rule: deduce negative facts from different-from-facts"],
             zr.I800["rule: mark relations which are opposite of functional activities"],
             zr.I810["rule: deduce positive fact from 4 negative facts (hardcoded cheat)"],

@@ -18,8 +18,6 @@ activate_ips_on_exception()
 #  tuple of Relation keys which are not displayed by default
 REL_BLACKLIST = ("erk:/builtins#R1", "erk:/builtins#R2")
 
-# from semantictools import core as smt
-
 from abc import ABC
 
 REPLACEMENTS = {}
@@ -72,14 +70,14 @@ class AbstractGraphObject(ABC):
         """
         handle label formatting (segmentation into multiple lines and later wrapping by html tags)
 
-        labels of Nodes should be centered (dot file should contain r"\n" bewteen segments)
-        hower neither using "\n" nor r"\n" inside the nxv-node-labels leads to the desired results
+        labels of Nodes should be centered (dot file should contain r"\n" between segments)
+        however neither using "\n" nor r"\n" inside the nxv-node-labels leads to the desired results
         thus: use a dummy which will be replaced later
         """
 
         # TODO: replace this by prefixed short_key
-        unformated_repr_str = f'{self.short_key}["{self.label}"]'
-        self.label_segment_keys, self.label_segments = create_label_segments(unformated_repr_str, maxlen=self.maxlen)
+        unformatted_repr_str = f'{self.short_key}["{self.label}"]'
+        self.label_segment_keys, self.label_segments = create_label_segments(unformatted_repr_str, maxlen=self.maxlen)
         self.label_segment_items = zip(self.label_segment_keys, self.label_segments)
 
         # wrap the each key with curly braces to allow application of .format(...) later]
@@ -295,7 +293,7 @@ def create_label_segments(label: str, maxlen: int) -> Tuple[List[str], List[str]
 
         first_part_split_index = maxlen - i
 
-        # rstrip to eliminate trainling spaces but not dashes etc
+        # rstrip to eliminate trailing spaces but not dashes etc
         new_line = first_part[:first_part_split_index].rstrip()
         res_segments.append(new_line)
         rest = rest[first_part_split_index:]
@@ -492,7 +490,7 @@ def visualize_entity(uri: str, url_template="", write_tmp_files: bool = False) -
     for old, new in NEWLINE_REPLACEMENTS:
         dot_data0 = dot_data0.replace(old, new)
 
-    # work arround curly braces in first and last line
+    # work around curly braces in first and last line
     dot_lines = dot_data0.split("\n")
     inner_dot_code = "\n".join(dot_lines[1:-1])
 

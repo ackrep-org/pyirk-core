@@ -162,7 +162,7 @@ class Test_01_CC(HousekeeperMixin, unittest.TestCase):
                 :param _anchor_item:    auxiliary graph node to which the condition function is attached
                                         it is passed automatically (not needed here)
                 :param rule:            the rule which has this function as a consequent_func
-                :param arg:             the item which triggerred the rule
+                :param arg:             the item which triggered the rule
                 """
                 raise p.cc.ErkConsistencyError(f"Rule {rule} failed for arg {arg}.")
 

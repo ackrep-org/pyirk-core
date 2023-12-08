@@ -18,6 +18,6 @@ R2000 = p.create_relation(
 
 
 if os.getenv("PYERK_TRIGGER_TEST_EXCEPTION", "False").lower() == "true":
-    raise p.aux.ExcplicitlyTriggeredTestException("this exception is intended")
+    raise p.aux.ExplicitlyTriggeredTestException("this exception is intended")
 
 p.end_mod()

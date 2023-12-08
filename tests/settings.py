@@ -44,7 +44,7 @@ TEST_ACKREP_DATA_FOR_UT_PATH = pjoin(ERK_ROOT_DIR, "..", "ackrep", "ackrep_data_
 os.environ["UNITTEST"] = "True"
 
 # UNLOAD_MODS is True by default but could be set to False via env var.
-# This is sometimes useful to prevent the deletion of entites by tear_down()
+# This is sometimes useful to prevent the deletion of entities by tear_down()
 UNLOAD_MODS = not (os.getenv("PYERK_NOT_UNLOAD_MODS") == "True")
 
 __URI__ = TEST_BASE_URI = "erk:/local/unittest"
@@ -57,7 +57,7 @@ PRINT_TEST_METHODNAMES = True
 WRITE_TMP_FILES = False
 
 
-class HouskeeperMixin:
+class HousekeeperMixin:
     """
     Class to provide common functions for all our TestCase subclasses
     """

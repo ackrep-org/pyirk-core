@@ -7,15 +7,15 @@
 In Pyerk there are the following kinds of keys:
 - a) short_key like `"R1234"`
 - b) name-labeled key like `"R1234__my_relation"` (consisting of a short_key, a delimiter (`__`) and a label)
-- c) prefixed short_key like `"bi__R1234"` (here the prefix `bi` referse to the module `builtin_entities`)
+- c) prefixed short_key like `"bi__R1234"` (here the prefix `bi` refers to the module `builtin_entities`)
 - d) prefixed name-labeled key like `"bi__R1234__my_relation"`
-- e) index-labeld key like  `"R1234['my relation']"`
+- e) index-labeled key like  `"R1234['my relation']"`
 
-Note: prefixed and name-labled keys can optionally have a language indicator. Examples: ``"bi__R1__de"`` or `"R1__has_label__fr"`.
+Note: prefixed and name-labeled keys can optionally have a language indicator. Examples: ``"bi__R1__de"`` or `"R1__has_label__fr"`.
 
 Also, the leading character indicates the entity type (called `EType` in the code): `I` → item, `R` → relation.
 
-The usage of these syntax variants depens on the context.
+The usage of these syntax variants depends on the context.
 
 For more information see See also {ref}`sec_modules`.
 
@@ -47,7 +47,7 @@ To open an IPython shell with a loaded module run e.g.
 pyerk -i -l control_theory1.py ct
 ```
 
-Then, you have `ct` as variable in your namespace and can e.g. run `print(ct.I5167.R1`).
+Then, you have `ct` as variable in your namespace and can e.g. run `print(ct.I5167.R1)`.
 
 (The above command assumes that the file `control_theory1.py` is in your current working directory.)
 
@@ -74,7 +74,7 @@ lss1 = "some english words"@en
 lss2 = "ein paar deutsche Wörter"@de
 ```
 
-where `en, de` are instances of `pyerk.core.LangaguageCode`.
+where `en, de` are instances of `pyerk.core.LanguageCode`.
 
 The usage inside Pyerk is best demonstrated by the unittest `test_c02__multilingual_relations`, see [test_core.py](https://github.com/ackrep-org/pyerk-core/blob/main/tests/test_core.py) (maybe change branch).
 
@@ -91,7 +91,7 @@ In Pyerk knowledge is represented via *entities* and *statements* (inspired by W
 
 Literals are "atomic" values like strings, numbers or boolean values.
 
-Every entity has short_key (`entity.short_key`, see also {ref}`sec_keys`.) and an uri (`entity.uri`). It is recommended but not requiered that every entity has a label (by means of relation `R1["has label"]`) and a description (by means of `R2["has description"]`).
+Every entity has short_key (`entity.short_key`, see also {ref}`sec_keys`.) and an uri (`entity.uri`). It is recommended but not required that every entity has a label (by means of relation `R1["has label"]`) and a description (by means of `R2["has description"]`).
 
 (sec_items)=
 ### Item (subclass of `core.Entity`)
@@ -112,7 +112,7 @@ Unlike in OWL (but like in Wikidata) an item can be an instance and a class at t
 One consequence of expressing knowledge as a collection of triples is the necessity of auxiliary items. E.g. consider the equation {math}`y = \sin(x)` where `x, y, sin` can be assumed to be well defined items. Because the predicate must be a relation, it is not possible to relate these three items in one triple. The usual approach to deal with such situations is to introduce auxiliary items and more triples (see also [wikipedia on "reification"](https://en.wikipedia.org/wiki/Reification_(knowledge_representation))). One possible (fictional) triple representation of the above equation is
 
 ```
-auxiliary_expr is_functioncall_of_type sin
+auxiliary_expr is_function_call_of_type sin
 auxiliary_expr has_arg x
 y is_equal_to expr
 ```
@@ -150,11 +150,11 @@ Instances of the class model string values (including a `.language` attribute).
 (sec_Statements)=
 ### Statements (`core.Statement`)
 
-Instanes of this class model semantic triples (subject, predicate, object) and corresponding [qualifiers](sec_qualifiers). Every edge in the knowledge graph corresponds to a statement instance.
+Instances of this class model semantic triples (subject, predicate, object) and corresponding [qualifiers](sec_qualifiers). Every edge in the knowledge graph corresponds to a statement instance.
 
 Note: For technical reasons for every `Statement` instance there exits a dual `Statement` instance. For most situations this does not matter, though.
 
-The whole knowledge graph is a collection of Entities (Items, Relation, Literals) and Statements. Roughly speaking, the collection of Entities defines what exists (in the resprective universe of discourse) while the collection of Statements defines how these things are related. Because flat subject-predicate-object triples have very limited expressivity it is possible to "make statements about statements", i.e. use a `Statement` instance as subject another triple. This [Wikidata](https://www.wikidata.org/wiki/Wikidata:SPARQL_tutorial#Qualifiers)-inspired mechanism is called [qualifiers](sec_qualifiers) (see below).
+The whole knowledge graph is a collection of Entities (Items, Relation, Literals) and Statements. Roughly speaking, the collection of Entities defines what exists (in the respective universe of discourse) while the collection of Statements defines how these things are related. Because flat subject-predicate-object triples have very limited expressivity it is possible to "make statements about statements", i.e. use a `Statement` instance as subject another triple. This [Wikidata](https://www.wikidata.org/wiki/Wikidata:SPARQL_tutorial#Qualifiers)-inspired mechanism is called [qualifiers](sec_qualifiers) (see below).
 
 
 
@@ -170,7 +170,7 @@ I2746["Rudolf Kalman"].set_relation(R1833["has employer"], I9942["Stanford Unive
 #.
 ```
 
-This results in the triple: `(I2746, R1833, I9942)`. In Pyerk such triples are modeled as instances of class `Statement`; each such instance represents an edge in the knowledge graph, where the subject and object are the corresponding nodes and each such edge has a lable (the relation type) and optionally other information attachend to it.
+This results in the triple: `(I2746, R1833, I9942)`. In Pyerk such triples are modeled as instances of class `Statement`; each such instance represents an edge in the knowledge graph, where the subject and object are the corresponding nodes and each such edge has a lable (the relation type) and optionally other information attached to it.
 
 
 However, in many cases more complexity is needed. To express that Kalman worked at Stanford between 1964 and 1971, we can exploit that `Statement`-instances can themselves be use as subject of other triples, by means of so called qualifiers:
@@ -211,12 +211,12 @@ The concept of qualifiers is borrowed from Wikidata, see e.g the [WD-SPARQL-tuto
 ### Basics
 Many knowledge artifacts (such as theorems or definitions) consists of multiple simpler statements which are in a specific semantic relation to each other. Consider the example theorem:
 
-> Let {math}`(a, b, c)` be the sides of a triangle, ordered from shortest to longest, and {math}`(l_a, l_b, l_c)` the repective lengths. If the angle between a and b is a rect angle then the equation {math}`l_c^2 = l_a^2 + l_b^2` holds.
+> Let {math}`(a, b, c)` be the sides of a triangle, ordered from shortest to longest, and {math}`(l_a, l_b, l_c)` the respective lengths. If the angle between a and b is a rect angle then the equation {math}`l_c^2 = l_a^2 + l_b^2` holds.
 
 
 Such a theorem consists of several "semantic parts", which in the context of Pyerk are called *scopes*. In particular we the three following scopes:
 
-- *setting*: "Let (a, b, c) be the sides of a triangle, ordered from shortest to longest, and (la, lb, lc) the repective lengths."
+- *setting*: "Let (a, b, c) be the sides of a triangle, ordered from shortest to longest, and (la, lb, lc) the respective lengths."
 - *premise*: "If the angle between a and b is a rect angle"
 - *assertion*: "then the equation {math}`l_c^2 = l_a^2 + l_b^2` holds."
 
@@ -243,7 +243,7 @@ I5000 = p.create_item(
 # because I5000 is an instance of I15 it has a `.scope` method:
 with I5000["simplified Pythagorean theorem"].scope("setting") as cm:
     # the theorem should hold for every planar triangle,
-    # thus a univerally quantified instance is created
+    # thus a universally quantified instance is created
     cm.new_var(ta=p.uq_instance_of(I1000["planar triangle"]))
     cm.new_var(sides=I1001["get polygon sides ordered by length"](cm.ta))
 
@@ -255,7 +255,7 @@ with I5000["simplified Pythagorean theorem"].scope("premise") as cm:
 
 with I5000["simplified Pythagorean theorem"].scope("assertion") as cm:
 
-    # convert a pyerk items into  sympy.Symbol instances to conventiently
+    # convert a pyerk items into  sympy.Symbol instances to conveniently
     # denote formulas (see documentation below)
     La, Lb, Lc = p.items_to_symbols(la, lb, lc)
     cm.new_equation( La**2 + Lb**2, "==", Lc**2 )
@@ -283,7 +283,7 @@ I4895["mathematical operator"].add_method(p.create_evaluated_mapping, "_custom_c
 
 I5177 = p.create_item(
     R1__has_label="matmul",
-    R2__has_description=("matrix multplication operator"),
+    R2__has_description=("matrix multiplication operator"),
     R4__is_instance_of=I4895["mathematical operator"],
     R8__has_domain_of_argument_1=I9904["matrix"],
     R9__has_domain_of_argument_2=I9904["matrix"],
@@ -306,7 +306,7 @@ C = mul(A, B)
 
 ### Convenience-Expressions
 
-While the operator approach is suitable to create the appriate notes and edges in the knowledge graph it is not very convenient to write more complex formulas in that way. Thus pyerk offers a convenience mechanism based on the computer algebra pakage [Sympy](). The function `builtin_entities.items_to_symbols()` creates a sympy symbol for every passed item (and keeps track of the associations). Then, a formula can be denoted using "usual" python syntax with operator signs `+`, `-`, `*`, `/`, and `**` which results in an instance of `sympy.core.expr.Expr`. These expressions can be passed, e.g., to `cm.new_equation` where they are converted back to pyerk-items. In other words the following two snippets are equivalent:
+While the operator approach is suitable to create the appropriate notes and edges in the knowledge graph it is not very convenient to write more complex formulas in that way. Thus pyerk offers a convenience mechanism based on the computer algebra package [Sympy](https://docs.sympy.org/dev/install.html). The function `builtin_entities.items_to_symbols()` creates a sympy symbol for every passed item (and keeps track of the associations). Then, a formula can be denoted using "usual" python syntax with operator signs `+`, `-`, `*`, `/`, and `**` which results in an instance of `sympy.core.expr.Expr`. These expressions can be passed, e.g., to `cm.new_equation` where they are converted back to pyerk-items. In other words the following two snippets are equivalent:
 
 ```python
 # approach 1: using intermediate symbolic expressions
@@ -334,7 +334,7 @@ They are also called *universal quantifier* and *existential quantifier*. In Pye
 - [Qualifiers](sec_qualifiers). In particular (defined in module `builtin_entities`):
     - `univ_quant = QualifierFactory(R44["is universally quantified"])`
         - usage (in OCSE): `cm.new_rel(cm.z, p.R15["is element of"], cm.HP, qualifiers=p.univ_quant(True))`
-    - `exis_quant = QualifierFactory(R66["is existantially quantified"])`
+    - `exis_quant = QualifierFactory(R66["is existentially quantified"])`
         - usage (in OCSE): `cm.new_var(y=p.instance_of(p.I37["integer number"], qualifiers=[p.exis_quant(True)]))`
 - (Sub)scopes:
     ```python
@@ -358,7 +358,7 @@ Despite having similar phonetics (and spelling) quantifiers (logic operators) an
 (sec_modules)=
 ## Pyerk Modules and Packages
 
-Pyerk entities and statements are organized in Pyerk *modules* (python files). Each module has to specify its own URI via the variable `__URI__`. The uri of an entity from that module is formed by `<module URI>#<entity short_key>`. Modules can be bundled together to form pyer *packages*. A Pyerk package consits of a directory containing a file `erkpackage.toml` and at least one Pyerk module.
+Pyerk entities and statements are organized in Pyerk *modules* (python files). Each module has to specify its own URI via the variable `__URI__`. The uri of an entity from that module is formed by `<module URI>#<entity short_key>`. Modules can be bundled together to form pyerk *packages*. A Pyerk package consists of a directory containing a file `erkpackage.toml` and at least one Pyerk module.
 
 Modules can depend on other modules. A usual pattern is the following:
 
@@ -380,9 +380,9 @@ The prefix `"ma"` can also be used to refer to that module like here
 ```python
 # ...
 
-res = A.ma__R8736__depends_polyonomially_on
+res = A.ma__R8736__depends_polynomially_on
 ```
 
-Rationale: The attribute name `ma__R8736__depends_polyonomially_on` is handled as a string by Python (in the method `__getattr__`). While `mod.R8736` is the relation object we cannot use this syntax as attribute name.
+Rationale: The attribute name `ma__R8736__depends_polynomially_on` is handled as a string by Python (in the method `__getattr__`). While `mod.R8736` is the relation object we cannot use this syntax as attribute name.
 
 See also {ref}`sec_keys`.

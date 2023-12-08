@@ -36,43 +36,6 @@ if os.environ.get("IPYDEX_AIOE") == "true":
     activate_ips_on_exception()
 
 
-"""
-    TODO:
-
-    report should link entities to django
-
-    model sets as type? and elements as instances?
-    manually trigger reload in gui
-
-    Caylay-Hamilton-Theorem
-    qualifier relations, e.g. for universal quantification
-
-    Lyapunov stability theorem
-    visualizing the results
-    has implementation (application to actual instances)
-
-
-    multiple assignments via list
-    natural language representation of ordered atomic statements
-    Labels (als Listeneinträge)
-    DOMAIN und RANGE
-
-    unittests ✓
-    Sanity-check: `R1__part_of` muss einen Fehler werfen
-
-    content: dynamical_system can_be_represented_by mathematical_model
-    → Herausforderung: in OWL sind relationen nur zwischen Instanzen zulässig.
-    Damit ist die Angabe von DOMAIN und RANGE, relativ klar. Wenn die Grenze zwischen Klasse und Instanz verschwimmt
-    ist das nicht mehr so klar: Jede Instanz der Klasse <dynamical_system> ???
-
-    anders: <can_be_represented_by> ist eine n:m Zuordnung von Instanzen der Klasse
-    <dynamical_system> zu Instanzen der Klasse <mathematical_model>
-
-    komplexere Aussagen:
-    alle steuerbaren linearen ODE-systeme sind flach
-
-"""
-
 allowed_literal_types = (str, bool, float, int, complex, Literal)
 
 # Relations with R11__has_range_of_result=I19["multilingual string literal"] (due to multilinguality support)
@@ -164,7 +127,7 @@ class Entity(abc.ABC):
     def idoc(self, adhoc_label: str):
         """
         idoc means "inline doc". This function allows to attach a label to entities when using them in code
-        because it returns just the Entity-object itself. Thus one can use the following expressions interchageably:
+        because it returns just the Entity-object itself. Thus one can use the following expressions interchangeably:
         `I1234` and `I1234.idoc("human readable item name")`
 
         Note that there is a shortcut to this function: `I1234["human readable item name"]
@@ -188,7 +151,7 @@ class Entity(abc.ABC):
 
             if adhoc_label_str not in all_labels_dict:
                 msg = (
-                    f"Mismatiching label for Entity {self.short_key}! Got '{adhoc_label}' but valid labels are: "
+                    f"Mismatching label for Entity {self.short_key}! Got '{adhoc_label}' but valid labels are: "
                     f" {all_labels}.\n\n"
                     f"Note: in index-labeled key notation the language of the labels is ignored for convenience."
                 )
@@ -426,7 +389,7 @@ class Entity(abc.ABC):
             else:
                 self.set_relation(key, value)
 
-    def set_mutliple_relations(
+    def set_multiple_relations(
         self, relation: Union["Relation", str], obj_seq: Union[tuple, list], *args, **kwargs
     ) -> List["Statement"]:
         """
@@ -915,7 +878,7 @@ class DataStore:
         """
         Insert a Statement into the relevant data structures of the DataStorage (self)
 
-        This method does not handle the dual realtion. It must be created and stored separately.
+        This method does not handle the dual relation. It must be created and stored separately.
 
         :param stm:   Statement instance
         :return:
@@ -1041,7 +1004,7 @@ class DataStore:
         try:
             return self.scope_stack[-1]
         except IndexError:
-            msg = "unexepectedly found the scope stack empty"
+            msg = "unexpectedly found the scope stack empty"
             raise PyERKError(msg)
 
 
@@ -1068,7 +1031,7 @@ class SType(Enum):
     """
 
     CREATION = 0
-    EXTENTION = 1
+    EXTENSION = 1
     UNDEFINED = 2
 
 
@@ -1138,8 +1101,8 @@ def process_key_str(
         - c) prefixed short_key like `bi__R1234`
         - d) prefixed name-labeled key like `bi__R1234__my_relation`
 
-        - e) index-labeld key like  `R1234["my relation"]`
-        - f) prefixed index-labeld key like  `bi__R1234["my relation"]`
+        - e) index-labeled key like  `R1234["my relation"]`
+        - f) prefixed index-labeled key like  `bi__R1234["my relation"]`
 
     See also: userdoc/overview.html#keys-in-pyerk
 
@@ -1161,7 +1124,7 @@ def process_key_str(
 
     match1 = re_prefix_shortkey_suffix.match(key_str)
 
-    errmsg = f"unxexpected key_str: `{key_str}` (maybe a literal or syntax error)"
+    errmsg = f"unexpected key_str: `{key_str}` (maybe a literal or syntax error)"
     if not match1:
         raise aux.InvalidGeneralKeyError(errmsg)
 
@@ -1199,7 +1162,7 @@ def process_key_str(
         res.etype = EType.RELATION
         res.vtype = VType.ENTITY
     else:
-        msg = f"unxexpected shortkey: '{res.short_key}' (maybe a literal)"
+        msg = f"unexpected shortkey: '{res.short_key}' (maybe a literal)"
         raise aux.InvalidShortKeyError(msg)
 
     if resolve_prefix:
@@ -1283,7 +1246,7 @@ def _resolve_prefix(pr_key: ProcessedStmtKey, passed_mod_uri: str = None) -> Non
                 # if res_entity is still None no entity could be found
                 msg = (
                     f"No entity could be found for short_key {pr_key.short_key}, neither in active module "
-                    f"({active_mod_uri}) nor in builin_entities ({settings.BUILTINS_URI})"
+                    f"({active_mod_uri}) nor in builtin_entities ({settings.BUILTINS_URI})"
                 )
                 raise aux.ShortKeyNotFoundError(msg)
     else:
@@ -1345,7 +1308,7 @@ def check_processed_key_label(pkey: ProcessedStmtKey) -> None:
 
 def ilk2nlk(ilk: str) -> str:
     """
-    convert index labled key (R1234["my relation"]) to name labled key (R1234__my_relation)
+    convert index labeled key (R1234["my relation"]) to name labeled key (R1234__my_relation)
     """
     assert isinstance(ilk, str)
 
@@ -1400,7 +1363,7 @@ def get_active_mod_uri(strict: bool = True) -> Union[str, None]:
         res = _uri_stack[-1]
     except IndexError:
         msg = (
-            "Unexpected: empty uri_stack. Be sure to use uri_contex manager or similar technique "
+            "Unexpected: empty uri_stack. Be sure to use uri_context manager or similar technique "
             "when creating entities"
         )
         if strict:
@@ -1516,7 +1479,7 @@ def create_item(key_str: str = "", **kwargs) -> Item:
     assert itm.uri not in ds.items, f"Problematic (duplicated) uri: {itm.uri}"
     ds.items[itm.uri] = itm
 
-    # acces the defaultdict(list)
+    # access the defaultdict(list)
     ds.entities_created_in_mod[mod_uri].append(itm.uri)
 
     process_lang_related_kwargs_for_entity_creation(itm, item_key, lang_related_kwargs)
@@ -1628,7 +1591,7 @@ class KeyManager:
 
     def _generate_key_numbers(self) -> None:
         """
-        Creates a reaservoir of keynumbers, e.g. for automatically created entities. Due to the hardcoded seed value
+        Creates a reservoir of keynumbers, e.g. for automatically created entities. Due to the hardcoded seed value
         these numbers are stable between runs of the software, which simplifies development and debugging.
 
         This function is also called after unloading a module because the respective keys are "free" again
@@ -1641,7 +1604,7 @@ class KeyManager:
 
         assert self.key_reservoir is None
 
-        # passing seed (arg `x`) ensures "reproducible randomness" accross runs
+        # passing seed (arg `x`) ensures "reproducible randomness" across runs
         if not self.keyseed:
             # use hardcoded fallback
             self.keyseed = 1750
@@ -1730,7 +1693,7 @@ class Statement:
     # Note: in earlier versions this class was called "RelationEdge";
     # some old comments might refer to this
     """
-    Models a conrete (instantiated/applied) relation between entities. This is basically a dict.
+    Models a concrete (instantiated/applied) relation between entities. This is basically a dict.
     """
 
     def __init__(
@@ -1764,7 +1727,7 @@ class Statement:
         self.base_uri = mod_uri
         self.uri = f"{aux.make_uri(self.base_uri, self.short_key)}"
         self.relation = relation
-        self.rsk = relation.short_key  # to conviniently access this attribute in visualization
+        self.rsk = relation.short_key  # to conveniently access this attribute in visualization
         self.relation_tuple = relation_tuple
         self.subject = relation_tuple[0]
         self.predicate = relation_tuple[1]
@@ -2152,7 +2115,7 @@ class abstract_uri_context:
 
     def __enter__(self):
         """
-        implicitly called in the head of the with statemet
+        implicitly called in the head of the with statement
         :return:
         """
         self.uri_stack.append(self.uri)
@@ -2190,7 +2153,7 @@ class search_uri_context(abstract_uri_context):
 
 def unload_mod(mod_uri: str, strict=True) -> None:
     """
-    Delete all references to entities comming from a module with `mod_id`
+    Delete all references to entities coming from a module with `mod_id`
 
     :param mod_uri: str; uri of the module, see its __URI__ attribute
     :param strict:  boolean; raise Exception if module seems be not loaded
@@ -2252,7 +2215,7 @@ def unload_mod(mod_uri: str, strict=True) -> None:
 
 def _unlink_entity(uri: str, remove_from_mod=False) -> None:
     """
-    Remove the occurrence of this the respective entitiy from all relevant data structures
+    Remove the occurrence of this the respective entity from all relevant data structures
 
     :param uri:     entity uri
     :return:        None
@@ -2283,7 +2246,7 @@ def _unlink_entity(uri: str, remove_from_mod=False) -> None:
     re_dict = ds.statements.pop(entity.uri, {})
     inv_re_dict = ds.inv_statements.pop(entity.uri, {})
 
-    # in case res1 is a scope-item we delete all corressponding relation edges, otherwise nothing happens
+    # in case res1 is a scope-item we delete all corresponding relation edges, otherwise nothing happens
     scope_rels = ds.scope_statements.pop(uri, [])
 
     re_list = list(scope_rels)
@@ -2361,7 +2324,7 @@ def replace_and_unlink_entity(old_entity: Entity, new_entity: Entity):
                 # prevent the creation of a duplicated statement
                 existing_objs = new_entity.get_relations(predicate.uri, return_obj=True)
                 if not obj in existing_objs:
-                    # it is possible that predicate is functional and new_entitiy.predicate has a value
+                    # it is possible that predicate is functional and new_entity.predicate has a value
                     # different from obj. this is OK if one of them is a placeholder
                     if len(existing_objs) == 1 and predicate.R22__is_functional:
                         existing_obj = existing_objs[0]
@@ -2370,7 +2333,7 @@ def replace_and_unlink_entity(old_entity: Entity, new_entity: Entity):
                             continue
                         elif not existing_obj.R57__is_placeholder and not obj.R57__is_placeholder:
                             msg = (
-                                f"confilicting statement for functional predicate {predicate} and non-placeholder "
+                                f"conflicting statement for functional predicate {predicate} and non-placeholder "
                                 f"objects: {obj} (of old_entity)  and {existing_obj} of new_entity, while replacing"
                                 f"{old_entity} (old) with {new_entity} (new)."
                             )
@@ -2442,7 +2405,7 @@ def get_language_of_str_literal(obj: Union[str, Literal]):
     return None
 
 
-class LangaguageCode:
+class LanguageCode:
     def __init__(self, langtag):
         assert langtag in settings.SUPPORTED_LANGUAGES
 
@@ -2465,12 +2428,12 @@ class LangaguageCode:
         return res
 
 
-df = LangaguageCode(settings.DEFAULT_DATA_LANGUAGE)
-en = LangaguageCode("en")
-de = LangaguageCode("de")
-fr = LangaguageCode("fr")
-it = LangaguageCode("it")
-es = LangaguageCode("es")
+df = LanguageCode(settings.DEFAULT_DATA_LANGUAGE)
+en = LanguageCode("en")
+de = LanguageCode("de")
+fr = LanguageCode("fr")
+it = LanguageCode("it")
+es = LanguageCode("es")
 
 
 class RuleResult:

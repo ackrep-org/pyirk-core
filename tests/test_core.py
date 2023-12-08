@@ -29,16 +29,16 @@ from .settings import (
     # TEST_ACKREP_DATA_FOR_UT_PATH,
     TEST_BASE_URI,
     WRITE_TMP_FILES,
-    HouskeeperMixin,
+    HousekeeperMixin,
 
 
     )
 
 
 
-class Test_00_Core(HouskeeperMixin, unittest.TestCase):
+class Test_00_Core(HousekeeperMixin, unittest.TestCase):
 
-    def test_a1__dependencyies(self):
+    def test_a1__dependencies(self):
         # this tests checks some dependencies which are prone to cause problems (e.g. due to recent api-changes)
 
         pydantic_version = version.parse(p.pydantic.__version__)
@@ -90,7 +90,7 @@ class Test_00_Core(HouskeeperMixin, unittest.TestCase):
         with self.assertRaises(p.aux.InvalidGeneralKeyError):
             res = p.process_key_str("some_prefix__I000__double_label_['redundant']", check=False)
 
-    def test_b2__uri_contex_manager(self):
+    def test_b2__uri_context_manager(self):
         """
         Test defined behavior of errors occur in uri_context
         :return:
@@ -111,7 +111,7 @@ class Test_00_Core(HouskeeperMixin, unittest.TestCase):
             _ = p.erkloader.load_mod_from_path(pjoin(TEST_DATA_DIR1, "tmod0_with_errors.py"), prefix="tm0")
         except ValueError:
             pass
-        # assert that no enties remain in the data structures
+        # assert that no entities remain in the data structures
         self.assertEqual(len(p.ds.entities_created_in_mod), 1)
         self.assertEqual(L1, len(p.ds.items))
         self.assertEqual(L2, len(p.ds.relations))
@@ -166,18 +166,18 @@ class Test_00_Core(HouskeeperMixin, unittest.TestCase):
 
         os.environ["PYERK_TRIGGER_TEST_EXCEPTION"] = "True"
 
-        with self.assertRaises(p.aux.ExcplicitlyTriggeredTestException):
+        with self.assertRaises(p.aux.ExplicitlyTriggeredTestException):
             mod1 = p.erkloader.load_mod_from_path(pjoin(TEST_DATA_DIR1, "tmod1.py"), prefix="tm1")
 
         # this was a bug: if the module is loaded for the second time exception is not handled correctly
-        with self.assertRaises(p.aux.ExcplicitlyTriggeredTestException):
+        with self.assertRaises(p.aux.ExplicitlyTriggeredTestException):
             mod1 = p.erkloader.load_mod_from_path(pjoin(TEST_DATA_DIR1, "tmod1.py"), prefix="tm1")
 
         os.environ.pop("PYERK_TRIGGER_TEST_EXCEPTION")
 
 
 @unittest.skipIf(os.environ.get("CI"), "Skipping directory structure tests on CI")
-class Test_01_Core(HouskeeperMixin, unittest.TestCase):
+class Test_01_Core(HousekeeperMixin, unittest.TestCase):
     def test_a01__directory_structure(self):
         pyerk_dir = pjoin(ERK_ROOT_DIR, "pyerk-core")
         django_gui_dir = pjoin(ERK_ROOT_DIR, "pyerk-django")
@@ -237,7 +237,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         self.assertEqual(len(non_builtin_entities), 0)
 
     # noinspection PyUnresolvedReferences
-    # (above noinspection is necessary because of the @-operator which is undecleared for strings)
+    # (above noinspection is necessary because of the @-operator which is undeclared for strings)
     def test_b00__core1_basics(self):
         mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
         self.assertEqual(mod1.ma.I3749.R1.value, "Cayley-Hamilton theorem")
@@ -527,7 +527,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
                 f = cm.new_var(f=p.instance_of(ct.ma.I9841["vector field"]))
 
                 LfV = cm.new_var(LfV=ct.I1347["Lie derivative of scalar field"](V, f, x))
-                # TODO: this does not occure in I0111_setting at all (!!)
+                # TODO: this does not occur in I0111_setting at all (!!)
                 with p.ImplicationStatement() as imp1:
                     imp1.antecedent_relation(lhs=x, rsgn="==", rhs=y)
                     imp1.consequent_relation(lhs=y, rsgn=">=", rhs=x)
@@ -576,7 +576,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
 
         with p.uri_context(uri=TEST_BASE_URI):
             # check that assigning sequences is possible with explicit method.
-            Ia001.set_mutliple_relations(p.R5["is part of"], [p.I4["Mathematics"], p.I5["Engineering"]])
+            Ia001.set_multiple_relations(p.R5["is part of"], [p.I4["Mathematics"], p.I5["Engineering"]])
 
         rel_objs = Ia001.get_relations("R5", return_obj=True)
         self.assertEqual(rel_objs, [p.I4, p.I5])
@@ -697,7 +697,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
 
     def test_c12__process_key_str(self):
 
-        # first, check label consistency in builtin_enities
+        # first, check label consistency in builtin_entities
         # note these keys do not to exist
         pkey1 = p.process_key_str("I0008234")
 
@@ -737,19 +737,19 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
             with self.assertRaises(p.aux.ShortKeyNotFoundError):
                 _ = p.create_item(key_str="I0125", R1="some label", R7641__has_approximation=e0)
 
-            # second: use prefix to adresse the correct relation
+            # second: use prefix to address the correct relation
             e1 = p.create_item(key_str="I0125", R1="some label", ct__R7641__has_approximation=e0)
 
-            # third: create a relation which has a short key collission with a relation from the ct module
+            # third: create a relation which has a short key collision with a relation from the ct module
             _ = p.create_relation(key_str="R7641", R1="some test relation")
             e2 = p.create_item(
                 key_str="I0126", R1="some label", ct__R7641__has_approximation=e0, R7641__some_test_relation="foo"
             )
 
-        # this is the verbose way to adress a builtin relation
+        # this is the verbose way to address a builtin relation
         self.assertEqual(e1.bi__R1.value, "some label")
 
-        # this is the (necessary) way to adress a relation from an external module
+        # this is the (necessary) way to address a relation from an external module
         self.assertEqual(e1.ct__R7641[0], e0)
         self.assertEqual(e2.ct__R7641[0], e0)
 
@@ -759,10 +759,10 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
 
         with p.uri_context(uri=TEST_BASE_URI, prefix="ut"):
 
-            # adress the relation with correct prefix
+            # address the relation with correct prefix
             self.assertEqual(e2.ut__R7641__some_test_relation[0], "foo")
 
-            # adress the relation without prefix (but with activated unittet module)
+            # address the relation without prefix (but with activated unittest module)
             self.assertEqual(e2.R7641__some_test_relation[0], "foo")
 
         # activate different module and use attribute without prefix
@@ -870,8 +870,9 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
             d = ma.I5359["determinant"](M)
 
         self.assertTrue(M.R4__is_instance_of, ma.I1935["polynomial matrix"])
-        self.assertTrue(M.ma__R8736__depends_polyonomially_on, s)
 
+        # TODO fix typo in OCSE and regenerate test data
+        self.assertTrue(M.ma__R8736__depends_polyonomially_on, s)
         self.assertTrue(d.ma__R8736__depends_polyonomially_on, s)
 
     def test_d02b__signature_inheritance(self):
@@ -994,7 +995,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
             itm.overwrite_statement("R4__is_instance_of", p.I2["Metaclass"])
         self.assertEqual(itm.R4__is_instance_of, p.I2["Metaclass"])
 
-    def test_d08__unlink_enities(self):
+    def test_d08__unlink_entities(self):
 
         with p.uri_context(uri=TEST_BASE_URI, prefix="ut"):
 
@@ -1119,7 +1120,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         self.assertFalse(p.check_type(data, Dict[str, List[int]], strict=False))
         self.assertFalse(p.check_type(data, Dict[str, List[List[int]]], strict=False))
 
-        # pydantic has nontrivial behavior abour Unions. This requires smart_unions=True
+        # pydantic has nontrivial behavior about Unions. This requires smart_unions=True
         q = [5, 'erk:/ocse/0.2/zebra_base_data#I9848']
         p.check_type(q, List[Union[int, str]])
 
@@ -1180,7 +1181,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
 
     def test_d16__IntegerRangeElement(self):
         # the original definition of the IRE had the problem that it only was
-        # aplicable in the same module where it was defined
+        # applicable in the same module where it was defined
         ma = p.erkloader.load_mod_from_path(TEST_DATA_PATH_MA, prefix="ma")
 
         with p.uri_context(uri=TEST_BASE_URI, prefix="ut"):
@@ -1223,7 +1224,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
             scp1 = I1001.scope("setting")
 
 
-class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
+class Test_02_ruleengine(HousekeeperMixin, unittest.TestCase):
     def setUp(self):
         super().setUp()
 
@@ -1323,7 +1324,7 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         # in this erk module some properties have subproperties
         _ = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct", modname=TEST_MOD_NAME)
 
-        # create a new RuleApplicator because the overal graph changed
+        # create a new RuleApplicator because the overall graph changed
         ra = p.ruleengine.RuleApplicator(self.rule1)
         ra_worker = ra.ra_workers[0]
         res_graph = ra_worker.match_subgraph_P()
@@ -1354,7 +1355,7 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
             _ = p.ruleengine.apply_all_semantic_rules()
 
 
-class Test_03_Multilinguality(HouskeeperMixin, unittest.TestCase):
+class Test_03_Multilinguality(HousekeeperMixin, unittest.TestCase):
     def test_a01__label(self):
 
         teststring1 = "this is english text" @ p.en
@@ -1494,7 +1495,7 @@ class Test_03_Multilinguality(HouskeeperMixin, unittest.TestCase):
 
         self.assertEqual(desc2.language, "de")
 
-        # use the labels of different languages in index-labeld key notation
+        # use the labels of different languages in index-labeled key notation
 
         # first: without explicitly specifying the language
         tmp1 = itm["test-label in english"]
@@ -1543,14 +1544,14 @@ class Test_03_Multilinguality(HouskeeperMixin, unittest.TestCase):
                 # multiple values to R1 can be passed using a list
                 R1__has_label="test-label2",  # this is now interpreted as de-label
                 R1__has_label__en="test-label2-en",
-                R2__has_description="test beschreibung auf deutsch",
+                R2__has_description="test Beschreibung auf deutsch",
             )
 
         # in case of ordinary strings they should be used if no value is available for current language
 
         self.assertEqual(p.settings.DEFAULT_DATA_LANGUAGE, "de")
         self.assertEqual(itm2.R1, "test-label2" @ p.de)
-        self.assertEqual(itm2.R2, "test beschreibung auf deutsch" @ p.de)
+        self.assertEqual(itm2.R2, "test Beschreibung auf deutsch" @ p.de)
 
         p.settings.DEFAULT_DATA_LANGUAGE = "en"
         self.assertEqual(itm2.R1.value, "test-label2-en")
@@ -1559,14 +1560,14 @@ class Test_03_Multilinguality(HouskeeperMixin, unittest.TestCase):
         self.assertEqual(itm2.R2, None)
 
         # TODO: decide whether this behavior (returning some other lang) would be better
-        # self.assertEqual(itm2.R2, "test beschreibung auf deutsch" @ p.de)
+        # self.assertEqual(itm2.R2, "test Beschreibung auf deutsch" @ p.de)
 
         # test for correct error message
         with p.uri_context(uri=TEST_BASE_URI, prefix="ut"):
 
             itm1 = p.instance_of(p.I1["general item"])
 
-            # this should cause no error (because of differnt language)
+            # this should cause no error (because of different language)
             itm1.set_relation(p.R1["has label"], "neues Label" @ p.de)
 
             with self.assertRaises(p.aux.FunctionalRelationError):
@@ -1605,16 +1606,16 @@ class Test_03_Multilinguality(HouskeeperMixin, unittest.TestCase):
             self.assertEqual(I1000.R77__has_alternative_label, ["bar"@p.df, "baz"@p.de, "more foo"@p.df])
 
 
-            I1000.set_mutliple_relations("R77__has_alternative_label", ["foo-it"@p.it, "bar-es"@p.es])
+            I1000.set_multiple_relations("R77__has_alternative_label", ["foo-it"@p.it, "bar-es"@p.es])
             self.assertEqual(
                 I1000.R77__has_alternative_label,
                 ["bar"@p.df, "baz"@p.de, "more foo"@p.df, "foo-it"@p.it, "bar-es"@p.es]
             )
 
 
-class Test_Z_Core(HouskeeperMixin, unittest.TestCase):
+class Test_Z_Core(HousekeeperMixin, unittest.TestCase):
     """
-    Collection of test that should be executed last (because they seem to influence othter tests).
+    Collection of test that should be executed last (because they seem to influence other tests).
     This is achieved by putting "ZZ" in the name (assuming that test classes are executed in alphabetical order).
     """
 
@@ -1698,7 +1699,7 @@ class Test_Z_Core(HouskeeperMixin, unittest.TestCase):
             res2 = p.aux.apply_func_to_table_cells(p.rdfstack.convert_from_rdf_to_pyerk, res)
             self.assertGreater(len(res2), 0)
 
-        # syntactically incorrect querys:
+        # syntactically incorrect queries:
         condition_list = [
             "?s :R16__wrong ct:I7864__controllability.",
         ]
@@ -1721,7 +1722,7 @@ class Test_Z_Core(HouskeeperMixin, unittest.TestCase):
 
 
 @unittest.skipIf(os.environ.get("CI"), "Skipping report tests on CI to prevent dependencies")
-class Test_06_reportgenerator(HouskeeperMixin, unittest.TestCase):
+class Test_06_reportgenerator(HousekeeperMixin, unittest.TestCase):
     @p.erkloader.preserve_cwd
     def tearDown(self) -> None:
         super().tearDown()
@@ -1761,7 +1762,7 @@ class Test_06_reportgenerator(HouskeeperMixin, unittest.TestCase):
         self.assertEqual(len(rg.authors), 2)
 
 
-class Test_07_import_export(HouskeeperMixin, unittest.TestCase):
+class Test_07_import_export(HousekeeperMixin, unittest.TestCase):
 
     def test_b01__rdf_export(self):
 

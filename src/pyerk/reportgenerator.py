@@ -26,7 +26,7 @@ def generate_report(reportconf_path: str):
 
 class ReportGenerator:
     """
-    Omnipotent class that manages the report-generation. Assumend to be a singleton.
+    Omnipotent class that manages the report-generation. Assumed to be a singleton.
     """
 
     @preserve_cwd

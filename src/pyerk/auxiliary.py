@@ -179,7 +179,7 @@ class SemanticRuleError(PyERKError):
     pass
 
 
-class ExcplicitlyTriggeredTestException(PyERKError):
+class ExplicitlyTriggeredTestException(PyERKError):
     pass
 
 

@@ -13,14 +13,14 @@ import pyerk as p
 
 from .settings import (
     TEST_BASE_URI,
-    HouskeeperMixin,
+    HousekeeperMixin,
     TEST_DATA_PATH2,
 
     )
 
 
 # noinspection PyPep8Naming
-class Test_01_CC(HouskeeperMixin, unittest.TestCase):
+class Test_01_CC(HousekeeperMixin, unittest.TestCase):
 
 
     def create_operators(self):
@@ -80,7 +80,7 @@ class Test_01_CC(HouskeeperMixin, unittest.TestCase):
     def test_a02__cc_enable_checking(self):
 
         I0111 = self.create_operators()
-        p.cc.enable_consitency_checking()
+        p.cc.enable_consistency_checking()
 
         with p.uri_context(uri=TEST_BASE_URI):
             real_number = p.instance_of(p.I35["real number"])
@@ -162,7 +162,7 @@ class Test_01_CC(HouskeeperMixin, unittest.TestCase):
                 :param _anchor_item:    auxiliary graph node to which the condition function is attached
                                         it is passed automatically (not needed here)
                 :param rule:            the rule which has this function as a consequent_func
-                :param arg:             the item which triggerred the rule
+                :param arg:             the item which triggered the rule
                 """
                 raise p.cc.ErkConsistencyError(f"Rule {rule} failed for arg {arg}.")
 

@@ -390,7 +390,11 @@ def create_complete_graph(
     i = 0
     relation_dict: dict
     for item_uri, relation_dict in p.ds.statements.items():
-        item = p.ds.get_entity_by_uri(item_uri)
+        item = p.ds.get_entity_by_uri(item_uri, strict=None)
+        if item is None:
+            # this is the case for some statements which are subject of a qualifier relation
+            assert item_uri in p.ds.statement_uri_map
+            continue
         if not isinstance(item, p.Item) or item.short_key in ["I000"]:
             continue
         # count only items
@@ -582,7 +586,7 @@ def visualize_all_entities(url_template="", write_tmp_files: bool = False) -> st
     if write_tmp_files:
         # for debugging
 
-        dot_fpath = "./t#mp_dot.txt"
+        dot_fpath = "./tmp_dot.txt"
         with open(dot_fpath, "w") as txtfile:
             txtfile.write(dot_data)
         print("File written:", os.path.abspath(dot_fpath))

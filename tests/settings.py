@@ -22,6 +22,7 @@ ERK_ROOT_DIR = p.aux.get_erk_root_dir()
 
 # path for basic (staged) test data
 TEST_DATA_DIR1 = pjoin(ERK_ROOT_DIR, "pyerk-core", "tests", "test_data")
+TEST_DATA_DIR_OCSE = pjoin(TEST_DATA_DIR1, "ocse_subset")
 
 
 TEST_DATA_PATH2 = pjoin(TEST_DATA_DIR1, "ocse_subset", "control_theory1.py")

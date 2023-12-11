@@ -15,7 +15,7 @@ from .settings import (
     TEST_BASE_URI,
     TEST_DATA_DIR1,
     HousekeeperMixin,
-    TEST_DATA_PATH2,
+    TEST_DATA_DIR_OCSE,
 
     )
 
@@ -59,5 +59,12 @@ class Test_01_Script(HousekeeperMixin, unittest.TestCase):
     @unittest.skipIf(os.environ.get("CI"), "Skipping visualization test on CI to prevent graphviz-dependency")
     def test_c01__visualization(self):
         cmd = "pyerk -vis I12"
+        res = os.system(cmd)
+        self.assertEqual(res, 0)
+
+    @unittest.skipIf(os.environ.get("CI"), "Skipping visualization test on CI to prevent graphviz-dependency")
+    def test_c02__visualization_all(self):
+        os.chdir(TEST_DATA_DIR_OCSE)
+        cmd = "pyerk --load-mod control_theory1.py demo -vis __all__"
         res = os.system(cmd)
         self.assertEqual(res, 0)

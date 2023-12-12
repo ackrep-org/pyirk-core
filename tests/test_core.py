@@ -1223,6 +1223,10 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
             )
             scp1 = I1001.scope("setting")
 
+    def test_e02__is_true(self):
+        ma = p.erkloader.load_mod_from_path(TEST_DATA_PATH_MA, prefix="ma")
+        p.is_true(ma.I5359, p.R4, ma.I4895)
+        p.is_true(ma.I5359["determinant"], p.R4["is instance of"], ma.I4895["mathematical operator"])
 
 class Test_02_ruleengine(HousekeeperMixin, unittest.TestCase):
     def setUp(self):

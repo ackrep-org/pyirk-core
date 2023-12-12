@@ -2506,6 +2506,14 @@ class RuleResult:
         return self._rule
 
 
+def is_true(subject: Entity, predicate: Relation, object) -> (bool, None):
+    assert isinstance(subject, Entity)
+    assert isinstance(predicate, Relation)
+
+    res = subject.get_relations(predicate, return_obj=True)
+    IPS()
+
+
 def format_entity_html(e: Entity):
     short_txt = f'<span class="entity">{e.R1}</span>'
     detailed_txt = f'<span class="entity">{e.short_key}["{e.R1}"]</span>'

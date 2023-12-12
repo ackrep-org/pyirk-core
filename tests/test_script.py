@@ -63,8 +63,15 @@ class Test_01_Script(HousekeeperMixin, unittest.TestCase):
         self.assertEqual(res, 0)
 
     @unittest.skipIf(os.environ.get("CI"), "Skipping visualization test on CI to prevent graphviz-dependency")
-    def test_c02__visualization_all(self):
+    def test_c02__visualization_commands(self):
         os.chdir(TEST_DATA_DIR_OCSE)
+
+        self.files_to_delete.append("tmp_dot.txt")
+        self.files_to_delete.append("tmp.svg")
         cmd = "pyerk --load-mod control_theory1.py demo -vis __all__"
+        res = os.system(cmd)
+        self.assertEqual(res, 0)
+
+        cmd = "pyerk --load-mod control_theory1.py demo -vis ma__I9904"
         res = os.system(cmd)
         self.assertEqual(res, 0)

@@ -209,7 +209,8 @@ def main():
             return
 
         if not aux.ensure_valid_uri(key, strict=False):
-            uri = aux.make_uri(settings.BUILTINS_URI, key)
+            entity = core.ds.get_entity_by_key_str(key)
+            uri = entity.uri
         else:
             uri = key
         aux.ensure_valid_uri(uri)

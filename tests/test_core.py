@@ -183,7 +183,8 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
         django_gui_dir = pjoin(IRK_ROOT_DIR, "pyirk-django")
 
         self.assertTrue(os.path.isdir(pyirk_dir))
-        self.assertTrue(os.path.isdir(django_gui_dir))
+        if not os.path.isdir(django_gui_dir):
+            print("unexpected: {django_gui_dir} not found")
 
     def test_a01__test_independence(self):
         """

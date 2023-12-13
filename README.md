@@ -6,7 +6,7 @@
 
 # Overview: pyirk
 
-Pyirk is the python implementation of the ***e**mergent **r**epresentation of **k**nowledge* framework.
+Pyirk is a Python framework for ***i**mperative **r**epresentation of **k**nowledge*.
 
 - Designed to formally represent knowledge (including meta levels)
 - Implementation-status: "early alpha"
@@ -14,17 +14,20 @@ Pyirk is the python implementation of the ***e**mergent **r**epresentation of **
     - ... at the cost of guarantied computability
 - Inspired by Wikidata, but much simpler
 - Inspired by SUO-KIF, but with less brackets
-- Represented directly in python: → imperative instaead of declarative knowledge representation
+- Represented directly in python: → imperative instead of declarative knowledge representation
 
 
-Pyirk originated and is currently (2022) mainly developed with focus on representing knowledge from the domain of *control theory* as part of the *Automatic Control Knowledge Repository ([ACKREP](https://ackrep.org))*. However, in principle, it aims to be applicable wo a wide range of domains.
 
+While pyirk aims to be applicable to a wide range of knowledge domains, its origin an its current (2023) main focus is the representation of knowledge from the domain of *control theory* as part of the *Automatic Control Knowledge Repository ([ACKREP](https://ackrep.org))*.
+Thus, a subset of the [Ontology of Control Systems Engineering](https://github.com/ackrep-org/ocse) is used as test data for pyirk. In fact, both projects are practically co-developed.
 
-# Assumed Directory Structure
+Not that, originally pyirk was called pyerk (imperative representation of knowledge), in case you come across some old version.
+
+# Recommended Directory Structure
 
 ```
 <irk-root>/
-├── pyirk/                          ← repo with the code of the core package
+├── pyirk-core/                     ← repo with the code of the core package
 │  ├── .git/
 │  ├── README.md                    ← the currently displayed file (README.md)
 │  ├── setup.py                     ← deployment script
@@ -36,26 +39,12 @@ Pyirk originated and is currently (2022) mainly developed with focus on represen
 │  ├── .git/
 │  ├── manage.py
 │  └── ...
-│
-├── irk-data/                       ← directory that contains irk-knowledge packages (for actual usage)
-│  ├── ocse/                        ← a knowledge package (ontology of control systems engineering)
-│  │  ├── .git/
-│  │  ├── README.md
-│  │  ├── ocse.py                   ← a knowledge module
-│  │  │                             (this one is currently used for unit testing)
-│  │  └── ...
-│  ├── xyz123/                      ← another knowledge package
-│  │  └── ...
-│  └── ...
-├── irk-data-for-unittests/         ← directory that contains irk-knowledge packages
-│  └── ...                            (unittest version, probably older and different from
-│                                      production data.)
 └──...
 ```
 
 # Documentation
 
-Rudimentary documentation is available at <https://pyirk-core.readthedocs.io> (generated from the [`/docs`](/docs) directory). To get an overview of the most importent features you might also want to have a look at the source code, especially at the files [builtin_entities.py](/src/pyirk/builtin_entities.py) and the [test_core.py](tests/test_core.py).
+Rudimentary documentation is available at <https://pyirk-core.readthedocs.io> (generated from the [`/docs`](/docs) directory). To get an overview of the most important features you might also want to have a look at the source code, especially at the files [builtin_entities.py](/src/pyirk/builtin_entities.py) and the test cases, e.g., [test_core.py](tests/test_core.py).
 
 
 # Coding style

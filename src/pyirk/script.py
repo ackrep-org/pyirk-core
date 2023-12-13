@@ -34,7 +34,7 @@ def create_parser():
     generate the cli docs.
     """
 
-    parser = argparse.ArgumentParser(description="command line interface to IRK (emergent representation of knowledge)")
+    parser = argparse.ArgumentParser(description="command line interface to IRK (imperative representation of knowledge)")
     parser.add_argument(
         "inputfile",
         help="input file",

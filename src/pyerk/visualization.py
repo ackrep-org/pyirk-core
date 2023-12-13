@@ -1,5 +1,5 @@
 """
-This module contains code for the visualization of ERK-entities.
+This module contains code for the visualization of IRK-entities.
 """
 from typing import Union, List, Tuple, Optional
 import os
@@ -10,14 +10,14 @@ import networkx as nx
 import nxv  # for graphviz visualization of networkx graphs
 
 # TODO: this should be a relative import of the *package*
-import pyerk as p
+import pyirk as p
 from ipydex import IPS, activate_ips_on_exception
 
 activate_ips_on_exception()
 
 # TODO: make this a  dict to speedup lookup
 #  tuple of Relation keys which are not displayed by default
-REL_BLACKLIST = ("erk:/builtins#R1", "erk:/builtins#R2")
+REL_BLACKLIST = ("irk:/builtins#R1", "irk:/builtins#R2")
 
 from abc import ABC
 
@@ -500,7 +500,7 @@ def svg_replace(raw_svg_data: str, REPLACEMENTS: dict) -> str:
 def visualize_entity(uri: str, url_template="", write_tmp_files: bool = False) -> str:
     """
 
-    :param uri:             entity uri (like "erk:/my/module#I0123")
+    :param uri:             entity uri (like "irk:/my/module#I0123")
     :param url_template:    url template for creation of a-tags (html links) for the labels
     :param write_tmp_files: boolean flag whether to write debug output
 

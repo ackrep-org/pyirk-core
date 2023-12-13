@@ -33,9 +33,9 @@ from . import core
 # todo: replace bi. with p. etc
 from . import builtin_entities as bi
 from . import settings
-import pyerk as p
+import pyirk as p
 
-LITERAL_BASE_URI = "erk:/tmp/literals"
+LITERAL_BASE_URI = "irk:/tmp/literals"
 
 VERBOSITY = False
 
@@ -335,7 +335,7 @@ class RuleApplicator:
         res = defaultdict(list)
 
         # core.ds.statements
-        # {'erk:/builtins#R1': {'erk:/builtins#R1': [S(...), ...], ...}, ..., 'erk:/builtins#I1': {...}}
+        # {'irk:/builtins#R1': {'irk:/builtins#R1': [S(...), ...], ...}, ..., 'irk:/builtins#I1': {...}}
         for subj_uri, stm_dict in core.ds.statements.items():
             entity = core.ds.get_entity_by_uri(subj_uri, strict=False)
             if not isinstance(entity, core.Entity):
@@ -468,7 +468,7 @@ class RuleApplicatorWorker:
             print(re.sub(r"(?m)^", repl, qsrc))
             raise
 
-        res2 = p.aux.apply_func_to_table_cells(p.rdfstack.convert_from_rdf_to_pyerk, res)
+        res2 = p.aux.apply_func_to_table_cells(p.rdfstack.convert_from_rdf_to_pyirk, res)
 
         result_maps = []
         for row in res2:
@@ -832,7 +832,7 @@ class RuleApplicatorWorker:
             res.append(r)
             if i >= self.max_subgraph_monomorphisms:
                 break
-        # res is a list of dicts like:[{'erk:/test/zebra02#Ia1158': 0, 'erk:/tmp/literals#0': 1}, ...]
+        # res is a list of dicts like:[{'irk:/test/zebra02#Ia1158': 0, 'irk:/tmp/literals#0': 1}, ...]
         # for some reason the order of that list is not stable across multiple runs
         # ensure stable order for stable test results; for comparing dicts they are converted to json-strings
         res.sort(key=json.dumps)
@@ -1186,7 +1186,7 @@ def edge_matcher(e1d: AtlasView, e2d: AtlasView) -> bool:
     inner_dict0 = {
         'itm1': <Relation R64["has scope type"]>,
         'itm2': <Item I16["scope"]>,
-        'rel_uri': 'erk:/builtins#R8',
+        'rel_uri': 'irk:/builtins#R8',
         'rel_entity': <Relation R8["has domain of argument 1"]>
     }
 

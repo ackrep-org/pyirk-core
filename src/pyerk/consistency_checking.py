@@ -1,5 +1,5 @@
 """
-pyerk module for consistency checking.
+pyirk module for consistency checking.
 
 
 """
@@ -14,18 +14,18 @@ from .core import Item
 from ipydex import IPS
 
 
-class ErkConsistencyError(core.aux.PyERKError):
+class IrkConsistencyError(core.aux.PyIRKError):
     pass
 
-class ErkTypeError(ErkConsistencyError):
-    pass
-
-
-class WrongArgNumber(ErkTypeError):
+class IrkTypeError(IrkConsistencyError):
     pass
 
 
-class WrongArgType(ErkTypeError):
+class WrongArgNumber(IrkTypeError):
+    pass
+
+
+class WrongArgType(IrkTypeError):
     pass
 
 
@@ -122,7 +122,7 @@ def get_error_location():
         f = f.f_back
     else:
         # break was not reached
-        msg = "<could not find pyerk module in stack>"
+        msg = "<could not find pyirk module in stack>"
         return msg
     fname = os.path.split(fi.filename)[-1]
     code_context = "\n".join(fi.code_context).strip()
@@ -144,11 +144,11 @@ def get_expected_arg_types(itm: Item) -> Tuple[Item]:
     match domains:
         case [None, _, _]:
             msg = f"unexpected: R8__has_domain_of_argument_1 is undefined for operator {itm}\n{get_error_location()}"
-            raise ErkTypeError(msg)
+            raise IrkTypeError(msg)
 
         case [_, None, a3] if a3 is not None:
             msg = f"inconsistency for operator {itm}: domain for arg3 defined but not for arg2\n{get_error_location()}"
-            raise ErkTypeError(msg)
+            raise IrkTypeError(msg)
         case [a1, None, None]:
             arity = 1
         case [a1, a2, None]:
@@ -157,7 +157,7 @@ def get_expected_arg_types(itm: Item) -> Tuple[Item]:
             arity = 3
         case _:
             msg = f"unexpected domain structure for {itm}: {domains}\n {get_error_location()}"
-            raise ErkTypeError(msg)
+            raise IrkTypeError(msg)
 
     domains = domains[:arity]
 

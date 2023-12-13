@@ -8,13 +8,13 @@ See https://en.wikipedia.org/wiki/Zebra_Puzzle
 """
 
 
-import pyerk as p
+import pyirk as p
 
-zb = p.erkloader.load_mod_from_path("./zebra_base_data.py", prefix="zb", reuse_loaded=True)
-zr = p.erkloader.load_mod_from_path("./zebra_puzzle_rules.py", prefix="zr", reuse_loaded=True)
+zb = p.irkloader.load_mod_from_path("./zebra_base_data.py", prefix="zb", reuse_loaded=True)
+zr = p.irkloader.load_mod_from_path("./zebra_puzzle_rules.py", prefix="zr", reuse_loaded=True)
 
 
-__URI__ = "erk:/ocse/0.2/zebra02"
+__URI__ = "irk:/ocse/0.2/zebra02"
 
 keymanager = p.KeyManager(keyseed=1438)
 p.register_mod(__URI__, keymanager)
@@ -165,7 +165,7 @@ p.end_mod()
 
 
 """
-key reservoir created with: `pyerk -l zebra01.py ag -nk 100`
+key reservoir created with: `pyirk -l zebra01.py ag -nk 100`
 supposed keys:
 
 

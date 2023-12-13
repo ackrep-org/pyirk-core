@@ -1,5 +1,5 @@
 (sec_devdoc_overview)=
-# pyerk Developer Documentation Overview
+# pyirk Developer Documentation Overview
 
 
 
@@ -13,7 +13,7 @@ Originally the "real" OCSE data was used for testing. This had the advantage of 
 To keep the test data small but avoid additional maintaince effort we now automatically extract the relevant entities and statements from the real ocse.
 
 ```bash
-pyerk -utd <path/to/ocse/dir>
+pyirk -utd <path/to/ocse/dir>
 ```
 
 Which entities (and objects) are relevant is specified in the `ocse_subset/templates` subdirectory of `testdata`. The syntax of the template files is as follows:

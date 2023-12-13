@@ -8,10 +8,10 @@ See https://en.wikipedia.org/wiki/Zebra_Puzzle
 """
 
 
-import pyerk as p
+import pyirk as p
 
 
-__URI__ = "erk:/ocse/0.2/zebra01"
+__URI__ = "irk:/ocse/0.2/zebra01"
 
 keymanager = p.KeyManager(keyseed=1835)
 p.register_mod(__URI__, keymanager)
@@ -240,7 +240,7 @@ p.end_mod()
 
 
 """
-key reservoir created with: `pyerk -l zebra01.py ag -nk 100`
+key reservoir created with: `pyirk -l zebra01.py ag -nk 100`
 supposed keys:
 I3896      R3896
 I4118      R4118

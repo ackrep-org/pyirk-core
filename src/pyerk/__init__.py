@@ -4,7 +4,7 @@ try:
     from .core import *
     from .builtin_entities import *
     from .settings import *
-    from . import erkloader
+    from . import irkloader
     from . import rdfstack
     from . import ruleengine
     from . import auxiliary as aux

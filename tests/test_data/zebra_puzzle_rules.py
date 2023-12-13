@@ -7,14 +7,14 @@ This module contains some rules for determining the solution of the zebra puzzle
 See https://en.wikipedia.org/wiki/Zebra_Puzzle
 """
 
-import pyerk as p
+import pyirk as p
 
 from ipydex import IPS  # for debugging
 
-zb = p.erkloader.load_mod_from_path("./zebra_base_data.py", prefix="zb", reuse_loaded=True)
+zb = p.irkloader.load_mod_from_path("./zebra_base_data.py", prefix="zb", reuse_loaded=True)
 
 
-__URI__ = "erk:/ocse/0.2/zebra_puzzle_rules"
+__URI__ = "irk:/ocse/0.2/zebra_puzzle_rules"
 
 keymanager = p.KeyManager(keyseed=1629)
 p.register_mod(__URI__, keymanager)

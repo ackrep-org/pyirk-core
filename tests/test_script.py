@@ -8,7 +8,7 @@ import rdflib
 
 # noinspection PyUnresolvedReferences
 from ipydex import IPS, activate_ips_on_exception, set_trace  # noqa
-import pyerk as p
+import pyirk as p
 
 
 from .settings import (
@@ -33,7 +33,7 @@ class Test_01_Script(HousekeeperMixin, unittest.TestCase):
 
         N = len(os.listdir(TEST_DATA_DIR1))
 
-        cmd = f"pyerk --insert-keys-for-placeholders {modpath}"
+        cmd = f"pyirk --insert-keys-for-placeholders {modpath}"
         os.system(cmd)
 
         # ensure that temporary file is deleted correctly
@@ -46,7 +46,7 @@ class Test_01_Script(HousekeeperMixin, unittest.TestCase):
         self.assertNotIn("I000", txt)
 
         # ensure that the module is loadable
-        mod = p.erkloader.load_mod_from_path(modpath, prefix="tm1")
+        mod = p.irkloader.load_mod_from_path(modpath, prefix="tm1")
 
         # test I000["key insertion by label"]
         itm3, = mod.I1000.R72__is_generally_related_to
@@ -58,7 +58,7 @@ class Test_01_Script(HousekeeperMixin, unittest.TestCase):
 
     @unittest.skipIf(os.environ.get("CI"), "Skipping visualization test on CI to prevent graphviz-dependency")
     def test_c01__visualization(self):
-        cmd = "pyerk -vis I12"
+        cmd = "pyirk -vis I12"
         res = os.system(cmd)
         self.assertEqual(res, 0)
 
@@ -68,10 +68,10 @@ class Test_01_Script(HousekeeperMixin, unittest.TestCase):
 
         self.files_to_delete.append("tmp_dot.txt")
         self.files_to_delete.append("tmp.svg")
-        cmd = "pyerk --load-mod control_theory1.py demo -vis __all__"
+        cmd = "pyirk --load-mod control_theory1.py demo -vis __all__"
         res = os.system(cmd)
         self.assertEqual(res, 0)
 
-        cmd = "pyerk --load-mod control_theory1.py demo -vis ma__I9904"
+        cmd = "pyirk --load-mod control_theory1.py demo -vis ma__I9904"
         res = os.system(cmd)
         self.assertEqual(res, 0)

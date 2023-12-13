@@ -11,10 +11,10 @@ This module is to be imported in other modules
 """
 
 
-import pyerk as p
+import pyirk as p
 
 
-__URI__ = "erk:/ocse/0.2/zebra_base_data"
+__URI__ = "irk:/ocse/0.2/zebra_base_data"
 
 keymanager = p.KeyManager(keyseed=1835)
 p.register_mod(__URI__, keymanager)
@@ -482,7 +482,7 @@ def report(display=True, title=""):
     # all_humans = I7435["human"].get_inv_relations("R4", return_subj=True)
 
     # this makes this function paste-able
-    human = p.ds.get_entity_by_uri("erk:/ocse/0.2/zebra_base_data#I7435")
+    human = p.ds.get_entity_by_uri("irk:/ocse/0.2/zebra_base_data#I7435")
     all_humans = human.get_inv_relations("R4", return_subj=True)
 
     res = []

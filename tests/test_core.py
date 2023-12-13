@@ -1226,8 +1226,8 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
 
     def test_e02__is_true(self):
         ma = p.irkloader.load_mod_from_path(TEST_DATA_PATH_MA, prefix="ma")
-        p.is_true(ma.I5359, p.R4, ma.I4895)
-        p.is_true(ma.I5359["determinant"], p.R4["is instance of"], ma.I4895["mathematical operator"])
+        self.assertTrue(p.is_true(ma.I5359, p.R4, ma.I4895))
+        self.assertTrue(p.is_true(ma.I5359["determinant"], p.R4["is instance of"], ma.I4895["mathematical operator"]))
 
 class Test_02_ruleengine(HousekeeperMixin, unittest.TestCase):
     def setUp(self):

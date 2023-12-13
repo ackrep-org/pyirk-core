@@ -2510,8 +2510,10 @@ def is_true(subject: Entity, predicate: Relation, object) -> (bool, None):
     assert isinstance(subject, Entity)
     assert isinstance(predicate, Relation)
 
-    res = subject.get_relations(predicate, return_obj=True)
-    IPS()
+    res = subject.get_relations(predicate.uri, return_obj=True)
+    if isinstance(res, list):
+        res = res[0]
+    return res == object
 
 
 def format_entity_html(e: Entity):

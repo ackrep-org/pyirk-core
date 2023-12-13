@@ -143,22 +143,22 @@ I2562 = p.create_item(
 
 I2557 = p.create_item(
     R1__has_label="quasilinearity",
-    R2__has_description="states that in a pde the highest order derivatives appear linearly, with their coeffitients \
-        being functions of the independant variables and their (lower order) derivatives",
+    R2__has_description="states that in a pde the highest order derivatives appear linearly, with their coefficients \
+        being functions of the independent variables and their (lower order) derivatives",
     R17__is_subproperty_of=I2562["general property of pde"],
 )
 
 I3114 = p.create_item(
     R1__has_label="semilinearity",
-    R2__has_description="states that in a pde the highest order derivatives appear linearly, with their coeffitients \
-        being functions of only the independant variables",
+    R2__has_description="states that in a pde the highest order derivatives appear linearly, with their coefficients \
+        being functions of only the independent variables",
     R17__is_subproperty_of=I2557["quasilinearity"],
 )
 
 I3863 = p.create_item(
     R1__has_label="linearity",
-    R2__has_description="states that in a pde the unknown function and all its derivatives appear linearly, with their coeffitients \
-        being functions of only the independant variables",
+    R2__has_description="states that in a pde the unknown function and all its derivatives appear linearly, with their coefficients \
+        being functions of only the independent variables",
     R17__is_subproperty_of=I3114["semilinearity"],
 )
 
@@ -209,7 +209,7 @@ I9642 = p.create_item(
 I9210 = p.create_item(
     R1__has_label="stabilizability",
     R2__has_description="states that for the model of a dynamical system there exists a state feedback such that the \
-        system is asymptotically stable",
+        system is stable",
     R4__is_instance_of=I5356["general system property"],
 )
 

@@ -873,8 +873,8 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
         self.assertTrue(M.R4__is_instance_of, ma.I1935["polynomial matrix"])
 
         # TODO fix typo in OCSE and regenerate test data
-        self.assertTrue(M.ma__R8736__depends_polyonomially_on, s)
-        self.assertTrue(d.ma__R8736__depends_polyonomially_on, s)
+        self.assertTrue(M.ma__R8736__depends_polynomially_on, s)
+        self.assertTrue(d.ma__R8736__depends_polynomially_on, s)
 
     def test_d02b__signature_inheritance(self):
         ct = p.irkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")

@@ -83,7 +83,7 @@ I2746 = create_person("Rudolf", "Kalman", "electrical engineer and mathematician
 
 R1833 = p.create_relation(
     R1__has_label="has employer",
-    R2__has_description="specifies for which entity (organisation/person) the subject works",
+    R2__has_description="specifies for which entity (organization/person) the subject works",
     R33__has_corresponding_wikidata_entity="https://www.wikidata.org/entity/P108",
 )
 

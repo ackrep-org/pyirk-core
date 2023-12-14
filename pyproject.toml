@@ -9,8 +9,8 @@ build-backend = "setuptools.build_meta"
 [project]
 
 
-name = "pyerk"
-description = "Python based 'Easy Representation of Knowledge' (pyERK)"
+name = "pyirk"
+description = "Python based 'Imperative Representation of Knowledge' (PyIRK)"
 authors=[{name = "Carsten Knoll", email = "firstname.lastname@posteo.de"}]
 readme = "README.md"
 requires-python = ">=3.8"
@@ -24,9 +24,9 @@ classifiers=[
     "Programming Language :: Python :: 3",
 ]
 
-# copied from the original setup.py
+# copied (and name-adapted) from the original setup.py
 # long_description="""
-# (Python based) Easy Representation of Knowledge (pyERK).
+# (Python based) Imperative Representation of Knowledge (PyIRK).
 #
 # - Inspired by OWL, but more expressive
 # - Inspired by Wikidata, but much simpler
@@ -39,10 +39,10 @@ classifiers=[
 # https://setuptools.pypa.io/en/latest/userguide/pyproject_config.html
 
 [project.urls]
-Homepage = "https://github.com/ackrep-org/pyerk-core/"
+Homepage = "https://github.com/ackrep-org/pyirk-core/"
 
 [project.scripts]
-pyerk = "pyerk.script:main"
+pyirk = "pyirk.script:main"
 
 [tool.setuptools.packages.find]
 # note: `include-package-data = true` by default in pyproject.toml
@@ -50,4 +50,4 @@ where = ["src"]
 
 [tool.setuptools.dynamic]
 dependencies = {file = ["requirements.txt"]}
-version = {attr = "pyerk.__version__"}
+version = {attr = "pyirk.__version__"}

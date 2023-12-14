@@ -4,11 +4,27 @@ import re as regex
 from typing import Iterable, Union, Dict, Any
 from rdflib import Literal
 from colorama import Style, Fore
+from addict import Addict as Container
 from . import settings
 
 """
-Some auxiliary classes and functions for pyerk.
+Some auxiliary classes and functions for pyirk.
 """
+
+startup_workdir = os.path.abspath(os.getcwd())
+
+
+# the following suffixes for base URIs are used for predicates to RDF-encode qualifiers (statements about statements)
+# strongly inspired by https://en.wikibooks.org/wiki/SPARQL/WIKIDATA_Qualifiers,_References_and_Ranks#Qualifiers
+
+# corresponds to `p` ("http://www.wikidata.org/prop/") -> links to statement nodes
+STATEMENTS_URI_PART = "/STATEMENTS"
+
+# corresponds to `ps` ("http://www.wikidata.org/prop/schema/".") -> links to main object
+PREDICATES_URI_PART = "/PREDICATES"
+
+# corresponds to `pq` ("http://www.wikidata.org/property_qualifier/" ?) -> used for qualifying pred-obj-tuples
+QUALIFIERS_URI_PART = "/QUALIFIERS"
 
 
 class NotYetFinishedError(NotImplementedError):
@@ -24,6 +40,14 @@ class OneToOneMapping(object):
         assert len(self.a) == len(self.b)
 
     def add_pair(self, key_a, key_b):
+        if key_a in self.a:
+            msg = f"key_a '{key_a}' does already exist."
+            raise KeyError(msg)
+
+        if key_b in self.b:
+            msg = f"key_b '{key_b}' does already exist."
+            raise KeyError(msg)
+
         self.a[key_a] = key_b
         self.b[key_b] = key_a
 
@@ -31,7 +55,6 @@ class OneToOneMapping(object):
         assert len(self.a) == len(self.b)
 
     def remove_pair(self, key_a=None, key_b=None, strict=True):
-
         try:
             if key_a is not None:
                 key_b = self.a.pop(key_a)
@@ -75,7 +98,6 @@ def apply_func_to_table_cells(func: callable, table: Iterable, *args, **kwargs) 
 
 
 def ensure_rdf_str_literal(arg, allow_none=True) -> Union[Literal, None]:
-
     if allow_none and arg is None:
         return arg
 
@@ -92,50 +114,118 @@ def ensure_rdf_str_literal(arg, allow_none=True) -> Union[Literal, None]:
     return res
 
 
-class PyERKError(Exception):
+class PyIRKError(Exception):
     """
-    raised in situations where some ERK-specific conditions are violated
+    raised in situations where some IRK-specific conditions are violated
     """
-
     pass
 
 
-class EmptyURIStackError(PyERKError):
+class MultilingualityError(PyIRKError):
     pass
 
 
-class UnknownPrefixError(PyERKError):
+class EmptyURIStackError(PyIRKError):
     pass
 
 
-class UnknownURIError(PyERKError):
+class UnknownPrefixError(PyIRKError):
     pass
 
 
-class InvalidURIError(PyERKError):
+class UnknownURIError(PyIRKError):
     pass
 
 
-class InvalidPrefixError(PyERKError):
+class InvalidURIError(PyIRKError):
     pass
 
 
-class InvalidShortKeyError(PyERKError):
+class InvalidPrefixError(PyIRKError):
     pass
 
 
-class ModuleAlreadyLoadedError(PyERKError):
+# used for syntax problems
+class InvalidShortKeyError(PyIRKError):
     pass
 
 
-class SemanticRuleError(PyERKError):
+class InvalidGeneralKeyError(PyIRKError):
+    pass
+
+
+class InconsistentLabelError(PyIRKError):
+    pass
+
+
+# used for syntactically correct keys which could not be found
+class ShortKeyNotFoundError(PyIRKError):
+    pass
+
+
+class InvalidScopeNameError(PyIRKError):
+    pass
+
+
+class InvalidScopeTypeError(PyIRKError):
+    pass
+
+
+class ModuleAlreadyLoadedError(PyIRKError):
+    pass
+
+
+class SemanticRuleError(PyIRKError):
+    pass
+
+
+class ExplicitlyTriggeredTestException(PyIRKError):
+    pass
+
+
+class InconsistentEdgeRelations(SemanticRuleError):
+    pass
+
+class InvalidObjectValue(SemanticRuleError):
+    pass
+
+
+class MissingQualifierError(PyIRKError):
+    pass
+
+
+class AmbiguousQualifierError(PyIRKError):
+    pass
+
+
+class FunctionalRelationError(PyIRKError):
+    pass
+
+
+class UndefinedRelationError(PyIRKError):
+    pass
+
+
+class TaxonomicError(PyIRKError):
+    pass
+
+
+class RuleTermination(PyIRKError):
+    pass
+
+
+class LogicalContradiction(RuleTermination):
+    pass
+
+
+class ReasoningGoalReached(RuleTermination):
     pass
 
 
 def ensure_valid_short_key(txt: str, strict: bool = True) -> bool:
     conds = [isinstance(txt, str)]
 
-    re_short_key = regex.compile(r"^((Ia?)|(Ra?)|(RE))(\d+)$")
+    re_short_key = regex.compile(r"^((Ia?)|(Ra?)|(S))(\d+)$")
     # produces 5 groups: [{outer-parenthesis}, {inner-p1}, {inner-p2}, {inner-p3}, {last-p}]
     # first (index: 1) and last are the only relevant groups
 
@@ -175,6 +265,26 @@ def ensure_valid_uri(txt: str, strict: bool = True) -> bool:
     return cond
 
 
+def ensure_valid_relation_uri(txt: str, strict=True):
+    conds = [ensure_valid_uri(txt, strict)]
+    conds.append(txt.split("#")[1].startswith("R"))
+
+    cond = all(conds)
+    if not cond and strict:
+        msg = f"This is not a valid relation URI: {txt}. Condition protocoll: {conds}"
+        raise InvalidURIError(msg)
+
+
+def ensure_valid_item_uri(txt: str, strict=True):
+    conds = [ensure_valid_uri(txt, strict)]
+    conds.append(txt.split("#")[1].startswith("I"))
+
+    cond = all(conds)
+    if not cond and strict:
+        msg = f"This is not a valid item URI: {txt}. Condition protocoll: {conds}"
+        raise InvalidURIError(msg)
+
+
 def ensure_valid_prefix(txt: str, strict: bool = True) -> bool:
     """
     To avoid confusion with base_uris prefixes have to meet certain conditions.
@@ -195,6 +305,20 @@ def ensure_valid_prefix(txt: str, strict: bool = True) -> bool:
         raise InvalidPrefixError(msg)
 
     return cond
+
+
+def parse_uri(txt: str) -> Container:
+    res = Container(full_uri=txt)
+    res.base_uri, res.short_key = txt.split("#")
+
+    for uri_part in (STATEMENTS_URI_PART, PREDICATES_URI_PART, QUALIFIERS_URI_PART):
+        if res.base_uri.endswith(uri_part):
+            res.sub_ns = uri_part
+            break
+    else:
+        res.sub_ns = None
+
+    return res
 
 
 def ensure_valid_baseuri(txt: str, strict: bool = True) -> bool:
@@ -228,8 +352,7 @@ def make_uri(base_uri: str, short_key):
 # This function was once part of the key-recycling mechanism.
 # Currently it is not needed but might be useful in the future.
 def convert_key_str_to_num(key_str: str) -> int:
-
-    import regex  # this import is "parked here" as long as the function is not used
+    import re as regex  # this import is "parked here" as long as the function is not used
 
     re_short_key = regex.compile(r"^((Ia?)|(Ra?)|(RE))(\d+)$")
     # produces 5 groups: [{outer-parenthesis}, {inner-p1}, {inner-p2}, {inner-p3}, {last-p}]
@@ -268,6 +391,13 @@ def clean_dict(dikt: Dict[Any, Union[list, dict]]) -> Dict[Any, Union[list, dict
     return dikt
 
 
+def uri_set(*args):
+    res = []
+    for arg in args:
+        res.append(arg.uri)
+    return set(res)
+
+
 def bright(txt):
     return f"{Style.BRIGHT}{txt}{Style.RESET_ALL}"
 
@@ -296,19 +426,36 @@ def byellow(txt):
     return f"{Fore.YELLOW}{Style.BRIGHT}{txt}{Style.RESET_ALL}"
 
 
-def get_erk_root_dir() -> str:
+def get_irk_root_dir() -> str:
     """
-    Return the absolute path of the erk-root (assuming the directory structure documented in README.md)
+    Return the absolute path of the irk-root (assuming the directory structure documented in README.md)
 
     :return:
     """
 
     current_dir = os.path.abspath(os.getcwd())
 
-    # this allows to have a local-deployment copy of the erk-root which does not change on every edit of the
+    # this allows to have a local-deployment copy of the irk-root which does not change on every edit of the
     # knowledge base
-    if os.path.isfile(os.path.join(current_dir, "__erk-root__")):
+    # TODO: obsolete? (this should respect pyirkconf.toml)
+    if os.path.isfile(os.path.join(current_dir, "__irk-root__")):
         return current_dir
     dir_of_this_file = os.path.dirname(os.path.abspath(sys.modules.get(__name__).__file__))
-    erk_root = os.path.abspath(os.path.join(dir_of_this_file, "..", "..", ".."))
-    return erk_root
+    irk_root = os.path.abspath(os.path.join(dir_of_this_file, "..", "..", ".."))
+    return irk_root
+
+
+def get_irk_path(dirname=None):
+
+    if dirname is None:
+        return get_irk_root_dir()
+
+    dir_of_this_file = os.path.dirname(os.path.abspath(sys.modules.get(__name__).__file__))
+
+    # this assumes pyirk is installed with `pip install -e .` from the repo
+    pyirk_root = os.path.abspath(os.path.join(dir_of_this_file, "..", ".."))
+    if dirname == "pyirk-core-test_data":
+        return os.path.join(pyirk_root, "tests", "test_data")
+
+    msg = f"unexpected dirname: {dirname}"
+    raise ValueError(msg)

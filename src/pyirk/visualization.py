@@ -1,24 +1,23 @@
 """
-This module contains code for the visualization of ERK-entities.
+This module contains code for the visualization of IRK-entities.
 """
 from typing import Union, List, Tuple, Optional
 import os
 import urllib
+from rdflib import Literal
 
 import networkx as nx
 import nxv  # for graphviz visualization of networkx graphs
 
 # TODO: this should be a relative import of the *package*
-import pyerk as p
+import pyirk as p
 from ipydex import IPS, activate_ips_on_exception
 
 activate_ips_on_exception()
 
 # TODO: make this a  dict to speedup lookup
 #  tuple of Relation keys which are not displayed by default
-REL_BLACKLIST = ("erk:/builtins#R1", "erk:/builtins#R2")
-
-# from semantictools import core as smt
+REL_BLACKLIST = ("irk:/builtins#R1", "irk:/builtins#R2")
 
 from abc import ABC
 
@@ -72,14 +71,14 @@ class AbstractGraphObject(ABC):
         """
         handle label formatting (segmentation into multiple lines and later wrapping by html tags)
 
-        labels of Nodes should be centered (dot file should contain r"\n" bewteen segments)
-        hower neither using "\n" nor r"\n" inside the nxv-node-labels leads to the desired results
+        labels of Nodes should be centered (dot file should contain r"\n" between segments)
+        however neither using "\n" nor r"\n" inside the nxv-node-labels leads to the desired results
         thus: use a dummy which will be replaced later
         """
 
         # TODO: replace this by prefixed short_key
-        unformated_repr_str = f'{self.short_key}["{self.label}"]'
-        self.label_segment_keys, self.label_segments = create_label_segments(unformated_repr_str, maxlen=self.maxlen)
+        unformatted_repr_str = f'{self.short_key}["{self.label}"]'
+        self.label_segment_keys, self.label_segments = create_label_segments(unformatted_repr_str, maxlen=self.maxlen)
         self.label_segment_items = zip(self.label_segment_keys, self.label_segments)
 
         # wrap the each key with curly braces to allow application of .format(...) later]
@@ -148,7 +147,7 @@ class EntityNode(AbstractGraphObject):
             self.shape = "circle"
         elif isinstance(entity, p.Relation):
             self.shape = "hexagon"
-        elif isinstance(entity, p.RelationEdge):
+        elif isinstance(entity, p.Statement):
             self.shape = "cds"
         else:
             msg = f"Unexpected entity type: {type(entity)} during creation of EntityNode in visualization."
@@ -162,7 +161,6 @@ class EntityNode(AbstractGraphObject):
         self._perform_label_segmentation()
 
     def get_dot_label(self, render=False) -> str:
-
         if render:
             return render_label(self.dot_label_str)
         else:
@@ -214,7 +212,6 @@ class Edge(AbstractGraphObject):
 
 
 def create_node(arg: Union[p.Entity, object], url_template: str):
-
     if isinstance(arg, p.Entity):
         return EntityNode(arg, url_template)
     elif isinstance(arg, str):
@@ -224,7 +221,6 @@ def create_node(arg: Union[p.Entity, object], url_template: str):
 
 
 def create_key_with_length(basic_key_gen: callable, length: int) -> str:
-
     base_key = next(basic_key_gen)
 
     relevant_length = length - 2  # (account for curly braces (see REMARK__curly_braces_wrapping))
@@ -232,7 +228,6 @@ def create_key_with_length(basic_key_gen: callable, length: int) -> str:
     if relevant_length <= len(base_key):
         key_str = base_key
     else:
-
         assert relevant_length > 0
         assert length < 36, "unexpected long length"
 
@@ -281,7 +276,6 @@ def create_label_segments(label: str, maxlen: int) -> Tuple[List[str], List[str]
     split_chars = (" ", "-", "_", ":")
 
     while len(rest) > maxlen:
-
         first_part = rest[:maxlen]
 
         # handle special case where the next character is a space
@@ -300,7 +294,7 @@ def create_label_segments(label: str, maxlen: int) -> Tuple[List[str], List[str]
 
         first_part_split_index = maxlen - i
 
-        # rstrip to eliminate trainling spaces but not dashes etc
+        # rstrip to eliminate trailing spaces but not dashes etc
         new_line = first_part[:first_part_split_index].rstrip()
         res_segments.append(new_line)
         rest = rest[first_part_split_index:]
@@ -316,7 +310,6 @@ def create_label_segments(label: str, maxlen: int) -> Tuple[List[str], List[str]
 
 class CustomizedDiGraph(nx.DiGraph):
     def add_node(self, node: AbstractGraphObject, **kwargs):
-
         # set defaults
         # note: adding an id keyword here does not influence the id in the svg
         new_kwargs = dict(label=node.get_dot_label(), id=node.id, shape=node.shape)
@@ -349,7 +342,7 @@ def create_nx_graph_from_entity(uri, url_template="") -> nx.DiGraph:
         if rel_key in REL_BLACKLIST:
             continue
 
-        re_list: List[p.RelationEdge]
+        re_list: List[p.Statement]
         for re in re_list:
             assert len(re.relation_tuple) == 3
             subj, pred, obj = re.relation_tuple
@@ -375,10 +368,10 @@ def get_color_for_item(item: p.Item) -> str:
     return "black"
 
 
-def get_color_for_rledg(rledg: p.RelationEdge) -> str:
+def get_color_for_stm(stm: p.Statement) -> str:
     cmap = {"R3": mpl_colors[0], "R4": mpl_colors[1]}
 
-    return cmap.get(rledg.rsk, "black")
+    return cmap.get(stm.rsk, "black")
 
 
 def create_complete_graph(
@@ -392,13 +385,17 @@ def create_complete_graph(
     """
 
     added_items_nodes = {}
-    added_relation_edges = {}
+    added_statements = {}
     G = nx.DiGraph()
 
     i = 0
     relation_dict: dict
-    for item_uri, relation_dict in p.ds.relation_edges.items():
-        item = p.ds.get_entity_by_uri(item_uri)
+    for item_uri, relation_dict in p.ds.statements.items():
+        item = p.ds.get_entity_by_uri(item_uri, strict=None)
+        if item is None:
+            # this is the case for some statements which are subject of a qualifier relation
+            assert item_uri in p.ds.statement_uri_map
+            continue
         if not isinstance(item, p.Item) or item.short_key in ["I000"]:
             continue
         # count only items
@@ -410,19 +407,20 @@ def create_complete_graph(
             pass
         else:
             node = create_node(item, url_template)
-        G.add_node(node, label=item.short_key, color=get_color_for_item(item))
+        label_str = f"{item.short_key}\n{item.R1__has_label}"
+        G.add_node(node, label=label_str, color=get_color_for_item(item))
         added_items_nodes[item_uri] = node
 
         # iterate over relation edges
-        for relation_uri, rledg_list in relation_dict.items():
-            rledg: p.RelationEdge
-            for rledg in rledg_list:
-                if rledg.role != p.RelationRole.SUBJECT:
+        for relation_uri, stm_list in relation_dict.items():
+            stm: p.Statement
+            for stm in stm_list:
+                if stm.role != p.RelationRole.SUBJECT:
                     continue
-                if rledg.relation_tuple[1].uri in REL_BLACKLIST:
+                if stm.relation_tuple[1].uri in REL_BLACKLIST:
                     continue
 
-                obj = rledg.relation_tuple[-1]
+                obj = stm.relation_tuple[-1]
                 if isinstance(obj, p.Item):
                     if other_node := added_items_nodes.get(obj.uri):
                         pass
@@ -434,12 +432,12 @@ def create_complete_graph(
                     # obj is a literal, we omit that for now
                     continue
 
-                # edge_label = f"{rledg.relation_tuple[1].short_key}"
-                edge_label = f"{rledg.relation_tuple[1].short_key}"
-                G.add_edge(node, other_node, label=edge_label, color=get_color_for_rledg(rledg))
+                # edge_label = f"{stm.relation_tuple[1].short_key}"
+                edge_label = f"{stm.relation_tuple[1].short_key}"
+                G.add_edge(node, other_node, label=edge_label, color=get_color_for_stm(stm))
 
-                assert rledg.uri not in added_relation_edges
-                added_relation_edges[rledg.uri] = 1
+                assert stm.uri not in added_statements
+                added_statements[stm.uri] = 1
 
     return G
 
@@ -481,10 +479,28 @@ def render_graph_to_dot(G: nx.DiGraph) -> str:
     return dot_data
 
 
+def svg_replace(raw_svg_data: str, REPLACEMENTS: dict) -> str:
+    assert isinstance(raw_svg_data, str)
+
+    # prevent some latex stuff to interfere with the handing of the `REPLACEMENTS`
+    # TODO: handle the whole problme more elegantly
+
+    latex_replacements = [(r"\dot{x}", "__LATEX1__")]
+    for orig, subs in latex_replacements:
+        raw_svg_data = raw_svg_data.replace(orig, subs)
+
+    svg_data1: str = raw_svg_data.format(**REPLACEMENTS)
+
+    for orig, subs in latex_replacements:
+        svg_data1 = svg_data1.replace(subs, orig)
+
+    return svg_data1
+
+
 def visualize_entity(uri: str, url_template="", write_tmp_files: bool = False) -> str:
     """
 
-    :param uri:             entity uri (like "erk:/my/module#I0123")
+    :param uri:             entity uri (like "irk:/my/module#I0123")
     :param url_template:    url template for creation of a-tags (html links) for the labels
     :param write_tmp_files: boolean flag whether to write debug output
 
@@ -498,7 +514,7 @@ def visualize_entity(uri: str, url_template="", write_tmp_files: bool = False) -
     for old, new in NEWLINE_REPLACEMENTS:
         dot_data0 = dot_data0.replace(old, new)
 
-    # work arround curly braces in first and last line
+    # work around curly braces in first and last line
     dot_lines = dot_data0.split("\n")
     inner_dot_code = "\n".join(dot_lines[1:-1])
 
@@ -506,8 +522,8 @@ def visualize_entity(uri: str, url_template="", write_tmp_files: bool = False) -
 
     # noinspection PyUnresolvedReferences,PyProtectedMember
     raw_svg_data = nxv._graphviz.run(dot_data, algorithm="dot", format="svg", graphviz_bin=None)
-
-    svg_data1: str = raw_svg_data.decode("utf8").format(**REPLACEMENTS)
+    raw_svg_data = raw_svg_data.decode("utf8")
+    svg_data1 = svg_replace(raw_svg_data, REPLACEMENTS)
 
     if write_tmp_files:
         # for debugging
@@ -525,8 +541,13 @@ def visualize_entity(uri: str, url_template="", write_tmp_files: bool = False) -
     return svg_data1
 
 
-def visualize_all_entities(url_template="", write_tmp_files: bool = False) -> str:
+def get_label(entity):
+    res = entity.get("label", "undefined label")
+    if isinstance(res, Literal):
+        return res.value
+    return res
 
+def visualize_all_entities(url_template="", write_tmp_files: bool = False) -> str:
     G = create_complete_graph(url_template)
 
     print(f"Visualizing {len(G.nodes)} nodes and {len(G.edges)} edges.")
@@ -547,7 +568,7 @@ def visualize_all_entities(url_template="", write_tmp_files: bool = False) -> st
             "width": 1.3,
             "fontsize": 10,
             "color": d.get("color", "black"),
-            "label": d.get("label", "undefined label"),
+            "label": get_label(d),
             "shape": d.get("shape", "circle"),  # see also AbstractNode.shape
         },
         # u: node1, v: node1, d: its attribute dict
@@ -565,9 +586,9 @@ def visualize_all_entities(url_template="", write_tmp_files: bool = False) -> st
             "style": "filled",
             "fixedsize": True,
             "color": d.get("color", "black"),
-            "width": .3,
+            "width": 0.3,
             "fontsize": 2,
-            "label": d.get("label", "undefined label"),
+            "label": get_label(d),
             "fillcolor": "#45454533",
         },
         edge=lambda u, v, d: {
@@ -586,12 +607,12 @@ def visualize_all_entities(url_template="", write_tmp_files: bool = False) -> st
     dot_data = raw_dot_data
     # noinspection PyUnresolvedReferences,PyProtectedMember
     raw_svg_data = nxv._graphviz.run(dot_data, algorithm="dot", format="svg", graphviz_bin=None)
-    svg_data1: str = raw_svg_data.decode("utf8").format(**REPLACEMENTS)
+    svg_data1 = svg_replace(raw_svg_data.decode("utf8"), REPLACEMENTS)
 
     if write_tmp_files:
         # for debugging
 
-        dot_fpath = "./t#mp_dot.txt"
+        dot_fpath = "./tmp_dot.txt"
         with open(dot_fpath, "w") as txtfile:
             txtfile.write(dot_data)
         print("File written:", os.path.abspath(dot_fpath))

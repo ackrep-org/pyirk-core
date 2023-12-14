@@ -17,16 +17,16 @@ import sphinx_rtd_theme
 sys.path.insert(0, pathlib.Path(__file__).parents[2].resolve().as_posix())
 # print(sys.path[0])
 
-import pyerk
+import pyirk
 
 # -- Project information -----------------------------------------------------
 
-project = "pyerk"
+project = "pyirk"
 copyright = "2022, Ackrep Team"
 author = "Carsten Knoll et. al."
 
 # The full version, including alpha/beta/rc tags
-release = pyerk.__version__
+release = pyirk.__version__
 
 
 # -- General configuration ---------------------------------------------------
@@ -40,7 +40,8 @@ extensions = [
     "sphinx.ext.doctest",
     "sphinx.ext.autodoc",
     "sphinx.ext.autosummary",
-    'sphinx_rtd_theme',
+    "sphinx_rtd_theme",
+    "sphinxarg.ext",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -59,11 +60,11 @@ exclude_patterns = []
 #
 html_theme = "sphinx_rtd_theme"
 html_theme_options = {
-    'collapse_navigation': True,
-    'sticky_navigation': True,
-    'navigation_depth': 4,
-    'includehidden': True,
-    'titles_only': False
+    "collapse_navigation": True,
+    "sticky_navigation": True,
+    "navigation_depth": 4,
+    "includehidden": True,
+    "titles_only": False,
 }
 
 # Add any paths that contain custom static files (such as style sheets) here,
@@ -74,7 +75,7 @@ html_static_path = ["_static"]
 primary_domain = "py"
 
 
-source_suffix = ['.rst', '.md']
-source_parsers = {'.md': 'recommonmark.parser.CommonMarkParser'}
+source_suffix = [".rst", ".md"]
+source_parsers = {".md": "recommonmark.parser.CommonMarkParser"}
 
 # master_doc = 'index'

@@ -4,7 +4,7 @@ jobs: # A basic unit of work in a run
     working_directory: ~/erk/pyerk-core
     docker: # run the steps with Docker
       # CircleCI Python images available at: https://hub.docker.com/r/circleci/python/
-      - image: circleci/python:3.8
+      - image: cimg/python:3.8
         # environment: # environment variables for primary container
     steps: # steps that comprise the `build` job
       - checkout # check out source code to working directory
@@ -14,12 +14,10 @@ jobs: # A basic unit of work in a run
       - run:
           name: install graphviz
           command: |
-            sudo apt-get install graphviz
+            sudo apt-get update && sudo apt-get install -y graphviz
       - run:
           name: Install Dependancies
           command: |
-            python -m venv venv
-            . venv/bin/activate
             pip install -U pip
             pip install -r requirements.txt
             pip install -e .
@@ -28,30 +26,24 @@ jobs: # A basic unit of work in a run
           paths:
             - "venv"
       - run:
+          name: Test cli
+          command: |
+            pyerk --help
+      - run:
           name: Load ERK Modules
           command: |
             echo Cloning erk-data
             cd ..
             mkdir erk-data-for-unittests
             cd erk-data-for-unittests
-            git clone https://github.com/ackrep-org/ocse.git erk-ocse
-            cd erk-ocse
-            git checkout for-unittests
+            git clone https://github.com/ackrep-org/ocse.git ocse
+            cd ocse
+            git checkout ut__pyerk__main
             cd ..
             ls -R
       - run:
-          name: Load Test Data
-          command: |
-            cd ../../
-            mkdir ackrep
-            cd ackrep
-            git clone https://github.com/ackrep-org/ackrep_data.git ackrep_data_for_unittests
-            cd ackrep_data_for_unittests
-            git checkout for_unittests
-      - run:
           name: Test Core
           command: |
-            . venv/bin/activate
             python -m unittest
 
 workflows:

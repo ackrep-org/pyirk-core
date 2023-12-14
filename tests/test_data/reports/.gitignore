@@ -1,0 +1,10 @@
+
+*.tex
+*.pdf
+*.aux
+*.out
+*.log
+*.bcf
+*.bbl
+*.run.xml
+*synctex.gz

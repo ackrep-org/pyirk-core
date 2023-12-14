@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+
+
+<html>
+<head lang="en">
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+
+<!--  prevent favicon -->
+<link rel="icon" href="data:,">
+
+<link type="text/css" rel="stylesheet" href="{{c.css_path}}">
+
+
+<!-- toggle functionality for entity display -->
+<script>
+      var mode = 1; // switch to detailed mode on first call
+
+      function toggleItems() {
+        var items = document.getElementsByClassName('js-toggle');
+        var key = "";
+        if (mode === 0) {
+            key = "data-short-txt";
+            mode = 1;
+        } else {
+            key = "data-detailed-txt";
+            mode = 0;
+        }
+        for (var i = 0; i < items.length; i++) {
+            var src_data = items[i].getAttribute(key);
+            items[i].innerHTML = unescape(src_data);
+        }
+      }
+</script>
+
+
+
+<title></title>
+
+</head>
+
+<body>
+
+<div class="non-footer">
+    <div class="headerbar">
+    <div class="headerbar-content">
+
+    <h1>IRK: Imperative Representation of Knowledge</h1>
+    </div>
+    </div>
+<div class="main">
+
+<button onclick="toggleItems()">toggle details</button>
+
+<h2>{{c.content.title}}</h2>
+
+{% for rule_res in c.content.rule_res_list %}
+
+    <h3>{{rule_res.rule.short_key}}["{{rule_res.rule.R1}}"] ({{rule_res.length}})</h3>
+
+    <div class="stm_expl_table">
+
+    {% for stm_container in rule_res.stm_container_list %}
+        {% include "l1_rule-application-report-stm.html"%}
+    {% endfor %}
+
+    </div>
+
+{% endfor %}
+
+</div>
+</div>
+
+<div class="footer">
+    <div class="footer-content">
+        footer
+    </div>
+</div>
+
+
+
+</body>
+</html>
+
+
+

@@ -82,6 +82,7 @@ The usage inside Pyirk is best demonstrated by the unittest `test_c02__multiling
 
 (sec_patterns)=
 ## Patterns for Knowledge Representation in Pyirk
+<!-- Modeling Techniques -->
 
 In Pyirk knowledge is represented via *entities* and *statements* (inspired by Wikidata). There are two types of entities: *items* (mostly associated with nouns) and *relations* (mostly associated with verbs). Statements consist of *subject-predicate-object*-triples.
 
@@ -94,7 +95,7 @@ Literals are "atomic" values like strings, numbers or boolean values.
 Every entity has short_key (`entity.short_key`, see also {ref}`sec_keys`.) and an uri (`entity.uri`). It is recommended but not required that every entity has a label (by means of relation `R1["has label"]`) and a description (by means of `R2["has description"]`).
 
 (sec_items)=
-### Item (subclass of `core.Entity`)
+### Items (Python Subclass of `core.Entity`)
 
 The `short_key` of any items starts with "`I`" and ends with a sequence of number characters (maximum sequence length not yet specified). Optionally the second character is "`a`" which indicates that this item was generated automatically (see [below](sec_auto_gen_items)).
 
@@ -159,7 +160,7 @@ The whole knowledge graph is a collection of Entities (Items, Relation, Literals
 
 
 (sec_qualifiers)=
-## Qualifiers
+### Qualifiers
 
 
 Basic statements in Pyirk are modeled as `subject`-`predicate`-`object`-triples.
@@ -206,9 +207,9 @@ The concept of qualifiers is borrowed from Wikidata, see e.g the [WD-SPARQL-tuto
 
 
 (sec_scopes)=
-## Scopes
+### Scopes
 
-### Basics
+#### Basics
 Many knowledge artifacts (such as theorems or definitions) consists of multiple simpler statements which are in a specific semantic relation to each other. Consider the example theorem:
 
 > Let {math}`(a, b, c)` be the sides of a triangle, ordered from shortest to longest, and {math}`(l_a, l_b, l_c)` the respective lengths. If the angle between a and b is a rect angle then the equation {math}`l_c^2 = l_a^2 + l_b^2` holds.
@@ -222,7 +223,7 @@ Such a theorem consists of several "semantic parts", which in the context of Pyi
 
 While the concepts "premise" and "assertion" are usually used to refer to parts of theorems (etc). The concept of "setting" is used to refer to those statements which do "set the stage" to properly formulate the premise and the assertion (e.g. by introducing and specifying the relevant objects).
 
-### Scopes in Pyirk
+#### Scopes in Pyirk
 
 Scopes are represented by  Items (instances (`R4`) of `I16["scope"]`). A scope item is specified by `R64__has_scope_type`. It is associated with a parent item (e.g. a theorem) via `R21__is_scope_of`. A statement which semantically belongs to a specific scope is associated to the respective scope item via the [qualifier](sec_qualifiers) `R20__has_defining_scope`.
 
@@ -230,7 +231,7 @@ Scopes are represented by  Items (instances (`R4`) of `I16["scope"]`). A scope i
 `R21__is_scope_of` and `R20__has_defining_scope` are not inverse (`R68__is_inverse_of`) to each other.
 ```
 
-### Notation of Scopes via Context Managers (`with ... as cm`)
+#### Notation of Scopes via Context Managers (`with ... as cm`)
 
 To simplify the creation of the auxiliary scope-items [python context managers](https://docs.python.org/3/reference/datamodel.html#context-managers) (i.e. `with`-statements) are used. This is illustrated by the following example:
 
@@ -259,23 +260,6 @@ with I5000["simplified Pythagorean theorem"].scope("assertion") as cm:
     # denote formulas (see documentation below)
     La, Lb, Lc = p.items_to_symbols(la, lb, lc)
     cm.new_equation( La**2 + Lb**2, "==", Lc**2 )
-```
-
-(sec_formulas)=
-## Representing Formulas
-
-In the module `math1.py` of OCSE there is an implementation for a convenient formula notation (write `x + y + z` instead of `add_item(x, add_item(y, z))`). See this example from the OCSE unittests:
-
-```python
-ma = p.irkloader.load_mod_from_path(pjoin(OCSE_PATH, "math1.py"), prefix="ma")
-t = p.instance_of(ma.I2917["planar triangle"])
-sides = ma.I9148["get polygon sides ordered by length"](t)
-a, b, c = sides.R39__has_element
-
-la, lb, lc = ma.items_to_symbols(a, b, c, relation=ma.R2495["has length"])
-symbolic_sum = la + lb + lc
-
-sum_item = ma.symbolic_expression_to_graph_expression(symbolic_sum)
 ```
 
 (sec_operators)=
@@ -317,7 +301,25 @@ mul = I5177["matmul"]
 C = mul(A, B)
 ```
 
-### Convenience-Expressions
+(sec_formulas)=
+### Representing Formulas
+
+In the module `math1.py` of OCSE there is an implementation for a convenient formula notation (write `x + y + z` instead of `add_item(x, add_item(y, z))`). See this example from the OCSE unittests:
+
+```python
+ma = p.irkloader.load_mod_from_path(pjoin(OCSE_PATH, "math1.py"), prefix="ma")
+t = p.instance_of(ma.I2917["planar triangle"])
+sides = ma.I9148["get polygon sides ordered by length"](t)
+a, b, c = sides.R39__has_element
+
+la, lb, lc = ma.items_to_symbols(a, b, c, relation=ma.R2495["has length"])
+symbolic_sum = la + lb + lc
+
+sum_item = ma.symbolic_expression_to_graph_expression(symbolic_sum)
+```
+
+
+#### Convenience-Expressions
 
 ```{warning}
 This is not yet implemented. However, see [formula representation](sec_formulas).
@@ -340,43 +342,6 @@ cm.new_equation( plus(sq(La), sq(Lb)), "==", sq(Lc) )
 <!-- TODO: implement this mechanism and refer to unit test here -->
 
 
-(sec_modules)=
-## Pyirk Modules and Packages
-
-Pyirk entities and statements are organized in Pyirk *modules* (python files). Each module has to specify its own URI via the variable `__URI__`. The uri of an entity from that module is formed by `<module URI>#<entity short_key>`. Modules can be bundled together to form pyirk *packages*. A Pyirk package consists of a directory containing a file `irkpackage.toml` and at least one Pyirk module.
-
-Modules can depend on other modules. A usual pattern is the following:
-
-```python
-# in module control_theory1.py
-
-import pyirk as p
-mod = p.irkloader.load_mod_from_path("./math1.py", prefix="ma")
-```
-
-Here the variable `mod` is the module object (like from ordinary python import) and allows to access to the complete namespace of that module:
-```python
-# ...
-
-A = p.instance_of(mod.I9904["matrix"])
-```
-
-The prefix `"ma"` can also be used to refer to that module like here
-```python
-# ...
-
-res = A.ma__R8736__depends_polynomially_on
-```
-
-Rationale: The attribute name `ma__R8736__depends_polynomially_on` is handled as a string by Python (in the method `__getattr__`). While `mod.R8736` is the relation object we cannot use this syntax as attribute name.
-
-See also {ref}`sec_keys`.
-
-
-
-
-## Modeling Techniques
-
 (sec_stubs)=
 ### Stubs (`I50["Stub"]`, `I000["some arbitrary label"]` and `R000["also"]`)
 
@@ -393,19 +358,19 @@ I1234 = p.create_item(
 )
 ```
 
-In some situations it is useful to use items and relations which do not yet exist. This can be done by `I000["dummy item]` and `R000["dummy relation"]`. Both entities can be used with **arbitrary labels** and can thus be used regarded as a special kind of comment. Example:
+In some situations it is desireable to use items and relations which do not yet exist. This can be done by `I000["dummy item]` and `R000["dummy relation"]`. Both entities can be used with **arbitrary labels** and can thus be used regarded as a special kind of comment. Example:
 
 ```python
 I1234 = p.create_item(
     R1__has_label="polygon",
     R2__has_description="",
-    R3__is_subclass_of=p.I000["general gemoetric figure"],
+    R3__is_subclass_of=p.I000["general geometric figure"],
     R000__has_dimension=2,
 )
 
 ```
 
-This allows to concentrate on the important items and relations and prevents to get distracted by side-quests (secondary storylines).
+This allows to focus a modeling session on the important items and relations and prevents to get distracted by introducing entities of subordinate relevance.
 
 It is quite probable that even mature irk-ontologies contain relations involving `I50`. Such items can be considered to constitute the "border of the domain of discourse". On the other hand, `I000` and `R000` should be used only temporarily and be replaced soon, e.g., by new instances/subclasses of `I50`.
 
@@ -441,3 +406,36 @@ They are also called *universal quantifier* and *existential quantifier*. In Pyi
 ```{warning}
 Despite having similar phonetics (and spelling) quantifiers (logic operators) and qualifiers (knowledge modeling technique, in triple-based knowledge graphs) are totally different concepts. However, qualifiers can (among many other use cases) be used to model universal or existential quantification of an statement.
 ```
+
+
+(sec_modules)=
+## Pyirk Modules and Packages
+
+Pyirk entities and statements are organized in Pyirk *modules* (python files). Each module has to specify its own URI via the variable `__URI__`. The uri of an entity from that module is formed by `<module URI>#<entity short_key>`. Modules can be bundled together to form pyirk *packages*. A Pyirk package consists of a directory containing a file `irkpackage.toml` and at least one Pyirk module.
+
+Modules can depend on other modules. A usual pattern is the following:
+
+```python
+# in module control_theory1.py
+
+import pyirk as p
+mod = p.irkloader.load_mod_from_path("./math1.py", prefix="ma")
+```
+
+Here the variable `mod` is the module object (like from ordinary python import) and allows to access to the complete namespace of that module:
+```python
+# ...
+
+A = p.instance_of(mod.I9904["matrix"])
+```
+
+The prefix `"ma"` can also be used to refer to that module like here
+```python
+# ...
+
+res = A.ma__R8736__depends_polynomially_on
+```
+
+Rationale: The attribute name `ma__R8736__depends_polynomially_on` is handled as a string by Python (in the method `__getattr__`). While `mod.R8736` is the relation object we cannot use this syntax as attribute name.
+
+See also {ref}`sec_keys`.

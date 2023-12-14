@@ -264,6 +264,20 @@ with I5000["simplified Pythagorean theorem"].scope("assertion") as cm:
 (sec_formulas)=
 ## Representing Formulas
 
+In the module `math1.py` of OCSE there is an implementation for a convenient formula notation (write `x + y + z` instead of `add_item(x, add_item(y, z))`). See this example from the OCSE unittests:
+
+```python
+ma = p.irkloader.load_mod_from_path(pjoin(OCSE_PATH, "math1.py"), prefix="ma")
+t = p.instance_of(ma.I2917["planar triangle"])
+sides = ma.I9148["get polygon sides ordered by length"](t)
+a, b, c = sides.R39__has_element
+
+la, lb, lc = ma.items_to_symbols(a, b, c, relation=ma.R2495["has length"])
+symbolic_sum = la + lb + lc
+
+sum_item = ma.symbolic_expression_to_graph_expression(symbolic_sum)
+```
+
 (sec_operators)=
 ### Operators
 
@@ -271,7 +285,6 @@ Example from `math.py` (OCSE):
 
 
 ```python
-
 I4895 = p.create_item(
     R1__has_label="mathematical operator",
     R2__has_description="general (unspecified) mathematical operator",

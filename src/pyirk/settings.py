@@ -1,4 +1,4 @@
-# This is the settings module of pyerk (backend). It is assumed to take precedence over django settings.
+# This is the settings module of pyirk (backend). It is assumed to take precedence over django settings.
 
 import os
 import sys
@@ -10,7 +10,7 @@ try:
 except ModuleNotFoundError:
     import tomli as tomllib
 
-logger = logging.getLogger("pyerk")
+logger = logging.getLogger("pyirk")
 
 # for now we only support a subset of languages with wich the authors are familiar
 # if you miss a language, please consider contributing
@@ -30,24 +30,24 @@ ACKREP_DATA_UT_REL_PATH = "../ackrep/ackrep_data_for_unittests"
 source_dir = os.path.dirname(os.path.abspath(sys.modules.get(__name__).__file__))
 TEMPLATE_PATH = os.path.join(source_dir, "templates")
 
-BUILTINS_URI = "erk:/builtins"
+BUILTINS_URI = "irk:/builtins"
 URI_SEP = "#"
 
-# todo: some time in the future pyerk should become indendent from the OCSE
+# todo: some time in the future pyirk should become indendent from the OCSE
 # for now it is convenient to have the URI stored here
-OCSE_URI = "erk:/ocse/0.2"
+OCSE_URI = "irk:/ocse/0.2"
 
 
-# this is relevant to look for pyerk-data to load (specified by a configuration file)
-BASE_DIR = os.getenv("PYERK_BASE_DIR", "")
+# this is relevant to look for pyirk-data to load (specified by a configuration file)
+BASE_DIR = os.getenv("PYIRK_BASE_DIR", "")
 if not BASE_DIR:
     BASE_DIR = "./"
 BASE_DIR = os.path.abspath(BASE_DIR)
 
 
-confpath = os.getenv("PYERK_CONF_PATH", "")
+confpath = os.getenv("PYIRK_CONF_PATH", "")
 if not confpath:
-    confpath = os.path.join(BASE_DIR, "erkpackage.toml")
+    confpath = os.path.join(BASE_DIR, "irkpackage.toml")
 
 try:
     with open(confpath, "rb") as fp:

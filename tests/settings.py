@@ -6,8 +6,8 @@ import random
 
 # noinspection PyUnresolvedReferences
 from ipydex import IPS, activate_ips_on_exception, set_trace  # noqa
-import pyerk as p
-import pyerk.io
+import pyirk as p
+import pyirk.io
 
 
 # ensure reproducible results
@@ -18,21 +18,16 @@ activate_ips_on_exception()
 
 current_dir = os.path.dirname(os.path.abspath(sys.modules.get(__name__).__file__))
 
-ERK_ROOT_DIR = p.aux.get_erk_root_dir()
+IRK_ROOT_DIR = p.aux.get_irk_root_dir()
 
 # path for basic (staged) test data
-TEST_DATA_DIR1 = pjoin(ERK_ROOT_DIR, "pyerk-core", "tests", "test_data")
-
-# path for "realistic" test data
-
-# taking this from envvar allows to flexibly use other test-data during debugging
-TEST_DATA_PARENT_PATH = os.getenv("PYERK_TEST_DATA_PARENT_PATH", default=pjoin(ERK_ROOT_DIR, "erk-data-for-unittests"))
+TEST_DATA_DIR1 = pjoin(IRK_ROOT_DIR, "pyirk-core", "tests", "test_data")
+TEST_DATA_DIR_OCSE = pjoin(TEST_DATA_DIR1, "ocse_subset")
 
 
-TEST_DATA_REPO_PATH = pjoin(TEST_DATA_PARENT_PATH, "ocse")
-TEST_DATA_PATH2 = pjoin(TEST_DATA_REPO_PATH, "control_theory1.py")
-TEST_DATA_PATH_MA = pjoin(TEST_DATA_REPO_PATH, "math1.py")
-TEST_DATA_PATH3 = pjoin(TEST_DATA_REPO_PATH, "agents1.py")
+TEST_DATA_PATH2 = pjoin(TEST_DATA_DIR1, "ocse_subset", "control_theory1.py")
+TEST_DATA_PATH_MA = pjoin(TEST_DATA_DIR1, "ocse_subset", "math1.py")
+TEST_DATA_PATH3 = pjoin(TEST_DATA_DIR1, "ocse_subset", "agents1.py")
 TEST_DATA_PATH_ZEBRA01 = pjoin(TEST_DATA_DIR1, "zebra01.py")
 TEST_DATA_PATH_ZEBRA02 = pjoin(TEST_DATA_DIR1, "zebra02.py")
 TEST_DATA_PATH_ZEBRA_BASE_DATA = pjoin(TEST_DATA_DIR1, "zebra_base_data.py")
@@ -41,19 +36,19 @@ TEST_MOD_NAME = "control_theory1"
 
 # useful to get the currently latest sha strings:
 # git log --pretty=oneline | head
-TEST_DATA_REPO_COMMIT_SHA = "8898efd919cfefa959eca59e19dd3888cb1ea9de"  # (2023-11-05 15:29:28)
+TEST_DATA_REPO_COMMIT_SHA = "11b9f9fe14cef7248fd0d9f31c7412516aa92aa9"  # (2023-11-07 16:20:00)
 
 # TODO: make this more robust (e.g. search for config file or environment variable)
 # TODO: put link to docs here (directory layout)
-TEST_ACKREP_DATA_FOR_UT_PATH = pjoin(ERK_ROOT_DIR, "..", "ackrep", "ackrep_data_for_unittests")
+TEST_ACKREP_DATA_FOR_UT_PATH = pjoin(IRK_ROOT_DIR, "..", "ackrep", "ackrep_data_for_unittests")
 
 os.environ["UNITTEST"] = "True"
 
 # UNLOAD_MODS is True by default but could be set to False via env var.
-# This is sometimes useful to prevent the deletion of entites by tear_down()
-UNLOAD_MODS = not (os.getenv("PYERK_NOT_UNLOAD_MODS") == "True")
+# This is sometimes useful to prevent the deletion of entities by tear_down()
+UNLOAD_MODS = not (os.getenv("PYIRK_NOT_UNLOAD_MODS") == "True")
 
-__URI__ = TEST_BASE_URI = "erk:/local/unittest"
+__URI__ = TEST_BASE_URI = "irk:/local/unittest"
 
 
 # this serves to print the test-method-name before it is executed (useful for debugging, see setUP below)
@@ -63,7 +58,7 @@ PRINT_TEST_METHODNAMES = True
 WRITE_TMP_FILES = False
 
 
-class HouskeeperMixin:
+class HousekeeperMixin:
     """
     Class to provide common functions for all our TestCase subclasses
     """

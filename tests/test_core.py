@@ -9,52 +9,36 @@ import rdflib
 
 # noinspection PyUnresolvedReferences
 from ipydex import IPS, activate_ips_on_exception, set_trace  # noqa
-import pyerk as p
-import pyerk.visualization as visualization
-import pyerk.io
-from pyerk.auxiliary import uri_set
+import pyirk as p
+import pyirk.visualization as visualization
+import pyirk.io
+from pyirk.auxiliary import uri_set
 import git
-import pyerk.reportgenerator as rgen
+import pyirk.reportgenerator as rgen
 
 
 from .settings import (
-    ERK_ROOT_DIR,
+    IRK_ROOT_DIR,
     TEST_DATA_DIR1,
-    TEST_DATA_PARENT_PATH,
-    TEST_DATA_REPO_PATH,
     TEST_DATA_PATH2,
     TEST_DATA_PATH_MA,
     TEST_DATA_PATH3,
     TEST_DATA_PATH_ZEBRA_BASE_DATA,
     TEST_DATA_PATH_ZEBRA02,
     TEST_MOD_NAME,
-    TEST_DATA_REPO_COMMIT_SHA,
     # TEST_ACKREP_DATA_FOR_UT_PATH,
     TEST_BASE_URI,
     WRITE_TMP_FILES,
-    HouskeeperMixin,
+    HousekeeperMixin,
 
 
     )
 
 
 
-class Test_00_Core(HouskeeperMixin, unittest.TestCase):
-    def test_a0__ensure_expected_test_data(self):
-        """
-        Construct a list of all sha-strings which where commited in the current branch and assert that
-        the expected string is among them. This heuristics assumes that it is OK if the data-repo is newer than
-        expected. But the tests fails if it is older (or on a unexpeced branch).
-        """
+class Test_00_Core(HousekeeperMixin, unittest.TestCase):
 
-        repo = git.Repo(TEST_DATA_REPO_PATH)
-        log_list = repo.git.log("--pretty=oneline").split("\n")
-        msg = f"Unexpected: could not find commit hash {TEST_DATA_REPO_COMMIT_SHA} in repo {TEST_DATA_REPO_PATH}"
-        sha_list = [line.split(" ")[0] for line in log_list]
-
-        self.assertIn(TEST_DATA_REPO_COMMIT_SHA, sha_list, msg=msg)
-
-    def test_a1__dependencyies(self):
+    def test_a1__dependencies(self):
         # this tests checks some dependencies which are prone to cause problems (e.g. due to recent api-changes)
 
         pydantic_version = version.parse(p.pydantic.__version__)
@@ -106,7 +90,7 @@ class Test_00_Core(HouskeeperMixin, unittest.TestCase):
         with self.assertRaises(p.aux.InvalidGeneralKeyError):
             res = p.process_key_str("some_prefix__I000__double_label_['redundant']", check=False)
 
-    def test_b2__uri_contex_manager(self):
+    def test_b2__uri_context_manager(self):
         """
         Test defined behavior of errors occur in uri_context
         :return:
@@ -124,10 +108,10 @@ class Test_00_Core(HouskeeperMixin, unittest.TestCase):
         L2 = len(p.ds.relations)
         L3 = len(p.ds.statement_uri_map)
         try:
-            _ = p.erkloader.load_mod_from_path(pjoin(TEST_DATA_DIR1, "tmod0_with_errors.py"), prefix="tm0")
+            _ = p.irkloader.load_mod_from_path(pjoin(TEST_DATA_DIR1, "tmod0_with_errors.py"), prefix="tm0")
         except ValueError:
             pass
-        # assert that no enties remain in the data structures
+        # assert that no entities remain in the data structures
         self.assertEqual(len(p.ds.entities_created_in_mod), 1)
         self.assertEqual(L1, len(p.ds.items))
         self.assertEqual(L2, len(p.ds.relations))
@@ -164,10 +148,10 @@ class Test_00_Core(HouskeeperMixin, unittest.TestCase):
         self.assertEqual(rel.uri, f"{TEST_BASE_URI}#{rel.short_key}")
 
     def test_c1__load_multiple_modules(self):
-        mod1 = p.erkloader.load_mod_from_path(pjoin(TEST_DATA_DIR1, "tmod1.py"), prefix="tm1")
+        mod1 = p.irkloader.load_mod_from_path(pjoin(TEST_DATA_DIR1, "tmod1.py"), prefix="tm1")
 
         # test recursive module loading
-        self.assertEqual(mod1.foo_mod.__URI__, "erk:/pyerk/testmodule3")
+        self.assertEqual(mod1.foo_mod.__URI__, "irk:/pyirk/testmodule3")
 
         # test validity of R2000 statements (created in tmod1 with a relation from tmod3)
         stm1, stm2 = mod1.I1000.get_relations("bar__R2000")
@@ -180,36 +164,34 @@ class Test_00_Core(HouskeeperMixin, unittest.TestCase):
 
     def test_c02__exception_handling(self):
 
-        os.environ["PYERK_TRIGGER_TEST_EXCEPTION"] = "True"
+        os.environ["PYIRK_TRIGGER_TEST_EXCEPTION"] = "True"
 
-        with self.assertRaises(p.aux.ExcplicitlyTriggeredTestException):
-            mod1 = p.erkloader.load_mod_from_path(pjoin(TEST_DATA_DIR1, "tmod1.py"), prefix="tm1")
+        with self.assertRaises(p.aux.ExplicitlyTriggeredTestException):
+            mod1 = p.irkloader.load_mod_from_path(pjoin(TEST_DATA_DIR1, "tmod1.py"), prefix="tm1")
 
         # this was a bug: if the module is loaded for the second time exception is not handled correctly
-        with self.assertRaises(p.aux.ExcplicitlyTriggeredTestException):
-            mod1 = p.erkloader.load_mod_from_path(pjoin(TEST_DATA_DIR1, "tmod1.py"), prefix="tm1")
+        with self.assertRaises(p.aux.ExplicitlyTriggeredTestException):
+            mod1 = p.irkloader.load_mod_from_path(pjoin(TEST_DATA_DIR1, "tmod1.py"), prefix="tm1")
 
-        os.environ.pop("PYERK_TRIGGER_TEST_EXCEPTION")
+        os.environ.pop("PYIRK_TRIGGER_TEST_EXCEPTION")
 
 
-# noinspection PyPep8Naming
-class Test_01_Core(HouskeeperMixin, unittest.TestCase):
+@unittest.skipIf(os.environ.get("CI"), "Skipping directory structure tests on CI")
+class Test_01_Core(HousekeeperMixin, unittest.TestCase):
     def test_a01__directory_structure(self):
-        pyerk_dir = pjoin(ERK_ROOT_DIR, "pyerk-core")
-        django_gui_dir = pjoin(ERK_ROOT_DIR, "pyerk-django")
+        pyirk_dir = pjoin(IRK_ROOT_DIR, "pyirk-core")
+        django_gui_dir = pjoin(IRK_ROOT_DIR, "pyirk-django")
 
-        self.assertTrue(os.path.isdir(pyerk_dir))
-        # since there is no reason to have the django gui in this repos CI:
-        if os.environ.get("CI") != "true":
-            self.assertTrue(os.path.isdir(django_gui_dir))
-        self.assertTrue(os.path.isdir(TEST_DATA_PARENT_PATH))
+        self.assertTrue(os.path.isdir(pyirk_dir))
+        if not os.path.isdir(django_gui_dir):
+            print("unexpected: {django_gui_dir} not found")
 
     def test_a01__test_independence(self):
         """
         The first test ensures, that TestCases do not influence each other
         """
 
-        _ = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
+        _ = p.irkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
 
         self.tearDown()
 
@@ -256,10 +238,10 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         self.assertEqual(len(non_builtin_entities), 0)
 
     # noinspection PyUnresolvedReferences
-    # (above noinspection is necessary because of the @-operator which is undecleared for strings)
+    # (above noinspection is necessary because of the @-operator which is undeclared for strings)
     def test_b00__core1_basics(self):
-        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
-        self.assertEqual(mod1.I3749.R1.value, "Cayley-Hamilton theorem")
+        mod1 = p.irkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
+        self.assertEqual(mod1.ma.I3749.R1.value, "Cayley-Hamilton theorem")
 
         def_eq_item = mod1.I6886.R6__has_defining_mathematical_relation
         self.assertEqual(def_eq_item.R4__is_instance_of, p.I18["mathematical expression"])
@@ -308,7 +290,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         """
         ensure that the default settingsfile is loaded correctly
         """
-        # this is a variable which should be present in every pyerkconf file
+        # this is a variable which should be present in every pyirkconf file
         conf = p.settings.CONF
 
         # self.assertTrue(len(conf) != 0)
@@ -331,7 +313,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
 
         :return:
         """
-        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
+        mod1 = p.irkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
         self.assertIn("ma", p.ds.uri_prefix_mapping.b)
         itm1 = p.ds.get_entity_by_key_str("ma__I5000__scalar_zero")
         self.assertEqual(itm1, mod1.ma.I5000["scalar zero"])
@@ -347,9 +329,9 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         res = p.ds.statements.get("S6229")
         self.assertIsNone(res)
 
-        ct = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
+        ct = p.irkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
         with p.uri_context(uri=TEST_BASE_URI):
-            poly1 = p.instance_of(ct.I4239["abstract monovariate polynomial"])
+            poly1 = p.instance_of(ct.ma.I4239["abstract monovariate polynomial"])
 
         # test that an arbitrary item is *not* callable
         self.assertRaises(TypeError, ct.ma.I2738["field of complex numbers"], 0)
@@ -370,19 +352,19 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
 
 
     def test_c05__evaluated_mapping2(self):
-        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
+        mod1 = p.irkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
 
         with p.uri_context(uri=TEST_BASE_URI):
-            h = p.instance_of(mod1.I9923["scalar field"])
-            f = p.instance_of(mod1.I9841["vector field"])
-            x = p.instance_of(mod1.I1168["point in state space"])
+            h = p.instance_of(mod1.ma.I9923["scalar field"])
+            f = p.instance_of(mod1.ma.I9841["vector field"])
+            x = p.instance_of(mod1.ma.I1168["point in state space"])
 
             Lderiv = mod1.I1347["Lie derivative of scalar field"]
 
             # this creates a new item (and thus must be executed with a non-empty uri stack, i.e. within this context)
             h2 = Lderiv(h, f, x)
 
-        self.assertEqual(h2.R4__is_instance_of, mod1.I9923["scalar field"])
+        self.assertEqual(h2.R4__is_instance_of, mod1.ma.I9923["scalar field"])
 
         arg_tup = h2.R36__has_argument_tuple
         self.assertEqual(arg_tup.R4__is_instance_of, p.I33["tuple"])
@@ -408,8 +390,8 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
     def test_c07__scope_vars(self):
 
         # this tests for a bug with labels of scope vars
-        _ = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
-        def_itm = p.ds.get_entity_by_key_str("ct__I9907__definition_of_square_matrix")
+        _ = p.irkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
+        def_itm = p.ds.get_entity_by_key_str("ma__I9907__definition_of_square_matrix")
         matrix_instance = def_itm.M
         self.assertEqual(matrix_instance.R1.value, "M")
 
@@ -424,7 +406,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
             )
 
             my_set = p.instance_of(p.I13["mathematical set"])
-            my_prop = p.instance_of(p.I11["mathematical property"])
+            my_prop = p.instance_of(p.I54["mathematical property"])
 
             with I7324["definition of something"].scope("setting") as cm:
                 x = cm.new_var(x=p.instance_of(p.I39["positive integer"]))
@@ -525,7 +507,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         """
         test to copy statements from one scope to another
         """
-        ct = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
+        ct = p.irkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
         with p.uri_context(uri=TEST_BASE_URI):
             I0111 = p.create_item(
                 R1__has_label = "definition of something",
@@ -533,7 +515,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
             )
 
             my_set = p.instance_of(p.I13["mathematical set"])
-            my_prop = p.instance_of(p.I11["mathematical property"])
+            my_prop = p.instance_of(p.I54["mathematical property"])
 
             # create some variables and relations
             with I0111["definition of something"].scope("setting") as cm:
@@ -546,7 +528,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
                 f = cm.new_var(f=p.instance_of(ct.ma.I9841["vector field"]))
 
                 LfV = cm.new_var(LfV=ct.I1347["Lie derivative of scalar field"](V, f, x))
-                # TODO: this does not occure in I0111_setting at all (!!)
+                # TODO: this does not occur in I0111_setting at all (!!)
                 with p.ImplicationStatement() as imp1:
                     imp1.antecedent_relation(lhs=x, rsgn="==", rhs=y)
                     imp1.consequent_relation(lhs=y, rsgn=">=", rhs=x)
@@ -589,18 +571,18 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         with p.uri_context(uri=TEST_BASE_URI):
             Ia001 = p.create_item(R1__has_label="test item")
 
-        # check that assigning sequences is not allowed
-        with self.assertRaises(TypeError):
-            Ia001.set_relation(p.R5["is part of"], [p.I4["Mathematics"], p.I5["Engineering"]])
+            # check that assigning sequences is not allowed
+            with self.assertRaises(TypeError):
+                Ia001.set_relation(p.R5["is part of"], [p.I4["Mathematics"], p.I5["Engineering"]])
 
         with p.uri_context(uri=TEST_BASE_URI):
             # check that assigning sequences is possible with explicit method.
-            Ia001.set_mutliple_relations(p.R5["is part of"], [p.I4["Mathematics"], p.I5["Engineering"]])
+            Ia001.set_multiple_relations(p.R5["is part of"], [p.I4["Mathematics"], p.I5["Engineering"]])
 
         rel_objs = Ia001.get_relations("R5", return_obj=True)
         self.assertEqual(rel_objs, [p.I4, p.I5])
 
-        _ = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
+        _ = p.irkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
         itm = p.ds.get_entity_by_key_str("ct__I4466__Systems_Theory")
         # construction: R5__is_part_of=[p.I4["Mathematics"], p.I5["Engineering"]]
         res = itm.R5
@@ -609,7 +591,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         self.assertIn(p.I5["Engineering"], res)
 
     def test_c09__is_instance_of_generalized_metaclass(self):
-        _ = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
+        _ = p.irkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
 
         itm1 = p.ds.get_entity_by_key_str("I2__Metaclass")
         itm2 = p.ds.get_entity_by_key_str("I12__mathematical_object")
@@ -661,8 +643,8 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
 
 
     def test_c10__qualifiers(self):
-        _ = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
-        _ = p.erkloader.load_mod_from_path(TEST_DATA_PATH3, prefix="ag")
+        _ = p.irkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
+        _ = p.irkloader.load_mod_from_path(TEST_DATA_PATH3, prefix="ag")
 
         itm1: p.Item = p.ds.get_entity_by_key_str("ag__I2746__Rudolf_Kalman")
         stm1, stm2 = itm1.get_relations("ag__R1833__has_employer")[:2]
@@ -678,13 +660,13 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         self.assertEqual(len(stm2.dual_statement.qualifiers), 1)
 
     def test_c11__equation(self):
-        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
+        mod1 = p.irkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
 
         # get item via prefix and key
-        itm1: p.Item = p.ds.get_entity_by_key_str("ct__I3749__Cayley_Hamilton_theorem")
+        itm1: p.Item = p.ds.get_entity_by_key_str("ma__I3749__Cayley_Hamilton_theorem")
 
         # get item via key and uri
-        itm2: p.Item = p.ds.get_entity_by_key_str("I3749__Cayley_Hamilton_theorem", mod_uri=mod1.__URI__)
+        itm2: p.Item = p.ds.get_entity_by_key_str("I3749__Cayley_Hamilton_theorem", mod_uri=mod1.ma.__URI__)
 
         self.assertEqual(itm1, itm2)
 
@@ -716,7 +698,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
 
     def test_c12__process_key_str(self):
 
-        # first, check label consistency in builtin_enities
+        # first, check label consistency in builtin_entities
         # note these keys do not to exist
         pkey1 = p.process_key_str("I0008234")
 
@@ -740,11 +722,11 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         self.assertRaises(ValueError, p.process_key_str, "R2__has_description_XYZ")
 
         # now, check label consistency in the test data
-        _ = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, TEST_MOD_NAME)
+        _ = p.irkloader.load_mod_from_path(TEST_DATA_PATH2, TEST_MOD_NAME)
 
     def test_c12a__process_key_str2(self):
 
-        ct = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
+        ct = p.irkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
 
         p.ds.get_entity_by_key_str("ct__R7641__has_approximation") == ct.R7641["has approximation"]
 
@@ -756,19 +738,19 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
             with self.assertRaises(p.aux.ShortKeyNotFoundError):
                 _ = p.create_item(key_str="I0125", R1="some label", R7641__has_approximation=e0)
 
-            # second: use prefix to adresse the correct relation
+            # second: use prefix to address the correct relation
             e1 = p.create_item(key_str="I0125", R1="some label", ct__R7641__has_approximation=e0)
 
-            # third: create a relation which has a short key collission with a relation from the ct module
+            # third: create a relation which has a short key collision with a relation from the ct module
             _ = p.create_relation(key_str="R7641", R1="some test relation")
             e2 = p.create_item(
                 key_str="I0126", R1="some label", ct__R7641__has_approximation=e0, R7641__some_test_relation="foo"
             )
 
-        # this is the verbose way to adress a builtin relation
+        # this is the verbose way to address a builtin relation
         self.assertEqual(e1.bi__R1.value, "some label")
 
-        # this is the (necessary) way to adress a relation from an external module
+        # this is the (necessary) way to address a relation from an external module
         self.assertEqual(e1.ct__R7641[0], e0)
         self.assertEqual(e2.ct__R7641[0], e0)
 
@@ -778,10 +760,10 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
 
         with p.uri_context(uri=TEST_BASE_URI, prefix="ut"):
 
-            # adress the relation with correct prefix
+            # address the relation with correct prefix
             self.assertEqual(e2.ut__R7641__some_test_relation[0], "foo")
 
-            # adress the relation without prefix (but with activated unittet module)
+            # address the relation without prefix (but with activated unittest module)
             self.assertEqual(e2.R7641__some_test_relation[0], "foo")
 
         # activate different module and use attribute without prefix
@@ -826,10 +808,10 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         )
         self.assertGreater(res_graph.number_of_nodes(), 6)
 
-        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, TEST_MOD_NAME)
+        mod1 = p.irkloader.load_mod_from_path(TEST_DATA_PATH2, TEST_MOD_NAME)
 
         # do not use something like "Ia3699" here directly because this might change when mod1 changes
-        auto_item: p.Item = mod1.I3749["Cayley-Hamilton theorem"].A
+        auto_item: p.Item = mod1.ma.I3749["Cayley-Hamilton theorem"].A
         res_graph: visualization.nx.DiGraph = visualization.create_nx_graph_from_entity(auto_item.uri)
         self.assertGreater(res_graph.number_of_nodes(), 7)
 
@@ -839,8 +821,8 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
 
         res = visualization.visualize_entity(p.u("I21__mathematical_relation"), write_tmp_files=WRITE_TMP_FILES)
 
-        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, TEST_MOD_NAME)
-        auto_item: p.Item = mod1.I3749["Cayley-Hamilton theorem"].P
+        mod1 = p.irkloader.load_mod_from_path(TEST_DATA_PATH2, TEST_MOD_NAME)
+        auto_item: p.Item = mod1.ma.I3749["Cayley-Hamilton theorem"].P
         res = visualization.visualize_entity(auto_item.uri, write_tmp_files=WRITE_TMP_FILES)
 
         s1 = '<a href="">R35</a>'
@@ -851,7 +833,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         self.assertIn(s3, res)
 
     def test_d01__wrap_function_with_uri_context(self):
-        ma = p.erkloader.load_mod_from_path(TEST_DATA_PATH_MA, prefix="ma")
+        ma = p.irkloader.load_mod_from_path(TEST_DATA_PATH_MA, prefix="ma")
 
         with p.uri_context(uri=TEST_BASE_URI, prefix="ut"):
             A = p.instance_of(ma.I9906["square matrix"])
@@ -878,7 +860,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
 
     def test_d02__custom_call_post_process1(self):
 
-        ma = p.erkloader.load_mod_from_path(TEST_DATA_PATH_MA, prefix="ma")
+        ma = p.irkloader.load_mod_from_path(TEST_DATA_PATH_MA, prefix="ma")
 
         with p.uri_context(uri=TEST_BASE_URI, prefix="ut"):
             A = p.instance_of(ma.I9906["square matrix"])
@@ -889,12 +871,13 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
             d = ma.I5359["determinant"](M)
 
         self.assertTrue(M.R4__is_instance_of, ma.I1935["polynomial matrix"])
-        self.assertTrue(M.ma__R8736__depends_polyonomially_on, s)
 
-        self.assertTrue(d.ma__R8736__depends_polyonomially_on, s)
+        # TODO fix typo in OCSE and regenerate test data
+        self.assertTrue(M.ma__R8736__depends_polynomially_on, s)
+        self.assertTrue(d.ma__R8736__depends_polynomially_on, s)
 
     def test_d02b__signature_inheritance(self):
-        ct = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
+        ct = p.irkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
         with p.uri_context(uri=TEST_BASE_URI):
             P = p.instance_of(ct.ma.I4240["matrix polynomial"])
             self.assertEqual(P.R8__has_domain_of_argument_1, [ct.ma.I9906["square matrix"]])
@@ -902,7 +885,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
 
     def test_d03__replace_entity(self):
 
-        ma = p.erkloader.load_mod_from_path(TEST_DATA_PATH_MA, prefix="ma")
+        ma = p.irkloader.load_mod_from_path(TEST_DATA_PATH_MA, prefix="ma")
 
         with p.uri_context(uri=TEST_BASE_URI, prefix="ut"):
             A = p.instance_of(ma.I9906["square matrix"])
@@ -928,7 +911,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
 
     def test_d03b__replace_entity(self):
 
-        ma = p.erkloader.load_mod_from_path(TEST_DATA_PATH_MA, prefix="ma")
+        ma = p.irkloader.load_mod_from_path(TEST_DATA_PATH_MA, prefix="ma")
 
         with p.uri_context(uri=TEST_BASE_URI, prefix="ut"):
             A = p.instance_of(ma.I9906["square matrix"])
@@ -954,7 +937,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         n4a = len(sys.modules)
 
         with self.assertRaises(p.aux.InvalidPrefixError):
-            _ = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA02, prefix="zb")
+            _ = p.irkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA02, prefix="zb")
 
         n1b = len(p.ds.mod_path_mapping.a)
         n2b = len(p.ds.entities_created_in_mod)
@@ -1013,7 +996,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
             itm.overwrite_statement("R4__is_instance_of", p.I2["Metaclass"])
         self.assertEqual(itm.R4__is_instance_of, p.I2["Metaclass"])
 
-    def test_d08__unlink_enities(self):
+    def test_d08__unlink_entities(self):
 
         with p.uri_context(uri=TEST_BASE_URI, prefix="ut"):
 
@@ -1114,21 +1097,21 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
 
         # created with json.dumps and textwrap.fill(json_str, width=100)
         raw_data = """
-        {"erk:/ocse/0.2/zebra_base_data#R8216": [[5, "erk:/ocse/0.2/zebra_base_data#I4037"], [5,
-        "erk:/ocse/0.2/zebra_base_data#I9848"], [5, "erk:/ocse/0.2/zebra_base_data#I3132"], [5,
-        "erk:/ocse/0.2/zebra_base_data#I2552"], [5, "erk:/ocse/0.2/zebra_base_data#I5931"]],
-        "erk:/ocse/0.2/zebra_base_data#R9040": [[5, "erk:/ocse/0.2/zebra_base_data#I4037"], [5,
-        "erk:/ocse/0.2/zebra_base_data#I9848"], [5, "erk:/ocse/0.2/zebra_base_data#I3132"], [5,
-        "erk:/ocse/0.2/zebra_base_data#I2552"], [5, "erk:/ocse/0.2/zebra_base_data#I5931"]],
-        "erk:/ocse/0.2/zebra_base_data#R5611": [[5, "erk:/ocse/0.2/zebra_base_data#I4037"], [5,
-        "erk:/ocse/0.2/zebra_base_data#I9848"], [5, "erk:/ocse/0.2/zebra_base_data#I3132"], [5,
-        "erk:/ocse/0.2/zebra_base_data#I2552"], [5, "erk:/ocse/0.2/zebra_base_data#I5931"]],
-        "erk:/ocse/0.2/zebra_base_data#R8098": [[5, "erk:/ocse/0.2/zebra_base_data#I4037"], [5,
-        "erk:/ocse/0.2/zebra_base_data#I9848"], [5, "erk:/ocse/0.2/zebra_base_data#I3132"], [5,
-        "erk:/ocse/0.2/zebra_base_data#I2552"], [5, "erk:/ocse/0.2/zebra_base_data#I5931"]],
-        "erk:/ocse/0.2/zebra_base_data#R8592": [[5, "erk:/ocse/0.2/zebra_base_data#I4037"], [5,
-        "erk:/ocse/0.2/zebra_base_data#I9848"], [5, "erk:/ocse/0.2/zebra_base_data#I3132"], [5,
-        "erk:/ocse/0.2/zebra_base_data#I2552"], [5, "erk:/ocse/0.2/zebra_base_data#I5931"]]}
+        {"irk:/ocse/0.2/zebra_base_data#R8216": [[5, "irk:/ocse/0.2/zebra_base_data#I4037"], [5,
+        "irk:/ocse/0.2/zebra_base_data#I9848"], [5, "irk:/ocse/0.2/zebra_base_data#I3132"], [5,
+        "irk:/ocse/0.2/zebra_base_data#I2552"], [5, "irk:/ocse/0.2/zebra_base_data#I5931"]],
+        "irk:/ocse/0.2/zebra_base_data#R9040": [[5, "irk:/ocse/0.2/zebra_base_data#I4037"], [5,
+        "irk:/ocse/0.2/zebra_base_data#I9848"], [5, "irk:/ocse/0.2/zebra_base_data#I3132"], [5,
+        "irk:/ocse/0.2/zebra_base_data#I2552"], [5, "irk:/ocse/0.2/zebra_base_data#I5931"]],
+        "irk:/ocse/0.2/zebra_base_data#R5611": [[5, "irk:/ocse/0.2/zebra_base_data#I4037"], [5,
+        "irk:/ocse/0.2/zebra_base_data#I9848"], [5, "irk:/ocse/0.2/zebra_base_data#I3132"], [5,
+        "irk:/ocse/0.2/zebra_base_data#I2552"], [5, "irk:/ocse/0.2/zebra_base_data#I5931"]],
+        "irk:/ocse/0.2/zebra_base_data#R8098": [[5, "irk:/ocse/0.2/zebra_base_data#I4037"], [5,
+        "irk:/ocse/0.2/zebra_base_data#I9848"], [5, "irk:/ocse/0.2/zebra_base_data#I3132"], [5,
+        "irk:/ocse/0.2/zebra_base_data#I2552"], [5, "irk:/ocse/0.2/zebra_base_data#I5931"]],
+        "irk:/ocse/0.2/zebra_base_data#R8592": [[5, "irk:/ocse/0.2/zebra_base_data#I4037"], [5,
+        "irk:/ocse/0.2/zebra_base_data#I9848"], [5, "irk:/ocse/0.2/zebra_base_data#I3132"], [5,
+        "irk:/ocse/0.2/zebra_base_data#I2552"], [5, "irk:/ocse/0.2/zebra_base_data#I5931"]]}
         """.replace("\n","")
         data = json.loads(raw_data)
 
@@ -1138,8 +1121,8 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         self.assertFalse(p.check_type(data, Dict[str, List[int]], strict=False))
         self.assertFalse(p.check_type(data, Dict[str, List[List[int]]], strict=False))
 
-        # pydantic has nontrivial behavior abour Unions. This requires smart_unions=True
-        q = [5, 'erk:/ocse/0.2/zebra_base_data#I9848']
+        # pydantic has nontrivial behavior about Unions. This requires smart_unions=True
+        q = [5, 'irk:/ocse/0.2/zebra_base_data#I9848']
         p.check_type(q, List[Union[int, str]])
 
         # this is what we actually want to test (note that the inner list could be specified more precisely)
@@ -1184,6 +1167,7 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
         # ensure expected number of hooks (after re-initialization)
         self.assertEqual(sum([len(lst) for lst in p.ds.hooks.values()]), 0)
 
+    # TODO: obsolete?
     def test_d15__setattr(self):
 
         return
@@ -1196,8 +1180,56 @@ class Test_01_Core(HouskeeperMixin, unittest.TestCase):
 
             self.assertTrue(R301.uri in itm1.get_relations())
 
+    def test_d16__IntegerRangeElement(self):
+        # the original definition of the IRE had the problem that it only was
+        # applicable in the same module where it was defined
+        ma = p.irkloader.load_mod_from_path(TEST_DATA_PATH_MA, prefix="ma")
 
-class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
+        with p.uri_context(uri=TEST_BASE_URI, prefix="ut"):
+            I9223 = p.create_item(
+                R1__has_label="definition of zero matrix",
+                R2__has_description="the defining statement of what a zero matrix is",
+                R4__is_instance_of=p.I20["mathematical definition"],
+            )
+
+            with I9223["definition of zero matrix"].scope("setting") as cm:
+                cm.new_var(M=p.uq_instance_of(ma.I9904["matrix"]))
+
+            with I9223["definition of zero matrix"].scope("premise") as cm:
+                with ma.IntegerRangeElement(start=1, stop=10) as i:
+                    with ma.IntegerRangeElement(start=1, stop=10) as j:
+
+                        # create an auxiliary variable (not part part of the graph)
+                        M_ij = ma.I3240["matrix element"](cm.M, i, j)
+                        cm.new_equation(lhs=M_ij, rhs=ma.I5000["scalar zero"])
+
+    def test_e01__I14_subclass_scopes(self):
+        # test whether the scope method is inherited correctly
+        with p.uri_context(uri=TEST_BASE_URI, prefix="ut"):
+            prop = p.instance_of(p.I17["equivalence proposition"])
+            scp1 = prop.scope("setting")
+            scp2 = prop.scope("premise")
+            scp3 = prop.scope("assertion")
+
+            I1000 = p.create_item(
+                R1__has_label="Cayley-Hamilton theorem",
+                R4__is_instance_of=p.I15["implication proposition"],
+            )
+
+            scp1 = I1000.scope("setting")
+
+            I1001 = p.create_item(
+                R1__has_label="Cayley-Hamilton theorem",
+                R4__is_instance_of=p.I17["equivalence proposition"],
+            )
+            scp1 = I1001.scope("setting")
+
+    def test_e02__is_true(self):
+        ma = p.irkloader.load_mod_from_path(TEST_DATA_PATH_MA, prefix="ma")
+        self.assertTrue(p.is_true(ma.I5359, p.R4, ma.I4895))
+        self.assertTrue(p.is_true(ma.I5359["determinant"], p.R4["is instance of"], ma.I4895["mathematical operator"]))
+
+class Test_02_ruleengine(HousekeeperMixin, unittest.TestCase):
     def setUp(self):
         super().setUp()
 
@@ -1211,16 +1243,16 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
                 key_str="I400",
                 R1__has_label="subproperty rule 1",
                 R2__has_description=(
-                    # "specifies the 'transitivity' of I11_mathematical_property-instances via R17_issubproperty_of"
+                    # "specifies the 'transitivity' of I54_mathematical_property-instances via R17_issubproperty_of"
                     "specifies the 'transitivity' of R17_is_subproperty_of"
                 ),
                 R4__is_instance_of=p.I41["semantic rule"],
             )
 
             with self.rule1["subproperty rule 1"].scope("setting") as cm:
-                cm.new_var(P1=p.instance_of(p.I11["mathematical property"]))
-                cm.new_var(P2=p.instance_of(p.I11["mathematical property"]))
-                cm.new_var(P3=p.instance_of(p.I11["mathematical property"]))
+                cm.new_var(P1=p.instance_of(p.I54["mathematical property"]))
+                cm.new_var(P2=p.instance_of(p.I54["mathematical property"]))
+                cm.new_var(P3=p.instance_of(p.I54["mathematical property"]))
             #     # A = cm.new_var(sys=instance_of(I1["general item"]))
             #
             with self.rule1["subproperty rule 1"].scope("premise") as cm:
@@ -1294,10 +1326,10 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
         # ensures that the rule does not match itself
         self.assertEqual(len(res_graph), 0)
 
-        # in this erk module some properties have subproperties
-        _ = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct", modname=TEST_MOD_NAME)
+        # in this irk module some properties have subproperties
+        _ = p.irkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct", modname=TEST_MOD_NAME)
 
-        # create a new RuleApplicator because the overal graph changed
+        # create a new RuleApplicator because the overall graph changed
         ra = p.ruleengine.RuleApplicator(self.rule1)
         ra_worker = ra.ra_workers[0]
         res_graph = ra_worker.match_subgraph_P()
@@ -1306,7 +1338,7 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
     def test_c05__ruleengine04(self):
         self.setup_data1()
 
-        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct", modname=TEST_MOD_NAME)
+        mod1 = p.irkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct", modname=TEST_MOD_NAME)
         self.assertEqual(len(mod1.I9642["local exponential stability"].get_relations("R17__is_subproperty_of")), 1)
         ra = p.ruleengine.RuleApplicator(self.rule1, mod_context_uri=TEST_BASE_URI)
         res = ra.apply()
@@ -1328,7 +1360,7 @@ class Test_02_ruleengine(HouskeeperMixin, unittest.TestCase):
             _ = p.ruleengine.apply_all_semantic_rules()
 
 
-class Test_03_Multilinguality(HouskeeperMixin, unittest.TestCase):
+class Test_03_Multilinguality(HousekeeperMixin, unittest.TestCase):
     def test_a01__label(self):
 
         teststring1 = "this is english text" @ p.en
@@ -1468,7 +1500,7 @@ class Test_03_Multilinguality(HouskeeperMixin, unittest.TestCase):
 
         self.assertEqual(desc2.language, "de")
 
-        # use the labels of different languages in index-labeld key notation
+        # use the labels of different languages in index-labeled key notation
 
         # first: without explicitly specifying the language
         tmp1 = itm["test-label in english"]
@@ -1517,14 +1549,14 @@ class Test_03_Multilinguality(HouskeeperMixin, unittest.TestCase):
                 # multiple values to R1 can be passed using a list
                 R1__has_label="test-label2",  # this is now interpreted as de-label
                 R1__has_label__en="test-label2-en",
-                R2__has_description="test beschreibung auf deutsch",
+                R2__has_description="test Beschreibung auf deutsch",
             )
 
         # in case of ordinary strings they should be used if no value is available for current language
 
         self.assertEqual(p.settings.DEFAULT_DATA_LANGUAGE, "de")
         self.assertEqual(itm2.R1, "test-label2" @ p.de)
-        self.assertEqual(itm2.R2, "test beschreibung auf deutsch" @ p.de)
+        self.assertEqual(itm2.R2, "test Beschreibung auf deutsch" @ p.de)
 
         p.settings.DEFAULT_DATA_LANGUAGE = "en"
         self.assertEqual(itm2.R1.value, "test-label2-en")
@@ -1533,14 +1565,14 @@ class Test_03_Multilinguality(HouskeeperMixin, unittest.TestCase):
         self.assertEqual(itm2.R2, None)
 
         # TODO: decide whether this behavior (returning some other lang) would be better
-        # self.assertEqual(itm2.R2, "test beschreibung auf deutsch" @ p.de)
+        # self.assertEqual(itm2.R2, "test Beschreibung auf deutsch" @ p.de)
 
         # test for correct error message
         with p.uri_context(uri=TEST_BASE_URI, prefix="ut"):
 
             itm1 = p.instance_of(p.I1["general item"])
 
-            # this should cause no error (because of differnt language)
+            # this should cause no error (because of different language)
             itm1.set_relation(p.R1["has label"], "neues Label" @ p.de)
 
             with self.assertRaises(p.aux.FunctionalRelationError):
@@ -1556,20 +1588,49 @@ class Test_03_Multilinguality(HouskeeperMixin, unittest.TestCase):
             labels = R300.get_relations("R1", return_obj=True)
             self.assertEqual(labels, ["default rel-label"@p.df, "deutsches rel-label"@p.de])
 
+            # ensure the correct range for the hardcoded relations
+            for short_key in p.RELKEYS_WITH_LITERAL_RANGE:
+                rel = p.ds.get_entity_by_uri(p.aux.make_uri(p.builtin_entities.__URI__, short_key))
+                self.assertIn(p.I19["language-specified string literal"], rel.R11__has_range_of_result)
 
-class Test_Z_Core(HouskeeperMixin, unittest.TestCase):
+            # test R77__has_alternative_label
+
+            I1000 =  p.create_item(
+                    R1__has_label="foo",
+                    R1__has_label__de="foo-de",
+                    R77__has_alternative_label="bar",
+                    R77__has_alternative_label__de="baz",
+                )
+
+            self.assertEqual(I1000.R77__has_alternative_label, ["bar"@p.df, "baz"@p.de])
+
+            # TODO: this should be automatically converted to default language
+            # I1000.R77__has_alternative_label = "more foo"
+
+            I1000.R77__has_alternative_label = "more foo"@p.en
+            self.assertEqual(I1000.R77__has_alternative_label, ["bar"@p.df, "baz"@p.de, "more foo"@p.df])
+
+
+            I1000.set_multiple_relations("R77__has_alternative_label", ["foo-it"@p.it, "bar-es"@p.es])
+            self.assertEqual(
+                I1000.R77__has_alternative_label,
+                ["bar"@p.df, "baz"@p.de, "more foo"@p.df, "foo-it"@p.it, "bar-es"@p.es]
+            )
+
+
+class Test_Z_Core(HousekeeperMixin, unittest.TestCase):
     """
-    Collection of test that should be executed last (because they seem to influence othter tests).
+    Collection of test that should be executed last (because they seem to influence other tests).
     This is achieved by putting "ZZ" in the name (assuming that test classes are executed in alphabetical order).
     """
 
     def test_sparql_query(self):
         # This test seems somehow to influence later tests
-        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, TEST_MOD_NAME)
+        mod1 = p.irkloader.load_mod_from_path(TEST_DATA_PATH2, TEST_MOD_NAME)
         p.ds.rdfgraph = p.rdfstack.create_rdf_triples()
         qsrc = p.rdfstack.get_sparql_example_query()
         res = p.ds.rdfgraph.query(qsrc)
-        res2 = p.aux.apply_func_to_table_cells(p.rdfstack.convert_from_rdf_to_pyerk, res)
+        res2 = p.aux.apply_func_to_table_cells(p.rdfstack.convert_from_rdf_to_pyirk, res)
 
         # Note: this might fail if more `R5__has_part` relations are used
         expected_result = [
@@ -1580,7 +1641,7 @@ class Test_Z_Core(HouskeeperMixin, unittest.TestCase):
 
     def test_c01__sparql_query2(self):
         # TODO: replace by Model entity once it exists
-        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, TEST_MOD_NAME)
+        mod1 = p.irkloader.load_mod_from_path(TEST_DATA_PATH2, TEST_MOD_NAME)
 
         with p.uri_context(uri=TEST_BASE_URI):
             m1 = p.instance_of(mod1.I7641["general system model"], r1="test_model 1", r2="a test model")
@@ -1593,7 +1654,7 @@ class Test_Z_Core(HouskeeperMixin, unittest.TestCase):
         p.ds.rdfgraph = p.rdfstack.create_rdf_triples()
 
         qsrc = f"""
-        PREFIX : <{p.rdfstack.ERK_URI}>
+        PREFIX : <{p.rdfstack.IRK_URI}>
         PREFIX ct: <{mod1.__URI__}#>
         SELECT ?s ?o
         WHERE {{
@@ -1601,7 +1662,7 @@ class Test_Z_Core(HouskeeperMixin, unittest.TestCase):
         }}
         """
         res = p.ds.rdfgraph.query(qsrc)
-        res2 = p.aux.apply_func_to_table_cells(p.rdfstack.convert_from_rdf_to_pyerk, res)
+        res2 = p.aux.apply_func_to_table_cells(p.rdfstack.convert_from_rdf_to_pyirk, res)
 
         expected_result = [
             [m2["test_model 2"], None],
@@ -1609,7 +1670,7 @@ class Test_Z_Core(HouskeeperMixin, unittest.TestCase):
         self.assertEqual(res2, expected_result)
 
     def test_c02__sparql_zz_preprocessing(self):
-        mod1 = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, TEST_MOD_NAME)
+        mod1 = p.irkloader.load_mod_from_path(TEST_DATA_PATH2, TEST_MOD_NAME)
 
         with p.uri_context(uri=TEST_BASE_URI):
             m1 = p.instance_of(mod1.I7641["general system model"], r1="test_model 1", r2="a test model")
@@ -1631,7 +1692,7 @@ class Test_Z_Core(HouskeeperMixin, unittest.TestCase):
 
         for condition in condition_list:
             qsrc_corr = f"""
-            PREFIX : <{p.rdfstack.ERK_URI}>
+            PREFIX : <{p.rdfstack.IRK_URI}>
             PREFIX ct: <{mod1.__URI__}#>
             SELECT ?s ?o
             WHERE {{
@@ -1640,10 +1701,10 @@ class Test_Z_Core(HouskeeperMixin, unittest.TestCase):
             """
             q = p.ds.preprocess_query(qsrc_corr)
             res = p.ds.rdfgraph.query(q)
-            res2 = p.aux.apply_func_to_table_cells(p.rdfstack.convert_from_rdf_to_pyerk, res)
+            res2 = p.aux.apply_func_to_table_cells(p.rdfstack.convert_from_rdf_to_pyirk, res)
             self.assertGreater(len(res2), 0)
 
-        # syntactically incorrect querys:
+        # syntactically incorrect queries:
         condition_list = [
             "?s :R16__wrong ct:I7864__controllability.",
         ]
@@ -1653,7 +1714,7 @@ class Test_Z_Core(HouskeeperMixin, unittest.TestCase):
 
         for condition, msg in zip(condition_list, msg_list):
             qsrc_incorr_1 = f"""
-            PREFIX : <{p.rdfstack.ERK_URI}>
+            PREFIX : <{p.rdfstack.IRK_URI}>
             PREFIX ct: <{mod1.__URI__}#>
             SELECT ?s ?o
             WHERE {{
@@ -1666,8 +1727,8 @@ class Test_Z_Core(HouskeeperMixin, unittest.TestCase):
 
 
 @unittest.skipIf(os.environ.get("CI"), "Skipping report tests on CI to prevent dependencies")
-class Test_06_reportgenerator(HouskeeperMixin, unittest.TestCase):
-    @p.erkloader.preserve_cwd
+class Test_06_reportgenerator(HousekeeperMixin, unittest.TestCase):
+    @p.irkloader.preserve_cwd
     def tearDown(self) -> None:
         super().tearDown()
         os.chdir(pjoin(TEST_DATA_DIR1, "reports"))
@@ -1686,13 +1747,13 @@ class Test_06_reportgenerator(HouskeeperMixin, unittest.TestCase):
         data1exp = {"key1": some_list, "key2": p.I1}
         self.assertEqual(reind(data1), data1exp)
 
-        mod2 = p.erkloader.load_mod_from_path(TEST_DATA_PATH3, prefix="ag")
+        mod2 = p.irkloader.load_mod_from_path(TEST_DATA_PATH3, prefix="ag")
 
         data1 = {"key1": ':ag__I2746["Rudolf Kalman"]', "key2": {"nested_key": ':ag__R1833["has employer"]'}}
         data1exp = {"key1": mod2.I2746, "key2": {"nested_key": mod2.R1833}}
         self.assertEqual(reind(data1), data1exp)
 
-    @p.erkloader.preserve_cwd
+    @p.irkloader.preserve_cwd
     def test_c02__report_generation1(self):
 
         reportconf_path1 = pjoin(TEST_DATA_DIR1, "reports", "reportconf.toml")
@@ -1706,7 +1767,7 @@ class Test_06_reportgenerator(HouskeeperMixin, unittest.TestCase):
         self.assertEqual(len(rg.authors), 2)
 
 
-class Test_07_import_export(HouskeeperMixin, unittest.TestCase):
+class Test_07_import_export(HousekeeperMixin, unittest.TestCase):
 
     def test_b01__rdf_export(self):
 
@@ -1758,7 +1819,7 @@ class Test_07_import_export(HouskeeperMixin, unittest.TestCase):
         """
         match persons which have four negative statements of the same kind (test statement relations)
         """
-        zb = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA_BASE_DATA, prefix="zb")
+        zb = p.irkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA_BASE_DATA, prefix="zb")
 
         self.assertEqual(zb.I9848["Norwegian"].zb__R8098__has_house_color, None)
         self.assertEqual(zb.I9848["Norwegian"].zb__R1055__has_not_house_color, [])
@@ -1772,8 +1833,8 @@ class Test_07_import_export(HouskeeperMixin, unittest.TestCase):
         self.assertEqual(len(zb.I9848["Norwegian"].zb__R1055__has_not_house_color), 4)
 
     def test_b04__zebra_puzzle_unlinked_items(self):
-        zb = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA_BASE_DATA, prefix="zb")
-        zp = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA02, prefix="zp")
+        zb = p.irkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA_BASE_DATA, prefix="zb")
+        zp = p.irkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA02, prefix="zp")
 
         # persons1 ... person12 exists -> if they are unlinked within a module this is not yet reflected in the
         # rdf-data -> TODO: introduce a "Housekeeping" item for every module

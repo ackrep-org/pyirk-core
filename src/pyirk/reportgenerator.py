@@ -12,9 +12,9 @@ except ModuleNotFoundError:
     import tomli as tomllib
 
 
-from . import erkloader
-import pyerk as p
-from pyerk.erkloader import preserve_cwd
+from . import irkloader
+import pyirk as p
+from pyirk.irkloader import preserve_cwd
 
 from . import settings
 
@@ -26,7 +26,7 @@ def generate_report(reportconf_path: str):
 
 class ReportGenerator:
     """
-    Omnipotent class that manages the report-generation. Assumend to be a singleton.
+    Omnipotent class that manages the report-generation. Assumed to be a singleton.
     """
 
     @preserve_cwd
@@ -61,8 +61,8 @@ class ReportGenerator:
 
         for prefix, path in lmdict.items():
             if path.startswith("$"):
-                path = path[1:].replace("__erk-root__", p.aux.get_erk_root_dir())
-            mod = erkloader.load_mod_from_path(path, prefix=prefix)
+                path = path[1:].replace("__irk-root__", p.aux.get_irk_root_dir())
+            mod = irkloader.load_mod_from_path(path, prefix=prefix)
             res.append(mod)
 
         return res
@@ -113,7 +113,7 @@ class ReportGenerator:
 # this is a function to be easier testable
 def resolve_entities_in_nested_data(data):
     """
-    process data: detect and resolve pyerk key strings, leaving everything else unchanged (assuming literals)
+    process data: detect and resolve pyirk key strings, leaving everything else unchanged (assuming literals)
 
     :param data:    one of (dict, str, list, int, float)
 
@@ -127,9 +127,9 @@ def resolve_entities_in_nested_data(data):
 
     if isinstance(data, str):
         if data.startswith(":"):
-            erk_key_str = data[1:]
-            entity = p.ds.get_entity_by_key_str(erk_key_str)
-            assert entity is not None, f"unknown key_str: {erk_key_str}"
+            irk_key_str = data[1:]
+            entity = p.ds.get_entity_by_key_str(irk_key_str)
+            assert entity is not None, f"unknown key_str: {irk_key_str}"
             return entity
         else:
             return data

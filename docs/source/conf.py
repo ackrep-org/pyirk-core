@@ -17,16 +17,16 @@ import sphinx_rtd_theme
 sys.path.insert(0, pathlib.Path(__file__).parents[2].resolve().as_posix())
 # print(sys.path[0])
 
-import pyerk
+import pyirk
 
 # -- Project information -----------------------------------------------------
 
-project = "pyerk"
+project = "pyirk"
 copyright = "2022, Ackrep Team"
 author = "Carsten Knoll et. al."
 
 # The full version, including alpha/beta/rc tags
-release = pyerk.__version__
+release = pyirk.__version__
 
 
 # -- General configuration ---------------------------------------------------

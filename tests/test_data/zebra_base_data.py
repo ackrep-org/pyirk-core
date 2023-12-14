@@ -11,10 +11,10 @@ This module is to be imported in other modules
 """
 
 
-import pyerk as p
+import pyirk as p
 
 
-__URI__ = "erk:/ocse/0.2/zebra_base_data"
+__URI__ = "irk:/ocse/0.2/zebra_base_data"
 
 keymanager = p.KeyManager(keyseed=1835)
 p.register_mod(__URI__, keymanager)
@@ -258,7 +258,7 @@ R2850 = p.create_relation(
     R1__has_label="is functional activity",
     R2__has_description="specifies that a relation is functional in the context of the zebra puzzle",
     R8__has_domain_of_argument_1=p.I40["general relation"],
-    R11__has_range_of_result=bool,
+    R11__has_range_of_result=p.I53["bool"],
     R22__is_functional=True,
     R62__is_relation_property=True,
 )
@@ -430,7 +430,7 @@ R6020 = p.create_relation(
         "specifies that the subject (a relation) is the opposite of a relation with R2850__is_functional_activity=True"
     ),
     R8__has_domain_of_argument_1=p.I40["general relation"],
-    R11__has_range_of_result=bool,
+    R11__has_range_of_result=p.I53["bool"],
     R22__is_functional=True,
     R62__is_relation_property=True,
 )
@@ -482,7 +482,7 @@ def report(display=True, title=""):
     # all_humans = I7435["human"].get_inv_relations("R4", return_subj=True)
 
     # this makes this function paste-able
-    human = p.ds.get_entity_by_uri("erk:/ocse/0.2/zebra_base_data#I7435")
+    human = p.ds.get_entity_by_uri("irk:/ocse/0.2/zebra_base_data#I7435")
     all_humans = human.get_inv_relations("R4", return_subj=True)
 
     res = []

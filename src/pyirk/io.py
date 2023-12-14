@@ -12,7 +12,7 @@ from addict import Addict as Container
 
 # noinspection PyUnresolvedReferences
 from ipydex import IPS  # noqa
-import pyerk as p
+import pyirk as p
 
 
 def export_rdf_triples(fpath: str, **kwargs):
@@ -57,7 +57,7 @@ def import_stms_from_rdf_triples(fpath: str):
             continue
 
         for elt in row:
-            new_row.append(p.rdfstack.convert_from_rdf_to_pyerk(elt))
+            new_row.append(p.rdfstack.convert_from_rdf_to_pyirk(elt))
         new_rows.append(new_row)
 
     res.new_stms = []

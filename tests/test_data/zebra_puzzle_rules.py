@@ -7,14 +7,14 @@ This module contains some rules for determining the solution of the zebra puzzle
 See https://en.wikipedia.org/wiki/Zebra_Puzzle
 """
 
-import pyerk as p
+import pyirk as p
 
 from ipydex import IPS  # for debugging
 
-zb = p.erkloader.load_mod_from_path("./zebra_base_data.py", prefix="zb", reuse_loaded=True)
+zb = p.irkloader.load_mod_from_path("./zebra_base_data.py", prefix="zb", reuse_loaded=True)
 
 
-__URI__ = "erk:/ocse/0.2/zebra_puzzle_rules"
+__URI__ = "irk:/ocse/0.2/zebra_puzzle_rules"
 
 keymanager = p.KeyManager(keyseed=1629)
 p.register_mod(__URI__, keymanager)
@@ -158,11 +158,11 @@ with I720.scope("premise") as cm:
             cm_AND.new_rel(cm.itm1, p.R57["is placeholder"], True)
             cm_AND.new_condition_func(p.label_compare_method, cm.itm1, cm.itm2)
 
-        # case 2:  itm1 is not a placholder (no statement)
+        # case 2:  itm1 is not a placeholder (no statement)
         with cm_OR.AND() as cm_AND:
             cm_AND.new_condition_func(p.does_not_have_relation, cm.itm1, p.R57["is placeholder"])
 
-        # case 3:  itm1 is not a placholder (explicit statement with object `False`)
+        # case 3:  itm1 is not a placeholder (explicit statement with object `False`)
         cm_OR.new_rel(cm.itm1, p.R57["is placeholder"], False, qualifiers=[p.qff_allows_alt_functional_value(True)])
 
     # TODO: this blocks the second application because only one itm is placeholder -> introduce logical OR
@@ -202,14 +202,14 @@ with I725.scope("premise") as cm:
 with I725.scope("assertion") as cm:
     cm.new_rel(cm.itm2, cm.rel2, cm.itm1, qualifiers=[p.qff_has_rule_ptg_mode(5)])
 
-txt = r"{h1} {rel1} {h2}  AND  {rel1} R68__is_invsere_of {rel2}."
+txt = r"{h1} {rel1} {h2}  AND  {rel1} R68__is_inverse_of {rel2}."
 
 I725.set_relation(p.R69["has explanation text template"], txt)
 
 # ###############################################################################
 
 I730 = p.create_item(
-    R1__has_label="rule: deduce negative facts for neighbours",
+    R1__has_label="rule: deduce negative facts for neighbors",
     R2__has_description=("deduce some negative facts e.g. which pet a person does not own"),
     R4__is_instance_of=p.I41["semantic rule"],
 )
@@ -243,7 +243,7 @@ with I730.scope("assertion") as cm:
 
 I740 = p.create_item(
     R1__has_label="rule: deduce more negative facts from negative facts",
-    R2__has_description=("deduce e.g. if h1 onws dog and h1 drinks milk and h2 owns zebra then h2 drinks not milk"),
+    R2__has_description=("deduce e.g. if h1 owns dog and h1 drinks milk and h2 owns zebra then h2 drinks not milk"),
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
@@ -295,7 +295,7 @@ with I740.scope("assertion") as cm:
 
 I750 = p.create_item(
     R1__has_label="rule: every human lives in one house",
-    R2__has_description=("human should have a house associated, create a new instance if neccessary"),
+    R2__has_description=("human should have a house associated, create a new instance if necessary"),
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
@@ -324,7 +324,7 @@ with I750.scope("assertion") as cm:
 
 
 I760 = p.create_item(
-    R1__has_label="rule: deduce impossible house indices of neighbour",
+    R1__has_label="rule: deduce impossible house indices of neighbor",
     R2__has_description=("next to house 1 is house 2"),
     R4__is_instance_of=p.I41["semantic rule"],
 )
@@ -349,10 +349,10 @@ with I760.scope("premise") as cm:
     cm.new_rel(cm.hn1, p.R40["has index"], cm.house_index1)
 
 
-def exclude_house_numbers_for_neighbour(self, nbr_hn: p.Item, primal_house_index: int) -> p.RuleResult:
+def exclude_house_numbers_for_neighbor(self, nbr_hn: p.Item, primal_house_index: int) -> p.RuleResult:
     """
-    Given the index (int) of a (primal) house, inferre which house_number (represented by nbr_hn) are not allowed
-    for the neighbour
+    Given the index (int) of a (primal) house, infer which house_number (represented by nbr_hn) are not allowed
+    for the neighbor
     """
 
     res = p.RuleResult()
@@ -374,13 +374,13 @@ def exclude_house_numbers_for_neighbour(self, nbr_hn: p.Item, primal_house_index
 
 
 with I760.scope("assertion") as cm:
-    cm.new_consequent_func(exclude_house_numbers_for_neighbour, cm.hn2, cm.house_index1)
+    cm.new_consequent_func(exclude_house_numbers_for_neighbor, cm.hn2, cm.house_index1)
 
 # ###############################################################################
 
 I763 = p.create_item(
-    R1__has_label="rule: deduce impossible house index for left-right neighbours",
-    R2__has_description=("deduce impossible house indices for right neighbour"),
+    R1__has_label="rule: deduce impossible house index for left-right neighbors",
+    R2__has_description=("deduce impossible house indices for right neighbor"),
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
@@ -456,8 +456,8 @@ with I770.scope("assertion") as cm:
 # ###############################################################################
 
 I780 = p.create_item(
-    R1__has_label="rule: infere from 'is none of' -> 'is one of'",
-    R2__has_description=("principle of exclusion, part 1: infere from 'is none of' -> 'is one of'"),
+    R1__has_label="rule: infer from 'is none of' -> 'is one of'",
+    R2__has_description=("principle of exclusion, part 1: infer from 'is none of' -> 'is one of'"),
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
@@ -506,8 +506,8 @@ with I780.scope("assertion") as cm:
 
 
 I790 = p.create_item(
-    R1__has_label="rule: infere from 'is one of' -> 'is same as'",
-    R2__has_description=("principle of exclusion part 2: infere from 'is one of' -> 'is same as of'"),
+    R1__has_label="rule: infer from 'is one of' -> 'is same as'",
+    R2__has_description=("principle of exclusion part 2: infer from 'is one of' -> 'is same as of'"),
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
@@ -531,7 +531,7 @@ with I790.scope("assertion") as cm:
 
 I741 = p.create_item(
     R1__has_label="rule: deduce more negative facts from negative facts",
-    R2__has_description=("deduce e.g. if h1 onws dog and h1 drinks milk and h2 owns zebra then h2 drinks not milk"),
+    R2__has_description=("deduce e.g. if h1 owns dog and h1 drinks milk and h2 owns zebra then h2 drinks not milk"),
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
@@ -591,7 +591,7 @@ I741.set_relation(p.R69["has explanation text template"], txt)
 
 I792 = p.create_item(
     R1__has_label="rule: deduce different-from-facts from negative facts",
-    R2__has_description=("deduce e.g. if h1 not onws dog and h2 onws dog then h2 different from h1 and vice versa."),
+    R2__has_description=("deduce e.g. if h1 not owns dog and h2 owns dog then h2 different from h1 and vice versa."),
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
@@ -635,7 +635,7 @@ I792.set_relation(p.R69["has explanation text template"], txt)
 
 
 I794 = p.create_item(
-    R1__has_label="rule: deduce neighbour-facts from house indices",
+    R1__has_label="rule: deduce neighbor-facts from house indices",
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
@@ -677,7 +677,7 @@ I794.set_relation(p.R69["has explanation text template"], txt)
 
 
 I796 = p.create_item(
-    R1__has_label="rule: deduce different-from facts for neighbour-pairs",
+    R1__has_label="rule: deduce different-from facts for neighbor-pairs",
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
@@ -934,7 +934,7 @@ I830 = p.create_item(
 I830.cheat = [
     p.ruleengine.AlgorithmicRuleApplicationWorker.hardcoded_I830,
     zb, p.raise_contradiction,
-    "{} has too many `R50__is_differnt_from` statements"
+    "{} has too many `R50__is_different_from` statements"
 ]
 
 
@@ -974,7 +974,7 @@ with I830.scope("premise") as cm:
     cm.new_rel(cm.p5, p.R57["is placeholder"], False)
 
 with I830.scope("assertion") as cm:
-    cm.new_consequent_func(p.raise_contradiction, "{} has too many `R50__is_differnt_from` statements", cm.p0)
+    cm.new_consequent_func(p.raise_contradiction, "{} has too many `R50__is_different_from` statements", cm.p0)
 
 # ###############################################################################
 
@@ -1027,7 +1027,7 @@ with I825.scope("premise") as cm:
 
 def exclude_houses(self, p1, nbr_hn):
 
-    # construct the neighbours of the neighbour
+    # construct the neighbors of the neighbor
     left_nbrs = []
     right_nbrs = []
 

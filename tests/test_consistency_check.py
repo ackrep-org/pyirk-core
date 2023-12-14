@@ -8,19 +8,19 @@ import rdflib
 
 # noinspection PyUnresolvedReferences
 from ipydex import IPS, activate_ips_on_exception, set_trace  # noqa
-import pyerk as p
+import pyirk as p
 
 
 from .settings import (
     TEST_BASE_URI,
-    HouskeeperMixin,
+    HousekeeperMixin,
     TEST_DATA_PATH2,
 
     )
 
 
 # noinspection PyPep8Naming
-class Test_01_CC(HouskeeperMixin, unittest.TestCase):
+class Test_01_CC(HousekeeperMixin, unittest.TestCase):
 
 
     def create_operators(self):
@@ -80,7 +80,7 @@ class Test_01_CC(HouskeeperMixin, unittest.TestCase):
     def test_a02__cc_enable_checking(self):
 
         I0111 = self.create_operators()
-        p.cc.enable_consitency_checking()
+        p.cc.enable_consistency_checking()
 
         with p.uri_context(uri=TEST_BASE_URI):
             real_number = p.instance_of(p.I35["real number"])
@@ -162,9 +162,9 @@ class Test_01_CC(HouskeeperMixin, unittest.TestCase):
                 :param _anchor_item:    auxiliary graph node to which the condition function is attached
                                         it is passed automatically (not needed here)
                 :param rule:            the rule which has this function as a consequent_func
-                :param arg:             the item which triggerred the rule
+                :param arg:             the item which triggered the rule
                 """
-                raise p.cc.ErkConsistencyError(f"Rule {rule} failed for arg {arg}.")
+                raise p.cc.IrkConsistencyError(f"Rule {rule} failed for arg {arg}.")
 
             with I502.scope("assertion") as cm:
                 cm.new_consequent_func(raise_error_for_item, cm.rule, cm.x, anchor_item=None)
@@ -223,7 +223,7 @@ class Test_01_CC(HouskeeperMixin, unittest.TestCase):
     @unittest.expectedFailure
     def test_b01__cc_constraint_violation_rules(self):
 
-        ct = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
+        ct = p.irkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
         I501 = self._define_tst_rules(ct)
         with p.uri_context(uri=TEST_BASE_URI):
 
@@ -239,7 +239,7 @@ class Test_01_CC(HouskeeperMixin, unittest.TestCase):
 
     def test_c01__cc_matrix_dimensions(self):
 
-        ct = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
+        ct = p.irkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
         c = self._define_tst_rules(ct)
         I501, I502, I503 = c.I501, c.I502, c.I503
         with p.uri_context(uri=TEST_BASE_URI):
@@ -274,7 +274,7 @@ class Test_01_CC(HouskeeperMixin, unittest.TestCase):
 
         #
         # test the rule which raises an exception
-        with self.assertRaises(p.cc.ErkConsistencyError):
+        with self.assertRaises(p.cc.IrkConsistencyError):
             p.ruleengine.apply_semantic_rule(I502["raise exception on invalid mat mul dimensions"], TEST_BASE_URI)
 
         #
@@ -288,3 +288,30 @@ class Test_01_CC(HouskeeperMixin, unittest.TestCase):
         self.assertTrue(p.is_instance_of, p.I48["constraint violation"])
 
         self.assertEqual(A2B.R74__has_constraint_violation, [])
+
+    def test_c02__cc_multi_valued_domain(self):
+        ma = p.irkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct").ma
+        with p.uri_context(uri=TEST_BASE_URI):
+            I1000 = p.create_item(
+                R1__has_label="negation",
+                R2__has_description="negation operator",
+                R4__is_instance_of=ma.I4895["mathematical operator"],
+                R8__has_domain_of_argument_1=(ma.I9904["matrix"], p.I35["real number"]),
+                R11__has_range_of_result=ma.I9904["matrix"],
+            )
+
+            x = p.instance_of(p.I35["real number"])
+            r = p.instance_of(p.I36["rational number"])
+            i = p.instance_of(p.I37["integer number"])
+            c = p.instance_of(p.I34["complex number"])
+            M = p.instance_of(ma.I9904["matrix"])
+            S = p.instance_of(ma.I9906["square matrix"])
+
+            p.cc.check(I1000(x))
+            p.cc.check(I1000(r))
+            p.cc.check(I1000(i))
+            p.cc.check(I1000(M))
+
+            with self.assertRaises(p.cc.WrongArgType):
+                # type error for arg2
+                p.cc.check(I1000(c))

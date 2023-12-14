@@ -113,7 +113,7 @@ def get_taxonomy_tree(itm, add_self=True) -> list:
     parent_class = itm.R4__is_instance_of
 
     if (super_class is not None) and (parent_class is not None):
-        msg = f"currently not allowed together: R3__is_subclass_of and R4__is_instnace_of (Entity: {itm}"
+        msg = f"currently not allowed together: R3__is_subclass_of and R4__is_instance_of (Entity: {itm}"
         raise NotImplementedError(msg)
 
     if super_class:
@@ -181,7 +181,7 @@ def instance_of(cls_entity, r1: str = None, r2: str = None, qualifiers: List[Ite
     Create an instance (R4) of an item. Try to obtain the label by inspection of the calling context (if r1 is None).
 
     :param cls_entity:      the type of which an instance is created
-    :param r1:          the label; if None use inspection to fetch it from the left hand side of the assingnment
+    :param r1:          the label; if None use inspection to fetch it from the left hand side of the assignment
     :param r2:          the description (optional)
     :param qualifiers:  list of RawQualifiers (optional); will be passed to the R4__is_instance_of relation
 
@@ -195,7 +195,7 @@ def instance_of(cls_entity, r1: str = None, r2: str = None, qualifiers: List[Ite
 
     class_scope = cls_entity.R20__has_defining_scope
 
-    # we have to determine if `cls_entity` is an instnace of I2_metaclass or a subclass of it
+    # we have to determine if `cls_entity` is an instance of I2_metaclass or a subclass of it
 
     is_instance_of_metaclass = allows_instantiation(cls_entity)
 
@@ -252,7 +252,7 @@ def instance_of(cls_entity, r1: str = None, r2: str = None, qualifiers: List[Ite
 
 ########################################################################################################################
 #
-#            Creattion of entities
+#            Creation of entities
 #
 ########################################################################################################################
 
@@ -285,7 +285,7 @@ R22 = create_builtin_relation(
 R22["is functional"].set_relation(R22["is functional"], True)
 R32["is functional for each language"].set_relation(R22["is functional"], True)
 
-# Note that R1, R22, and R32 are used extensively to control the behavior in pyerk.core
+# Note that R1, R22, and R32 are used extensively to control the behavior in pyirk.core
 
 R3 = create_builtin_relation("R3", R1="is subclass of", R22__is_functional=True)
 R4 = create_builtin_relation("R4", R1="is instance of", R22__is_functional=True)
@@ -308,7 +308,7 @@ R16 = create_builtin_relation(
     # R10__has_range_of_result=...
 )
 
-# The short key R61 was choosen for historical and/or pragmatic reasons
+# The short key R61 was chosen for historical and/or pragmatic reasons
 R61 = create_builtin_relation(
     key_str="R61",
     R1="does not have property",
@@ -324,13 +324,13 @@ R18 = create_builtin_relation(
     "R18", R1="has usage hint", R2="specifies a hint (str) on how this relation should be used"
 )
 
-R16.set_relation(R18["has usage hint"], "this relation should be used on conrete instances, not on generic types")
-R61.set_relation(R18["has usage hint"], "this relation should be used on conrete instances, not on generic types")
+R16.set_relation(R18["has usage hint"], "this relation should be used on concrete instances, not on generic types")
+R61.set_relation(R18["has usage hint"], "this relation should be used on concrete instances, not on generic types")
 
 R19 = create_builtin_relation(
     key_str="R19",
     R1="defines method",
-    R2="specifies that an entity has a special method (defined by executeable code)"
+    R2="specifies that an entity has a special method (defined by executable code)"
     # R10__has_range_of_result=callable !!
 )
 
@@ -359,7 +359,7 @@ R68 = create_builtin_relation(
 R20 = create_builtin_relation(
     key_str="R20",
     R1="has defining scope",
-    R2="specifies the scope *in* which an entity or relation edge is defined (e.g. the premise of a theorem)",
+    R2="specifies the scope *in* which an entity or statement is defined (e.g. the premise of a theorem)",
     R18=(
         "Notes: This relation is functional. But an Entity (e.g. a theorem) can be parent (via R21) of multiple "
         "scopes, (e.g. 'setting', 'premise', 'assertion'). Each of these items can 'contain' other items in the sense, "
@@ -438,8 +438,8 @@ I10 = create_builtin_item(
 )
 I11 = create_builtin_item(
     key_str="I11",
-    R1="mathematical property",
-    R2__has_description="base class for all mathematical properties",
+    R1="general property",
+    R2__has_description="base class for all properties",
     R4__is_instance_of=I2["Metaclass"],
     R18__has_usage_hint=(
         "Actual properties are instances of this class (not subclasses). "
@@ -447,11 +447,11 @@ I11 = create_builtin_item(
     ),
 )
 
-# TODO: clearify the difference between the I12 and I18
+# TODO: clarify the difference between the I12 and I18
 I12 = create_builtin_item(
     key_str="I12",
     R1__has_label="mathematical object",
-    R2__has_description="base class for any knowledge object of interrest in the field of mathematics",
+    R2__has_description="base class for any knowledge object of interest in the field of mathematics",
     R4__is_instance_of=I2["Metaclass"],
 )
 
@@ -471,12 +471,7 @@ I14 = create_builtin_item(
 )
 
 
-I15 = create_builtin_item(
-    key_str="I15",
-    R1__has_label="implication proposition",
-    R2__has_description="proposition, where the premise (if-part) implies the assertion (then-part)",
-    R3__is_subclass_of=I14["mathematical proposition"],
-)
+# I15 is defined below
 
 
 I16 = create_builtin_item(
@@ -640,7 +635,7 @@ class ScopingCM:
 
     def __enter__(self):
         """
-        implicitly called in the head of the with statemet
+        implicitly called in the head of the with statement
         :return:
         """
         ds.append_scope(self.scope)
@@ -689,7 +684,7 @@ class ScopingCM:
 
         add_scope_to_defining_statement(variable_object, self.scope)
 
-        # this reflects a dessign assumption which might be generalized later
+        # this reflects a design assumption which might be generalized later
         assert isinstance(variable_object, Entity)
 
         # allow simple access to the variables → put them into dict (after checking that the name is still free)
@@ -896,9 +891,9 @@ class ScopingCM:
 
         if strict:
             msg = f"Unexpected: Could not find a copied item associated to {old_var}"
-            raise core.aux.PyERKError(msg)
+            raise core.aux.PyIRKError(msg)
 
-        # last ressort return the original variable (because it was an external var)
+        # last resort return the original variable (because it was an external var)
         return old_var
 
     def _copy_mapping(self, mapping_item: Item) -> Item:
@@ -966,14 +961,14 @@ class AbstractMathRelatedScopeCM(ScopingCM):
         eq = new_equation(lhs, rhs, scope=self.scope)
         return eq
 
-    # TODO: this makes  self.new_equation obsolete, doesnt it?
+    # TODO: this makes  self.new_equation obsolete, doesn't it?
     def new_math_relation(self, lhs: Item, rsgn: str, rhs: Item) -> Item:
         """
         convenience method to create a math_relation-related StatementObject (aka "Statement")
 
         :param lhs:   left hand side
         :param rsgn:  relation sign
-        :param rhs:   rght hand sign
+        :param rhs:   right hand sign
 
         :return:      new instance of
         """
@@ -987,7 +982,7 @@ class AbstractMathRelatedScopeCM(ScopingCM):
 
 class _proposition__CM(AbstractMathRelatedScopeCM):
     """
-    Context manager taylored for mathematical theorems and definitions
+    Context manager tailored for mathematical theorems and definitions
     """
 
     valid_subscope_types = {"UNIV_QUANT": float("inf"), "EXIS_QUANT": float("inf")}
@@ -1263,7 +1258,7 @@ def _rule__scope(self: Item, scope_name: str):
     return cm
 
 
-I15["implication proposition"].add_method(_proposition__scope, name="scope")
+I14["mathematical proposition"].add_method(_proposition__scope, name="scope")
 
 
 def _get_subscopes(self):
@@ -1274,7 +1269,7 @@ def _get_subscopes(self):
     return scope_rels
 
 
-I15["implication proposition"].add_method(_get_subscopes, name="get_subscopes")
+I14["mathematical proposition"].add_method(_get_subscopes, name="get_subscopes")
 I16["scope"].add_method(_get_subscopes, name="get_subscopes")
 
 
@@ -1299,7 +1294,7 @@ def _get_subscope(self, name: str):
         return res[0]
 
 
-I15["implication proposition"].add_method(_get_subscope, name="get_subscope")
+I14["mathematical proposition"].add_method(_get_subscope, name="get_subscope")
 I16["scope"].add_method(_get_subscope, name="get_subscope")
 
 
@@ -1329,21 +1324,59 @@ def _get_items_for_scope(self):
 I16["scope"].add_method(_get_items_for_scope, name="get_items_for_scope")
 
 
+I15 = create_builtin_item(
+    key_str="I15",
+    R1__has_label="implication proposition",
+    R2__has_description="proposition, where the premise (if-part) implies the assertion (then-part)",
+    R3__is_subclass_of=I14["mathematical proposition"],
+)
+
+
 I17 = create_builtin_item(
     key_str="I17",
     R1__has_label="equivalence proposition",
-    R2__has_description="proposition, which establishes the equivalence of two or more statements",
+    R2__has_description="proposition, which establishes the equivalence of two sets of statements (premise and assertion)",
     R3__is_subclass_of=I14["mathematical proposition"],
+    R18__has_usage_hint=(
+        "While for I15__implication_proposition the border between scopes 'setting' and premise is somewhat arbitrary "
+        "this is not the case for I17__equivalence_proposition because assertion and premise here are interchangeable. "
+        "The implication must be true in the other direction as well."
+    ),
+)
+
+
+I51 = create_builtin_item(
+    key_str="I51",
+    R1__has_label="data type",
+    R2__has_description="subclasses of this item model data types such as string",
+    R4__is_instance_of=I2["Metaclass"],
+    R18__has_usage_hint="This class is meant to be 'abstract': it is not intended to be instantiated itself",
+)
+
+
+I52 = create_builtin_item(
+    key_str="I52",
+    R1__has_label="string",
+    R2__has_description="equivalent entity of the python datatype `str`",
+    R3__is_subclass_of=I51["data type"],
+)
+
+
+I53 = create_builtin_item(
+    key_str="I53",
+    R1__has_label="bool",
+    R2__has_description="equivalent entity of the python datatype `bool`",
+    R3__is_subclass_of=I51["data type"],
 )
 
 
 I18 = create_builtin_item(
     key_str="I18",
-    R1__has_label="mathematical expression",
+    R1__has_label="mathematical expression", # = math. term
     R2__has_description=(
         "mathematical expression, e.g. represented by a LaTeX-string; this might change in the future to MathMl"
     ),
-    R4__is_instance_of=I2["Metaclass"],
+    R3__is_subclass_of=I12["mathematical object"],
 )
 
 
@@ -1366,10 +1399,10 @@ def get_ui_short_representation(self) -> str:
 I18.add_method(get_ui_short_representation)
 del get_ui_short_representation
 R24["has LaTeX string"].set_relation(R8["has domain of argument 1"], I18["mathematical expression"])
-R24["has LaTeX string"].set_relation(R11["has range of result"], str)
+R24["has LaTeX string"].set_relation(R11["has range of result"], I52["string"])
 
 
-# TODO: how does this relate to I21["mathmatical relation"]?
+# TODO: how does this relate to I21["mathematical relation"]?
 # -> Latex expressions are for human readable representation
 # they should be used only as an addendum to semantic representations
 # TODO: Fix ocse_ct.I6091["control affinity"]
@@ -1385,14 +1418,15 @@ def create_expression(latex_src: str, r1: str = None, r2: str = None) -> Item:
     return expression
 
 
-# TODO: this item might be obsolete, we use a construction with RDF-Literals instead
-# however currently it is uses for R11__has_range_of_result in the ocse (test data)
 I19 = create_builtin_item(
     key_str="I19",
-    R1__has_label="multilingual string literal",
+    R1__has_label="language-specified string literal",
     R2__has_description="used to encode strings that depend on natural languages",
     R4__is_instance_of=I2["Metaclass"],
 )
+
+R1.set_relation(R11, I19["language-specified string literal"])
+R2.set_relation(R11, I19["language-specified string literal"])
 
 
 I20 = create_builtin_item(
@@ -1416,7 +1450,7 @@ I20["mathematical definition"].add_method(_get_subscope, name="get_subscope")
 I21 = create_builtin_item(
     key_str="I21",
     R1__has_label="mathematical relation",
-    R2__has_description="establishes that two mathematical expressions (I18) are in a relation, e.g. equalness",
+    R2__has_description="establishes that two mathematical expressions (I18) are in a relation, e.g. equality",
 )
 
 
@@ -1471,7 +1505,7 @@ I24 = create_builtin_item(
     R2__has_description="mathematical relation that specifies that lhs is unequal to rhs",
     R3__is_subclass_of=I21["mathematical relation"],
     R18__has_usage_hint=(
-        "This item is different from inquality (I25): lhs and rhs need to be members of the same ordered set."
+        "This item is different from inequality (I25): There, lhs and rhs need to be members of the same ordered set."
     ),
 )
 
@@ -1545,7 +1579,7 @@ R29 = create_builtin_relation(
     R1__has_label="has argument",
     R2__has_description='specifies the concrete argument item of an I32["evaluated mapping"] item',
     # todo: currently we only need univariate mappings. However, once we have multivariate mappings
-    #  this needs be reflected here (maybe use qualifiers or a seperate relation for each argument)
+    #  this needs be reflected here (maybe use qualifiers or a separate relation for each argument)
 )
 
 
@@ -1585,7 +1619,7 @@ def create_evaluated_mapping(mapping: Item, *args) -> Item:
     args_repr = ", ".join(arg_repr_list)
 
     target_class = mapping.R11__has_range_of_result
-    # TODO: this should be ensured by consistency check: for operatators R11 should be functional
+    # TODO: this should be ensured by consistency check: for operators R11 should be functional
     if target_class:
         assert len(target_class) == 1
         target_class = target_class[0]
@@ -1626,7 +1660,7 @@ def create_evaluated_mapping(mapping: Item, *args) -> Item:
     return ev_mapping
 
 
-# todo: maybe the differece between asserted inheritance and inferred inheritance should be encoded via qualifiers
+# todo: maybe the difference between asserted inheritance and inferred inheritance should be encoded via qualifiers
 R30 = create_builtin_relation(
     key_str="R30",
     R1__has_label="is secondary instance of",
@@ -1648,14 +1682,14 @@ R31 = create_builtin_relation(
     ),
     # TODO: update or delete:
     R18__has_usage_hint=(
-        "The actual type of the relation can be tretrieved by the .proxyitem attribute of the "
+        "The actual type of the relation can be retrieved by the .proxyitem attribute of the "
         "corresponding Statement."
     ),
 )
 
 
 def new_equation(lhs: Item, rhs: Item, doc=None, scope: Optional[Item] = None) -> Item:
-    """common speacial case of mathematical relation, also ensures backwards compatibility"""
+    """common special case of mathematical relation, also ensures backwards compatibility"""
 
     eq = new_mathematical_relation(lhs, "==", rhs, doc, scope)
 
@@ -1742,7 +1776,7 @@ def get_proxy_item(stm: Statement, strict=True) -> Item:
 R35 = create_builtin_relation(
     key_str="R35",
     R1__has_label="is applied mapping of",
-    R2__has_description="specifies the mapping entitiy for which the subject is an application",
+    R2__has_description="specifies the mapping entity for which the subject is an application",
     R8__has_domain_of_argument_1=I32["evaluated mapping"],
     R22__is_functional=True,
     R18__has_usage_hint=(
@@ -1762,12 +1796,12 @@ I33 = create_builtin_item(
 
 def new_tuple(*args, **kwargs) -> Item:
     """
-    Create a new tuple entitiy
+    Create a new tuple entity
     :param args:
     :return:
     """
 
-    # ensure this function is called with an active erk module (to define URIs of new instances )
+    # ensure this function is called with an active irk module (to define URIs of new instances )
     _ = core.get_active_mod_uri()
 
     scope = kwargs.pop("scope", None)
@@ -1805,7 +1839,7 @@ R46 = create_builtin_relation(
     key_str="R46",
     R1__has_label="is secondary subclass of",
     R2__has_description=(
-        "specifies that the subject is an subclass of a class-item, in addtion to its unambiguous parent class."
+        "specifies that the subject is an subclass of a class-item, in addition to its unambiguous parent class."
     ),
     R18__has_usage_hint=(
         "Note that this relation is not functional. This construction allows to combine single (R3) "
@@ -1956,7 +1990,7 @@ R42 = create_builtin_relation(
         "implies the statement `obj rel subj`"
     ),
     R8__has_domain_of_argument_1=I40["general relation"],
-    R9__has_domain_of_argument_2=bool,
+    R9__has_domain_of_argument_2=I53["bool"],
     R22__is_functional=True,
 )
 
@@ -1967,7 +2001,7 @@ R68["is inverse of"].set_relation(R42["is symmetrical"], True)
 R43 = create_builtin_relation(
     key_str="R43",
     R1__has_label="is opposite of",
-    R2__has_description="specifies that the subject is the oposite of the object.",
+    R2__has_description="specifies that the subject is the opposite of the object.",
     R42__is_symmetrical=True,
     R8__has_domain_of_argument_1=I1["general item"],
     R9__has_domain_of_argument_2=I1["general item"],
@@ -2004,15 +2038,15 @@ R44 = create_builtin_relation(
         "specifies that the subject represents an universally quantified variable (usually denoted by '∀')"
     ),
     R8__has_domain_of_argument_1=I1["general item"],
-    R11__has_range_of_result=bool,
+    R11__has_range_of_result=I53["bool"],
     R18__has_usage_hint=(
         "should be used as qualifier to specify the free variables in theorems and similar statements; "
-        "See also R66__is_existantially_quantified"
+        "See also R66__is_existentially_quantified"
     ),
 )
 
 
-# this qualifier is can be used to express universal quatification (mathematically expressed with ∀) of a relation
+# this qualifier is can be used to express universal quantification (mathematically expressed with ∀) of a relation
 # e.g. `some_item.set_relation(p.R15["is element of"], other_item, qualifiers=univ_quant(True))`
 # means that the statements where `some_item` is used claim to hold for all elements of `other_item` (which should be
 # a set)
@@ -2050,19 +2084,19 @@ def uq_instance_of(type_entity: Item, r1: str = None, r2: str = None) -> Item:
 # placed here for its obvious relation to universal quantification
 R66 = create_builtin_relation(
     key_str="R66",
-    R1__has_label="is existantially quantified",
+    R1__has_label="is existentially quantified",
     R2__has_description=(
         "specifies that the subject represents an existentially quantified variable (usually denoted by '∃')"
     ),
     R8__has_domain_of_argument_1=I1["general item"],
-    R11__has_range_of_result=bool,
+    R11__has_range_of_result=I53["bool"],
     R18__has_usage_hint=(
         "should be used as qualifier to specify the free variables in theorems and similar statements; "
         "See also R44__is_universally_quantified"
     ),
 )
 
-exis_quant = QualifierFactory(R66["is existantially quantified"])
+exis_quant = QualifierFactory(R66["is existentially quantified"])
 
 
 R45 = create_builtin_relation(
@@ -2080,7 +2114,7 @@ class ImplicationStatement:
     """
     Context manager to model conditional statements.
 
-    Example from erk:/math/0.2#I7169["definition of identity matrix"]
+    Example from irk:/math/0.2#I7169["definition of identity matrix"]
 
     ```
     with p.ImplicationStatement() as imp1:
@@ -2107,7 +2141,7 @@ class ImplicationStatement:
 
     def __enter__(self):
         """
-        implicitly called in the head of the with-statemet
+        implicitly called in the head of the with-statement
         """
 
         return self
@@ -2164,7 +2198,7 @@ R50 = create_builtin_relation(
     R42__is_symmetrical=True,
     R18__has_usage_hint=(
         "this might be used in two situations: a) to prevent accidental confusion during modeling; "
-        "b) to express a nontrivial fact of inequality, e.g. that a person has two childs and not just one with "
+        "b) to express a nontrivial fact of inequality, e.g. that a person has two children and not just one with "
         "two names."
     ),
 )
@@ -2200,7 +2234,7 @@ def close_class_with_R51(cls_item: Item):
     Set R51__instances_are_from for all current instances of a class.
 
     Note: this does not prevent the creation of further instances (because they can be related via R47__is_same_as to
-    the exising instances).
+    the existing instances).
 
     :returns:   tuple-item containing all instances
     """
@@ -2244,14 +2278,14 @@ R53 = create_builtin_relation(
     R1__has_label="is inverse functional",
     R2__has_description=("specifies that the inverse relation of the subject is functional"),
     # R8__has_domain_of_argument_1=I1["general item"],  # unsure here
-    R11__has_range_of_result=bool,
+    R11__has_range_of_result=I53["bool"],
     # TODO: model that this is (probably) equivalent to "owl:InverseFunctionalProperty"
 )
 
 R54 = create_builtin_relation(
     key_str="R54",
     R1__has_label="is matched by rule",
-    R2__has_description=("specifies that subject entitiy is matched by a semantic rule"),
+    R2__has_description=("specifies that subject entity is matched by a semantic rule"),
     # R8__has_domain_of_argument_1=I1["general item"],  # unsure here
     R11__has_range_of_result=I41["semantic rule"],
     R18__has_usage_hint="useful for debugging and testing semantic rules"
@@ -2262,7 +2296,7 @@ R55 = create_builtin_relation(
     key_str="R55",
     R1__has_label="uses as external entity",
     R2__has_description=(
-        "specifies that the subject (a setting-scope) uses the object entitiy as an external variable in its graph"
+        "specifies that the subject (a setting-scope) uses the object entity as an external variable in its graph"
     ),
     R8__has_domain_of_argument_1=I16["scope"],
     R11__has_range_of_result=I1["general item"],
@@ -2284,10 +2318,10 @@ R56 = create_builtin_relation(
 R57 = create_builtin_relation(
     key_str="R57",
     R1__has_label="is placeholder",
-    R2__has_description="specifies that the subject is a placeholder and might be replaced by other itmes",
+    R2__has_description="specifies that the subject is a placeholder and might be replaced by other items",
     # TODO:
     # R8__has_domain_of_argument_1=<any ordinary instance>,
-    R11__has_range_of_result=bool,
+    R11__has_range_of_result=I53["bool"],
     R22__is_functional=True,
 )
 
@@ -2309,8 +2343,8 @@ R59 = create_builtin_relation(
         "currently '2' is not implemented."
     ),
     R8__has_domain_of_argument_1=I1["general item"],
-    R11__has_range_of_result=int,
-    R18__has_usage_hint="used to adjust the meaning of a statement in the scopes of a I41__semantinc_rule",
+    R11__has_range_of_result=I37["integer number"],
+    R18__has_usage_hint="used to adjust the meaning of a statement in the scopes of a I41__semantic_rule",
 )
 
 qff_has_rule_ptg_mode = QualifierFactory(R59["has rule-prototype-graph-mode"])
@@ -2323,7 +2357,7 @@ R60 = create_builtin_relation(
         "`B rel C` also implies the statement `A rel C`"
     ),
     R8__has_domain_of_argument_1=I40["general relation"],
-    R9__has_domain_of_argument_2=bool,
+    R9__has_domain_of_argument_2=I53["bool"],
     R22__is_functional=True,
 )
 
@@ -2337,7 +2371,7 @@ R62 = create_builtin_relation(
         "by edge matching."
     ),
     R8__has_domain_of_argument_1=I40["general relation"],
-    R11__has_range_of_result=bool,
+    R11__has_range_of_result=I53["bool"],
     R22__is_functional=True,
 )
 
@@ -2363,7 +2397,7 @@ def get_relation_properties_uris():
 # TODO: this could be speed up by caching
 def get_relation_properties(rel_entity: Entity) -> List[str]:
     """
-    return a sorted list of URIs, corrosponding to the relation properties corresponding to `rel_entity`.
+    return a sorted list of URIs, corresponding to the relation properties corresponding to `rel_entity`.
     """
 
     assert isinstance(rel_entity, Relation) or rel_entity.R4__is_instance_of == I40["general relation"]
@@ -2384,7 +2418,7 @@ R63 = create_builtin_relation(
     R1__has_label="has SPARQL source",
     R2__has_description=("specifies that the subject (a scope) is featured by some unique SPARQL source code"),
     R8__has_domain_of_argument_1=I16["scope"],
-    R11__has_range_of_result=str,
+    R11__has_range_of_result=I52["string"],
     R22__is_functional=True,
 )
 
@@ -2403,7 +2437,7 @@ R64 = create_builtin_relation(
     R1__has_label="has scope type",
     R2__has_description=("specifies the subject (a scope) has a certain type (currently 'OR', 'AND')"),
     R8__has_domain_of_argument_1=I16["scope"],
-    R11__has_range_of_result=str,
+    R11__has_range_of_result=I52["string"],
     R22__is_functional=True,
 )
 
@@ -2416,7 +2450,7 @@ R65 = create_builtin_relation(
         "relation."
     ),
     R8__has_domain_of_argument_1=I16["scope"],
-    R11__has_range_of_result=str,
+    R11__has_range_of_result=I52["string"],
     R22__is_functional=True,
     R18__has_usage_hint="used inside OR-subscopes of semantic rules",
 )
@@ -2434,7 +2468,7 @@ R69 = create_builtin_relation(
         "associates a template text to the subject (a rule), which can be processed by the ruleengine."
     ),
     R8__has_domain_of_argument_1=I41["semantic rule"],
-    R11__has_range_of_result=str,
+    R11__has_range_of_result=I52["string"],
     R32__is_functional_for_each_language=True,
     R18__has_usage_hint="used to generate explaining reports of rule results",
 )
@@ -2447,7 +2481,7 @@ R70 = create_builtin_relation(
         "specifies the number of weakly connected 'main components' of the prototype graph of a semantic rule"
     ),
     R8__has_domain_of_argument_1=I41["semantic rule"],
-    R11__has_range_of_result=int,
+    R11__has_range_of_result=I37["integer number"],
     R22__is_functional=True,
 )
 
@@ -2459,7 +2493,7 @@ R71 = create_builtin_relation(
         "of the subjects (first) R11-value; to be used in rules"
     ),
     R8__has_domain_of_argument_1=I40["general relation"],
-    R11__has_range_of_result=bool,
+    R11__has_range_of_result=I53["bool"],
     R18__has_usage_hint="used to to control the behavior of rules with subjectivized predicates",
     R22__is_functional=True,
 )
@@ -2482,16 +2516,16 @@ R72 = create_builtin_relation(
     R1__has_label="is generally related to",
     R2__has_description=("specifies that the subject is 'somehow' related to the object"),
     R8__has_domain_of_argument_1=I45["general entity"],
-    R11__has_range_of_result=bool,
+    R11__has_range_of_result=I53["bool"],
     R18__has_usage_hint="used to model relationships which are not (yet) possible to model otherwise",
 )
 
 R73 = create_builtin_relation(
     key_str="R73",
-    R1__has_label="conceptually dependends",
+    R1__has_label="conceptually depends",
     R2__has_description=("specifies that the object is needed to define the subject"),
     R8__has_domain_of_argument_1=I45["general entity"],
-    R11__has_range_of_result=bool,
+    R11__has_range_of_result=I53["bool"],
     R18__has_usage_hint=(
         "Used to model directed relationships which are not (yet) possible to model otherwise. "
         "See R72__is_generally_related_to."
@@ -2504,7 +2538,7 @@ R73 = create_builtin_relation(
 I47 = create_builtin_item(
     key_str="I47",
     R1__has_label="constraint rule",
-    R2__has_description="rule that specifies which constraints a set of entites has to fulfill",
+    R2__has_description="rule that specifies which constraints a set of entities has to fulfill",
     R3__is_subclass_of=I41["semantic rule"]
 )
 
@@ -2556,17 +2590,51 @@ R76 = create_builtin_relation(
 I50 = create_builtin_item(
     key_str="I50",
     R1__has_label="stub",
-    R2__has_description="instances of this class represent incompletly modelled items (like wikipedia stub-articles)",
-    R3__is_subclass_of=I2["Metaclass"],
+    R2__has_description="instances of this class represent incompletely modelled items (like wikipedia stub-articles)",
+    R3__is_subclass_of=I2["Metaclass"],  # could be also R4 here but does not matter because stubs are very unspecific
     R18__has_usage_hint="This class can be used to preliminarily introduce items and refine them later",
 )
 
 
-# next keys: I51, R76
+R77 = create_builtin_relation(
+    key_str="R77",
+    R1__has_label="has alternative label",
+    R2__has_description="specifies alternative labels for entities in the sense of 'also called ...'",
+    R8__has_domain_of_argument_1=I45["general entity"],
+    R11__has_range_of_result=I19["language-specified string literal"],  # the labels should have a language specified
+    R18__has_usage_hint="allows multiple values per language (in contrast to R1__has_label)"
+)
+
+
+R78 = create_builtin_relation(
+    key_str="R78",
+    R1__has_label="is applicable to",
+    R2__has_description="specifies some property can be applied to some entity",
+    R8__has_domain_of_argument_1=I11["general property"],
+    # TODO: introduce some mechanism to distinguish whether a relation refers to the class in a direct or abstract sense
+    # (where abstract means that it actually refers to the instances of the class)
+    # example the mathematical property of symmetry might applicable to the class item ma.I9904["matrix"] but this statement
+    # actually means that an individual matrix might have this property
+    R11__has_range_of_result=I45["general entity"],
+)
+
+
+# I51, I52, I53, are defined above
+
+
+I54 = create_builtin_item(
+    key_str="I54",
+    R1__has_label="mathematical property",
+    R2__has_description="base class for all mathematical properties",
+    R3__is_subclass_of=I11["general property"],
+)
+
+
+# next keys: I54, R79
 
 
 # ######################################################################################################################
-# auxilliary entities
+# auxiliary entities
 # ######################################################################################################################
 
 
@@ -2583,7 +2651,7 @@ R000 = create_builtin_relation(
     R2__has_description="used during development as placeholder for relations which will be defined later",
 )
 
-# this allows to use I000("with any label") witout triggering an exception in I000.idoc
+# this allows to use I000("with any label") without triggering an exception in I000.idoc
 I000._ignore_mismatching_adhoc_label = True
 # ... same for R000
 R000._ignore_mismatching_adhoc_label = True
@@ -2648,7 +2716,7 @@ def copy_statements(self, rel1: Relation, rel2: Relation):
         new_stm = stm.subject.set_relation(rel2, stm.object, prevent_duplicate=True)
         res.add_statement(new_stm)
 
-    # this function intentially does not return a new item; only called for its side-effects
+    # this function intentionally does not return a new item; only called for its side-effects
     return res
 
 

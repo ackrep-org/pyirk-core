@@ -1,4 +1,4 @@
-# this file specifies the content and the metadata of a pyerk-report
+# this file specifies the content and the metadata of a pyirk-report
 # the goal is to generate a compile-ready tex document
 # For an introduction to toml syntax see https://learnxinyminutes.com/docs/toml/
 
@@ -11,8 +11,8 @@ journal = "default"
 
 # use absolute or relative paths here
 # (to simplify unittests, a path beginning with `$` will be preprocessed accordingly)
-ct = "$__erk-root__/erk-data-for-unittests/ocse/control_theory1.py"
-ag = "$__erk-root__/erk-data-for-unittests/ocse/agents1.py"
+ct = "$__irk-root__/pyirk-core/tests/test_data/ocse_subset/control_theory1.py"
+ag = "$__irk-root__/pyirk-core/tests/test_data/ocse_subset/agents1.py"
 
 
 # use an obviously fictious author combinations
@@ -21,18 +21,18 @@ item = ":ag__I2746__Rudolf_Kalman"
 affiliation = ":ag__I7301__ETH_Zürich"
 
 [authors.2]
-item = ":ag__I8124__Carsten_Knoll"
-affiliation = ":ag__I2478__TU_Dresden"
+item = ":ag__I4853__Sophus_Lie"
+affiliation = ":ag__I7301__ETH_Zürich"  # this is wrong and only for testing
 
 
 [content.title]
 
-text = "Defining basic mathematical objects in pyerk"
+text = "Defining basic mathematical objects in pyirk"
 
 [content.Abstract]
 
 text='''
-This report \textit{demonstrates} how to create semi-automatically generated reports based on the pyerk-framework.
+This report \textit{demonstrates} how to create semi-automatically generated reports based on the pyirk-framework.
 The abstract can also contain \LaTeX{} source code such as formulas $y = \frac{\x^2}{2}.$ It also serves as fixture-data to develop and test the respective software framework.
 '''
 
@@ -51,8 +51,7 @@ This is optional text for the main part. However, the main part should mainly co
 
 entities = [
     ':ma__I9905["zero matrix"]',
-    ':ma__I9223["definition of zero matrix"]',
-    ':ma__I1608["identity matrix"]',
-    ':ma__I7169["definition of identity matrix"]',
+    ':ma__I9739["finite scalar sequence"]',
+    ':ma__I4240["matrix polynomial"]',
+    ':ma__R5940["has characteristic polynomial"]',
 ]
-

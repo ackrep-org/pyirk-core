@@ -1,5 +1,5 @@
 """
-Core module of pyerk
+Core module of pyirk
 """
 import os
 import sys
@@ -19,12 +19,12 @@ from rdflib import Literal
 import pydantic
 import re
 
-from pyerk import auxiliary as aux
-from pyerk import settings
-from pyerk.auxiliary import (
+from pyirk import auxiliary as aux
+from pyirk import settings
+from pyirk.auxiliary import (
     InvalidURIError,
     InvalidPrefixError,
-    PyERKError,
+    PyIRKError,
     EmptyURIStackError,
     InvalidShortKeyError,
     UnknownPrefixError,
@@ -36,44 +36,12 @@ if os.environ.get("IPYDEX_AIOE") == "true":
     activate_ips_on_exception()
 
 
-"""
-    TODO:
+allowed_literal_types = (str, bool, float, int, complex, Literal)
 
-    report should link entities to django
-
-    model sets as type? and elements as instances?
-    manually trigger reload in gui
-
-    Caylay-Hamilton-Theorem
-    qualifier relations, e.g. for universal quantification
-
-    Lyapunov stability theorem
-    visualizing the results
-    has implementation (application to actual instances)
-
-
-    multiple assignments via list
-    natural language representation of ordered atomic statements
-    Labels (als Listeneinträge)
-    DOMAIN und RANGE
-
-    unittests ✓
-    Sanity-check: `R1__part_of` muss einen Fehler werfen
-
-    content: dynamical_system can_be_represented_by mathematical_model
-    → Herausforderung: in OWL sind relationen nur zwischen Instanzen zulässig.
-    Damit ist die Angabe von DOMAIN und RANGE, relativ klar. Wenn die Grenze zwischen Klasse und Instanz verschwimmt
-    ist das nicht mehr so klar: Jede Instanz der Klasse <dynamical_system> ???
-
-    anders: <can_be_represented_by> ist eine n:m Zuordnung von Instanzen der Klasse
-    <dynamical_system> zu Instanzen der Klasse <mathematical_model>
-
-    komplexere Aussagen:
-    alle steuerbaren linearen ODE-systeme sind flach
-
-"""
-
-allowed_literal_types = (str, bool, float, int, complex)
+# Relations with R11__has_range_of_result=I19["multilingual string literal"] (due to multilinguality support)
+# Here we should automatically identify those relations which have R11__has_range_of_result=I19["multilingual string literal"]
+# for now these are hardcoded (which is also faster)
+RELKEYS_WITH_LITERAL_RANGE = ("R1", "R2", "R77")
 
 
 # copied from yamlpyowl project
@@ -159,7 +127,7 @@ class Entity(abc.ABC):
     def idoc(self, adhoc_label: str):
         """
         idoc means "inline doc". This function allows to attach a label to entities when using them in code
-        because it returns just the Entity-object itself. Thus one can use the following expressions interchageably:
+        because it returns just the Entity-object itself. Thus one can use the following expressions interchangeably:
         `I1234` and `I1234.idoc("human readable item name")`
 
         Note that there is a shortcut to this function: `I1234["human readable item name"]
@@ -183,7 +151,7 @@ class Entity(abc.ABC):
 
             if adhoc_label_str not in all_labels_dict:
                 msg = (
-                    f"Mismatiching label for Entity {self.short_key}! Got '{adhoc_label}' but valid labels are: "
+                    f"Mismatching label for Entity {self.short_key}! Got '{adhoc_label}' but valid labels are: "
                     f" {all_labels}.\n\n"
                     f"Note: in index-labeled key notation the language of the labels is ignored for convenience."
                 )
@@ -373,6 +341,10 @@ class Entity(abc.ABC):
 
     @classmethod
     def add_method_to_class(cls, func):
+        """
+        Used to add methods to the class from the builtin_entities module.
+        This mechanism (adding the method later) allows to keep the dependency monodirectional
+        """
         setattr(cls, func.__name__, func)
 
     def add_method(self, func: callable, name: Optional[str] = None):
@@ -417,7 +389,7 @@ class Entity(abc.ABC):
             else:
                 self.set_relation(key, value)
 
-    def set_mutliple_relations(
+    def set_multiple_relations(
         self, relation: Union["Relation", str], obj_seq: Union[tuple, list], *args, **kwargs
     ) -> List["Statement"]:
         """
@@ -465,19 +437,24 @@ class Entity(abc.ABC):
             if obj in existing_objects:
                 return None
 
-        if isinstance(relation, Relation):
-
-            # handle R32__is_functional_for_each_language
-            if relation.R32 and not isinstance(obj, Literal):
-                obj = Literal(obj, lang=settings.DEFAULT_DATA_LANGUAGE)
-
-            if isinstance(obj, (Entity, *allowed_literal_types)) or obj in allowed_literal_types:
-                return self._set_relation(relation.uri, obj, scope=scope, qualifiers=qualifiers, proxyitem=proxyitem)
-            else:
-                msg = f"Unsupported type ({type(obj)}) of {obj}, while setting relation {relation.short_key} of {self}"
-                raise TypeError(msg)
-        else:
+        if not isinstance(relation, Relation):
             msg = f"unexpected type: {type(relation)} of relation object {relation}, with {self} as subject"
+            raise TypeError(msg)
+
+        if isinstance(obj, (list, tuple)):
+            msg = f"Sequences like ({type(obj)}) are not allowed in `.set_relation`. Use `.set_multiple_relations`."
+            raise TypeError(msg)
+
+        # handle R32__is_functional_for_each_language
+        enforce_literal_as_type = relation.short_key in RELKEYS_WITH_LITERAL_RANGE or relation.R32
+
+        if enforce_literal_as_type and not isinstance(obj, Literal):
+            obj = Literal(obj, lang=settings.DEFAULT_DATA_LANGUAGE)
+
+        if isinstance(obj, (Entity, *allowed_literal_types)) or obj in allowed_literal_types:
+            return self._set_relation(relation.uri, obj, scope=scope, qualifiers=qualifiers, proxyitem=proxyitem)
+        else:
+            msg = f"Unsupported type ({type(obj)}) of {obj}, while setting relation {relation.short_key} of {self}"
             raise TypeError(msg)
 
     def _set_relation(
@@ -498,12 +475,12 @@ class Entity(abc.ABC):
         if isinstance(rel_content, Entity):
             corresponding_entity = rel_content
             corresponding_literal = None
-        else:
+        elif isinstance(rel_content, allowed_literal_types):
             corresponding_entity = None
-
-            if not isinstance(rel_content, (str, int, float, complex)):
-                rel_content = repr(rel_content)
             corresponding_literal = rel_content
+        else:
+            msg = f"unexpected type: {type(rel_content)} for object {rel_content}"
+            raise TypeError(msg)
 
         if qualifiers is None:
             qualifiers = []
@@ -665,10 +642,10 @@ class Entity(abc.ABC):
         if isinstance(stm, list):
             if len(stm) == 0:
                 msg = f"Unexpectedly found empty statement list for entity {self} and relation {rel}"
-                raise aux.PyERKError(msg)
+                raise aux.PyIRKError(msg)
             if len(stm) > 1:
                 msg = f"Unexpectedly found length-{len(stm)} statement list for entity {self} and relation {rel}"
-                raise aux.PyERKError(msg)
+                raise aux.PyIRKError(msg)
             stm = stm[0]
 
         assert isinstance(stm, Statement)
@@ -699,7 +676,7 @@ def wrap_function_with_search_uri_context(func, uri=None):
         if uri is None:
             fi = inspect.getframeinfo(frame.f_back)
             msg = f"could not find `__URI__` in module {fi.filename}"
-            raise aux.PyERKError(msg)
+            raise aux.PyIRKError(msg)
 
     @functools.wraps(func)
     def wrapped_func(*args, **kwargs):
@@ -775,7 +752,7 @@ class DataStore:
         # dict like {uri1: <mod1>, ...}
         self.uri_mod_dict = {}
 
-        # this flag (default False) might be changed during erkloader calls
+        # this flag (default False) might be changed during irkloader calls
         self.reuse_loaded_module = False
 
         # this list serves to keep track of nested scopes
@@ -901,7 +878,7 @@ class DataStore:
         """
         Insert a Statement into the relevant data structures of the DataStorage (self)
 
-        This method does not handle the dual realtion. It must be created and stored separately.
+        This method does not handle the dual relation. It must be created and stored separately.
 
         :param stm:   Statement instance
         :return:
@@ -985,9 +962,9 @@ class DataStore:
                 # check sanity
                 prefix, rest = e.split(":")
                 prefix = prefix + ":"
-                erk_key, description = rest.split("__")
+                irk_key, description = rest.split("__")
 
-                entity_uri = prefix_dict.get(prefix) + erk_key
+                entity_uri = prefix_dict.get(prefix) + irk_key
                 entity = self.get_entity_by_uri(entity_uri)
 
                 label = description.replace("_", " ")
@@ -1019,7 +996,7 @@ class DataStore:
         current_scope = self.get_current_scope()
         if current_scope != scope:
             msg = "Refuse to remove scope which is not the topmost on the stack (i.e. the last in the list)"
-            raise PyERKError(msg)
+            raise PyIRKError(msg)
 
         self.scope_stack.pop()
 
@@ -1027,8 +1004,8 @@ class DataStore:
         try:
             return self.scope_stack[-1]
         except IndexError:
-            msg = "unexepectedly found the scope stack empty"
-            raise PyERKError(msg)
+            msg = "unexpectedly found the scope stack empty"
+            raise PyIRKError(msg)
 
 
 ds = DataStore()
@@ -1054,7 +1031,7 @@ class SType(Enum):
     """
 
     CREATION = 0
-    EXTENTION = 1
+    EXTENSION = 1
     UNDEFINED = 2
 
 
@@ -1118,16 +1095,16 @@ def process_key_str(
     mod_uri: str = None,
 ) -> ProcessedStmtKey:
     """
-    In ERK there are the following kinds of keys:
+    In IRK there are the following kinds of keys:
         - a) short_key like `R1234`
         - b) name-labeled key like `R1234__my_relation` (consisting of a short_key, a delimiter (`__`) and a label)
         - c) prefixed short_key like `bi__R1234`
         - d) prefixed name-labeled key like `bi__R1234__my_relation`
 
-        - e) index-labeld key like  `R1234["my relation"]`
-        - f) prefixed index-labeld key like  `bi__R1234["my relation"]`
+        - e) index-labeled key like  `R1234["my relation"]`
+        - f) prefixed index-labeled key like  `bi__R1234["my relation"]`
 
-    See also: userdoc/overview.html#keys-in-pyerk
+    See also: userdoc/overview.html#keys-in-pyirk
 
     Also, the leading character indicates the entity type (EType).
 
@@ -1147,7 +1124,7 @@ def process_key_str(
 
     match1 = re_prefix_shortkey_suffix.match(key_str)
 
-    errmsg = f"unxexpected key_str: `{key_str}` (maybe a literal or syntax error)"
+    errmsg = f"unexpected key_str: `{key_str}` (maybe a literal or syntax error)"
     if not match1:
         raise aux.InvalidGeneralKeyError(errmsg)
 
@@ -1185,7 +1162,7 @@ def process_key_str(
         res.etype = EType.RELATION
         res.vtype = VType.ENTITY
     else:
-        msg = f"unxexpected shortkey: '{res.short_key}' (maybe a literal)"
+        msg = f"unexpected shortkey: '{res.short_key}' (maybe a literal)"
         raise aux.InvalidShortKeyError(msg)
 
     if resolve_prefix:
@@ -1269,7 +1246,7 @@ def _resolve_prefix(pr_key: ProcessedStmtKey, passed_mod_uri: str = None) -> Non
                 # if res_entity is still None no entity could be found
                 msg = (
                     f"No entity could be found for short_key {pr_key.short_key}, neither in active module "
-                    f"({active_mod_uri}) nor in builin_entities ({settings.BUILTINS_URI})"
+                    f"({active_mod_uri}) nor in builtin_entities ({settings.BUILTINS_URI})"
                 )
                 raise aux.ShortKeyNotFoundError(msg)
     else:
@@ -1331,7 +1308,7 @@ def check_processed_key_label(pkey: ProcessedStmtKey) -> None:
 
 def ilk2nlk(ilk: str) -> str:
     """
-    convert index labled key (R1234["my relation"]) to name labled key (R1234__my_relation)
+    convert index labeled key (R1234["my relation"]) to name labeled key (R1234__my_relation)
     """
     assert isinstance(ilk, str)
 
@@ -1386,7 +1363,7 @@ def get_active_mod_uri(strict: bool = True) -> Union[str, None]:
         res = _uri_stack[-1]
     except IndexError:
         msg = (
-            "Unexpected: empty uri_stack. Be sure to use uri_contex manager or similar technique "
+            "Unexpected: empty uri_stack. Be sure to use uri_context manager or similar technique "
             "when creating entities"
         )
         if strict:
@@ -1419,8 +1396,7 @@ def process_kwargs_for_entity_creation(entity_key: str, kwargs: dict) ->(dict, d
             new_key = processed_key.short_key
 
         # handle those relations which might come with multiple languages
-        # (related to R32__is_functional_for_each_language)
-        if new_key in ("R1", "R2"):
+        if new_key in RELKEYS_WITH_LITERAL_RANGE:
             value_list = lang_related_kwargs[new_key]
             if len(value_list) == 0:
                 valid_languages = (None, settings.DEFAULT_DATA_LANGUAGE)
@@ -1503,7 +1479,7 @@ def create_item(key_str: str = "", **kwargs) -> Item:
     assert itm.uri not in ds.items, f"Problematic (duplicated) uri: {itm.uri}"
     ds.items[itm.uri] = itm
 
-    # acces the defaultdict(list)
+    # access the defaultdict(list)
     ds.entities_created_in_mod[mod_uri].append(itm.uri)
 
     process_lang_related_kwargs_for_entity_creation(itm, item_key, lang_related_kwargs)
@@ -1586,7 +1562,7 @@ def register_hook(type_str: str, func: callable) -> None:
 # for now we want unique numbers for keys for relations and items etc (although this is not necessary)
 class KeyManager:
     """
-    Class for a flexible and comprehensible key management. Every pyerk module must have its own (passed via)
+    Class for a flexible and comprehensible key management. Every pyirk module must have its own (passed via)
     """
 
     # TODO: the term "maxval" is misleading because it will be used in range where the upper bound is exclusive
@@ -1615,7 +1591,7 @@ class KeyManager:
 
     def _generate_key_numbers(self) -> None:
         """
-        Creates a reaservoir of keynumbers, e.g. for automatically created entities. Due to the hardcoded seed value
+        Creates a reservoir of keynumbers, e.g. for automatically created entities. Due to the hardcoded seed value
         these numbers are stable between runs of the software, which simplifies development and debugging.
 
         This function is also called after unloading a module because the respective keys are "free" again
@@ -1628,7 +1604,7 @@ class KeyManager:
 
         assert self.key_reservoir is None
 
-        # passing seed (arg `x`) ensures "reproducible randomness" accross runs
+        # passing seed (arg `x`) ensures "reproducible randomness" across runs
         if not self.keyseed:
             # use hardcoded fallback
             self.keyseed = 1750
@@ -1714,8 +1690,10 @@ class QualifierFactory:
 
 
 class Statement:
+    # Note: in earlier versions this class was called "RelationEdge";
+    # some old comments might refer to this
     """
-    Models a conrete (instantiated/applied) relation between entities. This is basically a dict.
+    Models a concrete (instantiated/applied) relation between entities. This is basically a dict.
     """
 
     def __init__(
@@ -1733,7 +1711,7 @@ class Statement:
 
         :param relation:
         :param relation_tuple:
-        :param role:                    RelationRole.SUBJECT for normal and RelationRole.OBJECT for inverse edges
+        :param role:                    RelationRole.SUBJECT for normal and RelationRole.OBJECT for inverse statements
         :param corresponding_entity:    This is the entity on the "other side" of the relation (depending of `role`) or
                                         None in case that other side is a literal
         :param corresponding_literal:   This is the literal on the "other side" of the relation (depending of `role`) or
@@ -1749,7 +1727,7 @@ class Statement:
         self.base_uri = mod_uri
         self.uri = f"{aux.make_uri(self.base_uri, self.short_key)}"
         self.relation = relation
-        self.rsk = relation.short_key  # to conviniently access this attribute in visualization
+        self.rsk = relation.short_key  # to conveniently access this attribute in visualization
         self.relation_tuple = relation_tuple
         self.subject = relation_tuple[0]
         self.predicate = relation_tuple[1]
@@ -2137,7 +2115,7 @@ class abstract_uri_context:
 
     def __enter__(self):
         """
-        implicitly called in the head of the with statemet
+        implicitly called in the head of the with statement
         :return:
         """
         self.uri_stack.append(self.uri)
@@ -2175,7 +2153,7 @@ class search_uri_context(abstract_uri_context):
 
 def unload_mod(mod_uri: str, strict=True) -> None:
     """
-    Delete all references to entities comming from a module with `mod_id`
+    Delete all references to entities coming from a module with `mod_id`
 
     :param mod_uri: str; uri of the module, see its __URI__ attribute
     :param strict:  boolean; raise Exception if module seems be not loaded
@@ -2237,7 +2215,7 @@ def unload_mod(mod_uri: str, strict=True) -> None:
 
 def _unlink_entity(uri: str, remove_from_mod=False) -> None:
     """
-    Remove the occurrence of this the respective entitiy from all relevant data structures
+    Remove the occurrence of this the respective entity from all relevant data structures
 
     :param uri:     entity uri
     :return:        None
@@ -2268,7 +2246,7 @@ def _unlink_entity(uri: str, remove_from_mod=False) -> None:
     re_dict = ds.statements.pop(entity.uri, {})
     inv_re_dict = ds.inv_statements.pop(entity.uri, {})
 
-    # in case res1 is a scope-item we delete all corressponding relation edges, otherwise nothing happens
+    # in case res1 is a scope-item we delete all corresponding relation edges, otherwise nothing happens
     scope_rels = ds.scope_statements.pop(uri, [])
 
     re_list = list(scope_rels)
@@ -2277,7 +2255,7 @@ def _unlink_entity(uri: str, remove_from_mod=False) -> None:
     re_item_list = list(re_dict.items()) + list(inv_re_dict.items())
 
     for rel_uri, local_re_list in re_item_list:
-        # rel_uri: uri of the relation (like "pyerk/foo#R1234")
+        # rel_uri: uri of the relation (like "pyirk/foo#R1234")
         # re_list: list of Statement instances
         re_list.extend(local_re_list)
 
@@ -2307,7 +2285,7 @@ def replace_and_unlink_entity(old_entity: Entity, new_entity: Entity):
 
     res = RuleResult()
 
-    from pyerk import builtin_entities as bi
+    from pyirk import builtin_entities as bi
 
     # these predicates should not be replaced
     omit_uris = aux.uri_set(
@@ -2346,7 +2324,7 @@ def replace_and_unlink_entity(old_entity: Entity, new_entity: Entity):
                 # prevent the creation of a duplicated statement
                 existing_objs = new_entity.get_relations(predicate.uri, return_obj=True)
                 if not obj in existing_objs:
-                    # it is possible that predicate is functional and new_entitiy.predicate has a value
+                    # it is possible that predicate is functional and new_entity.predicate has a value
                     # different from obj. this is OK if one of them is a placeholder
                     if len(existing_objs) == 1 and predicate.R22__is_functional:
                         existing_obj = existing_objs[0]
@@ -2355,7 +2333,7 @@ def replace_and_unlink_entity(old_entity: Entity, new_entity: Entity):
                             continue
                         elif not existing_obj.R57__is_placeholder and not obj.R57__is_placeholder:
                             msg = (
-                                f"confilicting statement for functional predicate {predicate} and non-placeholder "
+                                f"conflicting statement for functional predicate {predicate} and non-placeholder "
                                 f"objects: {obj} (of old_entity)  and {existing_obj} of new_entity, while replacing"
                                 f"{old_entity} (old) with {new_entity} (new)."
                             )
@@ -2379,7 +2357,7 @@ def replace_and_unlink_entity(old_entity: Entity, new_entity: Entity):
     return res
 
 
-def register_mod(uri: str, keymanager: KeyManager, check_uri=True):
+def register_mod(uri: str, keymanager: KeyManager, check_uri=True, prefix=None):
     frame = get_caller_frame(upcount=1)
     path = os.path.abspath(frame.f_globals["__file__"])
     if check_uri:
@@ -2396,12 +2374,17 @@ def register_mod(uri: str, keymanager: KeyManager, check_uri=True):
     # all modules should have their own key manager
     ds.uri_keymanager_dict[uri] = keymanager
 
+    # currently this is only used from within unittests as they create test data on the fly and
+    # not use irkloader for every tiny item
+    if prefix:
+        ds.uri_prefix_mapping.add_pair(key_a=uri, key_b=prefix)
+
 
 def start_mod(uri):
     """
     Register the uri for the _uri_stack.
 
-    Note: between start_mod and end_mod no it is not allowed to load other erk modules
+    Note: between start_mod and end_mod no it is not allowed to load other irk modules
 
     :param uri:
     :return:
@@ -2422,7 +2405,7 @@ def get_language_of_str_literal(obj: Union[str, Literal]):
     return None
 
 
-class LangaguageCode:
+class LanguageCode:
     def __init__(self, langtag):
         assert langtag in settings.SUPPORTED_LANGUAGES
 
@@ -2445,12 +2428,12 @@ class LangaguageCode:
         return res
 
 
-df = LangaguageCode(settings.DEFAULT_DATA_LANGUAGE)
-en = LangaguageCode("en")
-de = LangaguageCode("de")
-fr = LangaguageCode("fr")
-it = LangaguageCode("it")
-es = LangaguageCode("es")
+df = LanguageCode(settings.DEFAULT_DATA_LANGUAGE)
+en = LanguageCode("en")
+de = LanguageCode("de")
+fr = LanguageCode("fr")
+it = LanguageCode("it")
+es = LanguageCode("es")
 
 
 class RuleResult:
@@ -2521,6 +2504,16 @@ class RuleResult:
                 return self.partial_results[0].rule
 
         return self._rule
+
+
+def is_true(subject: Entity, predicate: Relation, object) -> (bool, None):
+    assert isinstance(subject, Entity)
+    assert isinstance(predicate, Relation)
+
+    res = subject.get_relations(predicate.uri, return_obj=True)
+    if isinstance(res, list):
+        res = res[0]
+    return res == object
 
 
 def format_entity_html(e: Entity):

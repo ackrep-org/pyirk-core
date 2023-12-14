@@ -2,13 +2,13 @@
 
 # Note: the inverse mapping will be added automatically
 [SPARQL_PREFIX_MAPPING]
-    ":" =  "<erk:/builtins#>"
-    "ct:" =  "<erk:/ocse/0.2/control_theory#>"
-    "ack:" = "<erk:/ackrep#>"
-    "ma:" = "<erk:/ocse/0.2/math#>"
+    ":" =  "<irk:/builtins#>"
+    "ct:" =  "<irk:/ocse/0.2/control_theory#>"
+    "ack:" = "<irk:/ackrep#>"
+    "ma:" = "<irk:/ocse/0.2/math#>"
 
 
-[pyerkdjango]
+[pyirkdjango]
 
 # empty main_module -> load only builtins
 main_module = ""

@@ -8,6 +8,7 @@ on:
     branches: 
     - main
     - develop
+    - develop_carsten
   pull_request:
     branches:
     - main
@@ -37,15 +38,6 @@ jobs:
     - name: Install pip
       run: |
         python -m pip install --upgrade pip
-
-    - name: get ocse as test data
-      run: |
-        mkdir -p erk-data-for-unittests
-        cd erk-data-for-unittests
-        echo "PYERK_TEST_DATA_PARENT_PATH=$(pwd)" >> "$GITHUB_ENV"
-        git clone https://github.com/ackrep-org/ocse.git
-        cd ocse
-        git checkout ut__pyerk__main
 
     - name: debug env
       run: |

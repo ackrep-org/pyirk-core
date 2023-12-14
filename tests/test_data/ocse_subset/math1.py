@@ -160,15 +160,15 @@ I5000 = p.create_item(
     R24__has_LaTeX_string="$0$",
 )
 
-R3033 = p.create_relation(
-    R1__has_label="has type of elements",
-    R2__has_description=(
-        "specifies the item-type of the elements of a mathematical set; "
-        "should be a subclass of I12['mathematical object']"
-    ),
-    R8__has_domain_of_argument_1=p.I13["mathematical set"],
-    R11__has_range_of_result=p.I42["mathematical type (metaclass)"],
-)
+# R3033 = p.create_relation(
+#     R1__has_label="has type of elements",
+#     R2__has_description=(
+#         "specifies the item-type of the elements of a mathematical set; "
+#         "should be a subclass of I12['mathematical object']"
+#     ),
+#     R8__has_domain_of_argument_1=p.I13["mathematical set"],
+#     R11__has_range_of_result=p.I42["mathematical type (metaclass)"],
+# )
 
 I8133 = p.create_item(
     R1__has_label="field of numbers",
@@ -182,7 +182,7 @@ I2738 = p.create_item(
     R2__has_description="field of complex numbers",
     R4__is_instance_of=I8133["field of numbers"],
     R13__has_canonical_symbol=r"$\mathbb{C}$",
-    R3033__has_type_of_elements=p.I34["complex number"],
+    # R3033__has_type_of_elements=p.I34["complex number"],
 )
 
 I5807 = p.create_item(

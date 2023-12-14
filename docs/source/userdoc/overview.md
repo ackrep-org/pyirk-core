@@ -319,6 +319,10 @@ C = mul(A, B)
 
 ### Convenience-Expressions
 
+```{warning}
+This is not yet implemented. However, see [formula representation](sec_formulas).
+```
+
 While the operator approach is suitable to create the appropriate notes and edges in the knowledge graph it is not very convenient to write more complex formulas in that way. Thus pyirk offers a convenience mechanism based on the computer algebra package [Sympy](https://docs.sympy.org/dev/install.html). The function `builtin_entities.items_to_symbols()` creates a sympy symbol for every passed item (and keeps track of the associations). Then, a formula can be denoted using "usual" python syntax with operator signs `+`, `-`, `*`, `/`, and `**` which results in an instance of `sympy.core.expr.Expr`. These expressions can be passed, e.g., to `cm.new_equation` where they are converted back to pyirk-items. In other words the following two snippets are equivalent:
 
 ```python
@@ -334,38 +338,6 @@ cm.new_equation( plus(sq(La), sq(Lb)), "==", sq(Lc) )
 
 <!-- TODO: introduce real squared and plus operators -->
 <!-- TODO: implement this mechanism and refer to unit test here -->
-
-
-## Universal and Existential Quantification
-
-Background, see <https://en.wikipedia.org/wiki/Quantifier_(logic)>.
-
-> commonly used quantifiers are ∀ (`$\forall$`) and ∃ (`$\exists$`).
-
-They are also called *universal quantifier* and *existential quantifier*. In Pyirk they can be expressed via
-
-- [Qualifiers](sec_qualifiers). In particular (defined in module `builtin_entities`):
-    - `univ_quant = QualifierFactory(R44["is universally quantified"])`
-        - usage (in OCSE): `cm.new_rel(cm.z, p.R15["is element of"], cm.HP, qualifiers=p.univ_quant(True))`
-    - `exis_quant = QualifierFactory(R66["is existentially quantified"])`
-        - usage (in OCSE): `cm.new_var(y=p.instance_of(p.I37["integer number"], qualifiers=[p.exis_quant(True)]))`
-- (Sub)scopes:
-    ```python
-    # excerpt from test_core.py
-    with I7324["definition of something"].scope("premise") as cm:
-                with cm.universally_quantified() as cm2:
-                    cm2.add_condition_statement(cm.x, p.R15["is element of"], my_set)
-    # ...
-    with I7324["definition of something"].scope("assertion") as cm:
-                # also pointless direct meaning, only to test contexts
-                with cm.existentially_quantified() as cm2:
-                    z = cm2.new_condition_var(z=p.instance_of(p.I39["positive integer"]))
-    ```
-
-
-```{warning}
-Despite having similar phonetics (and spelling) quantifiers (logic operators) and qualifiers (knowledge modeling technique, in triple-based knowledge graphs) are totally different concepts. However, qualifiers can (among many other use cases) be used to model universal or existential quantification of an statement.
-```
 
 
 (sec_modules)=
@@ -399,3 +371,73 @@ res = A.ma__R8736__depends_polynomially_on
 Rationale: The attribute name `ma__R8736__depends_polynomially_on` is handled as a string by Python (in the method `__getattr__`). While `mod.R8736` is the relation object we cannot use this syntax as attribute name.
 
 See also {ref}`sec_keys`.
+
+
+
+
+## Modeling Techniques
+
+(sec_stubs)=
+### Stubs (`I50["Stub"]`, `I000["some arbitrary label"]` and `R000["also"]`)
+
+One challenge in formal knowledge representation is  *Where to begin?*. Suppose you want to formalize some knowledge about triangles. It seems natural that you introduce the class *triangle* as a subclass of *polygon*. However, the class polygon should also be a subclass of something and so on.
+
+As modelling *all* knowledge is unfeasible at some points it is necessary to model incomplete entities (Ideally, theses are some relation-steps away from the relevant entities of the domain). To facilitate this there exists `I50["stub"]`. This item can be used as (base) class for any item which at the moment no further (taxonomic) information should be modeled. The name "stub" is inspired by Wikipedia's (stub-pages](https://en.wikipedia.org/wiki/Wikipedia:Stub). Example:
+
+
+```python
+I1234 = p.create_item(
+    R1__has_label="polygon",
+    R2__has_description="",
+    R3__is_subclass_of=p.I50["stub"],
+)
+```
+
+In some situations it is useful to use items and relations which do not yet exist. This can be done by `I000["dummy item]` and `R000["dummy relation"]`. Both entities can be used with **arbitrary labels** and can thus be used regarded as a special kind of comment. Example:
+
+```python
+I1234 = p.create_item(
+    R1__has_label="polygon",
+    R2__has_description="",
+    R3__is_subclass_of=p.I000["general gemoetric figure"],
+    R000__has_dimension=2,
+)
+
+```
+
+This allows to concentrate on the important items and relations and prevents to get distracted by side-quests (secondary storylines).
+
+It is quite probable that even mature irk-ontologies contain relations involving `I50`. Such items can be considered to constitute the "border of the domain of discourse". On the other hand, `I000` and `R000` should be used only temporarily and be replaced soon, e.g., by new instances/subclasses of `I50`.
+
+
+(sec_quantification)=
+### Universal and Existential Quantification
+
+Background, see <https://en.wikipedia.org/wiki/Quantifier_(logic)>.
+
+> commonly used quantifiers are ∀ (`$\forall$`) and ∃ (`$\exists$`).
+
+They are also called *universal quantifier* and *existential quantifier*. In Pyirk they can be expressed via
+
+- [Qualifiers](sec_qualifiers). In particular (defined in module `builtin_entities`):
+    - `univ_quant = QualifierFactory(R44["is universally quantified"])`
+        - usage (in OCSE): `cm.new_rel(cm.z, p.R15["is element of"], cm.HP, qualifiers=p.univ_quant(True))`
+    - `exis_quant = QualifierFactory(R66["is existentially quantified"])`
+        - usage (in OCSE): `cm.new_var(y=p.instance_of(p.I37["integer number"], qualifiers=[p.exis_quant(True)]))`
+- (Sub)scopes:
+    ```python
+    # excerpt from test_core.py
+    with I7324["definition of something"].scope("premise") as cm:
+                with cm.universally_quantified() as cm2:
+                    cm2.add_condition_statement(cm.x, p.R15["is element of"], my_set)
+    # ...
+    with I7324["definition of something"].scope("assertion") as cm:
+                # also pointless direct meaning, only to test contexts
+                with cm.existentially_quantified() as cm2:
+                    z = cm2.new_condition_var(z=p.instance_of(p.I39["positive integer"]))
+    ```
+
+
+```{warning}
+Despite having similar phonetics (and spelling) quantifiers (logic operators) and qualifiers (knowledge modeling technique, in triple-based knowledge graphs) are totally different concepts. However, qualifiers can (among many other use cases) be used to model universal or existential quantification of an statement.
+```

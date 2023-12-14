@@ -1,1 +1,1 @@
-Test data was moved to its own repository (see pyerk/README.md) for assumed diretory structure.
+Test data was moved to its own repository (see pyirk/README.md) for assumed diretory structure.

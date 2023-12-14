@@ -1,4 +1,4 @@
-# this file specifies the content and the metadata of a pyerk-report
+# this file specifies the content and the metadata of a pyirk-report
 # the goal is to generate a compile-ready tex document
 # For an introduction to toml syntax see https://learnxinyminutes.com/docs/toml/
 
@@ -11,8 +11,8 @@ journal = "default"
 
 # use absolute or relative paths here
 # (to simplify unittests, a path beginning with `$` will be preprocessed accordingly)
-ct = "$__erk-root__/pyerk-core/tests/test_data/ocse_subset/control_theory1.py"
-ag = "$__erk-root__/pyerk-core/tests/test_data/ocse_subset/agents1.py"
+ct = "$__irk-root__/pyirk-core/tests/test_data/ocse_subset/control_theory1.py"
+ag = "$__irk-root__/pyirk-core/tests/test_data/ocse_subset/agents1.py"
 
 
 # use an obviously fictious author combinations
@@ -27,12 +27,12 @@ affiliation = ":ag__I7301__ETH_Zürich"  # this is wrong and only for testing
 
 [content.title]
 
-text = "Defining basic mathematical objects in pyerk"
+text = "Defining basic mathematical objects in pyirk"
 
 [content.Abstract]
 
 text='''
-This report \textit{demonstrates} how to create semi-automatically generated reports based on the pyerk-framework.
+This report \textit{demonstrates} how to create semi-automatically generated reports based on the pyirk-framework.
 The abstract can also contain \LaTeX{} source code such as formulas $y = \frac{\x^2}{2}.$ It also serves as fixture-data to develop and test the respective software framework.
 '''
 

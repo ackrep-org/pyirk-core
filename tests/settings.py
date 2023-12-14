@@ -6,8 +6,8 @@ import random
 
 # noinspection PyUnresolvedReferences
 from ipydex import IPS, activate_ips_on_exception, set_trace  # noqa
-import pyerk as p
-import pyerk.io
+import pyirk as p
+import pyirk.io
 
 
 # ensure reproducible results
@@ -18,10 +18,10 @@ activate_ips_on_exception()
 
 current_dir = os.path.dirname(os.path.abspath(sys.modules.get(__name__).__file__))
 
-ERK_ROOT_DIR = p.aux.get_erk_root_dir()
+IRK_ROOT_DIR = p.aux.get_irk_root_dir()
 
 # path for basic (staged) test data
-TEST_DATA_DIR1 = pjoin(ERK_ROOT_DIR, "pyerk-core", "tests", "test_data")
+TEST_DATA_DIR1 = pjoin(IRK_ROOT_DIR, "pyirk-core", "tests", "test_data")
 TEST_DATA_DIR_OCSE = pjoin(TEST_DATA_DIR1, "ocse_subset")
 
 
@@ -40,15 +40,15 @@ TEST_DATA_REPO_COMMIT_SHA = "11b9f9fe14cef7248fd0d9f31c7412516aa92aa9"  # (2023-
 
 # TODO: make this more robust (e.g. search for config file or environment variable)
 # TODO: put link to docs here (directory layout)
-TEST_ACKREP_DATA_FOR_UT_PATH = pjoin(ERK_ROOT_DIR, "..", "ackrep", "ackrep_data_for_unittests")
+TEST_ACKREP_DATA_FOR_UT_PATH = pjoin(IRK_ROOT_DIR, "..", "ackrep", "ackrep_data_for_unittests")
 
 os.environ["UNITTEST"] = "True"
 
 # UNLOAD_MODS is True by default but could be set to False via env var.
 # This is sometimes useful to prevent the deletion of entities by tear_down()
-UNLOAD_MODS = not (os.getenv("PYERK_NOT_UNLOAD_MODS") == "True")
+UNLOAD_MODS = not (os.getenv("PYIRK_NOT_UNLOAD_MODS") == "True")
 
-__URI__ = TEST_BASE_URI = "erk:/local/unittest"
+__URI__ = TEST_BASE_URI = "irk:/local/unittest"
 
 
 # this serves to print the test-method-name before it is executed (useful for debugging, see setUP below)

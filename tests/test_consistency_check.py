@@ -8,7 +8,7 @@ import rdflib
 
 # noinspection PyUnresolvedReferences
 from ipydex import IPS, activate_ips_on_exception, set_trace  # noqa
-import pyerk as p
+import pyirk as p
 
 
 from .settings import (
@@ -164,7 +164,7 @@ class Test_01_CC(HousekeeperMixin, unittest.TestCase):
                 :param rule:            the rule which has this function as a consequent_func
                 :param arg:             the item which triggered the rule
                 """
-                raise p.cc.ErkConsistencyError(f"Rule {rule} failed for arg {arg}.")
+                raise p.cc.IrkConsistencyError(f"Rule {rule} failed for arg {arg}.")
 
             with I502.scope("assertion") as cm:
                 cm.new_consequent_func(raise_error_for_item, cm.rule, cm.x, anchor_item=None)
@@ -223,7 +223,7 @@ class Test_01_CC(HousekeeperMixin, unittest.TestCase):
     @unittest.expectedFailure
     def test_b01__cc_constraint_violation_rules(self):
 
-        ct = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
+        ct = p.irkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
         I501 = self._define_tst_rules(ct)
         with p.uri_context(uri=TEST_BASE_URI):
 
@@ -239,7 +239,7 @@ class Test_01_CC(HousekeeperMixin, unittest.TestCase):
 
     def test_c01__cc_matrix_dimensions(self):
 
-        ct = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
+        ct = p.irkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
         c = self._define_tst_rules(ct)
         I501, I502, I503 = c.I501, c.I502, c.I503
         with p.uri_context(uri=TEST_BASE_URI):
@@ -274,7 +274,7 @@ class Test_01_CC(HousekeeperMixin, unittest.TestCase):
 
         #
         # test the rule which raises an exception
-        with self.assertRaises(p.cc.ErkConsistencyError):
+        with self.assertRaises(p.cc.IrkConsistencyError):
             p.ruleengine.apply_semantic_rule(I502["raise exception on invalid mat mul dimensions"], TEST_BASE_URI)
 
         #
@@ -290,7 +290,7 @@ class Test_01_CC(HousekeeperMixin, unittest.TestCase):
         self.assertEqual(A2B.R74__has_constraint_violation, [])
 
     def test_c02__cc_multi_valued_domain(self):
-        ma = p.erkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct").ma
+        ma = p.irkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct").ma
         with p.uri_context(uri=TEST_BASE_URI):
             I1000 = p.create_item(
                 R1__has_label="negation",

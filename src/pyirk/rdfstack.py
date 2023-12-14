@@ -3,7 +3,7 @@ This module serves to perform integrity checks on the knowledge base
 """
 from typing import Union
 
-from . import core as pyerk, auxiliary as aux
+from . import core as pyirk, auxiliary as aux
 from .auxiliary import STATEMENTS_URI_PART, PREDICATES_URI_PART, QUALIFIERS_URI_PART
 
 # noinspection PyUnresolvedReferences
@@ -19,11 +19,11 @@ from rdflib.query import Result
 from pyparsing import ParseException  # noqa
 
 
-ERK_URI = f"{pyerk.settings.BUILTINS_URI}{pyerk.settings.URI_SEP}"
+IRK_URI = f"{pyirk.settings.BUILTINS_URI}{pyirk.settings.URI_SEP}"
 
 
 def _make_rel_uri_with_suffix(rel_uri: str, suffix: str):
-    pyerk.aux.ensure_valid_relation_uri(rel_uri)
+    pyirk.aux.ensure_valid_relation_uri(rel_uri)
     new_uri = rel_uri.replace("#", f"{suffix}#")
     assert len(new_uri) == len(rel_uri) + len(suffix)
     return new_uri
@@ -42,16 +42,16 @@ def make_qualifier_uri(rel_uri: str):
 
 
 def serialize_object(obj):
-    if isinstance(obj, pyerk.Entity):
+    if isinstance(obj, pyirk.Entity):
         return URIRef(f"{obj.uri}")
 
     else:
-        assert isinstance(obj, pyerk.allowed_literal_types)
+        assert isinstance(obj, pyirk.allowed_literal_types)
         # no entity but a literal value
         return Literal(obj)
 
 
-def get_statement_rows(stm: pyerk.Statement):
+def get_statement_rows(stm: pyirk.Statement):
     row1 = [URIRef(stm.subject.uri), URIRef(make_statement_uri(stm.predicate.uri)), URIRef(stm.uri)]
     row2 = [URIRef(stm.uri), URIRef(make_predicate_uri(stm.predicate.uri)), serialize_object(stm.object)]
 
@@ -73,13 +73,13 @@ def create_rdf_triples(add_qualifiers=False, add_statements=False, modfilter=Non
     if isinstance(modfilter, str):
         modfilter = set([modfilter])
 
-    for stm_uri, stm in pyerk.ds.statement_uri_map.items():
+    for stm_uri, stm in pyirk.ds.statement_uri_map.items():
         if not check_uri_in_modfilter(stm.uri, modfilter):
             continue
 
         row = []
         for i, entity in enumerate(stm.relation_tuple):
-            if isinstance(entity, pyerk.Statement):
+            if isinstance(entity, pyirk.Statement):
                 # stm is a qualifier-statement which has another statement as subject
                 assert i == 0
                 qualifier_statements.append(stm)
@@ -103,7 +103,7 @@ def create_rdf_triples(add_qualifiers=False, add_statements=False, modfilter=Non
             if not check_uri_in_modfilter(qstm.uri, modfilter):
                 continue
 
-            qstm: pyerk.Statement
+            qstm: pyirk.Statement
             subj_stm, pred, obj = qstm.relation_tuple
 
             if qstm.uri not in processed_statements:
@@ -149,23 +149,23 @@ Sparql_results_type = Union[aux.ListWithAttributes, SPARQLResult, Result]
 
 
 def perform_sparql_query(qsrc: str, return_raw=False) -> Sparql_results_type:
-    if pyerk.ds.rdfgraph is None:
-        pyerk.ds.rdfgraph = create_rdf_triples()
+    if pyirk.ds.rdfgraph is None:
+        pyirk.ds.rdfgraph = create_rdf_triples()
 
-    res = pyerk.ds.rdfgraph.query(qsrc)
+    res = pyirk.ds.rdfgraph.query(qsrc)
 
     if return_raw:
         return res
     else:
-        res2 = aux.apply_func_to_table_cells(convert_from_rdf_to_pyerk, res)
+        res2 = aux.apply_func_to_table_cells(convert_from_rdf_to_pyirk, res)
         res2.vars = res.vars
         return res2
 
 
-def convert_from_rdf_to_pyerk(rdfnode) -> object:
+def convert_from_rdf_to_pyirk(rdfnode) -> object:
     if isinstance(rdfnode, URIRef):
         uri = rdfnode.toPython()
-        entity_object = pyerk.ds.get_entity_by_uri(uri)
+        entity_object = pyirk.ds.get_entity_by_uri(uri)
     elif isinstance(rdfnode, Literal):
         entity_object = rdfnode.value
     elif rdfnode is None:
@@ -182,7 +182,7 @@ def convert_from_rdf_to_pyerk(rdfnode) -> object:
 def get_sparql_example_query():
     qsrc = f"""
 
-        PREFIX : <{ERK_URI}>
+        PREFIX : <{IRK_URI}>
         SELECT ?s ?o
         WHERE {{
             ?s :R5 ?o.
@@ -193,8 +193,8 @@ def get_sparql_example_query():
 
 def get_sparql_example_query2():
     qsrc = f"""
-        PREFIX : <{ERK_URI}>
-        PREFIX ocse: <erk:/ocse/0.2#>
+        PREFIX : <{IRK_URI}>
+        PREFIX ocse: <irk:/ocse/0.2#>
         SELECT ?s
         WHERE {{
             ?s :R16 ocse:I7733.
@@ -214,17 +214,17 @@ def check_all_relation_types():
 
     n = list(res)[0][0]
 
-    res2 = aux.apply_func_to_table_cells(convert_from_rdf_to_pyerk, res)
+    res2 = aux.apply_func_to_table_cells(convert_from_rdf_to_pyirk, res)
     # IPS()
     raise aux.NotYetFinishedError
 
 
 """
-    for rel_key, re_list in pyerk.ds.relation_statements.items():
+    for rel_key, re_list in pyirk.ds.relation_statements.items():
         for re in re_list:
-            re: pyerk.Statement
+            re: pyirk.Statement
             subj, pred, obj = re.relation_tuple
-            pred: pyerk.Relation
+            pred: pyirk.Relation
 
             # TODO: get rid of ensure_list here
             expected_domain1_list = aux.ensure_list(pred.R8)

@@ -1,5 +1,5 @@
 """
-Core module of pyerk
+Core module of pyirk
 """
 import os
 import sys
@@ -19,12 +19,12 @@ from rdflib import Literal
 import pydantic
 import re
 
-from pyerk import auxiliary as aux
-from pyerk import settings
-from pyerk.auxiliary import (
+from pyirk import auxiliary as aux
+from pyirk import settings
+from pyirk.auxiliary import (
     InvalidURIError,
     InvalidPrefixError,
-    PyERKError,
+    PyIRKError,
     EmptyURIStackError,
     InvalidShortKeyError,
     UnknownPrefixError,
@@ -642,10 +642,10 @@ class Entity(abc.ABC):
         if isinstance(stm, list):
             if len(stm) == 0:
                 msg = f"Unexpectedly found empty statement list for entity {self} and relation {rel}"
-                raise aux.PyERKError(msg)
+                raise aux.PyIRKError(msg)
             if len(stm) > 1:
                 msg = f"Unexpectedly found length-{len(stm)} statement list for entity {self} and relation {rel}"
-                raise aux.PyERKError(msg)
+                raise aux.PyIRKError(msg)
             stm = stm[0]
 
         assert isinstance(stm, Statement)
@@ -676,7 +676,7 @@ def wrap_function_with_search_uri_context(func, uri=None):
         if uri is None:
             fi = inspect.getframeinfo(frame.f_back)
             msg = f"could not find `__URI__` in module {fi.filename}"
-            raise aux.PyERKError(msg)
+            raise aux.PyIRKError(msg)
 
     @functools.wraps(func)
     def wrapped_func(*args, **kwargs):
@@ -752,7 +752,7 @@ class DataStore:
         # dict like {uri1: <mod1>, ...}
         self.uri_mod_dict = {}
 
-        # this flag (default False) might be changed during erkloader calls
+        # this flag (default False) might be changed during irkloader calls
         self.reuse_loaded_module = False
 
         # this list serves to keep track of nested scopes
@@ -962,9 +962,9 @@ class DataStore:
                 # check sanity
                 prefix, rest = e.split(":")
                 prefix = prefix + ":"
-                erk_key, description = rest.split("__")
+                irk_key, description = rest.split("__")
 
-                entity_uri = prefix_dict.get(prefix) + erk_key
+                entity_uri = prefix_dict.get(prefix) + irk_key
                 entity = self.get_entity_by_uri(entity_uri)
 
                 label = description.replace("_", " ")
@@ -996,7 +996,7 @@ class DataStore:
         current_scope = self.get_current_scope()
         if current_scope != scope:
             msg = "Refuse to remove scope which is not the topmost on the stack (i.e. the last in the list)"
-            raise PyERKError(msg)
+            raise PyIRKError(msg)
 
         self.scope_stack.pop()
 
@@ -1005,7 +1005,7 @@ class DataStore:
             return self.scope_stack[-1]
         except IndexError:
             msg = "unexpectedly found the scope stack empty"
-            raise PyERKError(msg)
+            raise PyIRKError(msg)
 
 
 ds = DataStore()
@@ -1095,7 +1095,7 @@ def process_key_str(
     mod_uri: str = None,
 ) -> ProcessedStmtKey:
     """
-    In ERK there are the following kinds of keys:
+    In IRK there are the following kinds of keys:
         - a) short_key like `R1234`
         - b) name-labeled key like `R1234__my_relation` (consisting of a short_key, a delimiter (`__`) and a label)
         - c) prefixed short_key like `bi__R1234`
@@ -1104,7 +1104,7 @@ def process_key_str(
         - e) index-labeled key like  `R1234["my relation"]`
         - f) prefixed index-labeled key like  `bi__R1234["my relation"]`
 
-    See also: userdoc/overview.html#keys-in-pyerk
+    See also: userdoc/overview.html#keys-in-pyirk
 
     Also, the leading character indicates the entity type (EType).
 
@@ -1562,7 +1562,7 @@ def register_hook(type_str: str, func: callable) -> None:
 # for now we want unique numbers for keys for relations and items etc (although this is not necessary)
 class KeyManager:
     """
-    Class for a flexible and comprehensible key management. Every pyerk module must have its own (passed via)
+    Class for a flexible and comprehensible key management. Every pyirk module must have its own (passed via)
     """
 
     # TODO: the term "maxval" is misleading because it will be used in range where the upper bound is exclusive
@@ -2255,7 +2255,7 @@ def _unlink_entity(uri: str, remove_from_mod=False) -> None:
     re_item_list = list(re_dict.items()) + list(inv_re_dict.items())
 
     for rel_uri, local_re_list in re_item_list:
-        # rel_uri: uri of the relation (like "pyerk/foo#R1234")
+        # rel_uri: uri of the relation (like "pyirk/foo#R1234")
         # re_list: list of Statement instances
         re_list.extend(local_re_list)
 
@@ -2285,7 +2285,7 @@ def replace_and_unlink_entity(old_entity: Entity, new_entity: Entity):
 
     res = RuleResult()
 
-    from pyerk import builtin_entities as bi
+    from pyirk import builtin_entities as bi
 
     # these predicates should not be replaced
     omit_uris = aux.uri_set(
@@ -2375,7 +2375,7 @@ def register_mod(uri: str, keymanager: KeyManager, check_uri=True, prefix=None):
     ds.uri_keymanager_dict[uri] = keymanager
 
     # currently this is only used from within unittests as they create test data on the fly and
-    # not use erkloader for every tiny item
+    # not use irkloader for every tiny item
     if prefix:
         ds.uri_prefix_mapping.add_pair(key_a=uri, key_b=prefix)
 
@@ -2384,7 +2384,7 @@ def start_mod(uri):
     """
     Register the uri for the _uri_stack.
 
-    Note: between start_mod and end_mod no it is not allowed to load other erk modules
+    Note: between start_mod and end_mod no it is not allowed to load other irk modules
 
     :param uri:
     :return:
@@ -2510,8 +2510,10 @@ def is_true(subject: Entity, predicate: Relation, object) -> (bool, None):
     assert isinstance(subject, Entity)
     assert isinstance(predicate, Relation)
 
-    res = subject.get_relations(predicate, return_obj=True)
-    IPS()
+    res = subject.get_relations(predicate.uri, return_obj=True)
+    if isinstance(res, list):
+        res = res[0]
+    return res == object
 
 
 def format_entity_html(e: Entity):

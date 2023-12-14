@@ -8,7 +8,7 @@ from addict import Addict as Container
 from . import settings
 
 """
-Some auxiliary classes and functions for pyerk.
+Some auxiliary classes and functions for pyirk.
 """
 
 startup_workdir = os.path.abspath(os.getcwd())
@@ -114,72 +114,72 @@ def ensure_rdf_str_literal(arg, allow_none=True) -> Union[Literal, None]:
     return res
 
 
-class PyERKError(Exception):
+class PyIRKError(Exception):
     """
-    raised in situations where some ERK-specific conditions are violated
+    raised in situations where some IRK-specific conditions are violated
     """
     pass
 
 
-class MultilingualityError(PyERKError):
+class MultilingualityError(PyIRKError):
     pass
 
 
-class EmptyURIStackError(PyERKError):
+class EmptyURIStackError(PyIRKError):
     pass
 
 
-class UnknownPrefixError(PyERKError):
+class UnknownPrefixError(PyIRKError):
     pass
 
 
-class UnknownURIError(PyERKError):
+class UnknownURIError(PyIRKError):
     pass
 
 
-class InvalidURIError(PyERKError):
+class InvalidURIError(PyIRKError):
     pass
 
 
-class InvalidPrefixError(PyERKError):
+class InvalidPrefixError(PyIRKError):
     pass
 
 
 # used for syntax problems
-class InvalidShortKeyError(PyERKError):
+class InvalidShortKeyError(PyIRKError):
     pass
 
 
-class InvalidGeneralKeyError(PyERKError):
+class InvalidGeneralKeyError(PyIRKError):
     pass
 
 
-class InconsistentLabelError(PyERKError):
+class InconsistentLabelError(PyIRKError):
     pass
 
 
 # used for syntactically correct keys which could not be found
-class ShortKeyNotFoundError(PyERKError):
+class ShortKeyNotFoundError(PyIRKError):
     pass
 
 
-class InvalidScopeNameError(PyERKError):
+class InvalidScopeNameError(PyIRKError):
     pass
 
 
-class InvalidScopeTypeError(PyERKError):
+class InvalidScopeTypeError(PyIRKError):
     pass
 
 
-class ModuleAlreadyLoadedError(PyERKError):
+class ModuleAlreadyLoadedError(PyIRKError):
     pass
 
 
-class SemanticRuleError(PyERKError):
+class SemanticRuleError(PyIRKError):
     pass
 
 
-class ExplicitlyTriggeredTestException(PyERKError):
+class ExplicitlyTriggeredTestException(PyIRKError):
     pass
 
 
@@ -190,27 +190,27 @@ class InvalidObjectValue(SemanticRuleError):
     pass
 
 
-class MissingQualifierError(PyERKError):
+class MissingQualifierError(PyIRKError):
     pass
 
 
-class AmbiguousQualifierError(PyERKError):
+class AmbiguousQualifierError(PyIRKError):
     pass
 
 
-class FunctionalRelationError(PyERKError):
+class FunctionalRelationError(PyIRKError):
     pass
 
 
-class UndefinedRelationError(PyERKError):
+class UndefinedRelationError(PyIRKError):
     pass
 
 
-class TaxonomicError(PyERKError):
+class TaxonomicError(PyIRKError):
     pass
 
 
-class RuleTermination(PyERKError):
+class RuleTermination(PyIRKError):
     pass
 
 
@@ -426,36 +426,36 @@ def byellow(txt):
     return f"{Fore.YELLOW}{Style.BRIGHT}{txt}{Style.RESET_ALL}"
 
 
-def get_erk_root_dir() -> str:
+def get_irk_root_dir() -> str:
     """
-    Return the absolute path of the erk-root (assuming the directory structure documented in README.md)
+    Return the absolute path of the irk-root (assuming the directory structure documented in README.md)
 
     :return:
     """
 
     current_dir = os.path.abspath(os.getcwd())
 
-    # this allows to have a local-deployment copy of the erk-root which does not change on every edit of the
+    # this allows to have a local-deployment copy of the irk-root which does not change on every edit of the
     # knowledge base
-    # TODO: obsolete? (this should respect pyerkconf.toml)
-    if os.path.isfile(os.path.join(current_dir, "__erk-root__")):
+    # TODO: obsolete? (this should respect pyirkconf.toml)
+    if os.path.isfile(os.path.join(current_dir, "__irk-root__")):
         return current_dir
     dir_of_this_file = os.path.dirname(os.path.abspath(sys.modules.get(__name__).__file__))
-    erk_root = os.path.abspath(os.path.join(dir_of_this_file, "..", "..", ".."))
-    return erk_root
+    irk_root = os.path.abspath(os.path.join(dir_of_this_file, "..", "..", ".."))
+    return irk_root
 
 
-def get_erk_path(dirname=None):
+def get_irk_path(dirname=None):
 
     if dirname is None:
-        return get_erk_root_dir()
+        return get_irk_root_dir()
 
     dir_of_this_file = os.path.dirname(os.path.abspath(sys.modules.get(__name__).__file__))
 
-    # this assumes pyerk is installed with `pip install -e .` from the repo
-    pyerk_root = os.path.abspath(os.path.join(dir_of_this_file, "..", ".."))
-    if dirname == "pyerk-core-test_data":
-        return os.path.join(pyerk_root, "tests", "test_data")
+    # this assumes pyirk is installed with `pip install -e .` from the repo
+    pyirk_root = os.path.abspath(os.path.join(dir_of_this_file, "..", ".."))
+    if dirname == "pyirk-core-test_data":
+        return os.path.join(pyirk_root, "tests", "test_data")
 
     msg = f"unexpected dirname: {dirname}"
     raise ValueError(msg)

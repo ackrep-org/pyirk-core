@@ -1,10 +1,10 @@
 (sec_userdoc_overview)=
-# Pyerk User Documentation Overview
+# Pyirk User Documentation Overview
 
 (sec_keys)=
-## Keys in Pyerk
+## Keys in Pyirk
 
-In Pyerk there are the following kinds of keys:
+In Pyirk there are the following kinds of keys:
 - a) short_key like `"R1234"`
 - b) name-labeled key like `"R1234__my_relation"` (consisting of a short_key, a delimiter (`__`) and a label)
 - c) prefixed short_key like `"bi__R1234"` (here the prefix `bi` refers to the module `builtin_entities`)
@@ -27,7 +27,7 @@ For more information see See also {ref}`sec_modules`.
 Currently there is some basic visualization support via the command line. To visualize your a module (including its relations to the builtin_entities) you can use a command like
 
 ```
-pyerk --load-mod demo-module.py demo -vis __all__
+pyirk --load-mod demo-module.py demo -vis __all__
 ```
 
 (sec_cli_overview)=
@@ -36,7 +36,7 @@ pyerk --load-mod demo-module.py demo -vis __all__
 For an overview of available command line options, see the [CLI page](cli) or the command:
 
 ```
-pyerk -h
+pyirk -h
 ```
 
 ### Interactive Usage
@@ -44,7 +44,7 @@ pyerk -h
 To open an IPython shell with a loaded module run e.g.
 
 ```
-pyerk -i -l control_theory1.py ct
+pyirk -i -l control_theory1.py ct
 ```
 
 Then, you have `ct` as variable in your namespace and can e.g. run `print(ct.I5167.R1)`.
@@ -55,7 +55,7 @@ Then, you have `ct` as variable in your namespace and can e.g. run `print(ct.I51
 ### Update Test Data
 
 ```
-pyerk --update-test-data
+pyirk --update-test-data
 ```
 
 For details see [devdoc#test_data](sec_test_data)
@@ -63,10 +63,10 @@ For details see [devdoc#test_data](sec_test_data)
 
 ## Multilinguality
 
-Pyerk aims to support an arbitrary number of languages by so called *language specified strings*. Currently support for English and German is preconfigured in `pyerk.settings`. These language specified strings are instances of the class `rdflib.Literal` where the `.language`-attribute is set to one of the values from `pyerk.setting.SUPPORTED_LANGUAGES` and can be created like:
+Pyirk aims to support an arbitrary number of languages by so called *language specified strings*. Currently support for English and German is preconfigured in `pyirk.settings`. These language specified strings are instances of the class `rdflib.Literal` where the `.language`-attribute is set to one of the values from `pyirk.setting.SUPPORTED_LANGUAGES` and can be created like:
 
 ```python
-from pyerk import de, en
+from pyirk import de, en
 
 # ...
 
@@ -74,16 +74,17 @@ lss1 = "some english words"@en
 lss2 = "ein paar deutsche Wörter"@de
 ```
 
-where `en, de` are instances of `pyerk.core.LanguageCode`.
+where `en, de` are instances of `pyirk.core.LanguageCode`.
 
-The usage inside Pyerk is best demonstrated by the unittest `test_c02__multilingual_relations`, see [test_core.py](https://github.com/ackrep-org/pyerk-core/blob/main/tests/test_core.py) (maybe change branch).
+The usage inside Pyirk is best demonstrated by the unittest `test_c02__multilingual_relations`, see [test_core.py](https://github.com/ackrep-org/pyirk-core/blob/main/tests/test_core.py) (maybe change branch).
 
 
 
 (sec_patterns)=
-## Patterns for Knowledge Representation in Pyerk
+## Patterns for Knowledge Representation in Pyirk
+<!-- Modeling Techniques -->
 
-In Pyerk knowledge is represented via *entities* and *statements* (inspired by Wikidata). There are two types of entities: *items* (mostly associated with nouns) and *relations* (mostly associated with verbs). Statements consist of *subject-predicate-object*-triples.
+In Pyirk knowledge is represented via *entities* and *statements* (inspired by Wikidata). There are two types of entities: *items* (mostly associated with nouns) and *relations* (mostly associated with verbs). Statements consist of *subject-predicate-object*-triples.
 
 - subject: can be any entity (item or a relation),
 - predicate: is always a relation,
@@ -94,7 +95,7 @@ Literals are "atomic" values like strings, numbers or boolean values.
 Every entity has short_key (`entity.short_key`, see also {ref}`sec_keys`.) and an uri (`entity.uri`). It is recommended but not required that every entity has a label (by means of relation `R1["has label"]`) and a description (by means of `R2["has description"]`).
 
 (sec_items)=
-### Item (subclass of `core.Entity`)
+### Items (Python Subclass of `core.Entity`)
 
 The `short_key` of any items starts with "`I`" and ends with a sequence of number characters (maximum sequence length not yet specified). Optionally the second character is "`a`" which indicates that this item was generated automatically (see [below](sec_auto_gen_items)).
 
@@ -117,13 +118,13 @@ auxiliary_expr has_arg x
 y is_equal_to expr
 ```
 
-One of the main goals of Pyerk is to simplify the creation of triples which involves creating auxiliary items (such as evaluated expressions). This can be achieved by calling functions such as `pyerk.instance_of(...)`. A more sophisticated way is to overload the `__call__` method of entities.
+One of the main goals of Pyirk is to simplify the creation of triples which involves creating auxiliary items (such as evaluated expressions). This can be achieved by calling functions such as `pyirk.instance_of(...)`. A more sophisticated way is to overload the `__call__` method of entities.
 
 
 (sec___call__mechanism)=
 #### The `__call__`-Method
 
-The class `pyerk.Entity` implements the `__call__` method which formally makes all items and relations callable Python objects. However, by default no method `_custom_call` is implemented which results in an exception. Associating a `_custom_call` method and thus truly make an item callable can be achieved by
+The class `pyirk.Entity` implements the `__call__` method which formally makes all items and relations callable Python objects. However, by default no method `_custom_call` is implemented which results in an exception. Associating a `_custom_call` method and thus truly make an item callable can be achieved by
 
 - explicitly adding the method, like e.g. in `I4895["mathematical operator"].add_method(p.create_evaluated_mapping, "_custom_call")`
 - creating an item which is a subclass (`R3`) or instance (`R4`) of a method which already has a `_custom_call` method, see `core.Entity._perform_inheritance` and `core.Entity._perform_instantiation` for details.
@@ -159,10 +160,10 @@ The whole knowledge graph is a collection of Entities (Items, Relation, Literals
 
 
 (sec_qualifiers)=
-## Qualifiers
+### Qualifiers
 
 
-Basic statements in Pyerk are modeled as `subject`-`predicate`-`object`-triples.
+Basic statements in Pyirk are modeled as `subject`-`predicate`-`object`-triples.
 E.g. to express that R. Kalman works at Stanford University one could use:
 ```python
 # example from ocse0.2 (adapted)
@@ -170,7 +171,7 @@ I2746["Rudolf Kalman"].set_relation(R1833["has employer"], I9942["Stanford Unive
 #.
 ```
 
-This results in the triple: `(I2746, R1833, I9942)`. In Pyerk such triples are modeled as instances of class `Statement`; each such instance represents an edge in the knowledge graph, where the subject and object are the corresponding nodes and each such edge has a lable (the relation type) and optionally other information attached to it.
+This results in the triple: `(I2746, R1833, I9942)`. In Pyirk such triples are modeled as instances of class `Statement`; each such instance represents an edge in the knowledge graph, where the subject and object are the corresponding nodes and each such edge has a lable (the relation type) and optionally other information attached to it.
 
 
 However, in many cases more complexity is needed. To express that Kalman worked at Stanford between 1964 and 1971, we can exploit that `Statement`-instances can themselves be use as subject of other triples, by means of so called qualifiers:
@@ -201,20 +202,20 @@ The concept of qualifiers is borrowed from Wikidata, see e.g the [WD-SPARQL-tuto
 ```
 
 
-**Summary:** Qualifiers are a flexible possibility to model "information about information" in Pyerk. They are used, e.g. to model the universal quantification.
+**Summary:** Qualifiers are a flexible possibility to model "information about information" in Pyirk. They are used, e.g. to model the universal quantification.
 
 
 
 (sec_scopes)=
-## Scopes
+### Scopes
 
-### Basics
+#### Basics
 Many knowledge artifacts (such as theorems or definitions) consists of multiple simpler statements which are in a specific semantic relation to each other. Consider the example theorem:
 
 > Let {math}`(a, b, c)` be the sides of a triangle, ordered from shortest to longest, and {math}`(l_a, l_b, l_c)` the respective lengths. If the angle between a and b is a rect angle then the equation {math}`l_c^2 = l_a^2 + l_b^2` holds.
 
 
-Such a theorem consists of several "semantic parts", which in the context of Pyerk are called *scopes*. In particular we the three following scopes:
+Such a theorem consists of several "semantic parts", which in the context of Pyirk are called *scopes*. In particular we the three following scopes:
 
 - *setting*: "Let (a, b, c) be the sides of a triangle, ordered from shortest to longest, and (la, lb, lc) the respective lengths."
 - *premise*: "If the angle between a and b is a rect angle"
@@ -222,7 +223,7 @@ Such a theorem consists of several "semantic parts", which in the context of Pye
 
 While the concepts "premise" and "assertion" are usually used to refer to parts of theorems (etc). The concept of "setting" is used to refer to those statements which do "set the stage" to properly formulate the premise and the assertion (e.g. by introducing and specifying the relevant objects).
 
-### Scopes in Pyerk
+#### Scopes in Pyirk
 
 Scopes are represented by  Items (instances (`R4`) of `I16["scope"]`). A scope item is specified by `R64__has_scope_type`. It is associated with a parent item (e.g. a theorem) via `R21__is_scope_of`. A statement which semantically belongs to a specific scope is associated to the respective scope item via the [qualifier](sec_qualifiers) `R20__has_defining_scope`.
 
@@ -230,7 +231,7 @@ Scopes are represented by  Items (instances (`R4`) of `I16["scope"]`). A scope i
 `R21__is_scope_of` and `R20__has_defining_scope` are not inverse (`R68__is_inverse_of`) to each other.
 ```
 
-### Notation of Scopes via Context Managers (`with ... as cm`)
+#### Notation of Scopes via Context Managers (`with ... as cm`)
 
 To simplify the creation of the auxiliary scope-items [python context managers](https://docs.python.org/3/reference/datamodel.html#context-managers) (i.e. `with`-statements) are used. This is illustrated by the following example:
 
@@ -255,14 +256,11 @@ with I5000["simplified Pythagorean theorem"].scope("premise") as cm:
 
 with I5000["simplified Pythagorean theorem"].scope("assertion") as cm:
 
-    # convert a pyerk items into  sympy.Symbol instances to conveniently
+    # convert a pyirk items into  sympy.Symbol instances to conveniently
     # denote formulas (see documentation below)
     La, Lb, Lc = p.items_to_symbols(la, lb, lc)
     cm.new_equation( La**2 + Lb**2, "==", Lc**2 )
 ```
-
-(sec_formulas)=
-## Representing Formulas
 
 (sec_operators)=
 ### Operators
@@ -271,7 +269,6 @@ Example from `math.py` (OCSE):
 
 
 ```python
-
 I4895 = p.create_item(
     R1__has_label="mathematical operator",
     R2__has_description="general (unspecified) mathematical operator",
@@ -304,9 +301,31 @@ mul = I5177["matmul"]
 C = mul(A, B)
 ```
 
-### Convenience-Expressions
+(sec_formulas)=
+### Representing Formulas
 
-While the operator approach is suitable to create the appropriate notes and edges in the knowledge graph it is not very convenient to write more complex formulas in that way. Thus pyerk offers a convenience mechanism based on the computer algebra package [Sympy](https://docs.sympy.org/dev/install.html). The function `builtin_entities.items_to_symbols()` creates a sympy symbol for every passed item (and keeps track of the associations). Then, a formula can be denoted using "usual" python syntax with operator signs `+`, `-`, `*`, `/`, and `**` which results in an instance of `sympy.core.expr.Expr`. These expressions can be passed, e.g., to `cm.new_equation` where they are converted back to pyerk-items. In other words the following two snippets are equivalent:
+In the module `math1.py` of OCSE there is an implementation for a convenient formula notation (write `x + y + z` instead of `add_item(x, add_item(y, z))`). See this example from the OCSE unittests:
+
+```python
+ma = p.irkloader.load_mod_from_path(pjoin(OCSE_PATH, "math1.py"), prefix="ma")
+t = p.instance_of(ma.I2917["planar triangle"])
+sides = ma.I9148["get polygon sides ordered by length"](t)
+a, b, c = sides.R39__has_element
+
+la, lb, lc = ma.items_to_symbols(a, b, c, relation=ma.R2495["has length"])
+symbolic_sum = la + lb + lc
+
+sum_item = ma.symbolic_expression_to_graph_expression(symbolic_sum)
+```
+
+
+#### Convenience-Expressions
+
+```{warning}
+This is not yet implemented. However, see [formula representation](sec_formulas).
+```
+
+While the operator approach is suitable to create the appropriate notes and edges in the knowledge graph it is not very convenient to write more complex formulas in that way. Thus pyirk offers a convenience mechanism based on the computer algebra package [Sympy](https://docs.sympy.org/dev/install.html). The function `builtin_entities.items_to_symbols()` creates a sympy symbol for every passed item (and keeps track of the associations). Then, a formula can be denoted using "usual" python syntax with operator signs `+`, `-`, `*`, `/`, and `**` which results in an instance of `sympy.core.expr.Expr`. These expressions can be passed, e.g., to `cm.new_equation` where they are converted back to pyirk-items. In other words the following two snippets are equivalent:
 
 ```python
 # approach 1: using intermediate symbolic expressions
@@ -323,13 +342,47 @@ cm.new_equation( plus(sq(La), sq(Lb)), "==", sq(Lc) )
 <!-- TODO: implement this mechanism and refer to unit test here -->
 
 
-## Universal and Existential Quantification
+(sec_stubs)=
+### Stubs (`I50["Stub"]`, `I000["some arbitrary label"]` and `R000["also"]`)
+
+One challenge in formal knowledge representation is  *Where to begin?*. Suppose you want to formalize some knowledge about triangles. It seems natural that you introduce the class *triangle* as a subclass of *polygon*. However, the class polygon should also be a subclass of something and so on.
+
+As modelling *all* knowledge is unfeasible at some points it is necessary to model incomplete entities (Ideally, theses are some relation-steps away from the relevant entities of the domain). To facilitate this there exists `I50["stub"]`. This item can be used as (base) class for any item which at the moment no further (taxonomic) information should be modeled. The name "stub" is inspired by Wikipedia's (stub-pages](https://en.wikipedia.org/wiki/Wikipedia:Stub). Example:
+
+
+```python
+I1234 = p.create_item(
+    R1__has_label="polygon",
+    R2__has_description="",
+    R3__is_subclass_of=p.I50["stub"],
+)
+```
+
+In some situations it is desireable to use items and relations which do not yet exist. This can be done by `I000["dummy item]` and `R000["dummy relation"]`. Both entities can be used with **arbitrary labels** and can thus be used regarded as a special kind of comment. Example:
+
+```python
+I1234 = p.create_item(
+    R1__has_label="polygon",
+    R2__has_description="",
+    R3__is_subclass_of=p.I000["general geometric figure"],
+    R000__has_dimension=2,
+)
+
+```
+
+This allows to focus a modeling session on the important items and relations and prevents to get distracted by introducing entities of subordinate relevance.
+
+It is quite probable that even mature irk-ontologies contain relations involving `I50`. Such items can be considered to constitute the "border of the domain of discourse". On the other hand, `I000` and `R000` should be used only temporarily and be replaced soon, e.g., by new instances/subclasses of `I50`.
+
+
+(sec_quantification)=
+### Universal and Existential Quantification
 
 Background, see <https://en.wikipedia.org/wiki/Quantifier_(logic)>.
 
 > commonly used quantifiers are ∀ (`$\forall$`) and ∃ (`$\exists$`).
 
-They are also called *universal quantifier* and *existential quantifier*. In Pyerk they can be expressed via
+They are also called *universal quantifier* and *existential quantifier*. In Pyirk they can be expressed via
 
 - [Qualifiers](sec_qualifiers). In particular (defined in module `builtin_entities`):
     - `univ_quant = QualifierFactory(R44["is universally quantified"])`
@@ -356,17 +409,17 @@ Despite having similar phonetics (and spelling) quantifiers (logic operators) an
 
 
 (sec_modules)=
-## Pyerk Modules and Packages
+## Pyirk Modules and Packages
 
-Pyerk entities and statements are organized in Pyerk *modules* (python files). Each module has to specify its own URI via the variable `__URI__`. The uri of an entity from that module is formed by `<module URI>#<entity short_key>`. Modules can be bundled together to form pyerk *packages*. A Pyerk package consists of a directory containing a file `erkpackage.toml` and at least one Pyerk module.
+Pyirk entities and statements are organized in Pyirk *modules* (python files). Each module has to specify its own URI via the variable `__URI__`. The uri of an entity from that module is formed by `<module URI>#<entity short_key>`. Modules can be bundled together to form pyirk *packages*. A Pyirk package consists of a directory containing a file `irkpackage.toml` and at least one Pyirk module.
 
 Modules can depend on other modules. A usual pattern is the following:
 
 ```python
 # in module control_theory1.py
 
-import pyerk as p
-mod = p.erkloader.load_mod_from_path("./math1.py", prefix="ma")
+import pyirk as p
+mod = p.irkloader.load_mod_from_path("./math1.py", prefix="ma")
 ```
 
 Here the variable `mod` is the module object (like from ordinary python import) and allows to access to the complete namespace of that module:

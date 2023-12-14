@@ -285,7 +285,7 @@ R22 = create_builtin_relation(
 R22["is functional"].set_relation(R22["is functional"], True)
 R32["is functional for each language"].set_relation(R22["is functional"], True)
 
-# Note that R1, R22, and R32 are used extensively to control the behavior in pyerk.core
+# Note that R1, R22, and R32 are used extensively to control the behavior in pyirk.core
 
 R3 = create_builtin_relation("R3", R1="is subclass of", R22__is_functional=True)
 R4 = create_builtin_relation("R4", R1="is instance of", R22__is_functional=True)
@@ -891,7 +891,7 @@ class ScopingCM:
 
         if strict:
             msg = f"Unexpected: Could not find a copied item associated to {old_var}"
-            raise core.aux.PyERKError(msg)
+            raise core.aux.PyIRKError(msg)
 
         # last resort return the original variable (because it was an external var)
         return old_var
@@ -1801,7 +1801,7 @@ def new_tuple(*args, **kwargs) -> Item:
     :return:
     """
 
-    # ensure this function is called with an active erk module (to define URIs of new instances )
+    # ensure this function is called with an active irk module (to define URIs of new instances )
     _ = core.get_active_mod_uri()
 
     scope = kwargs.pop("scope", None)
@@ -2114,7 +2114,7 @@ class ImplicationStatement:
     """
     Context manager to model conditional statements.
 
-    Example from erk:/math/0.2#I7169["definition of identity matrix"]
+    Example from irk:/math/0.2#I7169["definition of identity matrix"]
 
     ```
     with p.ImplicationStatement() as imp1:

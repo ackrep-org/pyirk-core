@@ -1,0 +1,7 @@
+# this file contains some configuration for the pyirk package
+
+main_module = "control_theory1.py"
+main_module_prefix = "ct"
+version = "0.2.2.0"
+
+[pyirkdjango]

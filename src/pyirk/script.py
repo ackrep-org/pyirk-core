@@ -1,5 +1,5 @@
 """
-Command line interface for erk package
+Command line interface for irk package
 """
 import os
 import argparse
@@ -16,7 +16,7 @@ except ModuleNotFoundError:
     import tomli as tomllib
 
 
-from . import core, erkloader, rdfstack
+from . import core, irkloader, rdfstack
 from . import visualization
 from . import reportgenerator
 from . import auxiliary as aux
@@ -34,7 +34,7 @@ def create_parser():
     generate the cli docs.
     """
 
-    parser = argparse.ArgumentParser(description="command line interface to ERK (emergent representation of knowledge)")
+    parser = argparse.ArgumentParser(description="command line interface to IRK (imperative representation of knowledge)")
     parser.add_argument(
         "inputfile",
         help="input file",
@@ -63,13 +63,13 @@ def create_parser():
     parser.add_argument(
         "-lp",
         "--load-package",
-        help="load erk package (represented by erkpackage.tomle file)",
+        help="load irk package (represented by irkpackage.tomle file)",
         default=None,
         metavar=("PACKAGE_TOML_PATH"),
     )
 
-    # background: in earlier versions default erk-module paths were specified wrt the path of the
-    # pyerk.core python module (and thus not wrt the current working dir).
+    # background: in earlier versions default irk-module paths were specified wrt the path of the
+    # pyirk.core python module (and thus not wrt the current working dir).
     # This flag served to switch to "real" paths (interpreted wrt the current working directory)
     # This behavior is now deprecated
     parser.add_argument(
@@ -143,8 +143,8 @@ def create_parser():
     parser.add_argument(
         "-utd",
         "--update-test-data",
-        help="create a subset of the erkpackage (e.g. OCSE) and store it in the `test_data` dir of pyerk-core",
-        metavar="path_to_erk_package"
+        help="create a subset of the irkpackage (e.g. OCSE) and store it in the `test_data` dir of pyirk-core",
+        metavar="path_to_irk_package"
     )
 
     parser.add_argument("--dbg", help="start debug routine", default=None, action="store_true")
@@ -191,8 +191,8 @@ def main():
         exit()
 
     # typical calls to generate new keys:
-    # pyerk --new-keys 30 --load-mod ../knowledge-base/rules/rules1.py rl
-    # short version: pyerk -nk 100 -l rules1.py rl
+    # pyirk --new-keys 30 --load-mod ../knowledge-base/rules/rules1.py rl
+    # short version: pyirk -nk 100 -l rules1.py rl
     if args.new_keys:
         if not args.load_mod:
             print(aux.byellow("No module loaded. Nothing to do."))
@@ -217,20 +217,20 @@ def main():
         visualization.visualize_entity(uri, write_tmp_files=True)
     elif args.start_django:
         try:
-            import pyerkdjango.core
+            import pyirkdjango.core
         except ImportError:
-            print(aux.bred("Error:"), "the module pyerkdjango seems not to be installed.")
+            print(aux.bred("Error:"), "the module pyirkdjango seems not to be installed.")
             # exit(10)
             raise
-        pyerkdjango.core.start_django()
+        pyirkdjango.core.start_django()
     elif args.start_django_shell:
         try:
-            import pyerkdjango.core
+            import pyirkdjango.core
         except ImportError:
-            print(aux.bred("Error:"), "the module pyerkdjango seems not to be installed.")
+            print(aux.bred("Error:"), "the module pyirkdjango seems not to be installed.")
             # exit(10)
             raise
-        pyerkdjango.core.start_django_shell()
+        pyirkdjango.core.start_django_shell()
     elif args.insert_keys_for_placeholders:
         insert_keys_for_placeholders(args.insert_keys_for_placeholders)
     elif args.update_test_data:
@@ -239,27 +239,27 @@ def main():
         print("nothing to do, see option `--help` for more info")
 
 
-def process_package(pkg_path: str) -> Tuple[erkloader.ModuleType, str]:
+def process_package(pkg_path: str) -> Tuple[irkloader.ModuleType, str]:
     if os.path.isdir(pkg_path):
-        pkg_path = os.path.join(pkg_path, "erkpackage.toml")
+        pkg_path = os.path.join(pkg_path, "irkpackage.toml")
 
     with open(pkg_path, "rb") as fp:
-        erk_conf_dict = tomllib.load(fp)
-    main_rel_path = erk_conf_dict["main_module"]
-    main_module_prefix = erk_conf_dict["main_module_prefix"]
+        irk_conf_dict = tomllib.load(fp)
+    main_rel_path = irk_conf_dict["main_module"]
+    main_module_prefix = irk_conf_dict["main_module_prefix"]
     main_mod_path = Path(pkg_path).parent.joinpath(main_rel_path).as_posix()
 
-    mod = erkloader.load_mod_from_path(modpath=main_mod_path, prefix=main_module_prefix)
+    mod = irkloader.load_mod_from_path(modpath=main_mod_path, prefix=main_module_prefix)
     return mod, main_module_prefix
 
 
-def process_mod(path: str, prefix: str, relative_to_workdir: bool = False) -> erkloader.ModuleType:
+def process_mod(path: str, prefix: str, relative_to_workdir: bool = False) -> irkloader.ModuleType:
     if not relative_to_workdir:
-        msg = "using mod paths which are not relative to workdir is deprecated since pyerk version 0.6.0"
+        msg = "using mod paths which are not relative to workdir is deprecated since pyirk version 0.6.0"
         raise DeprecationWarning(msg)
 
     smart_relative = None
-    mod1 = erkloader.load_mod_from_path(path, prefix=prefix, smart_relative=smart_relative)
+    mod1 = irkloader.load_mod_from_path(path, prefix=prefix, smart_relative=smart_relative)
 
     # perform sanity check
     # rdfstack.check_all_relation_types()
@@ -272,21 +272,21 @@ def debug():
     To interactively examine modules (builtin and others) use `--interactive-session`
     """
 
-    ERK_ROOT_DIR = aux.get_erk_root_dir()
-    TEST_DATA_PATH = os.path.join(ERK_ROOT_DIR, "erk-data", "ocse", "control_theory1.py")
-    mod1 = erkloader.load_mod_from_path(TEST_DATA_PATH, prefix="ct")  # noqa
+    IRK_ROOT_DIR = aux.get_irk_root_dir()
+    TEST_DATA_PATH = os.path.join(IRK_ROOT_DIR, "irk-data", "ocse", "control_theory1.py")
+    mod1 = irkloader.load_mod_from_path(TEST_DATA_PATH, prefix="ct")  # noqa
     ds = core.ds
     ds.rdfgraph = rdfstack.create_rdf_triples()
     qsrc = rdfstack.get_sparql_example_query2()
     res = ds.rdfgraph.query(qsrc)
-    z = aux.apply_func_to_table_cells(rdfstack.convert_from_rdf_to_pyerk, res)  # noqa
+    z = aux.apply_func_to_table_cells(rdfstack.convert_from_rdf_to_pyirk, res)  # noqa
     IPS()
 
 
 def create_auto_complete_file():
     lines = []
 
-    default_pkg_fname = "erkpackage.toml"
+    default_pkg_fname = "irkpackage.toml"
     if len(core.ds.uri_mod_dict) == 0:
         if os.path.exists(default_pkg_fname):
             print(f"Loading {default_pkg_fname}")
@@ -418,7 +418,7 @@ def update_test_data(pkg_path):
     mod, prefix = process_package(pkg_path)
     mod_cont = path_to_ast_container(inspect.getfile(mod))
 
-    test_data_root = core.aux.get_erk_path("pyerk-core-test_data")
+    test_data_root = core.aux.get_irk_path("pyirk-core-test_data")
     target_dir = os.path.join(test_data_root, "ocse_subset")
     template_dir = os.path.join(target_dir, "templates")
 
@@ -473,7 +473,7 @@ def process_template(template_path):
         elif line.startswith("class__"):
             short_key = line[len("class__"):]
         else:
-            # assume pyerk entity
+            # assume pyirk entity
             short_key = core.process_key_str(line, check=False).short_key
 
         original_content = mod_ast_cont.line_data[short_key]
@@ -534,11 +534,11 @@ def get_lines_for_short_key(short_key: str) -> str:
 def interactive_session(loaded_mod, prefix):
     """
     Start an interactive IPython session where the (optinally) loaded mod is available under its prefix name.
-    Also: perepare interactive pyerk-module -- a namespacew for experimentally creating entities.
+    Also: perepare interactive pyirk-module -- a namespacew for experimentally creating entities.
     """
-    import pyerk as p  # noqa
+    import pyirk as p  # noqa
 
-    __URI__ = "erk:/_interactive"
+    __URI__ = "irk:/_interactive"
 
     keymanager = p.KeyManager()
     p.register_mod(__URI__, keymanager, check_uri=False)

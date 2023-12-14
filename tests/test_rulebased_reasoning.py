@@ -7,10 +7,10 @@ import rdflib
 
 # noinspection PyUnresolvedReferences
 from ipydex import IPS, activate_ips_on_exception, set_trace  # noqa
-import pyerk as p
-import pyerk.io
+import pyirk as p
+import pyirk.io
 from addict import Addict as Container
-import pyerk.reportgenerator as rgen
+import pyirk.reportgenerator as rgen
 
 
 from .settings import (
@@ -50,7 +50,7 @@ class Test_01_rulebased_reasoning(HousekeeperMixin, unittest.TestCase):
 
         # store relevant data in Container to evaluate further
         c = Container()
-        zb = c.zb = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA01, prefix="zb")
+        zb = c.zb = p.irkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA01, prefix="zb")
 
         c.rule = p.ds.get_entity_by_key_str(rule_key)
 
@@ -94,7 +94,7 @@ class Test_01_rulebased_reasoning(HousekeeperMixin, unittest.TestCase):
         """
         apply all rules of stage 01 of the zebra puzzle and assess the correctness of the result
         """
-        zb = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA01, prefix="zb")
+        zb = p.irkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA01, prefix="zb")
 
         self.assertNotEqual(zb.I4037["Englishman"].zb__R8216__drinks, zb.I7509["water"])
         _ = p.ruleengine.apply_all_semantic_rules(mod_context_uri=zb.__URI__)
@@ -105,7 +105,7 @@ class Test_01_rulebased_reasoning(HousekeeperMixin, unittest.TestCase):
         assess correctness of full data
         """
 
-        zp = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA02, prefix="zp")
+        zp = p.irkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA02, prefix="zp")
 
         # test base data
         self.assertEqual(zp.zb.I4037["Englishman"].zb__R8098__has_house_color.R1.value, "red")
@@ -118,7 +118,7 @@ class Test_01_rulebased_reasoning(HousekeeperMixin, unittest.TestCase):
         apply rules and assess correctness of the result
         """
 
-        zp = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA02, prefix="zp")
+        zp = p.irkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA02, prefix="zp")
 
         neighbor = zp.person1.zb__R2353__lives_immediately_right_of
         self.assertIsNone(neighbor)
@@ -336,7 +336,7 @@ class Test_01_rulebased_reasoning(HousekeeperMixin, unittest.TestCase):
         apply rules and assess correctness of the result
         """
 
-        zp = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA02, prefix="zp")
+        zp = p.irkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA02, prefix="zp")
 
         neighbor_before = zp.person1.zb__R2353__lives_immediately_right_of
         self.assertEqual(neighbor_before, None)
@@ -860,9 +860,9 @@ class Test_01_rulebased_reasoning(HousekeeperMixin, unittest.TestCase):
         """
         match persons which have four negative statements of the same kind (test statement relations)
         """
-        zb = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA_BASE_DATA, prefix="zb")
-        zr = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA_RULES, prefix="zr", reuse_loaded=True)
-        zp = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA02, prefix="zp")
+        zb = p.irkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA_BASE_DATA, prefix="zb")
+        zr = p.irkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA_RULES, prefix="zr", reuse_loaded=True)
+        zp = p.irkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA02, prefix="zp")
 
         with p.uri_context(uri=TEST_BASE_URI):
 
@@ -894,9 +894,9 @@ class Test_01_rulebased_reasoning(HousekeeperMixin, unittest.TestCase):
 
     def test_d15__zebra_puzzle_stage02(self):
 
-        zb = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA_BASE_DATA, prefix="zb")
-        zr = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA_RULES, prefix="zr", reuse_loaded=True)
-        zp = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA02, prefix="zp")
+        zb = p.irkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA_BASE_DATA, prefix="zb")
+        zr = p.irkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA_RULES, prefix="zr", reuse_loaded=True)
+        zp = p.irkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA02, prefix="zp")
 
         # this will change soon
         self.assertNotIn(zb.I5209["red"], zp.person3.zb__R1055__has_not_house_color)
@@ -909,9 +909,9 @@ class Test_01_rulebased_reasoning(HousekeeperMixin, unittest.TestCase):
 
     def test_d16__zebra_puzzle_stage02(self):
 
-        zb = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA_BASE_DATA, prefix="zb")
-        zr = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA_RULES, prefix="zr", reuse_loaded=True)
-        zp = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA02, prefix="zp")
+        zb = p.irkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA_BASE_DATA, prefix="zb")
+        zr = p.irkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA_RULES, prefix="zr", reuse_loaded=True)
+        zp = p.irkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA02, prefix="zp")
 
         araw = p.ruleengine.AlgorithmicRuleApplicationWorker()
         func_act_list = p.ds.get_subjects_for_relation(zb.R2850["is functional activity"].uri, filter=True)
@@ -925,9 +925,9 @@ class Test_01_rulebased_reasoning(HousekeeperMixin, unittest.TestCase):
 
     def test_d17__zebra_puzzle_stage02(self):
 
-        zb = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA_BASE_DATA, prefix="zb")
-        zr = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA_RULES, prefix="zr", reuse_loaded=True)
-        zp = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA02, prefix="zp")
+        zb = p.irkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA_BASE_DATA, prefix="zb")
+        zr = p.irkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA_RULES, prefix="zr", reuse_loaded=True)
+        zp = p.irkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA02, prefix="zp")
 
         # get all non-placeholder etc humans
         h_list = p.get_instances_of(zb.I7435["human"], filter=p.is_relevant_item)
@@ -964,9 +964,9 @@ class Test_01_rulebased_reasoning(HousekeeperMixin, unittest.TestCase):
         """
         Test HTML report
         """
-        zb = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA_BASE_DATA, prefix="zb")
-        zr = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA_RULES, prefix="zr", reuse_loaded=True)
-        zp = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA02, prefix="zp")
+        zb = p.irkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA_BASE_DATA, prefix="zb")
+        zr = p.irkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA_RULES, prefix="zr", reuse_loaded=True)
+        zp = p.irkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA02, prefix="zp")
 
         fpath = pjoin(TEST_DATA_DIR1, "test_zebra_triples2.nt")
         with p.uri_context(uri=TEST_BASE_URI):
@@ -1003,8 +1003,8 @@ class Test_01_rulebased_reasoning(HousekeeperMixin, unittest.TestCase):
         reports = []
         result_history = []
 
-        zb = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA_BASE_DATA, prefix="zb")
-        zr = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA_RULES, prefix="zr", reuse_loaded=True)
+        zb = p.irkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA_BASE_DATA, prefix="zb")
+        zr = p.irkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA_RULES, prefix="zr", reuse_loaded=True)
 
         # before loading the hint, we can already infer some new statements
         res = p.ruleengine.apply_semantic_rules(
@@ -1019,7 +1019,7 @@ class Test_01_rulebased_reasoning(HousekeeperMixin, unittest.TestCase):
         self.assertIn(p.R68["is inverse of"].uri, res.rel_map)
 
         # load the hints and perform basic inference
-        zp = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA02, prefix="zp")
+        zp = p.irkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA02, prefix="zp")
         res_I702 = res = p.ruleengine.apply_semantic_rules(
             zp.zr.I701["rule: imply parent relation of a subrelation"],
             zp.zr.I702["rule: add reverse statement for symmetrical relations"],
@@ -1218,9 +1218,9 @@ class Test_01_rulebased_reasoning(HousekeeperMixin, unittest.TestCase):
         reports = []
         result_history = []
 
-        zb = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA_BASE_DATA, prefix="zb")
-        zr = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA_RULES, prefix="zr", reuse_loaded=True)
-        zp = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA02, prefix="zp")
+        zb = p.irkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA_BASE_DATA, prefix="zb")
+        zr = p.irkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA_RULES, prefix="zr", reuse_loaded=True)
+        zp = p.irkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA02, prefix="zp")
 
         fpath = pjoin(TEST_DATA_DIR1, "test_zebra_triples2.nt")
         with p.uri_context(uri=TEST_BASE_URI):
@@ -1409,9 +1409,9 @@ class Test_01_rulebased_reasoning(HousekeeperMixin, unittest.TestCase):
     @unittest.skip("currently too slow")
     def test_e03__zebra_puzzle_stage02(self):
 
-        zb = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA_BASE_DATA, prefix="zb")
-        zr = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA_RULES, prefix="zr", reuse_loaded=True)
-        zp = p.erkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA02, prefix="zp")
+        zb = p.irkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA_BASE_DATA, prefix="zb")
+        zr = p.irkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA_RULES, prefix="zr", reuse_loaded=True)
+        zp = p.irkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA02, prefix="zp")
 
         args = (zp.person8, zb.R2835["lives not in numbered house"], zb.I7582["house 2"], zb.I4735["house 3"],
          zb.I4785["house 4"], zb.I1383["house 5"])
@@ -1430,7 +1430,7 @@ class Test_01_rulebased_reasoning(HousekeeperMixin, unittest.TestCase):
             p.core._unlink_entity(zp.person12.uri, remove_from_mod=True)
 
             # not sure were this comes from but it has to go (disconnected artifact)
-            p.core._unlink_entity("erk:/local/unittest#Ia9473", remove_from_mod=True)
+            p.core._unlink_entity("irk:/local/unittest#Ia9473", remove_from_mod=True)
 
 
         all_relevant_rules = [

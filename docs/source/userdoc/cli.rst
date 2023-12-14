@@ -1,5 +1,5 @@
 
 .. argparse::
-   :module: pyerk.script
+   :module: pyirk.script
    :func: create_parser
-   :prog: pyerk
+   :prog: pyirk

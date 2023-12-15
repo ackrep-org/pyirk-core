@@ -2628,8 +2628,15 @@ I54 = create_builtin_item(
     R3__is_subclass_of=I11["general property"],
 )
 
+R79 = create_builtin_relation(
+    key_str="R79",
+    R1__has_label="has main subject",
+    R2__has_description="definition refers to this item",
+    R8__has_domain_of_argument_1=I20["mathematical definition"],
+    R11__has_range_of_result=I1["general item"],
+)
 
-# next keys: I54, R79
+# next keys: I55, R80
 
 
 # ######################################################################################################################

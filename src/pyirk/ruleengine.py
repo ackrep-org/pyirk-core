@@ -483,11 +483,52 @@ class RuleApplicatorWorker:
         res.apply_time = time.time() - t0
         return res
 
+    def _get_understandable_local_nodes(self):
+        """
+        Generate a humand understandable version of self.local_nodes.a
+        It is intendend for debugging only.
+        """
+        res = {}
+        for k, v in self.local_nodes.a.items():
+
+            lit = self.parent.literals.a.get(k)
+            if lit is not None:
+                res[repr(lit)] = v
+            else:
+                item = p.ds.get_entity_by_uri(k)
+                res[str(item)] = v
+        return res
+
+
+    def _get_understandable_result_maps(self, result_maps: List[dict]) -> List[list]:
+        """
+        Generate a humand understandable version of the result_map-dicts which are returned by
+        self.match_subgraph_P()
+        It is intendend for debugging only.
+        """
+        p.check_type(result_maps, List[dict])
+        res = []
+
+        # result_maps looks like [ {6: <Item I5177["matmul"]>, ... }, ...]
+
+        for result_map in result_maps:
+            res_pairs = []
+            for k, v_item in result_map.items():
+                uri = self.local_nodes.b[k]
+                k_item = p.ds.get_entity_by_uri(uri)
+                # v_item = p.ds.get_entity_by_uri(v)
+                res_pairs.append((k_item, v_item))
+            res.append(res_pairs)
+        return res
+
     def apply_graph_premise(self) -> core.RuleResult:
         t0 = time.time()
         result_maps = self.match_subgraph_P()
-        # TODO: for debugging the result_maps data structure the following things might be helpful:
-        # - a mapping like self.local_nodes.a but with labels instead of uris
+        # Note: useful for debugging:
+        # - self._get_understandable_local_nodes()
+        # - self._get_understandable_result_maps()
+        #
+        # TODO: to debug the result_maps data structure the following things might be helpful:
         # - a visualization of the prototype graph self.P
         res = self._process_result_map(result_maps)
         res.apply_time = time.time() - t0

@@ -483,6 +483,21 @@ class RuleApplicatorWorker:
         res.apply_time = time.time() - t0
         return res
 
+
+    def _resolve_local_node(self, node):
+        """
+        return item or literal
+        """
+
+        uri = self.local_nodes.b.get(node)
+        assert uri is not None
+        lit = self.parent.literals.a.get(uri)
+        if lit is not None:
+            return lit
+        else:
+            item = p.ds.get_entity_by_uri(uri)
+            return item
+
     def _get_understandable_local_nodes(self):
         """
         Generate a humand understandable version of self.local_nodes.a
@@ -491,12 +506,8 @@ class RuleApplicatorWorker:
         res = {}
         for k, v in self.local_nodes.a.items():
 
-            lit = self.parent.literals.a.get(k)
-            if lit is not None:
-                res[repr(lit)] = v
-            else:
-                item = p.ds.get_entity_by_uri(k)
-                res[str(item)] = v
+            item_or_lit = self._resolve_local_node(k)
+            res[str(item_or_lit)] = v
         return res
 
 
@@ -514,10 +525,9 @@ class RuleApplicatorWorker:
         for result_map in result_maps:
             res_pairs = []
             for k, v_item in result_map.items():
-                uri = self.local_nodes.b[k]
-                k_item = p.ds.get_entity_by_uri(uri)
+                k_item_or_lit = self._resolve_local_node(k)
                 # v_item = p.ds.get_entity_by_uri(v)
-                res_pairs.append((k_item, v_item))
+                res_pairs.append((k_item_or_lit, v_item))
             res.append(res_pairs)
         return res
 

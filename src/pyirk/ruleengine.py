@@ -484,12 +484,17 @@ class RuleApplicatorWorker:
         return res
 
 
-    def _resolve_local_node(self, node):
+    def _resolve_local_node(self, node=None, uri=None):
         """
         return item or literal
         """
 
-        uri = self.local_nodes.b.get(node)
+        assert not (node is None and uri is None)
+
+        if uri is None:
+            uri = self.local_nodes.b.get(node)
+        else:
+            assert node is None
         assert uri is not None
         lit = self.parent.literals.a.get(uri)
         if lit is not None:
@@ -504,9 +509,9 @@ class RuleApplicatorWorker:
         It is intendend for debugging only.
         """
         res = {}
-        for k, v in self.local_nodes.a.items():
+        for k_uri, v in self.local_nodes.a.items():
 
-            item_or_lit = self._resolve_local_node(k)
+            item_or_lit = self._resolve_local_node(uri=k_uri)
             res[str(item_or_lit)] = v
         return res
 
@@ -540,6 +545,9 @@ class RuleApplicatorWorker:
         #
         # TODO: to debug the result_maps data structure the following things might be helpful:
         # - a visualization of the prototype graph self.P
+        dbg = self._get_understandable_result_maps(result_maps)
+
+        # now apply condition funcs (to filter the results) and consequent funcs (to do something)
         res = self._process_result_map(result_maps)
         res.apply_time = time.time() - t0
 
@@ -902,6 +910,7 @@ class RuleApplicatorWorker:
         #   2: <Item I9642["local exponential stability"]>
         #  }, ... ]
 
+        # IPS()
         return new_res
 
     def _get_by_uri(self, uri):
@@ -938,6 +947,9 @@ class RuleApplicatorWorker:
 
         see also: function edge_matcher
         """
+
+        # cond = not n1d["is_literal"] and n1d["itm"].R4 is not None and "square matrix" in str(n1d["itm"].R4)
+        cond = not n1d["is_literal"] and n1d["itm"].short_key == "Ia7720"
 
         if n1d["is_literal"]:
             if n2d.get("is_variable_literal"):
@@ -1254,6 +1266,8 @@ def edge_matcher(e1d: AtlasView, e2d: AtlasView) -> bool:
     assert len(e2d) == 1, msg
 
     e2d = e2d[0]
+
+    # IPS("R5938" in str(e1d) + str(e2d))
 
     if e2d["rel_uri"] == wildcard_relation_uri:
         # wildcard relations matches any relation which has the required relation properties

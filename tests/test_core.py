@@ -1239,29 +1239,26 @@ class Test_02_ruleengine(HousekeeperMixin, unittest.TestCase):
     def setup_data1(self):
 
         with p.uri_context(uri=TEST_BASE_URI):
-            self.rule1 = p.create_item(
-                key_str="I400",
+            I4731 = p.create_item(
                 R1__has_label="subproperty rule 1",
-                R2__has_description=(
-                    # "specifies the 'transitivity' of I54_mathematical_property-instances via R17_issubproperty_of"
-                    "specifies the 'transitivity' of R17_is_subproperty_of"
-                ),
+                R2__has_description=("specifies the 'transitivity' of R17_is_subproperty_of"),
                 R4__is_instance_of=p.I41["semantic rule"],
             )
 
-            with self.rule1["subproperty rule 1"].scope("setting") as cm:
+            with I4731["subproperty rule 1"].scope("setting") as cm:
                 cm.new_var(P1=p.instance_of(p.I54["mathematical property"]))
                 cm.new_var(P2=p.instance_of(p.I54["mathematical property"]))
                 cm.new_var(P3=p.instance_of(p.I54["mathematical property"]))
-            #     # A = cm.new_var(sys=instance_of(I1["general item"]))
-            #
-            with self.rule1["subproperty rule 1"].scope("premise") as cm:
+
+            with I4731["subproperty rule 1"].scope("premise") as cm:
                 cm.new_rel(cm.P2, p.R17["is subproperty of"], cm.P1)
                 cm.new_rel(cm.P3, p.R17["is subproperty of"], cm.P2)
                 # todo: state that all variables are different from each other
 
-            with self.rule1["subproperty rule 1"].scope("assertion") as cm:
+            with I4731["subproperty rule 1"].scope("assertion") as cm:
                 cm.new_rel(cm.P3, p.R17["is subproperty of"], cm.P1)
+
+            self.rule1 = I4731
 
     def test_a01__basics(self):
 
@@ -1340,11 +1337,14 @@ class Test_02_ruleengine(HousekeeperMixin, unittest.TestCase):
 
         mod1 = p.irkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct", modname=TEST_MOD_NAME)
         self.assertEqual(len(mod1.I9642["local exponential stability"].get_relations("R17__is_subproperty_of")), 1)
+
+        IPS()
         ra = p.ruleengine.RuleApplicator(self.rule1, mod_context_uri=TEST_BASE_URI)
         res = ra.apply()
 
         # ensure that after rule application there new relations
         self.assertEqual(len(mod1.I9642["local exponential stability"].get_relations("R17__is_subproperty_of")), 3)
+        IPS()
 
     def test_c06__ruleengine05(self):
         self.setup_data1()

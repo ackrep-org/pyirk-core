@@ -149,7 +149,7 @@ class EntityNode(AbstractGraphObject):
         if isinstance(entity, p.Item):
             self.shape = "circle"
         elif isinstance(entity, p.Relation):
-            self.shape = "hexagon"
+            self.shape = "octagon"
         elif isinstance(entity, p.Statement):
             self.shape = "cds"
         else:
@@ -159,7 +159,7 @@ class EntityNode(AbstractGraphObject):
         # TODO: handle different languages here
         self.label = self.smart_label = entity.R1
 
-        self.maxlen = 17
+        self.maxlen = 12
         self.sep = "__newline-center__"  # see NEWLINE_REPLACEMENTS
         self._perform_label_segmentation()
 
@@ -478,15 +478,18 @@ def render_graph_to_dot(G: nx.DiGraph) -> str:
         node=lambda u, d: {
             "fixedsize": True,
             "width": 1.3,
-            "fontsize": 10,
-            "color": d.get("color", "black"),
+            "height": 1.3,
+            "fontsize": 20,
             "fontcolor": d.get("color", "black"),
             "label": d.get("label", "undefined label"),
             "shape": d.get("shape", "circle"),  # see also AbstractNode.shape
         },
         edge=lambda u, v, d: {
             **edge_defaults,
-            "label": d["label"],
+            # "label": d["label"],
+            # "labelangle": 0,
+            "label": d["short_key"],
+            "fontsize": 20,
             "color": d.get("color", "black"),
         },
     )

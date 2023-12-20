@@ -210,6 +210,10 @@ class Edge(AbstractGraphObject):
     def get_dot_label(self):
         return self.dot_label_str
 
+    def get_color(self) -> str:
+        clr = mpl_colors[(int(self.short_key[1:]) - 1) % len(mpl_colors)]
+        return clr
+
 
 def create_node(arg: Union[p.Entity, object], url_template: str):
     if isinstance(arg, p.Entity):
@@ -352,11 +356,11 @@ def create_nx_graph_from_entity(uri, url_template="") -> nx.DiGraph:
             if re.role == p.RelationRole.SUBJECT:
                 other_node = create_node(obj, url_template)
                 G.add_node(other_node)
-                G.add_edge(base_node, other_node, label=edge.get_dot_label())
+                G.add_edge(base_node, other_node, label=edge.get_dot_label(), color=edge.get_color())
             else:
                 other_node = create_node(subj, url_template)
                 G.add_node(other_node)
-                G.add_edge(other_node, base_node, label=edge.get_dot_label())
+                G.add_edge(other_node, base_node, label=edge.get_dot_label(), color=edge.get_color())
 
     return G
 
@@ -469,12 +473,19 @@ def render_graph_to_dot(G: nx.DiGraph) -> str:
             "label": d.get("label", "undefined label"),
             "shape": d.get("shape", "circle"),  # see also AbstractNode.shape
         },
-        # u: node1, v: node1, d: its attribute dict
-        edge=lambda u, v, d: {**edge_defaults, "label": d["label"]},
+        edge=lambda u, v, d: {
+            **edge_defaults,
+            "label": d["label"],
+            "color": d["color"],
+        },
     )
 
+    og = nxv.to_ordered_graph(G,
+                              node_key=lambda ud: ud[0].short_key,
+                              edge_key=lambda uvd: uvd[1].short_key,
+                              )
     # noinspection PyTypeChecker
-    dot_data: str = nxv.render(G, style, format="raw")
+    dot_data: str = nxv.render(og, style, format="raw")
 
     return dot_data
 

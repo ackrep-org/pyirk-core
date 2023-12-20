@@ -460,6 +460,7 @@ def render_graph_to_dot(G: nx.DiGraph) -> str:
         "style": "solid",
         "arrowType": "normal",
         "fontsize": 10,
+        "penwidth": 2,
         # "labeljust": "r",
     }
     style = nxv.Style(

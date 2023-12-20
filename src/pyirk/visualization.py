@@ -80,7 +80,7 @@ class AbstractGraphObject(ABC):
         if self.short_key.startswith("Ia"):
             unformatted_repr_str = f'{self.short_key}'
         else:
-            unformatted_repr_str = f'{self.short_key}["{self.label}"]'
+            unformatted_repr_str = f'{self.short_key}[{self.label}]'
         self.label_segment_keys, self.label_segments = create_label_segments(unformatted_repr_str, maxlen=self.maxlen)
         self.label_segment_items = zip(self.label_segment_keys, self.label_segments)
 

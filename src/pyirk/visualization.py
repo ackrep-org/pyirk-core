@@ -224,7 +224,7 @@ class Edge(AbstractGraphObject):
         return clr
 
 
-def create_node(arg: Union[p.Entity, object], url_template: str):
+def create_node(arg: Union[p.Entity, object], url_template: str) -> AbstractGraphObject:
     if isinstance(arg, p.Entity):
         return EntityNode(arg, url_template)
     elif isinstance(arg, str):
@@ -365,11 +365,11 @@ def create_nx_graph_from_entity(uri, url_template="") -> nx.DiGraph:
             if re.role == p.RelationRole.SUBJECT:
                 other_node = create_node(obj, url_template)
                 G.add_node(other_node, color=other_node.get_color())
-                G.add_edge(base_node, other_node, label=edge.get_dot_label(), color=edge.get_color())
+                G.add_edge(base_node, other_node, short_key=edge.short_key, label=edge.get_dot_label(), color=edge.get_color())
             else:
                 other_node = create_node(subj, url_template)
                 G.add_node(other_node, color=other_node.get_color())
-                G.add_edge(other_node, base_node, label=edge.get_dot_label(), color=edge.get_color())
+                G.add_edge(other_node, base_node, short_key=edge.short_key, label=edge.get_dot_label(), color=edge.get_color())
 
     return G
 
@@ -473,7 +473,17 @@ def render_graph_to_dot(G: nx.DiGraph) -> str:
         # "labeljust": "r",
     }
     style = nxv.Style(
-        graph={"rankdir": "BT"},
+        graph={
+            "rankdir": "BT",
+            "layout": "sfdp",
+            # "overlap_shrink": True,
+            "dim": 2,
+            "dimen": 2,
+            "beautify": True,
+            "overlap_scaling": -5.5,
+            # "beautify": False,
+            # "overlap_scaling": -3.0,
+        },
         # u: node, d: its attribute dict
         node=lambda u, d: {
             "fixedsize": True,
@@ -483,7 +493,9 @@ def render_graph_to_dot(G: nx.DiGraph) -> str:
             "fontcolor": d.get("color", "black"),
             "label": d.get("label", "undefined label"),
             "shape": d.get("shape", "circle"),  # see also AbstractNode.shape
+            "color": d.get("color", "black"),
         },
+        # u,v: nodes, d: edge attribute dict
         edge=lambda u, v, d: {
             **edge_defaults,
             # "label": d["label"],
@@ -494,10 +506,27 @@ def render_graph_to_dot(G: nx.DiGraph) -> str:
         },
     )
 
-    og = nxv.to_ordered_graph(G,
-                              node_key=lambda ud: ud[0].short_key,
-                              edge_key=lambda uvd: uvd[1].short_key,
-                              )
+    edge_first = True
+    # edge_first = False
+
+    def node_sort_func(args: Tuple[AbstractGraphObject, dict]):
+        u, d = args
+        if edge_first:
+            # get edge that starts or ends at this node
+            for (_u, _v), v in G.edges.items():
+                if _u == u or _v == u:
+                    return v["short_key"]
+        return u.short_key
+
+    def edge_sort_func(args: Tuple[AbstractGraphObject, AbstractGraphObject, dict]):
+        u, v, d = args
+        if edge_first:
+            return d["short_key"]
+        else:
+            return 0
+
+    # sort the graph
+    og = nxv.to_ordered_graph(G, node_key=node_sort_func, edge_key=edge_sort_func)
     # noinspection PyTypeChecker
     dot_data: str = nxv.render(og, style, format="raw")
 
@@ -546,6 +575,7 @@ def visualize_entity(uri: str, url_template="", write_tmp_files: bool = False) -
     dot_data = "\n".join((dot_lines[0], inner_dot_code, dot_lines[-1]))
 
     # noinspection PyUnresolvedReferences,PyProtectedMember
+    # choose one: "circo", "dot", "fdp", "neato", "osage", "sfdp", "twopi"
     raw_svg_data = nxv._graphviz.run(dot_data, algorithm="sfdp", format="svg", graphviz_bin=None)
     raw_svg_data = raw_svg_data.decode("utf8")
     svg_data1 = svg_replace(raw_svg_data, REPLACEMENTS)

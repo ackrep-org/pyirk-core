@@ -77,7 +77,10 @@ class AbstractGraphObject(ABC):
         """
 
         # TODO: replace this by prefixed short_key
-        unformatted_repr_str = f'{self.short_key}["{self.label}"]'
+        if self.short_key.startswith("Ia"):
+            unformatted_repr_str = f'{self.short_key}'
+        else:
+            unformatted_repr_str = f'{self.short_key}["{self.label}"]'
         self.label_segment_keys, self.label_segments = create_label_segments(unformatted_repr_str, maxlen=self.maxlen)
         self.label_segment_items = zip(self.label_segment_keys, self.label_segments)
 
@@ -165,6 +168,12 @@ class EntityNode(AbstractGraphObject):
             return render_label(self.dot_label_str)
         else:
             return self.dot_label_str
+
+    def get_color(self) -> str:
+        if self.short_key.startswith("Ia"):
+            return "grey"
+        else:
+            return "black"
 
 
 class LiteralStrNode(AbstractGraphObject):
@@ -355,11 +364,11 @@ def create_nx_graph_from_entity(uri, url_template="") -> nx.DiGraph:
             edge.perform_html_wrapping()
             if re.role == p.RelationRole.SUBJECT:
                 other_node = create_node(obj, url_template)
-                G.add_node(other_node)
+                G.add_node(other_node, color=other_node.get_color())
                 G.add_edge(base_node, other_node, label=edge.get_dot_label(), color=edge.get_color())
             else:
                 other_node = create_node(subj, url_template)
-                G.add_node(other_node)
+                G.add_node(other_node, color=other_node.get_color())
                 G.add_edge(other_node, base_node, label=edge.get_dot_label(), color=edge.get_color())
 
     return G
@@ -471,13 +480,14 @@ def render_graph_to_dot(G: nx.DiGraph) -> str:
             "width": 1.3,
             "fontsize": 10,
             "color": d.get("color", "black"),
+            "fontcolor": d.get("color", "black"),
             "label": d.get("label", "undefined label"),
             "shape": d.get("shape", "circle"),  # see also AbstractNode.shape
         },
         edge=lambda u, v, d: {
             **edge_defaults,
             "label": d["label"],
-            "color": d["color"],
+            "color": d.get("color", "black"),
         },
     )
 

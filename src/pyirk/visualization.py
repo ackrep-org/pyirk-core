@@ -356,6 +356,8 @@ def create_nx_graph_from_entity(uri, url_template="") -> nx.DiGraph:
             continue
 
         re_list: List[p.Statement]
+        # TODO: Make this hack visible from the outside
+        a_node_cnt = 0
         for re in re_list:
             assert len(re.relation_tuple) == 3
             subj, pred, obj = re.relation_tuple
@@ -363,13 +365,20 @@ def create_nx_graph_from_entity(uri, url_template="") -> nx.DiGraph:
             edge = Edge(pred, url_template)
             edge.perform_html_wrapping()
             if re.role == p.RelationRole.SUBJECT:
+                if "Ia" in obj.short_key and a_node_cnt > 2:
+                    continue
                 other_node = create_node(obj, url_template)
                 G.add_node(other_node, color=other_node.get_color())
                 G.add_edge(base_node, other_node, short_key=edge.short_key, label=edge.get_dot_label(), color=edge.get_color())
             else:
+                if "Ia" in subj.short_key and a_node_cnt > 2:
+                    continue
                 other_node = create_node(subj, url_template)
                 G.add_node(other_node, color=other_node.get_color())
                 G.add_edge(other_node, base_node, short_key=edge.short_key, label=edge.get_dot_label(), color=edge.get_color())
+
+            if "Ia" in other_node.short_key:
+                a_node_cnt += 1
 
     return G
 
@@ -480,7 +489,7 @@ def render_graph_to_dot(G: nx.DiGraph) -> str:
             "dim": 2,
             "dimen": 2,
             "beautify": True,
-            "overlap_scaling": -5.5,
+            # "overlap_scaling": -5.5,
             # "beautify": False,
             # "overlap_scaling": -3.0,
         },

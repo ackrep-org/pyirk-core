@@ -385,15 +385,16 @@ def create_nx_graph_from_entity(uri, url_template="") -> nx.DiGraph:
 
 def get_color_for_item(item: p.Item) -> str:
     # TODO: add color by base_uri
-    if item.short_key == "I14":
-        return "red"
+    if "Ia" in item.short_key:
+        return "grey"
+    # if item.short_key == "I14":
+    #     return "red"
     return "black"
 
 
 def get_color_for_stm(stm: p.Statement) -> str:
-    cmap = {"R3": mpl_colors[0], "R4": mpl_colors[1]}
-
-    return cmap.get(stm.rsk, "black")
+    # TODO: unfuck this
+    return mpl_colors[(int(stm.rsk[1:])-1) % len(mpl_colors)]
 
 
 def create_complete_graph(
@@ -429,8 +430,7 @@ def create_complete_graph(
             pass
         else:
             node = create_node(item, url_template)
-        label_str = f"{item.short_key}\n{item.R1__has_label}"
-        G.add_node(node, label=label_str, color=get_color_for_item(item))
+        G.add_node(node)
         added_items_nodes[item_uri] = node
 
         # iterate over relation edges
@@ -442,21 +442,19 @@ def create_complete_graph(
                 if stm.relation_tuple[1].uri in REL_BLACKLIST:
                     continue
 
-                obj = stm.relation_tuple[-1]
+                subj, pred, obj = stm.relation_tuple
                 if isinstance(obj, p.Item):
                     if other_node := added_items_nodes.get(obj.uri):
                         pass
                     else:
                         other_node = create_node(obj, url_template)
-                        G.add_node(other_node, label=obj.short_key, color=get_color_for_item(obj))
+                        G.add_node(other_node)
                         added_items_nodes[obj.uri] = other_node
                 else:
                     # obj is a literal, we omit that for now
                     continue
 
-                # edge_label = f"{stm.relation_tuple[1].short_key}"
-                edge_label = f"{stm.relation_tuple[1].short_key}"
-                G.add_edge(node, other_node, label=edge_label, color=get_color_for_stm(stm))
+                G.add_edge(node, other_node, edge=pred)
 
                 assert stm.uri not in added_statements
                 added_statements[stm.uri] = 1
@@ -611,71 +609,65 @@ def get_label(entity):
         return res.value
     return res
 
+
 def visualize_all_entities(url_template="", write_tmp_files: bool = False) -> str:
     G = create_complete_graph(url_template)
 
     print(f"Visualizing {len(G.nodes)} nodes and {len(G.edges)} edges.")
 
-    # styling and rendering
+    def edge_style(u, v, d):
+        e = d["edge"]
+        idx = (int(e.short_key[1:]) - 1)
+        clr = mpl_colors[idx] if idx < len(mpl_colors) else "grey"
 
-    edge_defaults = {
-        "style": "solid",
-        "arrowType": "normal",
-        "fontsize": 10,
-        # "labeljust": "r",
-    }
-    style = nxv.Style(
-        graph={"rankdir": "BT"},
-        # u: node, d: its attribute dict
-        node=lambda u, d: {
-            "fixedsize": True,
-            "width": 1.3,
-            "fontsize": 10,
-            "color": d.get("color", "black"),
-            "label": get_label(d),
-            "shape": d.get("shape", "circle"),  # see also AbstractNode.shape
-        },
-        # u: node1, v: node1, d: its attribute dict
-        edge=lambda u, v, d: {
-            **edge_defaults,
-            # "label": d["label"]
-        },
-    )
-
-    style = nxv.Style(
-        graph={"rankdir": "BT", "nodesep": 0.2},
-        node=lambda u, d: {
-            # "shape": "point",
-            "shape": "circle",
-            "style": "filled",
-            "fixedsize": True,
-            "color": d.get("color", "black"),
-            "width": 0.3,
-            "fontsize": 2,
-            "label": get_label(d),
-            "fillcolor": "#45454533",
-        },
-        edge=lambda u, v, d: {
+        return {
             "style": "solid",
-            "arrowhead": "normal",
-            "color": d.get("color", "#959595ff"),
-            "arrowsize": 0.5,
-            # "label": d["label"]
+            "arrowhead": "vee",
+            "arrowsize": 0.3,
+            "color": clr,
+            # "label": d["edge"].short_key
+        }
+
+    # styling and rendering
+    style = nxv.Style(
+        graph={
+            # layout algorithm
+            "layout": "sfdp",
+            "overlap": "prism",
+            # "overlap_shrink": -10,
+            "overlap_scaling": -10,
+            # global settings
+            "outputorder": "edgesfirst",  # such that nodes are above the edges
         },
+        node=lambda u, d: {
+            # shape and size of node symbol
+            "shape": "circle",
+            "fixedsize": True,
+            "width": 0.3,
+            "height": 0.3,
+            "style": "filled",
+            "color": "black" if "Ia" not in u.short_key else "gray",
+            "fillcolor": "#bbbbbbdd" if "Ia" not in u.short_key else "#dddddddd",
+            # shape size and content of node label
+            "fontsize": 8,
+            "fontcolor": "#555555" if "Ia" not in u.short_key else "#777777",
+            # "label": None,
+            "label": u.short_key,
+            # "label": f"{u.short_key}\n{u.R1__has_label}",
+        },
+        edge=edge_style,
     )
 
     # noinspection PyTypeChecker
     raw_dot_data: str = nxv.render(G, style, format="raw")
-
     # optional: preprocessing
     dot_data = raw_dot_data
     # noinspection PyUnresolvedReferences,PyProtectedMember
-    raw_svg_data = nxv._graphviz.run(dot_data, algorithm="dot", format="svg", graphviz_bin=None)
+    raw_svg_data = nxv._graphviz.run(dot_data, algorithm="sfdp", format="svg", graphviz_bin=None)
     svg_data1 = svg_replace(raw_svg_data.decode("utf8"), REPLACEMENTS)
 
     if write_tmp_files:
         # for debugging
-
         dot_fpath = "./tmp_dot.txt"
         with open(dot_fpath, "w") as txtfile:
             txtfile.write(dot_data)

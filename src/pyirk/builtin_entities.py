@@ -1898,6 +1898,8 @@ I39 = create_builtin_item(
     R3__is_subclass_of=I38["non-negative integer"],
 )
 
+I39["positive integer"].R1__has_label = "positive Ganzzahl" @ de
+
 
 R36 = create_builtin_relation(
     key_str="R36",

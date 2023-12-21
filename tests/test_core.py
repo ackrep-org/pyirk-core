@@ -1373,6 +1373,8 @@ class Test_03_Multilinguality(HousekeeperMixin, unittest.TestCase):
         # (it would need some further work to make it independent of the concrete default lang)
         self.assertEqual(p.settings.DEFAULT_DATA_LANGUAGE, "en")
 
+        self.assertEqual(p.I39["positive integer"], p.I39["positive Ganzzahl"@p.de])
+
         with p.uri_context(uri=TEST_BASE_URI):
 
             with self.assertRaises(p.aux.MultilingualityError):

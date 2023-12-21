@@ -369,13 +369,13 @@ def create_nx_graph_from_entity(uri, url_template="") -> nx.DiGraph:
                     continue
                 other_node = create_node(obj, url_template)
                 G.add_node(other_node, color=other_node.get_color())
-                G.add_edge(base_node, other_node, short_key=edge.short_key, label=edge.get_dot_label(), color=edge.get_color())
+                G.add_edge(base_node, other_node, edge=edge, short_key=edge.short_key, label=edge.get_dot_label(), color=edge.get_color())
             else:
                 if "Ia" in subj.short_key and a_node_cnt > 2:
                     continue
                 other_node = create_node(subj, url_template)
                 G.add_node(other_node, color=other_node.get_color())
-                G.add_edge(other_node, base_node, short_key=edge.short_key, label=edge.get_dot_label(), color=edge.get_color())
+                G.add_edge(other_node, base_node, edge=edge, hort_key=edge.short_key, label=edge.get_dot_label(), color=edge.get_color())
 
             if "Ia" in other_node.short_key:
                 a_node_cnt += 1
@@ -473,41 +473,43 @@ def render_graph_to_dot(G: nx.DiGraph) -> str:
     # matplotlib default colors:
     # ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf']
     edge_defaults = {
-        "style": "solid",
-        "arrowType": "normal",
-        "fontsize": 10,
-        "penwidth": 2,
         # "labeljust": "r",
     }
     style = nxv.Style(
         graph={
-            "rankdir": "BT",
             "layout": "sfdp",
+            "overlap": "prism",
             # "overlap_shrink": True,
             "dim": 2,
             "dimen": 2,
-            "beautify": True,
+            # "beautify": True,
             # "overlap_scaling": -5.5,
             # "beautify": False,
             # "overlap_scaling": -3.0,
+            "outputorder": "edgesfirst",
         },
         # u: node, d: its attribute dict
         node=lambda u, d: {
             "fixedsize": True,
             "width": 1.3,
             "height": 1.3,
-            "fontsize": 20,
-            "fontcolor": d.get("color", "black"),
-            "label": d.get("label", "undefined label"),
             "shape": d.get("shape", "circle"),  # see also AbstractNode.shape
-            "color": d.get("color", "black"),
+            "style": "filled",
+            "color": "grey" if u.short_key.startswith("Ia") else "black",
+            "fillcolor": "#eeeeeedd" if "Ia" not in u.short_key else "#dddddddd",
+            # Label
+            "label": u.get_dot_label(),
+            "fontsize": 20,
+            "fontcolor": "grey" if u.short_key.startswith("Ia") else "black",
         },
         # u,v: nodes, d: edge attribute dict
         edge=lambda u, v, d: {
-            **edge_defaults,
-            # "label": d["label"],
-            # "labelangle": 0,
-            "label": d["short_key"],
+            # arrow
+            "style": "solid",
+            "arrowType": "normal",
+            "penwidth": 2,
+            # label
+            "label": d["edge"].short_key,
             "fontsize": 20,
             "color": d.get("color", "black"),
         },
@@ -520,15 +522,15 @@ def render_graph_to_dot(G: nx.DiGraph) -> str:
         u, d = args
         if edge_first:
             # get edge that starts or ends at this node
-            for (_u, _v), v in G.edges.items():
+            for (_u, _v), _d in G.edges.items():
                 if _u == u or _v == u:
-                    return v["short_key"]
+                    return _d["edge"].short_key
         return u.short_key
 
     def edge_sort_func(args: Tuple[AbstractGraphObject, AbstractGraphObject, dict]):
         u, v, d = args
         if edge_first:
-            return d["short_key"]
+            return d["edge"].short_key
         else:
             return 0
 

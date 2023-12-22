@@ -1111,7 +1111,7 @@ class RuleApplicatorWorker:
             msg = (
                 f"unexpected number of components of prototype graph while applying rule {self.parent.rule}."
                 f"Expected: {expected_main_component_number}, but got {len(cc.main_components)}. "
-                "Possible reason: unused variables in the rules context."
+                "Possible reason: unused variables in the rule setting scope."
             )
             raise core.aux.SemanticRuleError(msg)
 

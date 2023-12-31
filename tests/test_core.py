@@ -1338,13 +1338,11 @@ class Test_02_ruleengine(HousekeeperMixin, unittest.TestCase):
         mod1 = p.irkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct", modname=TEST_MOD_NAME)
         self.assertEqual(len(mod1.I9642["local exponential stability"].get_relations("R17__is_subproperty_of")), 1)
 
-        IPS()
         ra = p.ruleengine.RuleApplicator(self.rule1, mod_context_uri=TEST_BASE_URI)
         res = ra.apply()
 
         # ensure that after rule application there new relations
         self.assertEqual(len(mod1.I9642["local exponential stability"].get_relations("R17__is_subproperty_of")), 3)
-        IPS()
 
     def test_c06__ruleengine05(self):
         self.setup_data1()

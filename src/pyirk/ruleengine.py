@@ -492,7 +492,7 @@ class RuleApplicatorWorker:
         assert not (node is None and uri is None)
 
         if uri is None:
-            uri = self.local_nodes.b.get(node)
+            uri = self.extended_local_nodes.b.get(node)
         else:
             assert node is None
         assert uri is not None
@@ -518,7 +518,7 @@ class RuleApplicatorWorker:
 
     def _get_understandable_result_maps(self, result_maps: List[dict]) -> List[list]:
         """
-        Generate a humand understandable version of the result_map-dicts which are returned by
+        Generate a human understandable version of the result_map-dicts which are returned by
         self.match_subgraph_P()
         It is intendend for debugging only.
         """
@@ -545,7 +545,13 @@ class RuleApplicatorWorker:
         #
         # TODO: to debug the result_maps data structure the following things might be helpful:
         # - a visualization of the prototype graph self.P
-        dbg = self._get_understandable_result_maps(result_maps)
+
+        try:
+            dbg = self._get_understandable_result_maps(result_maps)
+        except AssertionError:
+            # FIXME: occurs for test_d10__zebra_puzzle_stage02
+            dbg = None
+            pass
 
         # now apply condition funcs (to filter the results) and consequent funcs (to do something)
         res = self._process_result_map(result_maps)

@@ -2529,3 +2529,35 @@ def format_literal_html(obj):
 
 def script_main(fpath):
     IPS()
+
+
+def is_subclass(item: Item, parent_item: Item):
+    if item.R3 is None:
+        return False
+    elif item.R3 == parent_item:
+        return True
+    else:
+        return is_subclass(item.R3, parent_item)
+
+def is_instance(item: Item, parent_item: Item):
+    parent = item.R4
+    if parent is None:
+        return False
+    elif parent == parent_item:
+        return True
+    else:
+        return is_subclass(parent, parent_item)
+
+
+def is_subproperty(item: Item, parent_property: Item):
+    """check if item is subproperty of parent_property. item == parent_p will return True aswell."""
+    if item == parent_property:
+        return True
+    if not hasattr(item, "R17"):
+        return False
+    elif item.R17 is None:
+        return False
+    elif parent_property in item.R17:
+        return True
+    else:
+        return is_subproperty(item.R17, parent_property)

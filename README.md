@@ -21,7 +21,7 @@ Pyirk is a Python framework for ***i**mperative **r**epresentation of **k**nowle
 While pyirk aims to be applicable to a wide range of knowledge domains, its origin an its current (2023) main focus is the representation of knowledge from the domain of *control theory* as part of the *Automatic Control Knowledge Repository ([ACKREP](https://ackrep.org))*.
 Thus, a subset of the [Ontology of Control Systems Engineering](https://github.com/ackrep-org/ocse) is used as test data for pyirk. In fact, both projects are practically co-developed.
 
-Not that, originally pyirk was called pyerk (imperative representation of knowledge), in case you come across some old version.
+Not that, originally pyirk (imperative representation of knowledge) was called pyerk (emergent representation of knowledge), in case you come across some old version.
 
 # Recommended Directory Structure
 

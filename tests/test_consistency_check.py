@@ -285,7 +285,7 @@ class Test_01_CC(HousekeeperMixin, unittest.TestCase):
 
         cvio, = A1B.R74__has_constraint_violation
         self.assertEqual(cvio.R76__has_associated_rule, I503)
-        self.assertTrue(p.is_instance_of, p.I48["constraint violation"])
+        self.assertTrue(p.is_instance_of, p.I48["constraint violation"]) # TODO
 
         self.assertEqual(A2B.R74__has_constraint_violation, [])
 

@@ -1850,9 +1850,9 @@ R46 = create_builtin_relation(
 
 I42 = create_builtin_item(
     key_str="I42",
-    R1__has_label="mathematical type (metaclass)",
+    R1__has_label="scalar mathematical object",
     R2__has_description="base class of mathematical data types",
-    R3__is_subclass_of=I2["Metaclass"],  # because its instances are metaclasses
+    R3__is_subclass_of=I12["mathematical object"],
 )
 
 
@@ -1860,8 +1860,7 @@ I34 = create_builtin_item(
     key_str="I34",
     R1__has_label="complex number",
     R2__has_description="mathematical type representing all complex numbers",
-    R4__is_instance_of=I42["mathematical type (metaclass)"],
-    R46__is_secondary_subclass_of=I12["mathematical object"],
+    R3__is_subclass_of=I42["scalar mathematical object"],
 )
 
 I35 = create_builtin_item(
@@ -1898,6 +1897,8 @@ I39 = create_builtin_item(
     R2__has_description="mathematical type equivalent to Nat+ (from type theory): positive integer number",
     R3__is_subclass_of=I38["non-negative integer"],
 )
+
+I39["positive integer"].R1__has_label = "positive Ganzzahl" @ de
 
 
 R36 = create_builtin_relation(
@@ -2054,7 +2055,7 @@ R44 = create_builtin_relation(
 univ_quant = QualifierFactory(R44["is universally quantified"])
 
 
-# TODO: obsolete
+# TODO: this sould use qualifier approach
 def uq_instance_of(type_entity: Item, r1: str = None, r2: str = None) -> Item:
     """
     Shortcut to create an instance and set the relation R44["is universally quantified"] to True in one step
@@ -2629,8 +2630,26 @@ I54 = create_builtin_item(
     R3__is_subclass_of=I11["general property"],
 )
 
+R79 = create_builtin_relation(
+    key_str="R79",
+    R1__has_label="has main subject",
+    R2__has_description="definition refers to this item",
+    R8__has_domain_of_argument_1=I20["mathematical definition"],
+    R11__has_range_of_result=I1["general item"],
+)
 
-# next keys: I54, R79
+
+R80 = create_builtin_relation(
+    key_str="R80",
+    R1__has_label="applies to",
+    R2__has_description="state that a theorem applies to an item",
+    R8__has_domain_of_argument_1=I14["mathematical proposition"],
+    R11__has_range_of_result=I1["general item"],
+)
+
+
+# next keys: I55, R81
+
 
 
 # ######################################################################################################################

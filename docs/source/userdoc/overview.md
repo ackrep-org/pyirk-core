@@ -212,16 +212,16 @@ The concept of qualifiers is borrowed from Wikidata, see e.g the [WD-SPARQL-tuto
 #### Basics
 Many knowledge artifacts (such as theorems or definitions) consists of multiple simpler statements which are in a specific semantic relation to each other. Consider the example theorem:
 
-> Let {math}`(a, b, c)` be the sides of a triangle, ordered from shortest to longest, and {math}`(l_a, l_b, l_c)` the respective lengths. If the angle between a and b is a rect angle then the equation {math}`l_c^2 = l_a^2 + l_b^2` holds.
+> Let {math}`(a, b, c)` be the sides of a triangle, ordered from shortest to longest, and {math}`(l_a, l_b, l_c)` the respective lengths. If the angle between a and b is a right angle then the equation {math}`l_c^2 = l_a^2 + l_b^2` holds.
 
 
-Such a theorem consists of several "semantic parts", which in the context of Pyirk are called *scopes*. In particular we the three following scopes:
+Such a theorem consists of several "semantic parts", which in the context of Pyirk are called *scopes*. In particular we have the three following scopes:
 
-- *setting*: "Let (a, b, c) be the sides of a triangle, ordered from shortest to longest, and (la, lb, lc) the respective lengths."
+- *setting*: "Let {math}`(a, b, c)` be the sides of a triangle, ordered from shortest to longest, and (la, lb, lc) the respective lengths."
 - *premise*: "If the angle between a and b is a rect angle"
 - *assertion*: "then the equation {math}`l_c^2 = l_a^2 + l_b^2` holds."
 
-While the concepts "premise" and "assertion" are usually used to refer to parts of theorems (etc). The concept of "setting" is used to refer to those statements which do "set the stage" to properly formulate the premise and the assertion (e.g. by introducing and specifying the relevant objects).
+The concepts "premise" and "assertion" are usually used to refer to parts of theorems (etc). Additionally PyIRK uses the "setting"-scope to refer to those statements which do "set the stage" to properly formulate the premise and the assertion (e.g. by introducing and specifying the relevant objects).
 
 #### Scopes in Pyirk
 

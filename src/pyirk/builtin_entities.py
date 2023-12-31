@@ -2636,7 +2636,18 @@ R79 = create_builtin_relation(
     R11__has_range_of_result=I1["general item"],
 )
 
-# next keys: I55, R80
+
+R80 = create_builtin_relation(
+    key_str="R80",
+    R1__has_label="applies to",
+    R2__has_description="state that a theorem applies to an item",
+    R8__has_domain_of_argument_1=I14["mathematical proposition"],
+    R11__has_range_of_result=I1["general item"],
+)
+
+
+# next keys: I55, R81
+
 
 
 # ######################################################################################################################

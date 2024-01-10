@@ -469,12 +469,9 @@ def render_graph_to_dot(G: nx.DiGraph) -> str:
     :return:        dot_data
     """
 
+    ecm = build_edge_color_map(G)
+
     # for styling see https://nxv.readthedocs.io/en/latest/reference.html#styling
-    # matplotlib default colors:
-    # ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf']
-    edge_defaults = {
-        # "labeljust": "r",
-    }
     style = nxv.Style(
         graph={
             "layout": "sfdp",
@@ -511,7 +508,7 @@ def render_graph_to_dot(G: nx.DiGraph) -> str:
             # label
             "label": d["edge"].short_key,
             "fontsize": 20,
-            "color": d.get("color", "black"),
+            "color": ecm.get(d["edge"].short_key, "black"),
         },
     )
 
@@ -540,6 +537,23 @@ def render_graph_to_dot(G: nx.DiGraph) -> str:
     dot_data: str = nxv.render(og, style, format="raw")
 
     return dot_data
+
+
+def build_edge_color_map(G):
+    # count the appearances of all edges
+    key_counts = {}
+    for u, v, e in G.edges.data("edge"):
+        skey = e.short_key
+        if skey in key_counts:
+            key_counts[skey] += 1
+        else:
+            key_counts[skey] = 1
+    # sort them by number of their appearance
+    ranked_keys = [k for k, cnt in sorted(key_counts.items(), key=lambda x: x[1], reverse=True)]
+    # color them using the mpl colors in descending order
+    edge_color_map = dict(zip(ranked_keys, mpl_colors))
+
+    return edge_color_map
 
 
 def svg_replace(raw_svg_data: str, REPLACEMENTS: dict) -> str:
@@ -616,12 +630,11 @@ def visualize_all_entities(url_template="", write_tmp_files: bool = False) -> st
     G = create_complete_graph(url_template)
 
     print(f"Visualizing {len(G.nodes)} nodes and {len(G.edges)} edges.")
+    ecm = build_edge_color_map(G)
 
     def edge_style(u, v, d):
         e = d["edge"]
-        idx = (int(e.short_key[1:]) - 1)
-        clr = mpl_colors[idx] if idx < len(mpl_colors) else "grey"
-
+        clr = ecm.get(e.short_key, "grey")
         return {
             "style": "solid",
             "arrowhead": "vee",

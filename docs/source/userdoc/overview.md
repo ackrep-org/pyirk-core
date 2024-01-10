@@ -153,7 +153,9 @@ Instances of the class model string values (including a `.language` attribute).
 
 Instances of this class model semantic triples (subject, predicate, object) and corresponding [qualifiers](sec_qualifiers). Every edge in the knowledge graph corresponds to a statement instance.
 
+```{note}
 Note: For technical reasons for every `Statement` instance there exits a dual `Statement` instance. For most situations this does not matter, though.
+```
 
 The whole knowledge graph is a collection of Entities (Items, Relation, Literals) and Statements. Roughly speaking, the collection of Entities defines what exists (in the respective universe of discourse) while the collection of Statements defines how these things are related. Because flat subject-predicate-object triples have very limited expressivity it is possible to "make statements about statements", i.e. use a `Statement` instance as subject another triple. This [Wikidata](https://www.wikidata.org/wiki/Wikidata:SPARQL_tutorial#Qualifiers)-inspired mechanism is called [qualifiers](sec_qualifiers) (see below).
 
@@ -171,7 +173,7 @@ I2746["Rudolf Kalman"].set_relation(R1833["has employer"], I9942["Stanford Unive
 #.
 ```
 
-This results in the triple: `(I2746, R1833, I9942)`. In Pyirk such triples are modeled as instances of class `Statement`; each such instance represents an edge in the knowledge graph, where the subject and object are the corresponding nodes and each such edge has a lable (the relation type) and optionally other information attached to it.
+This results in the triple: `(I2746, R1833, I9942)`. In Pyirk such triples are modeled as instances of class `Statement`; each such instance represents an edge in the knowledge graph, where the subject and object are the corresponding nodes and each such edge has a label (the relation type) and optionally other information attached to it.
 
 
 However, in many cases more complexity is needed. To express that Kalman worked at Stanford between 1964 and 1971, we can exploit that `Statement`-instances can themselves be use as subject of other triples, by means of so called qualifiers:
@@ -345,9 +347,15 @@ cm.new_equation( plus(sq(La), sq(Lb)), "==", sq(Lc) )
 (sec_stubs)=
 ### Stubs (`I50["Stub"]`, `I000["some arbitrary label"]` and `R000["also"]`)
 
-One challenge in formal knowledge representation is  *Where to begin?*. Suppose you want to formalize some knowledge about triangles. It seems natural that you introduce the class *triangle* as a subclass of *polygon*. However, the class polygon should also be a subclass of something and so on.
+One challenge in formal knowledge representation is  *Where to begin?* 
+Suppose you want to formalize some knowledge about triangles. 
+It seems natural that you introduce the class *triangle* as a subclass of *polygon*. 
+However, the class polygon should also be a subclass of something and so on.
 
-As modelling *all* knowledge is unfeasible at some points it is necessary to model incomplete entities (Ideally, theses are some relation-steps away from the relevant entities of the domain). To facilitate this there exists `I50["stub"]`. This item can be used as (base) class for any item which at the moment no further (taxonomic) information should be modeled. The name "stub" is inspired by Wikipedia's (stub-pages](https://en.wikipedia.org/wiki/Wikipedia:Stub). Example:
+As modelling *all* knowledge is unfeasible at some points it is necessary to model incomplete entities (Ideally, theses
+are some relation-steps away from the relevant entities of the domain). To facilitate this there exists `I50["stub"]`.
+This item can be used as (base) class for any item which at the moment no further (taxonomic) information should be
+modeled. The name "stub" is inspired by Wikipedia's [stub-pages](https://en.wikipedia.org/wiki/Wikipedia:Stub). Example:
 
 
 ```python
@@ -358,7 +366,7 @@ I1234 = p.create_item(
 )
 ```
 
-In some situations it is desireable to use items and relations which do not yet exist. This can be done by `I000["dummy item]` and `R000["dummy relation"]`. Both entities can be used with **arbitrary labels** and can thus be used regarded as a special kind of comment. Example:
+In some situations it is desirable to use items and relations which do not yet exist. This can be done by `I000["dummy item]` and `R000["dummy relation"]`. Both entities can be used with **arbitrary labels** and can thus be used regarded as a special kind of comment. Example:
 
 ```python
 I1234 = p.create_item(
@@ -404,7 +412,7 @@ They are also called *universal quantifier* and *existential quantifier*. In Pyi
 
 
 ```{warning}
-Despite having similar phonetics (and spelling) quantifiers (logic operators) and qualifiers (knowledge modeling technique, in triple-based knowledge graphs) are totally different concepts. However, qualifiers can (among many other use cases) be used to model universal or existential quantification of an statement.
+Despite having similar phonetics (and spelling) quantifiers (logic operators) and qualifiers (knowledge modeling technique, in triple-based knowledge graphs) are totally different concepts. However, qualifiers can (among many other use cases) be used to model universal or existential quantification of a statement.
 ```
 
 

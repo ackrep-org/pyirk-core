@@ -1,6 +1,6 @@
 # Python Based Imperative Representation of Knowledge (Pyirk)
 
-Pyirk is an experimental framework for *imperative* knowledge representation. I is basically a collection of classes and functions which facilitates the construction of and the interaction with knowledge graphs.
+Pyirk is an experimental framework for *imperative* knowledge representation. It is basically a collection of classes and functions which facilitates the construction of and the interaction with knowledge graphs.
 
 The framewok is structurally inspired by
 

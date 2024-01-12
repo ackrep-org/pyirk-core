@@ -1,11 +1,19 @@
 # Notes for docs
 
 ## Main 
-- Use optional dependencies for required pakages
-- Add link to preprint in the main motivation section
-- Remove sentences *Nevertheless some usefulness cannot be excluded.* in Status
+- Use optional dependencies for required packages 
+  -> try out in new branch, check if req only install is still possible, update ci
+- Add link to preprint in the main motivation section -> later
+- Remove sentences *Nevertheless some usefulness cannot be excluded.* in Status -> do it
 - Add some introductory sentences about the ideas behind pyirk, especially about the role and meaning of Entities, 
   Statements and their friends.
+- To be precise:
+  - Basis is a knowledge graph that has nodes and edges
+  - Nodes are represented with Entities and Literals:
+    - Items
+    - Relations
+  - Semantic Triple (Subj, Pred, Obj) (from Repr. Theory) is a connection between 2 Nodes in the knowledge graph, 
+    pyirk calls this Statement, the Pred can be seen as an edge. Statement = (Ent, Rel, Ent).
 
 # User
 
@@ -16,9 +24,12 @@
 - Move section 'Patterns for Knowledge Representation in Pyirk' to the top
 - In that section: Refactor sentences in enumerations that show all instances of entities and link to the classes. 
 - Introduce a simple example (with a nice picture) and illustrate the meanings of the following section based on that example.
-- The 'note' at the end of the Item section is rather confusing, elaborate on that.
+- The 'note' at the end of the Item section is rather confusing, elaborate on that. -> Refactor into additional Remark
 - Concerning the __call__ method: Give motivating example and shorten text about the inner workings just tell
-  the user what to do to make the thing callable
+  the user what to do to make the thing callable -> move details to dev doc
+
+STOP of Meeting
+
 - Give an example of how adding a convenience method actually makes things easier, the internal get_arguments call 
   does not fulfill this purpose
 - Relations: Start with what they are (Graph analogy) and then explain the details, give example for instantiation 

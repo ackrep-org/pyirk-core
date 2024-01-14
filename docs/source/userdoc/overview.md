@@ -1,90 +1,40 @@
 (sec_userdoc_overview)=
-# Pyirk User Documentation Overview
+# Pyirk User Guide
 
-(sec_keys)=
-## Keys in Pyirk
-
-In Pyirk there are the following kinds of keys:
-- a) short_key like `"R1234"`
-- b) name-labeled key like `"R1234__my_relation"` (consisting of a short_key, a delimiter (`__`) and a label)
-- c) prefixed short_key like `"bi__R1234"` (here the prefix `bi` refers to the module `builtin_entities`)
-- d) prefixed name-labeled key like `"bi__R1234__my_relation"`
-- e) index-labeled key like  `"R1234['my relation']"`
-
-Note: prefixed and name-labeled keys can optionally have a language indicator. Examples: ``"bi__R1__de"`` or `"R1__has_label__fr"`.
-
-Also, the leading character indicates the entity type (called `EType` in the code): `I` → item, `R` → relation.
-
-The usage of these syntax variants depends on the context.
-
-For more information see See also {ref}`sec_modules`.
-
-% TODO: add example code.
-
-(sec_visualization)=
-## Visualization
-
-Currently there is some basic visualization support via the command line. To visualize your a module (including its relations to the builtin_entities) you can use a command like
-
-```
-pyirk --load-mod demo-module.py demo -vis __all__
-```
-
-(sec_cli_overview)=
-## Command Line Interface
-
-For an overview of available command line options, see the [CLI page](cli) or the command:
-
-```
-pyirk -h
-```
-
-### Interactive Usage
-
-To open an IPython shell with a loaded module run e.g.
-
-```
-pyirk -i -l control_theory1.py ct
-```
-
-Then, you have `ct` as variable in your namespace and can e.g. run `print(ct.I5167.R1)`.
-
-(The above command assumes that the file `control_theory1.py` is in your current working directory.)
-
-
-### Update Test Data
-
-```
-pyirk --update-test-data
-```
-
-For details see [devdoc#test_data](sec_test_data)
-
-
-## Multilinguality
-
-Pyirk aims to support an arbitrary number of languages by so called *language specified strings*. Currently support for English and German is preconfigured in `pyirk.settings`. These language specified strings are instances of the class `rdflib.Literal` where the `.language`-attribute is set to one of the values from `pyirk.setting.SUPPORTED_LANGUAGES` and can be created like:
-
-```python
-from pyirk import de, en
-
-# ...
-
-lss1 = "some english words"@en
-lss2 = "ein paar deutsche Wörter"@de
-```
-
-where `en, de` are instances of `pyirk.core.LanguageCode`.
-
-The usage inside Pyirk is best demonstrated by the unittest `test_c02__multilingual_relations`, see [test_core.py](https://github.com/ackrep-org/pyirk-core/blob/main/tests/test_core.py) (maybe change branch).
-
-
+**TODO** add intro
 
 (sec_patterns)=
 ## Patterns for Knowledge Representation in Pyirk
+
+Pyirk stores knowledge inside a knowledge graph.
+As every mathematical graph, it consists of *nodes* that are connected by *edges*.
+Roughly speaking, the nodes contain the facts and the edges encode how these
+facts are related to each other.
+However, to sustain the impression that Pyirk is indeed a serious toolbox, we work with **Items** and **Relations**.
+(inspired by Wikidata).
+For the following, just assume that **Items** and **Relations** are fancy names for nodes and edges 
+
+In Representation Theory, the concept of a *Semantic Triple*, consisting of
+
+- Subject
+- Predicate
+- Object
+
+is used to encode knowledge. For example: *Pythagoras* (Subj) *was a* (Predicate) *Scientist* (Object).
+As one can see, this concept works quite nicely in connection with knowledge graphs
+where a *Semantic Triple* connects two nodes (Subject and Object) using an edge (the Predicate).
+Consequently, in Pyirk-lingo a *Semantic Triple* typically connects two **Items** using a **Relation** and is
+therefore called a **Statement**.
+Thus, **Items** are  mostly associated with nouns and  **Relations** with verbs.
+To save some precious bytes, **Items** and **Relations** two different flavours 
+of an *Entity*.
+
+[//]: # (Statements consist of *subject-predicate-object*-triples.)
+
+In Detail, 
+
 <!-- Modeling Techniques -->
 
-In Pyirk knowledge is represented via *entities* and *statements* (inspired by Wikidata). There are two types of entities: *items* (mostly associated with nouns) and *relations* (mostly associated with verbs). Statements consist of *subject-predicate-object*-triples.
 
 - subject: can be any entity (item or a relation),
 - predicate: is always a relation,
@@ -105,6 +55,26 @@ The `short_key` of any items starts with "`I`" and ends with a sequence of numbe
 ```{note}
 Unlike in OWL (but like in Wikidata) an item can be an instance and a class at the same time. This allows to treat classes as "ordinary" items if necessary, e.g. use them directly in statements.
 ```
+
+(sec_keys)=
+## Keys in Pyirk
+
+In Pyirk there are the following kinds of keys:
+- a) short_key like `"R1234"`
+- b) name-labeled key like `"R1234__my_relation"` (consisting of a short_key, a delimiter (`__`) and a label)
+- c) prefixed short_key like `"bi__R1234"` (here the prefix `bi` refers to the module `builtin_entities`)
+- d) prefixed name-labeled key like `"bi__R1234__my_relation"`
+- e) index-labeled key like  `"R1234['my relation']"`
+
+Note: prefixed and name-labeled keys can optionally have a language indicator. Examples: ``"bi__R1__de"`` or `"R1__has_label__fr"`.
+
+Also, the leading character indicates the entity type (called `EType` in the code): `I` → item, `R` → relation.
+
+The usage of these syntax variants depends on the context.
+
+For more information see See also {ref}`sec_modules`.
+
+% TODO: add example code.
 
 
 (sec_auto_gen_items)=
@@ -447,3 +417,28 @@ res = A.ma__R8736__depends_polynomially_on
 Rationale: The attribute name `ma__R8736__depends_polynomially_on` is handled as a string by Python (in the method `__getattr__`). While `mod.R8736` is the relation object we cannot use this syntax as attribute name.
 
 See also {ref}`sec_keys`.
+### Update Test Data
+
+```
+pyirk --update-test-data
+```
+
+For details see [devdoc#test_data](sec_test_data)
+
+
+## Multilinguality
+
+Pyirk aims to support an arbitrary number of languages by so called *language specified strings*. Currently support for English and German is preconfigured in `pyirk.settings`. These language specified strings are instances of the class `rdflib.Literal` where the `.language`-attribute is set to one of the values from `pyirk.setting.SUPPORTED_LANGUAGES` and can be created like:
+
+```python
+from pyirk import de, en
+
+# ...
+
+lss1 = "some english words"@en
+lss2 = "ein paar deutsche Wörter"@de
+```
+
+where `en, de` are instances of `pyirk.core.LanguageCode`.
+
+The usage inside Pyirk is best demonstrated by the unittest `test_c02__multilingual_relations`, see [test_core.py](https://github.com/ackrep-org/pyirk-core/blob/main/tests/test_core.py) (maybe change branch).

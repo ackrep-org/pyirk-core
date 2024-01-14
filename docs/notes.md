@@ -1,13 +1,18 @@
 # Notes for docs
 
 ## Main 
-- Use optional dependencies for required packages 
-  -> try out in new branch, check if req only install is still possible, update ci
-- Add link to preprint in the main motivation section -> later
-- Remove sentences *Nevertheless some usefulness cannot be excluded.* in Status -> do it
-- Add some introductory sentences about the ideas behind pyirk, especially about the role and meaning of Entities, 
+- [ ] Use optional dependencies for required packages 
+  - try out in new branch, check if req only install is still possible, update ci
+  - See https://github.com/pypa/pip/issues/11440#issuecomment-1445119899, only-deps install still missing in pip
+  - No more steps taken at this time
+
+- [ ] Add link to preprint in the main motivation section 
+  - Will be done later
+
+- [x] Remove sentences *Nevertheless some usefulness cannot be excluded.* in Status
+
+- [ ] Add some introductory sentences about the ideas behind pyirk, especially about the role and meaning of Entities, 
   Statements and their friends.
-- To be precise:
   - Basis is a knowledge graph that has nodes and edges
   - Nodes are represented with Entities and Literals:
     - Items

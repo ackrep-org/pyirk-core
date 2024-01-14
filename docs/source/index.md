@@ -28,8 +28,37 @@ Pyirk also aims to allow for much greater [expressive power](https://en.wikipedi
 
 ## Status
 
-The whole Pyirk project and even much more this documentation is currently still under development and should be considered as incomplete and only partially functional. Nevertheless some usefulness cannot be excluded.
+The whole Pyirk project and even much more this documentation is currently still under development and should be considered as incomplete and only partially functional. 
 
+(sec_visualization)=
+## Visualization
+
+Currently there is some basic visualization support via the command line. To visualize your a module (including its relations to the builtin_entities) you can use a command like
+
+```
+pyirk --load-mod demo-module.py demo -vis __all__
+```
+
+(sec_cli_overview)=
+## Command Line Interface
+
+For an overview of available command line options, see the [CLI page](cli) or the command:
+
+```
+pyirk -h
+```
+
+### Interactive Usage
+
+To open an IPython shell with a loaded module run e.g.
+
+```
+pyirk -i -l control_theory1.py ct
+```
+
+Then, you have `ct` as variable in your namespace and can e.g. run `print(ct.I5167.R1)`.
+
+(The above command assumes that the file `control_theory1.py` is in your current working directory.)
 
 ## User Documentation
 Information regarding the local usage of pyirk.

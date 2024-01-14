@@ -25,10 +25,10 @@ REPLACEMENTS = {}
 
 NEWLINE_REPLACEMENTS = [("__newline-center__", r"\n"), ("__newline-left__", r"\l")]
 
-# default matplotlib colors
+# default matplotlib colors, orange and blue swapped
 mpl_colors = [
-    "#1f77b4",
     "#ff7f0e",
+    "#1f77b4",
     "#2ca02c",
     "#d62728",
     "#9467bd",

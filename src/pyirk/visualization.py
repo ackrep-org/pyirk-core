@@ -520,14 +520,18 @@ def render_graph_to_dot(G: nx.DiGraph) -> str:
         if edge_first:
             # get edge that starts or ends at this node
             for (_u, _v), _d in G.edges.items():
-                if _u == u or _v == u:
-                    return _d["edge"].short_key
+                if _u == u:
+                    return float(_d["edge"].short_key[1:])
+                elif _v == u:
+                    return float(_d["edge"].short_key[1:]) + .5
+            else:
+                print(f"Node {u} has no edge")
         return u.short_key
 
     def edge_sort_func(args: Tuple[AbstractGraphObject, AbstractGraphObject, dict]):
         u, v, d = args
         if edge_first:
-            return d["edge"].short_key
+            return int(d["edge"].short_key[1:])
         else:
             return 0
 

@@ -160,20 +160,33 @@ def is_subclass_of(itm1: Item, itm2: Item, allow_id=False) -> bool:
     return res
 
 
-def is_instance_of(itm1: Item, itm2: Item) -> bool:
+# TODO unify this with core.is_instance (probably prefer builtin_entities as location)
+def is_instance_of(inst_itm: Item, cls_itm: Item, allow_R30_secondary: bool = False) -> bool:
     """
-    Returns True if itm1.R4 is a subclass (R3) of itm2
+    Returns True if instance_itm.R4 is a subclass (R3) of itm2
+
+    :param inst_itm:                Item representing the instance
+    :param cls_itm:                 Item representing the class
+    :param allow_R30_secondary:     bool, accept also relations via R30__is_secondary_instance_of
     """
-    parent_class = itm1.R4__is_instance_of
+    parent_class = inst_itm.R4__is_instance_of
 
     if parent_class is None:
-        msg = f"itm1 ({itm1}) has no Statement for relation R4__is_instance_of"
+        msg = f"instance_itm ({inst_itm}) has no Statement for relation R4__is_instance_of"
         raise core.aux.TaxonomicError(msg)
 
-    if parent_class == itm2:
+    if parent_class == cls_itm:
         return True
-    else:
-        return is_subclass_of(parent_class, itm2)
+    if is_subclass_of(parent_class, cls_itm):
+        return True
+    if allow_R30_secondary:
+
+        for test_cls_item in inst_itm.R30__is_secondary_instance_of:
+                if test_cls_item == cls_itm:
+                    return True
+                if p.is_subclass_of(test_cls_item, cls_itm):
+                    return True
+    return False
 
 
 def instance_of(cls_entity, r1: str = None, r2: str = None, qualifiers: List[Item] = None) -> Item:

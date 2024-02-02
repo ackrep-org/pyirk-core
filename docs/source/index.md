@@ -2,7 +2,7 @@
 
 Pyirk is an experimental framework for *imperative* knowledge representation. It is basically a collection of classes and functions which facilitates the construction of and the interaction with knowledge graphs.
 
-The framewok is structurally inspired by
+The framework is structurally inspired by
 
 - [wikidata](https://wikidata.org/)
     - allow for statements about statements by means of *qualifiers*
@@ -66,8 +66,12 @@ Information regarding the local usage of pyirk.
 :maxdepth: 1
 :caption: User Documentation
 :hidden:
+userdoc/basics
+userdoc/entities
 userdoc/overview
 ```
+- [Basics](userdoc/basics)
+- [Entities](userdoc/entities)
 - [Overview](userdoc/overview)
 
 

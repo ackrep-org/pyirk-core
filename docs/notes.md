@@ -49,3 +49,6 @@ STOP of Meeting
 - Operators: Add explanation and try to find shorter example, explain domain_of_argument-foo, do not use OCSE code
 - Formulas: No OCSE code
 - Modules and packages: Explain what an URI is
+
+Available myst admonitions: 
+"attention", "caution", "danger", "error", "hint", "important", "note", "tip", "warning"

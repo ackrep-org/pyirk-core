@@ -4,6 +4,7 @@ This section will explain how **Entities** in Pyirk work.
 (Remember? The **Items** and **Relations** you can use in your **Statements**.) 
 But before that we should talk about **Keys**.
 
+(sec_keys)=
 ## Keys, Labels and URIs in Pyirk
 
 Sooner or later, you will need the reference your precious knowledge from somewhere else
@@ -47,14 +48,6 @@ The `short_key` of any items starts with "`I`" . Optionally the second character
 
 (Almost) all items are part of a taxonomy, i.e. a hierarchy of *"is-a"*-relations. 
 This is expressed by the relations `R3["is_subclass_of"]` and `R4["is instance of"]`.
-
-[//]: # (```{eval-rst})
-
-[//]: # (  .. autoclass:: pyirk.Item)
-
-[//]: # (    :members:)
-
-[//]: # (```)
 
 ```{error}
 Add code example.

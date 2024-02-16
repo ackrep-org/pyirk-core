@@ -1,5 +1,5 @@
 (sec_modules)=
-## Pyirk Modules and Packages
+# Pyirk Modules and Packages
 
 Pyirk entities and statements are organized in Pyirk *modules* (python files). Each module has to specify its own URI via the variable `__URI__`. The uri of an entity from that module is formed by `<module URI>#<entity short_key>`. Modules can be bundled together to form pyirk *packages*. A Pyirk package consists of a directory containing a file `irkpackage.toml` and at least one Pyirk module.
 

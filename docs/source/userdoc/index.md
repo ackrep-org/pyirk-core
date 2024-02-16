@@ -5,7 +5,7 @@ the toolbox.
 Before you start, we recommend to reading the [basics](../intro/basics.md) the understand the underlying concept
 of the toolbox.
 
-If you are more the hands-on type, have a look at the [beginner exmaple](example).
+If you are more the hands-on type, have a look at the [beginner exmaple](../intro/example).
 
 
 ```{toctree}
@@ -19,6 +19,7 @@ scopes
 operators
 formulas
 stubs
+quantification
 modules
 i18n
 cli

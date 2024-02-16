@@ -1,14 +1,6 @@
 (sec_Statements)=
 # Statements
 
-[//]: # (```{eval-rst})
-
-[//]: # (  .. autoclass:: pyirk.Statement)
-
-[//]: # (    :members:)
-
-[//]: # (```)
-
 Instances of this class model semantic triples (subject, predicate, object) and
 corresponding [qualifiers](sec_qualifiers). Every edge in the knowledge graph
 corresponds to a statement instance.

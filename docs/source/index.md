@@ -75,7 +75,5 @@ Information regarding actively contributing to pyirk.
 intro/index
 userdoc/index
 devdoc/overview
-notes
-genindex
-modindex
+apidocs/index
 ```

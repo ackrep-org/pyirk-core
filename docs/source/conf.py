@@ -38,10 +38,14 @@ extensions = [
     "sphinx.ext.duration",
     "myst_parser",
     "sphinx.ext.doctest",
-    "sphinx.ext.autodoc",
+    "autodoc2",
     "sphinx.ext.autosummary",
     "sphinx_rtd_theme",
     "sphinxarg.ext",
+]
+autodoc2_render_plugin = "myst"
+autodoc2_packages = [
+    "../../src/pyirk",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -79,3 +83,21 @@ source_suffix = [".rst", ".md"]
 source_parsers = {".md": "recommonmark.parser.CommonMarkParser"}
 
 # master_doc = 'index'
+
+# markdown conversion extensions
+myst_enable_extensions = [
+    # "amsmath",
+    # "attrs_inline",
+    "colon_fence",
+    # "deflist",
+    # "dollarmath",
+    # "fieldlist",
+    # "html_admonition",
+    # "html_image",
+    # "linkify",
+    # "replacements",
+    # "smartquotes",
+    # "strikethrough",
+    # "substitution",
+    # "tasklist",
+]

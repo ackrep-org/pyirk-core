@@ -1,4 +1,4 @@
-# Basic Patterns
+# Basic Patterns of Knowledge Representation
 
 This section explains the basic patterns for Knowledge Representation in Pyirk
 

@@ -14,6 +14,7 @@ The framework is structurally inspired by
 
 However, pyirk is a pure python framework and aims to be intuitively usable without prior familiarity with knowledge engineering techniques such as OWL, but instead requiring only some understanding of programming.
 
+
 ## Motivation
 
 Humankind is faced with an growing amount of knowledge available (in principle) and this growth is accelerating by itself. However, this knowledge often cannot be applied to solve actual problems because it is stored somewhere out of reach and often also distributed over several documents which often are not entirely consistent.
@@ -26,9 +27,19 @@ In contrast, Pyirk aims to enable domain-experts themselves to create such knowl
 
 Pyirk also aims to allow for much greater [expressive power](https://en.wikipedia.org/wiki/Expressive_power_(computer_science)) (e.g. allowing higher order logic statements) than most other approaches, despite the computational consequences.
 
+
 ## Status
 
 The whole Pyirk project and even much more this documentation is currently still under development and should be considered as incomplete and only partially functional. 
+
+
+## Getting Started
+
+The best way to get started with Pyirk is to read about the basics in the user 
+documentation and to have a look at the first example to see how the design principles
+translate into actual code.
+
+
 
 (sec_visualization)=
 ## Visualization
@@ -37,15 +48,6 @@ Currently there is some basic visualization support via the command line. To vis
 
 ```
 pyirk --load-mod demo-module.py demo -vis __all__
-```
-
-(sec_cli_overview)=
-## Command Line Interface
-
-For an overview of available command line options, see the [CLI page](cli) or the command:
-
-```
-pyirk -h
 ```
 
 ### Interactive Usage
@@ -60,53 +62,20 @@ Then, you have `ct` as variable in your namespace and can e.g. run `print(ct.I51
 
 (The above command assumes that the file `control_theory1.py` is in your current working directory.)
 
-## User Documentation
-Information regarding the local usage of pyirk.
-```{toctree}
-:maxdepth: 1
-:caption: User Documentation
-:hidden:
-userdoc/basics
-userdoc/entities
-userdoc/overview
-```
-- [Basics](userdoc/basics)
-- [Entities](userdoc/entities)
-- [Overview](userdoc/overview)
-
 
 ## Developer Documentation
 Information regarding actively contributing to pyirk.
-```{toctree}
-:maxdepth: 1
-:caption: Developer Documentation
-:hidden:
-devdoc/overview
-```
 - [Overview](devdoc/overview)
 
 
-## CLI
-
+## Full Table of Contents
 ```{toctree}
-:maxdepth: 1
-:caption: Command Line Interface
-:hidden:
-userdoc/cli
-```
-- [Command Line Interface (CLI)](userdoc/cli)
+:maxdepth: 2
 
-
-## More
-
-
-```{admonition} Note
-The following links are not yet functional.
-```
-```{eval-rst}
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
-
+intro/index
+userdoc/index
+devdoc/overview
+notes
+genindex
+modindex
 ```

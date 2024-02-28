@@ -1,3 +1,4 @@
+(sec_userdoc)=
 # User Guide
 
 Welcome the Pyirk's user docs, the central starting point if you want to get going with 

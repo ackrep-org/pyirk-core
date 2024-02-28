@@ -1,4 +1,4 @@
-(sec_devdoc_overview)=
+(sec_devdoc)=
 # Developer Guide
 
 Welcome the Pyirk's dev docs. This parts explains more bout the inner workings of the
@@ -7,7 +7,6 @@ toolbox and helps you to contribute to the project.
 ```{toctree}
 :maxdepth: 2
 ```
-
 
 
 (sec_test_data)=

@@ -1,5 +1,15 @@
 # Python Based Imperative Representation of Knowledge (Pyirk)
 
+```{toctree}
+:maxdepth: 1
+:hidden:
+
+intro/index
+userdoc/index
+apidocs/index
+devdoc/overview
+```
+
 Pyirk is an experimental framework for *imperative* knowledge representation. It is
 basically a collection of classes and functions which facilitates the construction of
 and the interaction with knowledge graphs.
@@ -52,50 +62,19 @@ computational consequences.
 The whole Pyirk project and even much more this documentation is currently still under
 development and should be considered as incomplete and only partially functional.
 
-## Getting Started
+## Where to start
 
-The best way to get started with Pyirk is to read about the basics in the user 
-documentation and to have a look at the first example to see how the design principles
-translate into actual code.
-
-
-
-(sec_visualization)=
-## Visualization
-
-Currently there is some basic visualization support via the command line. To visualize
-your a module (including its relations to the builtin_entities) you can use a command
-like
-
-```
-pyirk --load-mod demo-module.py demo -vis __all__
-```
-
-### Interactive Usage
-
-To open an IPython shell with a loaded module run e.g.
-
-```
-pyirk -i -l control_theory1.py ct
-```
-
-Then, you have `ct` as variable in your namespace and can e.g. run `print(ct.I5167.R1)`.
-
-(The above command assumes that the file `control_theory1.py` is in your current working
-directory.)
+The best way to get started with Pyirk is to follow the [Beginners Guide](sec_intro) which will introduce the
+basics and shows how the design principles translate into actual code in a short example.
+If you are more curious about how a certain task can be accomplished or simplified, have a look at
+the [User Guide](sec_userdoc).
+Certainly, you can also have a look at how exactly a certain function should be called in the API reference.
+Last but not least, if you are curious how the internals of pyirk work or how you can contribute to it have a look at
+the [Developer Guide](sec_devdoc).
 
 
-## Developer Documentation
-Information regarding actively contributing to pyirk.
-- [Overview](devdoc/overview)
 
 
-## Full Table of Contents
-```{toctree}
-:maxdepth: 2
 
-intro/index
-userdoc/index
-devdoc/overview
-apidocs/index
-```
+
+

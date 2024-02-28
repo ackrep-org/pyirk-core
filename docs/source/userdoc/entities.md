@@ -29,7 +29,7 @@ To reference that, we can use:
 - e) index-labeled key like  `"R1234['my relation']"`
 
 ```{error}
-Add code example.
+Add URI part and maybe a code example.
 ```
 
 ```{tip}
@@ -108,3 +108,24 @@ while nodes are typically `Item`-instances.
 The *predicate* part of a semantic triple must always be a (python) instance of 
 `Core.Relation`.  
 In general they can occur as *subject* or *object* as well.
+
+
+(ssec_common_relations)=
+### Common relations
+
+What follows is a short overview about the most common relations that pyirk ships with (see more in the
+{py:mod}`pyirk.builtin_entities` module.)
+You can of course always create your own ones.
+
+* {py:obj}`pyirk.builtin_entities.R1`: `has_label`
+* {py:obj}`pyirk.builtin_entities.R3`: `is_subclass_of`
+* {py:obj}`pyirk.builtin_entities.R4`: `is_instance_of`
+* {py:obj}`pyirk.builtin_entities.R5`: `is_part_of`
+* {py:obj}`pyirk.builtin_entities.R15`: `is_element_of`
+* {py:obj}`pyirk.builtin_entities.R16`: `has_property`
+* {py:obj}`pyirk.builtin_entities.R68`: `is_inverse_of`
+
+```{hint}
+Do not be afraid: There is no need to remember all of these, the syntac completion of your IDE will help
+you here.
+```

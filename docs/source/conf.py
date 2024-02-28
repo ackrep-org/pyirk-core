@@ -22,7 +22,7 @@ import pyirk
 # -- Project information -----------------------------------------------------
 
 project = "pyirk"
-copyright = "2022, Ackrep Team"
+copyright = "2024, The Ackrep Team"
 author = "Carsten Knoll et. al."
 
 # The full version, including alpha/beta/rc tags

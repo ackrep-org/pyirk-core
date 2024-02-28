@@ -9,6 +9,7 @@ try:
     from . import ruleengine
     from . import auxiliary as aux
     from . import consistency_checking as cc
+    from .visualization import *
 except ImportError:
     # this might be relevant during the installation process
     pass

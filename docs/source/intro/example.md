@@ -90,7 +90,7 @@ which will take the `URI` of your entity (in this case of the train item):
     :lines: 36-38
 ```
 
-<!--  !! This image is not yet rendered correctly-->
 
 The result should look like this:
+
 ![Image of the train graph](trains.svg) 

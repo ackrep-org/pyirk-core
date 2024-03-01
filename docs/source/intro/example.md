@@ -15,10 +15,7 @@ which `URI` we want to store our knowledge:
     :lines: 1-7
 ```
 
-
-<!-- !! This link seems to lead nowhere -->
-
-For now, just see the rest as boilerplate code, the details can be found [here](URI).
+For now, just see this as boilerplate code, the details can be found [here](sec_keys).
 
 ## The Train Item
 
@@ -96,4 +93,4 @@ which will take the `URI` of your entity (in this case of the train item):
 <!--  !! This image is not yet rendered correctly-->
 
 The result should look like this:
-![Image of the train graph](./trains.svg) 
+![Image of the train graph](trains.svg) 

@@ -34,5 +34,5 @@ I1004 = p.create_item(
 )
 
 # visualize the graph
-with open("./trains.svg", "w") as f:
+with open("trains.svg", "w") as f:
     f.write(p.visualize_entity(I1001.uri))

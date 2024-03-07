@@ -1,13 +1,13 @@
-# Python Based Imperative Representation of Knowledge (Pyirk)
+# Pyirk Documentation
 
 ```{toctree}
 :maxdepth: 1
 :hidden:
 
-intro/index
-userdoc/index
-apidocs/index
-devdoc/overview
+tutorials/index
+howto/index
+background/index
+reference/index
 ```
 
 Pyirk is an experimental framework for *imperative* knowledge representation. It is
@@ -27,6 +27,18 @@ The framework is structurally inspired by
 However, pyirk is a pure python framework and aims to be intuitively usable without
 prior familiarity with knowledge engineering techniques such as OWL, but instead
 requiring only some understanding of programming.
+
+
+## Where to start
+
+The best way to get started with Pyirk is to follow the [Beginners Guide](sec_intro) which will introduce the
+basics and shows how the design principles translate into actual code in a short example.
+If you are more curious about how a certain task can be accomplished or simplified, have a look at
+the [How to section](sec_howto).
+Certainly, you can also have a look at how exactly a certain function should be called in the [Reference](sec_reference)
+section.
+Last but not least, if you are curious how and why the internals of pyirk work like they do 
+have a look at the [Background](sec_background) section.
 
 
 ## Motivation
@@ -61,20 +73,3 @@ computational consequences.
 
 The whole Pyirk project and even much more this documentation is currently still under
 development and should be considered as incomplete and only partially functional.
-
-## Where to start
-
-The best way to get started with Pyirk is to follow the [Beginners Guide](sec_intro) which will introduce the
-basics and shows how the design principles translate into actual code in a short example.
-If you are more curious about how a certain task can be accomplished or simplified, have a look at
-the [User Guide](sec_userdoc).
-Certainly, you can also have a look at how exactly a certain function should be called in the API reference.
-Last but not least, if you are curious how the internals of pyirk work or how you can contribute to it have a look at
-the [Developer Guide](sec_devdoc).
-
-
-
-
-
-
-

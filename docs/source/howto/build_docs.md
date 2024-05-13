@@ -10,10 +10,13 @@ Automatically generated documentation is available at: <https://pyirk-core.readt
 
 Run `pip install -r requirements.txt` in this directory to install the dependencies to build the documentation.
 
-## Running the build
+## Run the build and preview locally
 
 Run `make html` in this directory to build the docs on your system. Open `build/html/index.html` to see the result.
 
+In `/docs/build/html` run `python -m http.server 8000`.
+
 ## Debug Readthedocs Build
 
-In `/docs/source` run `python -m sphinx -T -E -W --keep-going -b html -d _build/doctrees -D language=en . build/html`.
+In `/docs` run `python -m sphinx -T -E -W --keep-going -b html -d build/doctrees -D language=en ./source build/html`.
+

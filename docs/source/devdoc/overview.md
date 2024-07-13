@@ -1,6 +1,12 @@
-(sec_devdoc_overview)=
-# pyirk Developer Documentation Overview
+(sec_devdoc)=
+# Developer Guide
 
+Welcome the Pyirk's dev docs. This parts explains more bout the inner workings of the
+toolbox and helps you to contribute to the project.
+
+```{toctree}
+:maxdepth: 2
+```
 
 
 (sec_test_data)=
@@ -48,3 +54,14 @@ raw__I4237["monovariate rational function"].add_method(p.create_evaluated_mappin
 
 
 ```
+
+See also {ref}`sec_keys`.
+
+
+## Update Test Data
+
+```
+pyirk --update-test-data
+```
+
+For details see [devdoc#test_data](sec_test_data)

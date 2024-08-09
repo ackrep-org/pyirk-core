@@ -55,13 +55,4 @@ with I5000["simplified Pythagorean theorem"].scope("setting") as cm:
     a, b, c = p.unpack_tuple_item(cm.sides)
     la, lb, lc = a.R2000__has_length, b.R2000, c.R2000
 
-with I5000["simplified Pythagorean theorem"].scope("premise") as cm:
-    cm.new_equation(lhs=I1002["angle"](a, b), rhs=I1003["right angle"])
 
-with I5000["simplified Pythagorean theorem"].scope("assertion") as cm:
-
-    # convert a pyirk items into  sympy.Symbol instances to conveniently
-    # denote formulas (see documentation below)
-    La, Lb, Lc = p.items_to_symbols(la, lb, lc)
-    cm.new_equation( La**2 + Lb**2, "==", Lc**2 )
-```

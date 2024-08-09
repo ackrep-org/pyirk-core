@@ -39,10 +39,7 @@ OCSE_URI = "irk:/ocse/0.2"
 
 
 # this is relevant to look for pyirk-data to load (specified by a configuration file)
-BASE_DIR = os.getenv("PYIRK_BASE_DIR", "")
-if not BASE_DIR:
-    BASE_DIR = "./"
-BASE_DIR = os.path.abspath(BASE_DIR)
+BASE_DIR = os.path.abspath(os.getenv("PYIRK_BASE_DIR", "./"))
 
 
 confpath = os.getenv("PYIRK_CONF_PATH", "")

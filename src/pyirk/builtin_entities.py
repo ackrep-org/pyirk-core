@@ -791,6 +791,8 @@ class ScopingCM:
 
         """
 
+        assert issubclass(cls, ScopingCM) or (cls == ScopingCM)
+
         if isinstance(self.valid_subscope_types, dict):
             # assume that this is a dict mapping types to maximum number of such subscopes
             try:
@@ -999,17 +1001,62 @@ class AbstractMathRelatedScopeCM(ScopingCM):
         return rel
 
 
+
+class ConditionSubScopeCM(AbstractMathRelatedScopeCM):
+    """
+    A scoping context manager to handle conditions
+    """
+
+    valid_subscope_types = {"CONDITION": 1}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.condition_cm: AbstractMathRelatedScopeCM = self._create_subscope_cm("CONDITION", SubScopeConditionCM)
+
+    def add_condition_statement(self, subj, pred, obj, qualifiers=None):
+        with self.condition_cm:
+            self.condition_cm.new_rel(subj, pred, obj, qualifiers=qualifiers)
+
+    def add_condition_math_relation(self, *args, **kwargs):
+        with self.condition_cm:
+            self.condition_cm.new_math_relation(*args, **kwargs)
+
+    def new_condition_var(self, **kwargs):
+        with self.condition_cm:
+            return self.condition_cm.new_var(**kwargs)
+
+
+class QuantifiedSubScopeCM(ConditionSubScopeCM):
+    """
+    A scoping context manager for universally or existentially quantified statements
+    """
+    pass
+
+
+class SubScopeConditionCM(AbstractMathRelatedScopeCM):
+    """
+    A scoping context manager to specify the condition of another scope
+    """
+
+    valid_subscope_types = {}
+
+
 class _proposition__CM(AbstractMathRelatedScopeCM):
     """
     Context manager tailored for mathematical theorems and definitions
     """
 
-    valid_subscope_types = {"UNIV_QUANT": float("inf"), "EXIS_QUANT": float("inf")}
+    valid_subscope_types = {
+        "UNIV_QUANT": float("inf"),
+        "EXIS_QUANT": float("inf"),
+        "OR": float("inf"),
+        "AND": float("inf"),
+    }
 
     def universally_quantified(self) -> ScopingCM:
         """
         Create a new subscope of type "UNIV_QUANT", which can hold arbitrary statements. That subscope will contain
-        another subscope ("CONDITIONS") whose statements are considered as universally quantified condition-statements.
+        another subscope ("CONDITION") whose statements are considered as universally quantified condition-statements.
         """
 
         # create a new context manager (which implicitly creates a new scope-item), where the user can add statements
@@ -1020,12 +1067,34 @@ class _proposition__CM(AbstractMathRelatedScopeCM):
     def existentially_quantified(self) -> ScopingCM:
         """
         Create a new subscope of type "EXIS_QUANT", which can hold arbitrary statements. That subscope will contain
-        another subscope ("CONDITIONS") whose statements are considered as existentially quantified condition-statements.
+        another subscope ("CONDITION") whose statements are considered as existentially quantified condition-statements.
         """
 
         # create a new context manager (which implicitly creates a new scope-item), where the user can add statements
         # note: this also creates an internal "CONDITION" subscope
         cm = self._create_subscope_cm(scope_type="EXIS_QUANT", cls=QuantifiedSubScopeCM)
+        return cm
+
+    def AND(self) -> ConditionSubScopeCM:
+        """
+        Create a new subscope of type "AND", which can hold arbitrary statements. That subscope will contain
+        another subscope ("CONDITION") whose statements are considered to be AND-related in a boolean sense.
+        """
+
+        # create a new context manager (which implicitly creates a new scope-item), where the user can add statements
+        # note: this also creates an internal "CONDITION" subscope
+        cm = self._create_subscope_cm(scope_type="AND", cls=ConditionSubScopeCM)
+        return cm
+
+    def OR(self) -> ConditionSubScopeCM:
+        """
+        Create a new subscope of type "OR", which can hold arbitrary statements. That subscope will contain
+        another subscope ("CONDITION") whose statements are considered to be OR-related in a boolean sense.
+        """
+
+        # create a new context manager (which implicitly creates a new scope-item), where the user can add statements
+        # note: this also creates an internal "CONDITION" subscope
+        cm = self._create_subscope_cm(scope_type="EXIS_QUANT", cls=ConditionSubScopeCM)
         return cm
 
 
@@ -1043,38 +1112,6 @@ def _proposition__scope(self: Item, scope_name: str):
     cm = _proposition__CM(itm=self, namespace=namespace, scope=scope)
 
     return cm
-
-
-class QuantifiedSubScopeCM(AbstractMathRelatedScopeCM):
-    """
-    A scoping context manager for universally or existentially quantified statements
-    """
-
-    valid_subscope_types = {"CONDITION": 1}
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.condition_cm = self._create_subscope_cm("CONDITION", SubScopeConditionCM)
-
-    def add_condition_statement(self, subj, pred, obj, qualifiers=None):
-        with self.condition_cm:
-            self.condition_cm.new_rel(subj, pred, obj, qualifiers=qualifiers)
-
-    def add_condition_math_relation(self, *args, **kwargs):
-        with self.condition_cm:
-            self.condition_cm.new_math_relation(*args, **kwargs)
-
-    def new_condition_var(self, **kwargs):
-        with self.condition_cm:
-            return self.condition_cm.new_var(**kwargs)
-
-
-class SubScopeConditionCM(AbstractMathRelatedScopeCM):
-    """
-    A scoping context manager to specify the condition of another scope
-    """
-
-    valid_subscope_types = {}
 
 
 class _rule__CM(AbstractMathRelatedScopeCM):

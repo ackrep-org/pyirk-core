@@ -566,7 +566,53 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
             self.assertEqual(proxy_item.R26__has_lhs, z)
             self.assertEqual(proxy_item.R27__has_rhs, y)
 
-    def test_c07c__scope_copying(self):
+    def test_c07c__boolean_subscopes(self):
+        """
+        Test that `OR` and `AND` subscopes
+        """
+
+        with p.uri_context(uri=TEST_BASE_URI):
+            I7000 = p.create_item(
+                R1__has_label = "definition of countable",
+                R4__is_instance_of =p.I20["mathematical definition"],
+            )
+
+            finite = p.instance_of(p.I54["mathematical property"])
+            countably_infinite = p.instance_of(p.I54["mathematical property"])
+            countable = p.instance_of(p.I54["mathematical property"])
+
+            with I7000["definition of countable"].scope("setting") as cm:
+                cm.new_var(generic_set=p.instance_of(p.I13["mathematical set"]))
+
+            with I7000["definition of countable"].scope("premise") as cm:
+                with cm.OR() as cm2:
+                    cm2.add_condition_statement(cm.generic_set, p.R16["has property"], finite)
+                    cm2.add_condition_statement(cm.generic_set, p.R16["has property"], countably_infinite)
+
+            with I7000["definition of countable"].scope("assertion") as cm:
+                cm.new_rel(cm.generic_set, p.R16["has property"], countable)
+
+            # now test AND
+
+            I7100 = p.create_item(
+                R1__has_label = "definition of positive integer",
+                R4__is_instance_of =p.I20["mathematical definition"],
+            )
+
+            cm: p.builtin_entities._proposition__CM
+            with I7100["definition of positive integer"].scope("setting") as cm:
+                cm.new_var(i1=p.instance_of(p.I37["integer number"]))
+
+            with I7100["definition of positive integer"].scope("premise") as cm:
+                with cm.AND() as cm2:
+                    # Note, this cumbersome way to express i > 0 serves to use AND-relation.
+                    cm2.add_condition_math_relation(cm.i1, ">=", 0)
+                    cm2.add_condition_math_relation(cm.i1, "!=", 0)
+
+            with I7100["definition of positive integer"].scope("assertion") as cm:
+                cm.new_rel(cm.i1, p.R30["is secondary instance of"], p.I39["positive integer"])
+
+    def test_c07d__scope_copying(self):
         """
         test to copy statements from one scope to another
         """

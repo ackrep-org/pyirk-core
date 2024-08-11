@@ -1578,7 +1578,7 @@ class AlgorithmicRuleApplicationWorker:
         t0 = time.time()
 
         # in the future this logic will be parsed from the graph
-        h_list = p.get_instances_of(zb.I7435["human"])
+        h_list = p.get_direct_instances_of(zb.I7435["human"])
         rel_list = p.ds.get_subjects_for_relation(zb.R6020["is opposite of functional activity"].uri)
         result_filters = [p.is_relevant_item]
         result_conditions = [lambda res: len(res) == 4]
@@ -1615,7 +1615,7 @@ class AlgorithmicRuleApplicationWorker:
         t0 = time.time()
 
         # in the future this logic will be parsed from the graph
-        h_list = p.get_instances_of(zb.I7435["human"], filter=lambda itm: not itm.R20__has_defining_scope)
+        h_list = p.get_direct_instances_of(zb.I7435["human"], filter=lambda itm: not itm.R20__has_defining_scope)
         rel_list = [p.R50["is different from"]]
 
         # filter out R57__is_placeholder items
@@ -1652,7 +1652,7 @@ class AlgorithmicRuleApplicationWorker:
     def hardcoded_I840(zb, consequent_function: callable, *args):
         t0 = time.time()
 
-        h_list = p.get_instances_of(zb.I7435["human"], filter=p.is_relevant_item)
+        h_list = p.get_direct_instances_of(zb.I7435["human"], filter=p.is_relevant_item)
         rel_list = p.ds.get_subjects_for_relation(zb.R2850["is functional activity"].uri, filter=True)
 
         # filter out the two person-person-activities (TODO: test if this is necessary)

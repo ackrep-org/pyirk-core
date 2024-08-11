@@ -93,7 +93,7 @@ def get_taxonomy_tree(itm, add_self=True) -> list:
     """
     Recursively iterate over super and parent classes and
 
-    :param imt: DESCRIPTION
+    :param itm:     an item
     :raises NotImplementedError: DESCRIPTION
 
 
@@ -126,7 +126,7 @@ def get_taxonomy_tree(itm, add_self=True) -> list:
     return res
 
 
-def is_subclass_of(itm1: Item, itm2: Item, allow_id=False) -> bool:
+def is_subclass_of(itm1: Item, itm2: Item, allow_id=False, strict=True) -> bool:
     """
     Return True if itm1 is an (indirect) subclass (via) R3__is_subclass_of itm2
 
@@ -137,10 +137,11 @@ def is_subclass_of(itm1: Item, itm2: Item, allow_id=False) -> bool:
     if allow_id and itm1 == itm2:
         return True
 
-    for i, itm in enumerate((itm1, itm2), start=1):
-        if not allows_instantiation(itm):
-            msg = f"itm{i} ({itm}) is not a instantiable class"
-            raise core.aux.TaxonomicError(msg)
+    if strict:
+        for i, itm in enumerate((itm1, itm2), start=1):
+            if not allows_instantiation(itm):
+                msg = f"itm{i} ({itm}) is not a instantiable class"
+                raise core.aux.TaxonomicError(msg)
 
     taxtree1 = get_taxonomy_tree(itm1)
 
@@ -160,20 +161,38 @@ def is_subclass_of(itm1: Item, itm2: Item, allow_id=False) -> bool:
     return res
 
 
-def is_instance_of(itm1: Item, itm2: Item) -> bool:
+def is_instance_of(inst_itm: Item, cls_itm: Item, allow_R30_secondary: bool = False, strict=True) -> bool:
     """
-    Returns True if itm1.R4 is a subclass (R3) of itm2
+    Returns True if instance_itm.R4 is a subclass (R3) of itm2
+
+    :param inst_itm:                Item representing the instance
+    :param cls_itm:                 Item representing the class
+    :param allow_R30_secondary:     bool, accept also relations via R30__is_secondary_instance_of
     """
-    parent_class = itm1.R4__is_instance_of
+    parent_class = inst_itm.R4__is_instance_of
 
     if parent_class is None:
-        msg = f"itm1 ({itm1}) has no Statement for relation R4__is_instance_of"
-        raise core.aux.TaxonomicError(msg)
+        if strict:
+            msg = (
+                f"instance_itm ({inst_itm}) has no Statement for relation `R4__is_instance_of`. "
+                "You might use kwarg `strict=False`."
+            )
+            raise core.aux.TaxonomicError(msg)
+        else:
+            return False
 
-    if parent_class == itm2:
+    if parent_class == cls_itm:
         return True
-    else:
-        return is_subclass_of(parent_class, itm2)
+    if is_subclass_of(parent_class, cls_itm, strict=strict):
+        return True
+    if allow_R30_secondary:
+
+        for test_cls_item in inst_itm.R30__is_secondary_instance_of:
+                if test_cls_item == cls_itm:
+                    return True
+                if is_subclass_of(test_cls_item, cls_itm, strict=strict):
+                    return True
+    return False
 
 
 def instance_of(cls_entity, r1: str = None, r2: str = None, qualifiers: List[Item] = None) -> Item:
@@ -488,7 +507,7 @@ I16 = create_builtin_item(
 # Once the scope item has been defined it is possible to endow the Entity class with more features
 
 
-def _register_scope(self, name: str, scope_type: str = None) -> (dict, "Item"):
+def _register_scope(self, name: str, scope_type: str = None) -> tuple[dict, "Item"]:
     """
     Create a namespace-object (dict) and a Scope-Item
     :param name:    the name of the scope
@@ -2218,7 +2237,7 @@ def is_relevant_item(itm):
     return not itm.R57__is_placeholder and not itm.R20__has_defining_scope
 
 
-def get_instances_of(cls_item: Item, filter=None) -> List[Item]:
+def get_direct_instances_of(cls_item: Item, filter=None) -> List[Item]:
     assert allows_instantiation(cls_item)
 
     if filter is None:
@@ -2228,6 +2247,42 @@ def get_instances_of(cls_item: Item, filter=None) -> List[Item]:
     all_instances = cls_item.get_inv_relations("R4__is_instance_of", return_subj=True)
     res = [elt for elt in all_instances if filter(elt)]
     return res
+
+
+def get_all_instances_of(cls_item: Item, filter=None) -> List[Item]:
+    """
+    Return all direct and indirect instances of a class
+    """
+    assert allows_instantiation(cls_item)
+
+    # TODO: get (indirect) subclasses and then apply get_direct_instances
+    subclasses = get_all_subclasses(cls_item=cls_item)
+
+    instances: List = get_direct_instances_of(cls_item=cls_item, filter=filter)
+    for sc in subclasses:
+        instances.extend(get_direct_instances_of(sc, filter=filter))
+
+    return instances
+
+
+
+def get_all_subclasses(cls_item: Item, strict=True) -> List[Item]:
+    """
+    Recursively compile a list of all subclasses.
+    """
+
+    subclasses = cls_item.get_inv_relations("R3__is_subclass_of", return_subj=True)
+
+    if strict:
+        assert allows_instantiation(cls_item)
+
+    indirect_subclasses = []
+    for sc in subclasses:
+        indirect_subclasses.extend(get_all_subclasses(sc, strict=strict))
+
+    subclasses.extend(indirect_subclasses)
+
+    return subclasses
 
 
 def close_class_with_R51(cls_item: Item):
@@ -2240,7 +2295,7 @@ def close_class_with_R51(cls_item: Item):
     :returns:   tuple-item containing all instances
     """
 
-    instances = get_instances_of(cls_item)
+    instances = get_direct_instances_of(cls_item)
     tpl = new_tuple(*instances)
 
     cls_item.set_relation("R51__instances_are_from", tpl)

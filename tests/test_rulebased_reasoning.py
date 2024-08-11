@@ -930,10 +930,10 @@ class Test_01_rulebased_reasoning(HousekeeperMixin, unittest.TestCase):
         zp = p.irkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA02, prefix="zp")
 
         # get all non-placeholder etc humans
-        h_list = p.get_instances_of(zb.I7435["human"], filter=p.is_relevant_item)
+        h_list = p.get_direct_instances_of(zb.I7435["human"], filter=p.is_relevant_item)
         # get all placeholder humans
 
-        ph_list = p.get_instances_of(zb.I7435["human"], filter=lambda itm: itm.R57__is_placeholder)
+        ph_list = p.get_direct_instances_of(zb.I7435["human"], filter=lambda itm: itm.R57__is_placeholder)
 
         self.assertEqual(len(h_list), 5)
 

@@ -307,6 +307,69 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
         k = "R65__allows_alternative_functional_value"
         pk = p.process_key_str(k)
 
+    def test_b03_get_instances(self):
+        """
+        test the generation of direct and indirect instance lists
+        """
+
+        classes: list[p.Item] = p.get_direct_instances_of(p.I2["Metaclass"])
+
+        res = {}
+        for cl in classes:
+            res[repr(cl)] = len(p.get_all_instances_of(cl))
+
+        all_numbers1 = p.get_all_instances_of(p.I34["complex number"])
+
+        # no number has been defined yet
+        self.assertEqual(all_numbers1, [])
+
+        # now define numbers and test class structure
+
+        with p.uri_context(uri=TEST_BASE_URI):
+            i1 = p.instance_of(p.I39["positive integer"])
+            i2 = p.instance_of(p.I38["non-negative integer"])
+            i3 = p.instance_of(p.I37["integer number"])
+
+            q1 = p.instance_of(p.I36["rational number"])
+            r1 = p.instance_of(p.I35["real number"])
+            c1 = p.instance_of(p.I34["complex number"])
+
+        expected_numbers2 = set((i1, i2, i3, q1, r1, c1))
+
+        all_numbers2 = p.get_all_instances_of(p.I34["complex number"])
+        self.assertEqual(set(all_numbers2), expected_numbers2)
+
+        expected_numbers3 = set((i1, i2, i3, q1))
+        all_numbers3 = p.get_all_instances_of(p.I36["rational number"])
+        self.assertEqual(set(all_numbers3), expected_numbers3)
+        self.assertEqual(p.get_direct_instances_of(p.I36["rational number"]), [q1])
+
+        expected_numbers4 = set((i1, i2))
+        all_numbers4 = p.get_all_instances_of(p.I38["non-negative integer"])
+        self.assertEqual(set(all_numbers4), expected_numbers4)
+        self.assertEqual(p.get_direct_instances_of(p.I38["non-negative integer"]), [i2])
+
+
+    def test_b04_get_subclasses(self):
+        """
+        test the generation of direct and indirect subclass lists
+        """
+
+        cls_item = p.I34["complex number"]
+        direct_subclasses = cls_item.get_inv_relations("R3__is_subclass_of", return_subj=True)
+        all_subclasses = p.get_all_subclasses(cls_item)
+
+        self.assertEqual(direct_subclasses, [p.I35["real number"]])
+        expected_subclasses = set((
+            p.I35["real number"],
+            p.I36["rational number"],
+            p.I37["integer number"],
+            p.I38["non-negative integer"],
+            p.I39["positive integer"],
+        ))
+        self.assertEqual(set(all_subclasses), expected_subclasses)
+
+
     def test_c01__ct_loads_math(self):
         """
         test if the control_theory module successfully loads the math module

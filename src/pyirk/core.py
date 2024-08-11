@@ -666,6 +666,13 @@ class Entity(abc.ABC):
 
         run_hooks(self, phase="post-finalize")
 
+    def __hash__(self):
+        """
+        Defining a hash method allows to use Entities as keys in dicts, or create sets of them.
+        """
+
+        return hash(self.uri)
+
 
 def wrap_function_with_search_uri_context(func, uri=None):
     if uri is None:
@@ -1373,7 +1380,7 @@ def get_active_mod_uri(strict: bool = True) -> Union[str, None]:
     return res
 
 
-def process_kwargs_for_entity_creation(entity_key: str, kwargs: dict) ->(dict, dict):
+def process_kwargs_for_entity_creation(entity_key: str, kwargs: dict) -> tuple[dict, dict]:
     """
     :return:    return new_kwargs, lang_related_kwargs
     """
@@ -2506,7 +2513,7 @@ class RuleResult:
         return self._rule
 
 
-def is_true(subject: Entity, predicate: Relation, object) -> (bool, None):
+def is_true(subject: Entity, predicate: Relation, object) -> tuple[bool, None]:
     assert isinstance(subject, Entity)
     assert isinstance(predicate, Relation)
 
@@ -2540,6 +2547,9 @@ def is_subclass(item: Item, parent_item: Item):
         return is_subclass(item.R3, parent_item)
 
 def is_instance(item: Item, parent_item: Item):
+
+    msg = "`core.is_instance` is deprecated in favor of `builtins.is_instance_of`"
+    raise DeprecationWarning(msg)
     parent = item.R4
     if parent is None:
         return False

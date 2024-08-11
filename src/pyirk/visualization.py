@@ -13,6 +13,8 @@ import nxv  # for graphviz visualization of networkx graphs
 import pyirk as p
 from ipydex import IPS, activate_ips_on_exception
 
+__all__ = ["visualize_entity", "visualize_all_entities"]
+
 activate_ips_on_exception()
 
 # TODO: make this a  dict to speedup lookup

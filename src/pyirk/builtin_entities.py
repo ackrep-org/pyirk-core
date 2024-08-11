@@ -2256,7 +2256,7 @@ def get_all_instances_of(cls_item: Item, filter=None) -> List[Item]:
     assert allows_instantiation(cls_item)
 
     # TODO: get (indirect) subclasses and then apply get_direct_instances
-    subclasses = get_all_subclasses(cls_item=cls_item)
+    subclasses = get_all_subclasses_of(cls_item=cls_item)
 
     instances: List = get_direct_instances_of(cls_item=cls_item, filter=filter)
     for sc in subclasses:
@@ -2265,8 +2265,7 @@ def get_all_instances_of(cls_item: Item, filter=None) -> List[Item]:
     return instances
 
 
-
-def get_all_subclasses(cls_item: Item, strict=True) -> List[Item]:
+def get_all_subclasses_of(cls_item: Item, strict=True) -> List[Item]:
     """
     Recursively compile a list of all subclasses.
     """
@@ -2278,7 +2277,7 @@ def get_all_subclasses(cls_item: Item, strict=True) -> List[Item]:
 
     indirect_subclasses = []
     for sc in subclasses:
-        indirect_subclasses.extend(get_all_subclasses(sc, strict=strict))
+        indirect_subclasses.extend(get_all_subclasses_of(sc, strict=strict))
 
     subclasses.extend(indirect_subclasses)
 

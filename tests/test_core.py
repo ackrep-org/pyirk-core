@@ -357,7 +357,7 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
 
         cls_item = p.I34["complex number"]
         direct_subclasses = cls_item.get_inv_relations("R3__is_subclass_of", return_subj=True)
-        all_subclasses = p.get_all_subclasses(cls_item)
+        all_subclasses = p.get_all_subclasses_of(cls_item)
 
         self.assertEqual(direct_subclasses, [p.I35["real number"]])
         expected_subclasses = set((

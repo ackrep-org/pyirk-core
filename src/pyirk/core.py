@@ -2364,7 +2364,7 @@ def replace_and_unlink_entity(old_entity: Entity, new_entity: Entity):
     return res
 
 
-def register_mod(uri: str, keymanager: KeyManager, check_uri=True, prefix=None):
+def register_mod(uri: str, keymanager: KeyManager = None, check_uri=True, prefix=None):
     frame = get_caller_frame(upcount=1)
     path = os.path.abspath(frame.f_globals["__file__"])
     if check_uri:
@@ -2378,6 +2378,8 @@ def register_mod(uri: str, keymanager: KeyManager, check_uri=True, prefix=None):
 
         ds.mod_path_mapping.add_pair(key_a=uri, key_b=path)
 
+    if keymanager is None:
+        keymanager = KeyManager()
     # all modules should have their own key manager
     ds.uri_keymanager_dict[uri] = keymanager
 

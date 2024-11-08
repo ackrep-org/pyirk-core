@@ -1974,8 +1974,8 @@ R39 = create_builtin_relation(
     R1__has_label="has element",
     R2__has_description="specifies that the object is an element of the subject; inverse of R15_is_element_of",
     R8__has_domain_of_argument_1=I33["tuple"],
-    R18__has_usage_hint="This relation should be used with the qualifier R40__has_index"
-    # TODO specify inverse relation R15
+    R18__has_usage_hint="This relation should be used with the qualifier R40__has_index",
+    R68__is_inverse_of=R15["is element of"],
 )
 
 # TODO: should be functional
@@ -2702,8 +2702,16 @@ R80 = create_builtin_relation(
     R11__has_range_of_result=I1["general item"],
 )
 
+R81 = create_builtin_relation(
+    key_str="R81",
+    R1__has_label="has explanation",
+    R2__has_description="states that there is verbal explanation related to the subject",
+    R8__has_domain_of_argument_1=I1["general item"],
+    R11__has_range_of_result=I52["string"], #todo should this be type literal?
+)
 
-# next keys: I55, R81
+
+# next keys: I55, R82
 
 
 

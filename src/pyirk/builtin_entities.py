@@ -2751,8 +2751,46 @@ R81 = create_builtin_relation(
     R11__has_range_of_result=I52["string"], #todo should this be type literal?
 )
 
+I55 = create_builtin_item(
+    key_str="I55",
+    R1__has_label="mathematical operator",
+    R2__has_description="general (unspecified) mathematical operator",
+    R3__is_subclass_of=I12["mathematical object"],
+)
+I55["mathematical operator"].add_method(create_evaluated_mapping, "_custom_call")
 
-# next keys: I55, R82
+I56 = create_builtin_item(
+    key_str="I56",
+    R1__has_label="add",
+    R2__has_description="general addition operator",
+    R4__is_instance_of=I55["mathematical operator"],
+    R8__has_domain_of_argument_1=I12["mathematical object"],
+    R9__has_domain_of_argument_2=I12["mathematical object"],
+    R11__has_range_of_result=I12["mathematical object"],
+)
+
+I57 = create_builtin_item(
+    key_str="I57",
+    R1__has_label="mul",
+    R2__has_description="general multiplication operator",
+    R4__is_instance_of=I55["mathematical operator"],
+    R8__has_domain_of_argument_1=I12["mathematical object"],
+    R9__has_domain_of_argument_2=I12["mathematical object"],
+    R11__has_range_of_result=I12["mathematical object"],
+)
+
+
+def add_items(self, a):
+    return I56["add"](self, a)
+
+def mul_items(self, a):
+    return I57["mul"](self, a)
+
+Item.__add__ = add_items
+Item.__mul__ = mul_items
+
+
+# next keys: I58, R82
 
 
 

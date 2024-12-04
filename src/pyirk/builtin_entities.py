@@ -1720,6 +1720,10 @@ def create_evaluated_mapping(mapping: Item, *args) -> Item:
 
     return ev_mapping
 
+I6["mathematical operation"].add_method(create_evaluated_mapping, "_custom_call")
+I7["mathematical operation with arity 1"].add_method(create_evaluated_mapping, "_custom_call")
+I8["mathematical operation with arity 2"].add_method(create_evaluated_mapping, "_custom_call")
+I9["mathematical operation with arity 3"].add_method(create_evaluated_mapping, "_custom_call")
 
 # todo: maybe the difference between asserted inheritance and inferred inheritance should be encoded via qualifiers
 R30 = create_builtin_relation(
@@ -2753,17 +2757,19 @@ R81 = create_builtin_relation(
 
 I55 = create_builtin_item(
     key_str="I55",
-    R1__has_label="mathematical operator",
-    R2__has_description="general (unspecified) mathematical operator",
-    R3__is_subclass_of=I12["mathematical object"],
+    R1__has_label="add",
+    R2__has_description="general addition operator",
+    R4__is_instance_of=I8["mathematical operation with arity 2"],
+    R8__has_domain_of_argument_1=I12["mathematical object"],
+    R9__has_domain_of_argument_2=I12["mathematical object"],
+    R11__has_range_of_result=I12["mathematical object"],
 )
-I55["mathematical operator"].add_method(create_evaluated_mapping, "_custom_call")
 
 I56 = create_builtin_item(
     key_str="I56",
-    R1__has_label="add",
-    R2__has_description="general addition operator",
-    R4__is_instance_of=I55["mathematical operator"],
+    R1__has_label="mul",
+    R2__has_description="general multiplication operator",
+    R4__is_instance_of=I8["mathematical operation with arity 2"],
     R8__has_domain_of_argument_1=I12["mathematical object"],
     R9__has_domain_of_argument_2=I12["mathematical object"],
     R11__has_range_of_result=I12["mathematical object"],
@@ -2771,26 +2777,47 @@ I56 = create_builtin_item(
 
 I57 = create_builtin_item(
     key_str="I57",
-    R1__has_label="mul",
-    R2__has_description="general multiplication operator",
-    R4__is_instance_of=I55["mathematical operator"],
+    R1__has_label="pow",
+    R2__has_description="general power operator",
+    R4__is_instance_of=I8["mathematical operation with arity 2"],
     R8__has_domain_of_argument_1=I12["mathematical object"],
     R9__has_domain_of_argument_2=I12["mathematical object"],
     R11__has_range_of_result=I12["mathematical object"],
 )
 
+I58 = create_builtin_item(
+    key_str="I58",
+    R1__has_label="neg",
+    R2__has_description="general negation operator",
+    R4__is_instance_of=I7["mathematical operation with arity 1"],
+    R8__has_domain_of_argument_1=I12["mathematical object"],
+    R11__has_range_of_result=I12["mathematical object"],
+)
+
 
 def add_items(self, a):
-    return I56["add"](self, a)
+    return I55["add"](self, a)
+
+def sub_items(self, a):
+    return I55["add"](self, I58["neg"](a))
 
 def mul_items(self, a):
-    return I57["mul"](self, a)
+    return I56["mul"](self, a)
+
+def div_items(self, a):
+    return I56["mul"](self, I57["pow"](a, -1))
+
+def pow_items(self, a):
+    return I57["pow"](self, a)
 
 Item.__add__ = add_items
 Item.__mul__ = mul_items
+Item.__sub__ = sub_items
+Item.__div__ = div_items
+Item.__pow__ = pow_items
 
 
-# next keys: I58, R82
+# next keys: I59, R82
 
 
 

@@ -477,8 +477,8 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
 
             with I7324["definition of something"].scope("premise") as cm:
                 with cm.universally_quantified() as cm2:
-                    cm2.add_condition_statement(cm.x, p.R15["is element of"], my_set)
-                    cm2.add_condition_statement(cm.y, p.R15["is element of"], my_set)
+                    cm2.new_rel(cm.x, p.R15["is element of"], my_set)
+                    cm2.new_rel(cm.y, p.R15["is element of"], my_set)
 
                     # note: the meaning of this equation is pointless, we just test the implementation of subscopes
                     cm2.new_equation(lhs=cm.x, rhs=cm.y)
@@ -489,10 +489,10 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
 
                 # also pointless direct meaning, only to test contexts
                 with cm.existentially_quantified() as cm2:
-                    z = cm2.new_condition_var(z=p.instance_of(p.I39["positive integer"]))
-                    cm2.add_condition_statement(cm2.z, p.R15["is element of"], my_set)
-                    cm2.add_condition_statement(cm.y, p.R15["is element of"], my_set)
-                    cm2.add_condition_math_relation(cm2.z, "<", cm.x)
+                    z = cm2.new_var(z=p.instance_of(p.I39["positive integer"]))
+                    cm2.new_rel(cm2.z, p.R15["is element of"], my_set)
+                    cm2.new_rel(cm.y, p.R15["is element of"], my_set)
+                    cm2.new_math_relation(cm2.z, "<", cm.x)
 
                     cm2.new_math_relation(cm2.z, ">", cm.y)
 
@@ -586,8 +586,8 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
 
             with I7000["definition of countable"].scope("premise") as cm:
                 with cm.OR() as cm2:
-                    cm2.add_condition_statement(cm.generic_set, p.R16["has property"], finite)
-                    cm2.add_condition_statement(cm.generic_set, p.R16["has property"], countably_infinite)
+                    cm2.new_rel(cm.generic_set, p.R16["has property"], finite)
+                    cm2.new_rel(cm.generic_set, p.R16["has property"], countably_infinite)
 
             with I7000["definition of countable"].scope("assertion") as cm:
                 cm.new_rel(cm.generic_set, p.R16["has property"], countable)
@@ -606,8 +606,8 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
             with I7100["definition of positive integer"].scope("premise") as cm:
                 with cm.AND() as cm2:
                     # Note, this cumbersome way to express i > 0 serves to use AND-relation.
-                    cm2.add_condition_math_relation(cm.i1, ">=", 0)
-                    cm2.add_condition_math_relation(cm.i1, "!=", 0)
+                    cm2.new_math_relation(cm.i1, ">=", 0)
+                    cm2.new_math_relation(cm.i1, "!=", 0)
 
             with I7100["definition of positive integer"].scope("assertion") as cm:
                 cm.new_rel(cm.i1, p.R30["is secondary instance of"], p.I39["positive integer"])

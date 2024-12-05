@@ -483,12 +483,77 @@ class RuleApplicatorWorker:
         res.apply_time = time.time() - t0
         return res
 
+
+    def _resolve_local_node(self, node=None, uri=None):
+        """
+        return item or literal
+        """
+
+        assert not (node is None and uri is None)
+
+        if uri is None:
+            uri = self.extended_local_nodes.b.get(node)
+        else:
+            assert node is None
+        assert uri is not None
+        lit = self.parent.literals.a.get(uri)
+        if lit is not None:
+            return lit
+        else:
+            item = p.ds.get_entity_by_uri(uri)
+            return item
+
+    def _get_understandable_local_nodes(self):
+        """
+        Generate a humand understandable version of self.local_nodes.a
+        It is intendend for debugging only.
+        """
+        res = {}
+        for k_uri, v in self.local_nodes.a.items():
+
+            item_or_lit = self._resolve_local_node(uri=k_uri)
+            res[str(item_or_lit)] = v
+        return res
+
+
+    def _get_understandable_result_maps(self, result_maps: List[dict]) -> List[list]:
+        """
+        Generate a human understandable version of the result_map-dicts which are returned by
+        self.match_subgraph_P()
+        It is intendend for debugging only.
+        """
+        p.check_type(result_maps, List[dict])
+        res = []
+
+        # result_maps looks like [ {6: <Item I5177["matmul"]>, ... }, ...]
+
+        for result_map in result_maps:
+            res_pairs = []
+            for k, v_item in result_map.items():
+                k_item_or_lit = self._resolve_local_node(k)
+                # v_item = p.ds.get_entity_by_uri(v)
+                res_pairs.append((k_item_or_lit, v_item))
+            res.append(res_pairs)
+        return res
+
     def apply_graph_premise(self) -> core.RuleResult:
         t0 = time.time()
         result_maps = self.match_subgraph_P()
-        # TODO: for debugging the result_maps data structure the following things might be helpful:
-        # - a mapping like self.local_nodes.a but with labels instead of uris
+        # Note: useful for debugging:
+        # - self._get_understandable_local_nodes()
+        # - self._get_understandable_result_maps()
+        #
+        # TODO: to debug the result_maps data structure the following things might be helpful:
         # - a visualization of the prototype graph self.P
+
+        try:
+            dbg = self._get_understandable_result_maps(result_maps)
+        except AssertionError:
+            # FIXME: occurs for test_d10__zebra_puzzle_stage02
+            dbg = None
+            pass
+
+        # now apply condition funcs (to filter the results) and consequent funcs (to do something)
         res = self._process_result_map(result_maps)
         res.apply_time = time.time() - t0
 
@@ -851,6 +916,7 @@ class RuleApplicatorWorker:
         #   2: <Item I9642["local exponential stability"]>
         #  }, ... ]
 
+        # IPS()
         return new_res
 
     def _get_by_uri(self, uri):
@@ -887,6 +953,9 @@ class RuleApplicatorWorker:
 
         see also: function edge_matcher
         """
+
+        # cond = not n1d["is_literal"] and n1d["itm"].R4 is not None and "square matrix" in str(n1d["itm"].R4)
+        cond = not n1d["is_literal"] and n1d["itm"].short_key == "Ia7720"
 
         if n1d["is_literal"]:
             if n2d.get("is_variable_literal"):
@@ -1204,6 +1273,8 @@ def edge_matcher(e1d: AtlasView, e2d: AtlasView) -> bool:
 
     e2d = e2d[0]
 
+    # IPS("R5938" in str(e1d) + str(e2d))
+
     if e2d["rel_uri"] == wildcard_relation_uri:
         # wildcard relations matches any relation which has the required relation properties
 
@@ -1507,7 +1578,7 @@ class AlgorithmicRuleApplicationWorker:
         t0 = time.time()
 
         # in the future this logic will be parsed from the graph
-        h_list = p.get_instances_of(zb.I7435["human"])
+        h_list = p.get_direct_instances_of(zb.I7435["human"])
         rel_list = p.ds.get_subjects_for_relation(zb.R6020["is opposite of functional activity"].uri)
         result_filters = [p.is_relevant_item]
         result_conditions = [lambda res: len(res) == 4]
@@ -1544,7 +1615,7 @@ class AlgorithmicRuleApplicationWorker:
         t0 = time.time()
 
         # in the future this logic will be parsed from the graph
-        h_list = p.get_instances_of(zb.I7435["human"], filter=lambda itm: not itm.R20__has_defining_scope)
+        h_list = p.get_direct_instances_of(zb.I7435["human"], filter=lambda itm: not itm.R20__has_defining_scope)
         rel_list = [p.R50["is different from"]]
 
         # filter out R57__is_placeholder items
@@ -1581,7 +1652,7 @@ class AlgorithmicRuleApplicationWorker:
     def hardcoded_I840(zb, consequent_function: callable, *args):
         t0 = time.time()
 
-        h_list = p.get_instances_of(zb.I7435["human"], filter=p.is_relevant_item)
+        h_list = p.get_direct_instances_of(zb.I7435["human"], filter=p.is_relevant_item)
         rel_list = p.ds.get_subjects_for_relation(zb.R2850["is functional activity"].uri, filter=True)
 
         # filter out the two person-person-activities (TODO: test if this is necessary)

@@ -307,6 +307,69 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
         k = "R65__allows_alternative_functional_value"
         pk = p.process_key_str(k)
 
+    def test_b03_get_instances(self):
+        """
+        test the generation of direct and indirect instance lists
+        """
+
+        classes: list[p.Item] = p.get_direct_instances_of(p.I2["Metaclass"])
+
+        res = {}
+        for cl in classes:
+            res[repr(cl)] = len(p.get_all_instances_of(cl))
+
+        all_numbers1 = p.get_all_instances_of(p.I34["complex number"])
+
+        # no number has been defined yet
+        self.assertEqual(all_numbers1, [])
+
+        # now define numbers and test class structure
+
+        with p.uri_context(uri=TEST_BASE_URI):
+            i1 = p.instance_of(p.I39["positive integer"])
+            i2 = p.instance_of(p.I38["non-negative integer"])
+            i3 = p.instance_of(p.I37["integer number"])
+
+            q1 = p.instance_of(p.I36["rational number"])
+            r1 = p.instance_of(p.I35["real number"])
+            c1 = p.instance_of(p.I34["complex number"])
+
+        expected_numbers2 = set((i1, i2, i3, q1, r1, c1))
+
+        all_numbers2 = p.get_all_instances_of(p.I34["complex number"])
+        self.assertEqual(set(all_numbers2), expected_numbers2)
+
+        expected_numbers3 = set((i1, i2, i3, q1))
+        all_numbers3 = p.get_all_instances_of(p.I36["rational number"])
+        self.assertEqual(set(all_numbers3), expected_numbers3)
+        self.assertEqual(p.get_direct_instances_of(p.I36["rational number"]), [q1])
+
+        expected_numbers4 = set((i1, i2))
+        all_numbers4 = p.get_all_instances_of(p.I38["non-negative integer"])
+        self.assertEqual(set(all_numbers4), expected_numbers4)
+        self.assertEqual(p.get_direct_instances_of(p.I38["non-negative integer"]), [i2])
+
+
+    def test_b04_get_subclasses(self):
+        """
+        test the generation of direct and indirect subclass lists
+        """
+
+        cls_item = p.I34["complex number"]
+        direct_subclasses = cls_item.get_inv_relations("R3__is_subclass_of", return_subj=True)
+        all_subclasses = p.get_all_subclasses_of(cls_item)
+
+        self.assertEqual(direct_subclasses, [p.I35["real number"]])
+        expected_subclasses = set((
+            p.I35["real number"],
+            p.I36["rational number"],
+            p.I37["integer number"],
+            p.I38["non-negative integer"],
+            p.I39["positive integer"],
+        ))
+        self.assertEqual(set(all_subclasses), expected_subclasses)
+
+
     def test_c01__ct_loads_math(self):
         """
         test if the control_theory module successfully loads the math module
@@ -503,7 +566,53 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
             self.assertEqual(proxy_item.R26__has_lhs, z)
             self.assertEqual(proxy_item.R27__has_rhs, y)
 
-    def test_c07c__scope_copying(self):
+    def test_c07c__boolean_subscopes(self):
+        """
+        Test that `OR` and `AND` subscopes
+        """
+
+        with p.uri_context(uri=TEST_BASE_URI):
+            I7000 = p.create_item(
+                R1__has_label = "definition of countable",
+                R4__is_instance_of =p.I20["mathematical definition"],
+            )
+
+            finite = p.instance_of(p.I54["mathematical property"])
+            countably_infinite = p.instance_of(p.I54["mathematical property"])
+            countable = p.instance_of(p.I54["mathematical property"])
+
+            with I7000["definition of countable"].scope("setting") as cm:
+                cm.new_var(generic_set=p.instance_of(p.I13["mathematical set"]))
+
+            with I7000["definition of countable"].scope("premise") as cm:
+                with cm.OR() as cm2:
+                    cm2.add_condition_statement(cm.generic_set, p.R16["has property"], finite)
+                    cm2.add_condition_statement(cm.generic_set, p.R16["has property"], countably_infinite)
+
+            with I7000["definition of countable"].scope("assertion") as cm:
+                cm.new_rel(cm.generic_set, p.R16["has property"], countable)
+
+            # now test AND
+
+            I7100 = p.create_item(
+                R1__has_label = "definition of positive integer",
+                R4__is_instance_of =p.I20["mathematical definition"],
+            )
+
+            cm: p.builtin_entities._proposition__CM
+            with I7100["definition of positive integer"].scope("setting") as cm:
+                cm.new_var(i1=p.instance_of(p.I37["integer number"]))
+
+            with I7100["definition of positive integer"].scope("premise") as cm:
+                with cm.AND() as cm2:
+                    # Note, this cumbersome way to express i > 0 serves to use AND-relation.
+                    cm2.add_condition_math_relation(cm.i1, ">=", 0)
+                    cm2.add_condition_math_relation(cm.i1, "!=", 0)
+
+            with I7100["definition of positive integer"].scope("assertion") as cm:
+                cm.new_rel(cm.i1, p.R30["is secondary instance of"], p.I39["positive integer"])
+
+    def test_c07d__scope_copying(self):
         """
         test to copy statements from one scope to another
         """
@@ -1239,29 +1348,26 @@ class Test_02_ruleengine(HousekeeperMixin, unittest.TestCase):
     def setup_data1(self):
 
         with p.uri_context(uri=TEST_BASE_URI):
-            self.rule1 = p.create_item(
-                key_str="I400",
+            I4731 = p.create_item(
                 R1__has_label="subproperty rule 1",
-                R2__has_description=(
-                    # "specifies the 'transitivity' of I54_mathematical_property-instances via R17_issubproperty_of"
-                    "specifies the 'transitivity' of R17_is_subproperty_of"
-                ),
+                R2__has_description=("specifies the 'transitivity' of R17_is_subproperty_of"),
                 R4__is_instance_of=p.I41["semantic rule"],
             )
 
-            with self.rule1["subproperty rule 1"].scope("setting") as cm:
+            with I4731["subproperty rule 1"].scope("setting") as cm:
                 cm.new_var(P1=p.instance_of(p.I54["mathematical property"]))
                 cm.new_var(P2=p.instance_of(p.I54["mathematical property"]))
                 cm.new_var(P3=p.instance_of(p.I54["mathematical property"]))
-            #     # A = cm.new_var(sys=instance_of(I1["general item"]))
-            #
-            with self.rule1["subproperty rule 1"].scope("premise") as cm:
+
+            with I4731["subproperty rule 1"].scope("premise") as cm:
                 cm.new_rel(cm.P2, p.R17["is subproperty of"], cm.P1)
                 cm.new_rel(cm.P3, p.R17["is subproperty of"], cm.P2)
                 # todo: state that all variables are different from each other
 
-            with self.rule1["subproperty rule 1"].scope("assertion") as cm:
+            with I4731["subproperty rule 1"].scope("assertion") as cm:
                 cm.new_rel(cm.P3, p.R17["is subproperty of"], cm.P1)
+
+            self.rule1 = I4731
 
     def test_a01__basics(self):
 
@@ -1340,6 +1446,7 @@ class Test_02_ruleengine(HousekeeperMixin, unittest.TestCase):
 
         mod1 = p.irkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct", modname=TEST_MOD_NAME)
         self.assertEqual(len(mod1.I9642["local exponential stability"].get_relations("R17__is_subproperty_of")), 1)
+
         ra = p.ruleengine.RuleApplicator(self.rule1, mod_context_uri=TEST_BASE_URI)
         res = ra.apply()
 
@@ -1372,6 +1479,8 @@ class Test_03_Multilinguality(HousekeeperMixin, unittest.TestCase):
         # this test will break if the default language is not "en"
         # (it would need some further work to make it independent of the concrete default lang)
         self.assertEqual(p.settings.DEFAULT_DATA_LANGUAGE, "en")
+
+        self.assertEqual(p.I39["positive integer"], p.I39["positive Ganzzahl"@p.de])
 
         with p.uri_context(uri=TEST_BASE_URI):
 

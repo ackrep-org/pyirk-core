@@ -1018,18 +1018,19 @@ class ConditionSubScopeCM(AbstractMathRelatedScopeCM):
         super().__init__(*args, **kwargs)
         self.condition_cm: AbstractMathRelatedScopeCM = self._create_subscope_cm("CONDITION", SubScopeConditionCM)
 
-    # def new_rel(self, subj, pred, obj, qualifiers=None):
-    #     with self.condition_cm:
-    #         self.condition_cm.new_rel(subj, pred, obj, qualifiers=qualifiers)
+    def add_condition_statement(self, subj, pred, obj, qualifiers=None):
+        with self.condition_cm:
+            self.condition_cm.new_rel(subj, pred, obj, qualifiers=qualifiers)
 
-    # def new_math_relation(self, *args, **kwargs):
-    #     with self.condition_cm:
-    #         self.condition_cm.new_math_relation(*args, **kwargs)
+    def add_condition_math_relation(self, *args, **kwargs):
+        with self.condition_cm:
+            self.condition_cm.new_math_relation(*args, **kwargs)
 
-    # def new_var(self, **kwargs):
-    #     with self.condition_cm:
-    #         return self.condition_cm.new_var(**kwargs)
+    def new_condition_var(self, **kwargs):
+        with self.condition_cm:
+            return self.condition_cm.new_var(**kwargs)
 
+    # this duplication should be resolved, right now it is here so it doesnt mess up uq and exq cm
     def new_rel(self, subj, pred, obj, qualifiers=None):
         with self.condition_cm:
             self.condition_cm.new_rel(subj, pred, obj, qualifiers=qualifiers)

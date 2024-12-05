@@ -477,8 +477,8 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
 
             with I7324["definition of something"].scope("premise") as cm:
                 with cm.universally_quantified() as cm2:
-                    cm2.new_rel(cm.x, p.R15["is element of"], my_set)
-                    cm2.new_rel(cm.y, p.R15["is element of"], my_set)
+                    cm2.add_condition_statement(cm.x, p.R15["is element of"], my_set)
+                    cm2.add_condition_statement(cm.y, p.R15["is element of"], my_set)
 
                     # note: the meaning of this equation is pointless, we just test the implementation of subscopes
                     cm2.new_equation(lhs=cm.x, rhs=cm.y)
@@ -489,10 +489,10 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
 
                 # also pointless direct meaning, only to test contexts
                 with cm.existentially_quantified() as cm2:
-                    z = cm2.new_var(z=p.instance_of(p.I39["positive integer"]))
-                    cm2.new_rel(cm2.z, p.R15["is element of"], my_set)
-                    cm2.new_rel(cm.y, p.R15["is element of"], my_set)
-                    cm2.new_math_relation(cm2.z, "<", cm.x)
+                    z = cm2.new_condition_var(z=p.instance_of(p.I39["positive integer"]))
+                    cm2.add_condition_statement(cm2.z, p.R15["is element of"], my_set)
+                    cm2.add_condition_statement(cm.y, p.R15["is element of"], my_set)
+                    cm2.add_condition_math_relation(cm2.z, "<", cm.x)
 
                     cm2.new_math_relation(cm2.z, ">", cm.y)
 

@@ -1101,7 +1101,7 @@ class _proposition__CM(AbstractMathRelatedScopeCM):
 
         # create a new context manager (which implicitly creates a new scope-item), where the user can add statements
         # note: this also creates an internal "CONDITION" subscope
-        cm = self._create_subscope_cm(scope_type="EXIS_QUANT", cls=ConditionSubScopeCM)
+        cm = self._create_subscope_cm(scope_type="OR", cls=ConditionSubScopeCM)
         return cm
 
 

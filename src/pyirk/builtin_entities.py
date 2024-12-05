@@ -1018,6 +1018,8 @@ class ConditionSubScopeCM(AbstractMathRelatedScopeCM):
         super().__init__(*args, **kwargs)
         self.condition_cm: AbstractMathRelatedScopeCM = self._create_subscope_cm("CONDITION", SubScopeConditionCM)
 
+    # todo: these methods should be named the same as the submethods they are calling for overall consitency and for easier parsing in stafo
+    # todo: this is apparently not trivial, since the behavior of AND/OR-scopes and Quantifier-scopes depends on it
     def add_condition_statement(self, subj, pred, obj, qualifiers=None):
         with self.condition_cm:
             self.condition_cm.new_rel(subj, pred, obj, qualifiers=qualifiers)
@@ -2795,26 +2797,30 @@ I58 = create_builtin_item(
 )
 
 
-def add_items(self, a):
-    return I55["add"](self, a)
+def add_items(a, b):
+    return I55["add"](a, b)
 
-def sub_items(self, a):
-    return I55["add"](self, I58["neg"](a))
+def sub_items(a, b):
+    return I55["add"](a, I58["neg"](b))
 
-def mul_items(self, a):
-    return I56["mul"](self, a)
+def mul_items(a, b):
+    return I56["mul"](a, b)
 
-def div_items(self, a):
-    return I56["mul"](self, I57["pow"](a, -1))
+def div_items(a, b):
+    return I56["mul"](a, I57["pow"](b, -1))
 
-def pow_items(self, a):
-    return I57["pow"](self, a)
+def pow_items(a, b):
+    return I57["pow"](a, b)
+
+def neg_item(a):
+    return I58["neg"](a)
 
 Item.__add__ = add_items
 Item.__mul__ = mul_items
 Item.__sub__ = sub_items
-Item.__div__ = div_items
+Item.__truediv__ = div_items # truediv is the correct method for / operator
 Item.__pow__ = pow_items
+Item.__neg__ = neg_item
 
 
 # next keys: I59, R82

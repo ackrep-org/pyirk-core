@@ -1058,6 +1058,7 @@ class _proposition__CM(AbstractMathRelatedScopeCM):
         "EXIS_QUANT": float("inf"),
         "OR": float("inf"),
         "AND": float("inf"),
+        "NOT": float("inf"),
     }
 
     def universally_quantified(self) -> ScopingCM:
@@ -1102,6 +1103,17 @@ class _proposition__CM(AbstractMathRelatedScopeCM):
         # create a new context manager (which implicitly creates a new scope-item), where the user can add statements
         # note: this also creates an internal "CONDITION" subscope
         cm = self._create_subscope_cm(scope_type="OR", cls=ConditionSubScopeCM)
+        return cm
+
+    def NOT(self) -> ConditionSubScopeCM:
+        """
+        Create a new subscope of type "NOT", which can hold arbitrary statements. That subscope will contain
+        another subscope ("CONDITION") whose statements are considered to be negated in a boolean sense.
+        """
+
+        # create a new context manager (which implicitly creates a new scope-item), where the user can add statements
+        # note: this also creates an internal "CONDITION" subscope
+        cm = self._create_subscope_cm(scope_type="NOT", cls=ConditionSubScopeCM)
         return cm
 
 

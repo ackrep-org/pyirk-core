@@ -2766,7 +2766,7 @@ R81 = create_builtin_relation(
     R1__has_label="has explanation",
     R2__has_description="states that there is verbal explanation related to the subject",
     R8__has_domain_of_argument_1=I1["general item"],
-    R11__has_range_of_result=I52["string"], #todo should this be type literal?
+    R11__has_range_of_result=I52["string"],
 )
 
 I55 = create_builtin_item(
@@ -2808,6 +2808,13 @@ I58 = create_builtin_item(
     R11__has_range_of_result=I12["mathematical object"],
 )
 
+R82 = create_builtin_relation(
+    key_str="R82",
+    R1__has_label="has alternative latex string",
+    R2__has_description="has alternative latex notation, different from R24['has LaTeX string']",
+    R8__has_domain_of_argument_1=I18["mathematical expression"],
+    R11__has_range_of_result=I52["string"],
+)
 
 def add_items(a, b):
     return I55["add"](a, b)
@@ -2835,7 +2842,7 @@ Item.__pow__ = pow_items
 Item.__neg__ = neg_item
 
 
-# next keys: I59, R82
+# next keys: I59, R83
 
 
 

@@ -2822,23 +2822,37 @@ def add_items(a, b):
 def sub_items(a, b):
     return I55["add"](a, I58["neg"](b))
 
+def reflective_sub_items(a, b):
+    return I55["add"](b, I58["neg"](a))
+
 def mul_items(a, b):
     return I56["mul"](a, b)
 
 def div_items(a, b):
     return I56["mul"](a, I57["pow"](b, -1))
 
+def reflective_div_items(a, b):
+    return I56["mul"](b, I57["pow"](a, -1))
+
 def pow_items(a, b):
     return I57["pow"](a, b)
+
+def reflective_pow_items(a, b):
+    return I57["pow"](b, a)
 
 def neg_item(a):
     return I58["neg"](a)
 
 Item.__add__ = add_items
+Item.__radd__ = add_items # reflective addition for 1 + Item
 Item.__mul__ = mul_items
+Item.__rmul__ = mul_items
 Item.__sub__ = sub_items
+Item.__rsub__ = reflective_sub_items
 Item.__truediv__ = div_items # truediv is the correct method for / operator
+Item.__rtruediv__ = reflective_div_items
 Item.__pow__ = pow_items
+Item.__rpow__ = reflective_pow_items
 Item.__neg__ = neg_item
 
 

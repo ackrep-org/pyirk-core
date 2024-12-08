@@ -2856,6 +2856,15 @@ Item.__rpow__ = reflective_pow_items
 Item.__neg__ = neg_item
 
 
+def unpack_tuple_item(tuple_item):
+    """
+    This is just a convenience alias for .R39__has_element
+    """
+
+    # this will return a list (as R29 is not functional)
+    return tuple_item.R39__has_element
+
+
 # next keys: I59, R83
 
 

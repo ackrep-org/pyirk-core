@@ -32,9 +32,17 @@ class NotYetFinishedError(NotImplementedError):
 
 
 class OneToOneMapping(object):
-    def __init__(self, **kwargs):
-        self.a = dict(**kwargs)
-        self.b = dict([(v, k) for k, v in kwargs.items()])
+    def __init__(self, a_dict: dict = None, **kwargs):
+        if a_dict is None:
+            self.a = dict(**kwargs)
+            self.b = dict([(v, k) for k, v in kwargs.items()])
+        else:
+            # handle the case where we do not map strings
+            assert len(kwargs) == 0
+
+            # make a copy
+            self.a = dict(a_dict)
+            self.b = dict([(v, k) for k, v in a_dict.items()])
 
         # assert 1to1-property
         assert len(self.a) == len(self.b)
@@ -242,7 +250,7 @@ def ensure_valid_short_key(txt: str, strict: bool = True) -> bool:
 
     cond = all(conds)
     if not cond and strict:
-        msg = f"This seems not to be a valid short_key: {txt}. Condition protocoll: {conds}"
+        msg = f"This seems not to be a valid short_key: {txt}. Condition protocol: {conds}"
         raise InvalidShortKeyError(msg)
 
     return cond
@@ -259,7 +267,7 @@ def ensure_valid_uri(txt: str, strict: bool = True) -> bool:
 
     cond = all(conds)
     if not cond and strict:
-        msg = f"This seems not to be a valid URI: {txt}. Condition protocoll: {conds}"
+        msg = f"This seems not to be a valid URI: {txt}. Condition protocol: {conds}"
         raise InvalidURIError(msg)
 
     return cond
@@ -271,7 +279,7 @@ def ensure_valid_relation_uri(txt: str, strict=True):
 
     cond = all(conds)
     if not cond and strict:
-        msg = f"This is not a valid relation URI: {txt}. Condition protocoll: {conds}"
+        msg = f"This is not a valid relation URI: {txt}. Condition protocol: {conds}"
         raise InvalidURIError(msg)
 
 
@@ -281,7 +289,7 @@ def ensure_valid_item_uri(txt: str, strict=True):
 
     cond = all(conds)
     if not cond and strict:
-        msg = f"This is not a valid item URI: {txt}. Condition protocoll: {conds}"
+        msg = f"This is not a valid item URI: {txt}. Condition protocol: {conds}"
         raise InvalidURIError(msg)
 
 
@@ -301,7 +309,7 @@ def ensure_valid_prefix(txt: str, strict: bool = True) -> bool:
 
     cond = all(conds)
     if not cond and strict:
-        msg = f"This seems not to be a valid prefix: {txt}. Condition protocoll: {conds}"
+        msg = f"This seems not to be a valid prefix: {txt}. Condition protocol: {conds}"
         raise InvalidPrefixError(msg)
 
     return cond
@@ -336,7 +344,7 @@ def ensure_valid_baseuri(txt: str, strict: bool = True) -> bool:
 
     cond = all(conds)
     if not cond and strict:
-        msg = f"This seems not to be a valid base uri: {txt}. Condition protocoll: {conds}"
+        msg = f"This seems not to be a valid base uri: {txt}. Condition protocol: {conds}"
         raise InvalidURIError(msg)
 
     return cond

@@ -760,8 +760,10 @@ class ScopingCM:
 
             return res
 
+    # TODO: obsolete? This method seems not to be used in any test nor example
     @classmethod
     def create_scopingcm_factory(cls):
+        raise DeprecationWarning("This method is obsolete and will be removed in the future")
         def scopingcm_factory(self: Item, scope_name: str) -> ScopingCM:
             """
             This function will be used as a method for Items which can create a scoping context manager.
@@ -2550,7 +2552,7 @@ I44 = create_builtin_item(
 R64 = create_builtin_relation(
     key_str="R64",
     R1__has_label="has scope type",
-    R2__has_description=("specifies the subject (a scope) has a certain type (currently 'OR', 'AND')"),
+    R2__has_description=("specifies the subject (a scope) has a certain type (currently 'OR', 'AND', 'NOT')"),
     R8__has_domain_of_argument_1=I16["scope"],
     R11__has_range_of_result=I52["string"],
     R22__is_functional=True,

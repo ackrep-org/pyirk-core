@@ -793,7 +793,7 @@ class ScopingCM:
 
     def _create_subscope_cm(self, scope_type: str, cls: type):
         """
-        :param scope_type:     a str like "AND" or "OR"
+        :param scope_type:     a str like "AND", "OR", "NOT"
         :param cls:            the class to instantiate, e.g. RulePremiseSubScopeCM
 
         """

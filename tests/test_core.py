@@ -35,7 +35,6 @@ from .settings import (
     )
 
 
-
 class Test_00_Core(HousekeeperMixin, unittest.TestCase):
 
     def test_a1__dependencies(self):
@@ -349,7 +348,6 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
         self.assertEqual(set(all_numbers4), expected_numbers4)
         self.assertEqual(p.get_direct_instances_of(p.I38["non-negative integer"]), [i2])
 
-
     def test_b04_get_subclasses(self):
         """
         test the generation of direct and indirect subclass lists
@@ -368,7 +366,6 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
             p.I39["positive integer"],
         ))
         self.assertEqual(set(all_subclasses), expected_subclasses)
-
 
     def test_c01__ct_loads_math(self):
         """
@@ -412,7 +409,6 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
             s1 = ct.ma.I5807["sign"](x)
             s2 = ct.ma.I5807["sign"](x)
             self.assertTrue(s1 is s2)
-
 
     def test_c05__evaluated_mapping2(self):
         mod1 = p.irkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
@@ -631,8 +627,25 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
             with I7200["definition of non-negative integer"].scope("assertion") as cm:
                 cm.new_rel(cm.i1, p.R30["is secondary instance of"], p.I38["non-negative integer"])
 
+    def test_c07d__nested_scopes(self):
+        with p.uri_context(uri=TEST_BASE_URI):
+            I0100 = p.create_item(R1__has_label="x", R4__is_instance_of=p.I36["rational number"])
+            I0101 = p.create_item(R1__has_label="y", R4__is_instance_of=p.I36["rational number"])
+            I0102 = p.create_item(R1__has_label="z", R4__is_instance_of=p.I36["rational number"])
 
-    def test_c07d__scope_copying(self):
+            I0104 = p.create_item(
+                R1__has_label = "definition of something",
+                R4__is_instance_of =p.I20["mathematical definition"],
+            )
+
+            with I0104["definition of something"].scope("premise") as cm:
+                with cm.AND() as cm2:
+                    with cm2.OR() as cm3:
+                        # to be continued
+                        pass
+
+
+    def test_c07q__scope_copying(self):
         """
         test to copy statements from one scope to another
         """
@@ -694,7 +707,6 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
 
             self.assertEqual(len(args1), len(args2))
             self.assertEqual(args2, [V2, f2, x2])
-
 
     def test_c08__relations_with_sequence_as_argument(self):
         with p.uri_context(uri=TEST_BASE_URI):
@@ -769,7 +781,6 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
             with self.assertRaises(p.aux.TaxonomicError):
                 # I39 is not an instance -> error
                 p.is_instance_of(p.I39["positive integer"], p.I39["positive integer"])
-
 
     def test_c10__qualifiers(self):
         _ = p.irkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
@@ -971,7 +982,6 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
         else:
             # now relation labels are just ordinary text
             self.assertIn('font-size="20.00">R35</text>', res)
-
 
     def test_d01__wrap_function_with_uri_context(self):
         ma = p.irkloader.load_mod_from_path(TEST_DATA_PATH_MA, prefix="ma")
@@ -1289,7 +1299,6 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
 
             # Note: this has to be executed in the uri_context (otherwise R301 would be unknown)
             self.assertEqual(itm1.R301, ["entity: check"])
-
 
             p.register_hook("post-create-item", myhook2)
             p.register_hook("post-create-relation", myhook3)

@@ -906,28 +906,30 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
         node = visualization.create_node(e1, url_template="")
         node.perform_html_wrapping(use_html=False)
         label = node.get_dot_label(render=True)
-        self.assertEqual(label, 'I0123\\n["1234567890"]')
+
+        # note: for the sake of brevity we skip quotes inside of [...] for the node-labels in visualization
+        self.assertEqual(label, 'I0123\\n[1234567890]')
 
         with p.uri_context(uri=TEST_BASE_URI):
             e1 = p.create_item(key_str="I0124", R1="1234567890abcdefgh")
         node = visualization.create_node(e1, url_template="")
         node.perform_html_wrapping(use_html=False)
         label = node.get_dot_label(render=True)
-        self.assertEqual(label, 'I0124\\n["1234567890abcde\\nfgh"]')
+        self.assertEqual(label, 'I0124\\n[1234567890a\\nbcdefgh]')
 
         with p.uri_context(uri=TEST_BASE_URI):
             e1 = p.create_item(key_str="I0125", R1="12 34567 890abcdefgh")
         node = visualization.create_node(e1, url_template="")
         node.perform_html_wrapping(use_html=False)
         label = node.get_dot_label(render=True)
-        self.assertEqual(label, 'I0125\\n["12 34567\\n890abcdefgh"]')
+        self.assertEqual(label, 'I0125\\n[12 34567\\n890abcdefgh]')
 
         with p.uri_context(uri=TEST_BASE_URI):
             e1 = p.create_item(key_str="I0126", R1="12 34567-890abcdefgh")
         node = visualization.create_node(e1, url_template="")
         node.perform_html_wrapping(use_html=False)
         label = node.get_dot_label(render=True)
-        self.assertEqual(label, 'I0126\\n["12 34567-\\n890abcdefgh"]')
+        self.assertEqual(label, 'I0126\\n[12 34567-\\n890abcdefgh]')
 
     @unittest.skipIf(os.environ.get("CI"), "Skipping visualization test on CI to prevent graphviz-dependency")
     def test_c14__visualization1(self):

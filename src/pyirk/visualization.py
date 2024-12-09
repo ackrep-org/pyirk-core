@@ -257,7 +257,8 @@ def create_label_segments(label: str, maxlen: int) -> Tuple[List[str], List[str]
 
     Examples:
     - I4321["quite long label with many words"] ->
-        [("key0", 'I4321'), ("key1", '["quite long label'), ("key2", 'with many words"]')]
+        [("key0", 'I4321'), ("key1", '[quite long label'), ("key2", 'with many words]')]
+        # note: for the sake of brevity we skip quotes inside of [...]
 
     :param label:   label string
     :param maxlen:  maximum length of each line

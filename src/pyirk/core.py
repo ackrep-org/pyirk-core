@@ -109,6 +109,8 @@ class Entity(abc.ABC):
         self._label_after_unlink = None
         self._unlinked = False
 
+        self.updated = False
+
     def __call__(self, *args, **kwargs):
         custom_call_method = getattr(self, "_custom_call", None)
         if custom_call_method is None:
@@ -672,6 +674,23 @@ class Entity(abc.ABC):
         """
 
         return hash(self.uri)
+
+    def update_relations(self, **kwargs):
+        assert self.updated == False, "This function can be called only once for each object, this is the second time."
+
+        item_key = self.short_key
+
+        new_kwargs, lang_related_kwargs = process_kwargs_for_entity_creation(item_key, kwargs)
+
+        for dict_key, value in new_kwargs.items():
+            self.set_relation(dict_key, value)
+
+        process_lang_related_kwargs_for_entity_creation(self, item_key, lang_related_kwargs)
+
+        # update inheritance and instantiation
+        self.__post_init__()
+
+        self.updated = True
 
 
 def wrap_function_with_search_uri_context(func, uri=None):

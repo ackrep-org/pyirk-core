@@ -1358,6 +1358,21 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
         self.assertTrue(p.is_true(ma.I5359, p.R4, ma.I4895))
         self.assertTrue(p.is_true(ma.I5359["determinant"], p.R4["is instance of"], ma.I4895["mathematical operator"]))
 
+    def test_e03__update_relations(self):
+        with p.uri_context(uri=TEST_BASE_URI, prefix="ut"):
+            I1234 = p.create_item(R1__has_label="some theorem")
+            I1234["some theorem"].update_relations(
+                R2__has_description="bla",
+                R4__is_instance_of=p.I14["mathematical proposition"]
+            )
+            # check basic relations
+            self.assertTrue(hasattr(I1234, "R2"))
+            # check inherited attributes
+            self.assertTrue(hasattr(I1234, "scope"))
+            # is only callable once
+            self.assertRaises(AssertionError, I1234["some theorem"].update_relations)
+
+
 class Test_02_ruleengine(HousekeeperMixin, unittest.TestCase):
     def setUp(self):
         super().setUp()

@@ -568,7 +568,7 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
 
     def test_c07c__boolean_subscopes(self):
         """
-        Test that `OR` and `AND` subscopes
+        Test that `OR`, `AND` and `NOT` subscopes can be used.
         """
 
         with p.uri_context(uri=TEST_BASE_URI):
@@ -611,6 +611,26 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
 
             with I7100["definition of positive integer"].scope("assertion") as cm:
                 cm.new_rel(cm.i1, p.R30["is secondary instance of"], p.I39["positive integer"])
+
+            # now test NOT
+
+            I7200 = p.create_item(
+                R1__has_label = "definition of non-negative integer",
+                R4__is_instance_of =p.I20["mathematical definition"],
+            )
+
+            cm: p.builtin_entities._proposition__CM
+            with I7200["definition of non-negative integer"].scope("setting") as cm:
+                cm.new_var(i1=p.instance_of(p.I37["integer number"]))
+
+            with I7200["definition of non-negative integer"].scope("premise") as cm:
+                with cm.NOT() as cm2:
+                    # Note, this cumbersome way to express i >= 0 serves to use NOT-relation.
+                    cm2.add_condition_math_relation(cm.i1, "<", 0)
+
+            with I7200["definition of non-negative integer"].scope("assertion") as cm:
+                cm.new_rel(cm.i1, p.R30["is secondary instance of"], p.I38["non-negative integer"])
+
 
     def test_c07d__scope_copying(self):
         """

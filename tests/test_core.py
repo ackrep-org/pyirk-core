@@ -953,15 +953,25 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
         res = visualization.visualize_entity(p.u("I21__mathematical_relation"), write_tmp_files=WRITE_TMP_FILES)
 
         mod1 = p.irkloader.load_mod_from_path(TEST_DATA_PATH2, TEST_MOD_NAME)
+
+        # get the characteristic polynomial of A
         auto_item: p.Item = mod1.ma.I3749["Cayley-Hamilton theorem"].P
         res = visualization.visualize_entity(auto_item.uri, write_tmp_files=WRITE_TMP_FILES)
 
-        s1 = '<a href="">R35</a>'
-        s2 = '<a href="">["is applied</a>'
-        s3 = '<a href="">mapping of"]</a>'
-        self.assertIn(s1, res)
-        self.assertIn(s2, res)
-        self.assertIn(s3, res)
+        old_behavior = False
+        if old_behavior:
+            # in the old behavior the relation labels where printed
+            # this was (temporarily dropped for less cluttered results)
+            s1 = '<a href="">R35</a>'
+            s2 = '<a href="">[is applied</a>'
+            s3 = '<a href="">mapping of"]</a>'
+            self.assertIn(s1, res)
+            self.assertIn(s2, res)
+            self.assertIn(s3, res)
+        else:
+            # now relation labels are just ordinary text
+            self.assertIn('font-size="20.00">R35</text>', res)
+
 
     def test_d01__wrap_function_with_uri_context(self):
         ma = p.irkloader.load_mod_from_path(TEST_DATA_PATH_MA, prefix="ma")

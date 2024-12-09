@@ -9,6 +9,11 @@ from rdflib import Literal
 import networkx as nx
 import nxv  # for graphviz visualization of networkx graphs
 
+# prevent deprecation warning because nxv is not as up-to-date as nx (of which it depends)
+if hasattr(nx, "OrderedDiGraph"):
+    # usage of OrderedDiGraph is deprecated
+    nxv._util.GRAPH_TYPES[True, False, True] = nx.DiGraph
+
 # TODO: this should be a relative import of the *package*
 import pyirk as p
 from ipydex import IPS, activate_ips_on_exception
@@ -360,6 +365,7 @@ def create_nx_graph_from_entity(uri, url_template="") -> nx.DiGraph:
 
         re_list: List[p.Statement]
         # TODO: Make this hack visible from the outside
+        # we only display a limited amount of automatically created ("Ia") items or literals
         a_node_cnt = 0
         for re in re_list:
             assert len(re.relation_tuple) == 3
@@ -368,6 +374,11 @@ def create_nx_graph_from_entity(uri, url_template="") -> nx.DiGraph:
             edge = Edge(pred, url_template)
             edge.perform_html_wrapping()
             if re.role == p.RelationRole.SUBJECT:
+
+                if not isinstance(obj, p.Entity):
+                    # we do not display literals
+                    continue
+
                 if "Ia" in obj.short_key and a_node_cnt > 2:
                     continue
                 other_node = create_node(obj, url_template)

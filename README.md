@@ -49,4 +49,4 @@ Rudimentary documentation is available at <https://pyirk-core.readthedocs.io> (g
 
 # Coding style
 
-We use `black -l 120 ./` to ensure coding style consistency.
+We (aim to) use `black -l 110 ./` to ensure coding style consistency.

@@ -1411,6 +1411,36 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
             # is only callable once
             self.assertRaises(AssertionError, I1234["some theorem"].update_relations)
 
+    def test_e04__overloaded_math_operators(self):
+        with p.uri_context(uri=TEST_BASE_URI, prefix="ut"):
+            a = p.instance_of(p.I12["mathematical object"])
+            b = p.instance_of(p.I12["mathematical object"])
+            res = a + b
+            self.assertEqual(res, p.I55["add"](a, b))
+            res = 1 + b
+            self.assertEqual(res, p.I55["add"](1, b))
+            # todo as soon as implemented, test for a + b == b + a, etc
+
+            res = a - b
+            self.assertEqual(res, p.I55["add"](a, p.I58["neg"](b)))
+            res = 1 - b
+            self.assertEqual(res, p.I55["add"](1, p.I58["neg"](b)))
+
+            res = a * b
+            self.assertEqual(res, p.I56["mul"](a, b))
+            res = 1 * b
+            self.assertEqual(res, p.I56["mul"](1, b))
+
+            res = a ** b
+            self.assertEqual(res, p.I57["pow"](a, b))
+
+            res = a / b
+            self.assertEqual(res, p.I56["mul"](a, p.I57["pow"](b, -1)))
+            res = 1 / b
+            self.assertEqual(res, p.I56["mul"](1, p.I57["pow"](b, -1)))
+
+
+
 
 class Test_02_ruleengine(HousekeeperMixin, unittest.TestCase):
     def setUp(self):

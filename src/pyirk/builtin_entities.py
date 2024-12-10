@@ -2821,6 +2821,9 @@ R82 = create_builtin_relation(
 def add_items(a, b):
     return I55["add"](a, b)
 
+def radd_items(a, b):
+    return I55["add"](b, a)
+
 def sub_items(a, b):
     return I55["add"](a, I58["neg"](b))
 
@@ -2829,6 +2832,9 @@ def reflective_sub_items(a, b):
 
 def mul_items(a, b):
     return I56["mul"](a, b)
+
+def rmul_items(a, b):
+    return I56["mul"](b, a)
 
 def div_items(a, b):
     return I56["mul"](a, I57["pow"](b, -1))
@@ -2846,9 +2852,9 @@ def neg_item(a):
     return I58["neg"](a)
 
 Item.__add__ = add_items
-Item.__radd__ = add_items # reflective addition for 1 + Item
+Item.__radd__ = radd_items # reflective addition for 1 + Item
 Item.__mul__ = mul_items
-Item.__rmul__ = mul_items
+Item.__rmul__ = rmul_items
 Item.__sub__ = sub_items
 Item.__rsub__ = reflective_sub_items
 Item.__truediv__ = div_items # truediv is the correct method for / operator

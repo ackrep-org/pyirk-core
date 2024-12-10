@@ -18,5 +18,4 @@ In `/docs/build/html` run `python -m http.server 8000`.
 
 ## Debug Readthedocs Build
 
-In `/docs` run `python -m sphinx -T -E -W --keep-going -b html -d build/doctrees -D language=en ./source build/html`.
-
+In `/docs` run `sphinx-autobuild ./source ./build/`. Then visit <http://127.0.0.1:8000>

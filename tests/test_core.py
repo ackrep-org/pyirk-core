@@ -645,23 +645,48 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
             with I7200["definition of non-negative integer"].scope("assertion") as cm:
                 cm.new_rel(cm.i1, p.R30["is secondary instance of"], p.I38["non-negative integer"])
 
+    @unittest.expectedFailure
     def test_c07d__nested_scopes(self):
+        ct = p.irkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
         with p.uri_context(uri=TEST_BASE_URI):
-            I0100 = p.create_item(R1__has_label="x", R4__is_instance_of=p.I36["rational number"])
-            I0101 = p.create_item(R1__has_label="y", R4__is_instance_of=p.I36["rational number"])
-            I0102 = p.create_item(R1__has_label="z", R4__is_instance_of=p.I36["rational number"])
 
-            I0104 = p.create_item(
-                R1__has_label = "definition of something",
+            I0100 = p.create_item(
+                R1__has_label = "test-region in complex plane",
+                R4__is_instance_of = p.I13["mathematical set"],
+                R14__is_subset_of = ct.ma.I2738["field of complex numbers"]
+            )
+
+            I0101 = p.create_item(
+                R1__has_label = "definition test-region in complex plane",
                 R4__is_instance_of =p.I20["mathematical definition"],
             )
 
-            with I0104["definition of something"].scope("premise") as cm:
-                with cm.AND() as cm2:
-                    with cm2.OR() as cm3:
-                        # to be continued
-                        pass
+            with I0101["definition test-region in complex plane"].scope("setting") as cm:
+                cm.new_var(z=p.instance_of(p.I34["complex number"]))
+                # z = x + 1j*y
+                cm.new_var(x=ct.ma.I5005["real part"](cm.z))
+                cm.new_var(y=ct.ma.I5006["imaginary part"](cm.z))
 
+                # the test-region is consists of three parts:
+                #   - two axis-aligned polyhedral sets:
+                #      - (x > 10, y > 20)
+                #      - (x < -10, y < -20)
+                #   - the real axis (y = 0)
+
+            with I0101["definition test-region in complex plane"].scope("premise") as cm:
+                with cm.OR() as cm2:
+                    with cm2.AND() as cm2a:
+                        cm2a.new_math_relation(cm.x, ">", 10)
+                        cm2a.new_math_relation(cm.y, ">", 20)
+
+                    with cm2.AND() as cm2b:
+                        cm2b.new_math_relation(cm.x, "<", -10)
+                        cm2b.new_math_relation(cm.y, "<", -20)
+
+                    cm2.new_math_relation(cm.y, "==", 0)
+
+            with I0101["definition test-region in complex plane"].scope("assertion") as cm:
+                cm.new_rel(cm.z, p.R15["is element of"], I0100["test-region in complex plane"])
 
     def test_c07q__scope_copying(self):
         """

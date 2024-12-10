@@ -1,4 +1,5 @@
 from typing import List, Union, Optional, Any, Tuple
+from collections import defaultdict
 
 from ipydex import IPS  # noqa
 
@@ -646,7 +647,8 @@ class ScopingCM:
     E.g. establishing a relationship between two items as part of the assertions of a theorem-item
     """
 
-    _instances = []
+    _all_instances = []
+    _instances = defaultdict(list)
 
     valid_subscope_types = None
 
@@ -662,7 +664,9 @@ class ScopingCM:
         self.parent_scope_cm: ScopingCM|None = parent_scope_cm
 
         # introduced to facilitate debugging and experimentation
-        self._instances.append(self)
+        self._instances[type(self)].append(self)
+        self._all_instances.append(self)
+
 
     def __enter__(self):
         """
@@ -1015,7 +1019,6 @@ class AbstractMathRelatedScopeCM(ScopingCM):
         return rel
 
 
-
 class ConditionSubScopeCM(AbstractMathRelatedScopeCM):
     """
     A scoping context manager to handle conditions
@@ -1027,7 +1030,7 @@ class ConditionSubScopeCM(AbstractMathRelatedScopeCM):
         super().__init__(*args, **kwargs)
         self.condition_cm: AbstractMathRelatedScopeCM = self._create_subscope_cm("CONDITION", SubScopeConditionCM)
 
-    # todo: these methods should be named the same as the submethods they are calling for overall consitency and for easier parsing in stafo
+    # todo: these methods should be named the same as the sub-methods they are calling for overall consistency and for easier parsing in stafo
     # todo: this is apparently not trivial, since the behavior of AND/OR-scopes and Quantifier-scopes depends on it
     def add_condition_statement(self, subj, pred, obj, qualifiers=None):
         with self.condition_cm:
@@ -1044,7 +1047,9 @@ class ConditionSubScopeCM(AbstractMathRelatedScopeCM):
 
 class QuantifiedSubScopeCM(ConditionSubScopeCM):
     """
-    A scoping context manager for universally or existentially quantified statements
+    A scoping context manager for universally or existentially quantified statements.
+
+    Created by methods universally_quantified() and existentially_quantified() of _proposition__CM
     """
     pass
 

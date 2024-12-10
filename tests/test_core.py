@@ -1422,9 +1422,9 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
             # todo as soon as implemented, test for a + b == b + a, etc
 
             res = a - b
-            self.assertEqual(res, p.I55["add"](a, p.I58["neg"](b)))
+            self.assertEqual(res, p.I55["add"](a, p.I56["mul"](-1, b)))
             res = 1 - b
-            self.assertEqual(res, p.I55["add"](1, p.I58["neg"](b)))
+            self.assertEqual(res, p.I55["add"](1, p.I56["mul"](-1, b)))
 
             res = a * b
             self.assertEqual(res, p.I56["mul"](a, b))

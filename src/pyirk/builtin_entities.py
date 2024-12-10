@@ -2825,10 +2825,10 @@ def radd_items(a, b):
     return I55["add"](b, a)
 
 def sub_items(a, b):
-    return I55["add"](a, I58["neg"](b))
+    return I55["add"](a, I56["mul"](-1, b))
 
 def reflective_sub_items(a, b):
-    return I55["add"](b, I58["neg"](a))
+    return I55["add"](b, I56["mul"](-1, a))
 
 def mul_items(a, b):
     return I56["mul"](a, b)

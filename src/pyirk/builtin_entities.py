@@ -771,30 +771,6 @@ class ScopingCM:
 
             return res
 
-    # TODO: obsolete? This method seems not to be used in any test nor example
-    @classmethod
-    def create_scopingcm_factory(cls):
-        raise DeprecationWarning("This method is obsolete and will be removed in the future")
-        def scopingcm_factory(self: Item, scope_name: str) -> ScopingCM:
-            """
-            This function will be used as a method for Items which can create a scoping context manager.
-            It will return a `cls`-instance, where `cls` is either `ScopingCM` or a subclass of it.
-            For details see examples
-
-            :param self:        Item; the item to which the scope should be associated
-            :param scope_name:  str; the name of the scope
-
-            :return:            an instance of ScopingCM
-            """
-            namespace, scope = self._register_scope(scope_name)
-
-            cm = cls(itm=self, namespace=namespace, scope=scope)
-
-            return cm
-
-        # return that function object
-        return scopingcm_factory
-
     def _check_scope(self):
         active_scope = ds.scope_stack[-1]
 

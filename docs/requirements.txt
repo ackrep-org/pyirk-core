@@ -5,3 +5,4 @@ myst-parser
 sphinx_rtd_theme
 sphinx-argparse
 sphinx-autodoc2
+sphinx-autobuild

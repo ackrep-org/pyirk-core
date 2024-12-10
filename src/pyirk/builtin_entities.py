@@ -646,16 +646,23 @@ class ScopingCM:
     E.g. establishing a relationship between two items as part of the assertions of a theorem-item
     """
 
+    _instances = []
+
     valid_subscope_types = None
 
     def __init__(self, itm: Item, namespace: dict, scope: Item, parent_scope_cm=None):
         # prevent the accidental instantiation of abstract subclasses
         assert not __class__.__name__.lower().startswith("abstract")
 
-        self.item = itm
-        self.namespace = namespace
-        self.scope = scope
-        self.parent_scope_cm = parent_scope_cm
+        # the item to which the scope refers e.g. <Item I9223["definition of zero matrix"]>,
+        self.item: Item = itm
+        self.namespace: dict = namespace
+        # the associated scope-item (which has a R64__has_scope_type relation)
+        self.scope: Item = scope
+        self.parent_scope_cm: ScopingCM|None = parent_scope_cm
+
+        # introduced to facilitate debugging and experimentation
+        self._instances.append(self)
 
     def __enter__(self):
         """

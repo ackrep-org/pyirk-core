@@ -192,6 +192,9 @@ class ShortKeyNotFoundError(PyIRKError):
 class InvalidScopeNameError(PyIRKError):
     pass
 
+class InvalidScopeTypeError(PyIRKError):
+    pass
+
 
 class InvalidScopeTypeError(PyIRKError):
     pass

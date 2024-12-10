@@ -815,6 +815,7 @@ class ScopingCM:
         namespace, scope = self.scope._register_scope(name, scope_type)
 
         cm = cls(itm=self.item, namespace=namespace, scope=scope, parent_scope_cm=self)
+        cm.scope_type = scope_type
         return cm
 
     def copy_from(self, other_obj: Item, scope_name:str = None):
@@ -994,31 +995,108 @@ class AbstractMathRelatedScopeCM(ScopingCM):
         rel = new_mathematical_relation(lhs, rsgn, rhs, scope=self.scope, force_key=force_key)
         return rel
 
+    def AND(self) -> "ConditionSubScopeCM":
+        """
+        Create a new subscope of type "AND", which can hold arbitrary statements.
+        These statements are considered to be AND-related in a boolean sense.
+        """
+
+        # This is forbidden because it likely means a modeling error
+        self.check_scope_type(forbidden="AND")
+
+        cm = self._create_subscope_cm(scope_type="AND", cls=ConditionSubScopeCM)
+        return cm
+
+    def OR(self) -> "ConditionSubScopeCM":
+        """
+        Create a new subscope of type "OR", which can hold arbitrary statements.
+        These statements are considered to be OR-related in a boolean sense.
+        """
+        # This is forbidden because it likely means a modeling error
+        self.check_scope_type(forbidden="OR")
+
+        cm = self._create_subscope_cm(scope_type="OR", cls=ConditionSubScopeCM)
+        return cm
+
+    def NOT(self) -> "ConditionSubScopeCM":
+        """
+        Create a new subscope of type "NOT", which can hold arbitrary statements.
+        These statements are considered to be negated in a boolean sense.
+        """
+
+        # This is forbidden because it likely means a modeling error
+        self.check_scope_type(forbidden="AND")
+
+        cm = self._create_subscope_cm(scope_type="NOT", cls=ConditionSubScopeCM)
+        return cm
+
+    def check_scope_type(self, *args, **kwargs):
+        """
+        This method might raise an exception in subclasses
+        """
+        pass
+
 
 class ConditionSubScopeCM(AbstractMathRelatedScopeCM):
     """
     A scoping context manager to handle conditions
     """
 
-    valid_subscope_types = {"CONDITION": 1}
+    valid_subscope_types = {
+        "UNIV_QUANT": float("inf"),
+        "EXIS_QUANT": float("inf"),
+        "OR": float("inf"),
+        "AND": float("inf"),
+        "NOT": float("inf"),
+    }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.condition_cm: AbstractMathRelatedScopeCM = self._create_subscope_cm("CONDITION", SubScopeConditionCM)
+
+        # this will be set from outside (in `_create_subscope_cm()`) after instance-creation
+        self.scope_type = None
+
+    def add_condition_statement(self, subj, pred, obj, qualifiers=None):
+        self.new_rel(subj, pred, obj, qualifiers=qualifiers)
+
+    def add_condition_math_relation(self, *args, **kwargs):
+        self.new_math_relation(*args, **kwargs)
+
+    def new_condition_var(self, **kwargs):
+        return self.new_var(**kwargs)
+
+    def check_scope_type(self, forbidden):
+        if self.scope_type == forbidden:
+            msg = f"{forbidden}-scope inside {self.scope_type}-scope is not allowed"
+            raise core.aux.InvalidScopeTypeError(msg)
+
+
+    # note: there used to be a subscope to hold the actual conditions
+    # the ideas was to separate the conditions from "normal statements"
+    # however this seems unnecessary complicated -> subscope removed
+    # class `SubScopeConditionCM` also removed
+
+    # old code for easier comparison:
+
+    # valid_subscope_types = {"CONDITION": 1}
+
+    # def __init__(self, *args, **kwargs):
+    #     super().__init__(*args, **kwargs)
+    #     self.condition_cm: AbstractMathRelatedScopeCM = self._create_subscope_cm("CONDITION", SubScopeConditionCM)
 
     # todo: these methods should be named the same as the sub-methods they are calling for overall consistency and for easier parsing in stafo
     # todo: this is apparently not trivial, since the behavior of AND/OR-scopes and Quantifier-scopes depends on it
-    def add_condition_statement(self, subj, pred, obj, qualifiers=None):
-        with self.condition_cm:
-            self.condition_cm.new_rel(subj, pred, obj, qualifiers=qualifiers)
+    # def add_condition_statement(self, subj, pred, obj, qualifiers=None):
+    #     with self.condition_cm:
+    #         self.condition_cm.new_rel(subj, pred, obj, qualifiers=qualifiers)
 
-    def add_condition_math_relation(self, *args, **kwargs):
-        with self.condition_cm:
-            self.condition_cm.new_math_relation(*args, **kwargs)
+    # def add_condition_math_relation(self, *args, **kwargs):
+    #     with self.condition_cm:
+    #         self.condition_cm.new_math_relation(*args, **kwargs)
 
-    def new_condition_var(self, **kwargs):
-        with self.condition_cm:
-            return self.condition_cm.new_var(**kwargs)
+    # def new_condition_var(self, **kwargs):
+    #     with self.condition_cm:
+    #         return self.condition_cm.new_var(**kwargs)
 
 
 class QuantifiedSubScopeCM(ConditionSubScopeCM):
@@ -1030,12 +1108,12 @@ class QuantifiedSubScopeCM(ConditionSubScopeCM):
     pass
 
 
-class SubScopeConditionCM(AbstractMathRelatedScopeCM):
-    """
-    A scoping context manager to specify the condition of another scope
-    """
+# class SubScopeConditionCM(AbstractMathRelatedScopeCM):
+#     """
+#     A scoping context manager to specify the condition of another scope
+#     """
 
-    valid_subscope_types = {}
+#     valid_subscope_types = {}
 
 
 class _proposition__CM(AbstractMathRelatedScopeCM):
@@ -1071,39 +1149,6 @@ class _proposition__CM(AbstractMathRelatedScopeCM):
         # create a new context manager (which implicitly creates a new scope-item), where the user can add statements
         # note: this also creates an internal "CONDITION" subscope
         cm = self._create_subscope_cm(scope_type="EXIS_QUANT", cls=QuantifiedSubScopeCM)
-        return cm
-
-    def AND(self) -> ConditionSubScopeCM:
-        """
-        Create a new subscope of type "AND", which can hold arbitrary statements. That subscope will contain
-        another subscope ("CONDITION") whose statements are considered to be AND-related in a boolean sense.
-        """
-
-        # create a new context manager (which implicitly creates a new scope-item), where the user can add statements
-        # note: this also creates an internal "CONDITION" subscope
-        cm = self._create_subscope_cm(scope_type="AND", cls=ConditionSubScopeCM)
-        return cm
-
-    def OR(self) -> ConditionSubScopeCM:
-        """
-        Create a new subscope of type "OR", which can hold arbitrary statements. That subscope will contain
-        another subscope ("CONDITION") whose statements are considered to be OR-related in a boolean sense.
-        """
-
-        # create a new context manager (which implicitly creates a new scope-item), where the user can add statements
-        # note: this also creates an internal "CONDITION" subscope
-        cm = self._create_subscope_cm(scope_type="OR", cls=ConditionSubScopeCM)
-        return cm
-
-    def NOT(self) -> ConditionSubScopeCM:
-        """
-        Create a new subscope of type "NOT", which can hold arbitrary statements. That subscope will contain
-        another subscope ("CONDITION") whose statements are considered to be negated in a boolean sense.
-        """
-
-        # create a new context manager (which implicitly creates a new scope-item), where the user can add statements
-        # note: this also creates an internal "CONDITION" subscope
-        cm = self._create_subscope_cm(scope_type="NOT", cls=ConditionSubScopeCM)
         return cm
 
 
@@ -1274,6 +1319,11 @@ class _rule__CM(AbstractMathRelatedScopeCM):
             # args are supposed to be variables created in the "setting"-scope
             self.new_rel(factory_anchor, R29["has argument"], arg, qualifiers=[qff_has_rule_ptg_mode(4)])
 
+    # TODO unify these logical rules with the logical rules for theorems etc.
+    def NOT(self):
+        msg = "implementing this is planned for the future"
+        raise NotImplementedError
+
     def OR(self):
         """
         Register a subscope for OR-connected statements
@@ -1288,7 +1338,6 @@ class _rule__CM(AbstractMathRelatedScopeCM):
     def AND(self):
         msg = "AND-logical subscope is only allowed inside a subscope of a 'premise'-scope"
         raise core.aux.SemanticRuleError(msg)
-
 
 class RulePremiseSubScopeCM(_rule__CM):
     """

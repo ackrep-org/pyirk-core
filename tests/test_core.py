@@ -284,6 +284,24 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
         with self.assertRaises(AttributeError):
             itm2.example_func2(1234)
 
+    def test_a01b_add_method_recursively(self):
+        """
+        ensure inheritance of custom methods works regardless of declaration order
+        """
+        def test_func(slf):
+            return slf.R1.value
+        with p.uri_context(uri=TEST_BASE_URI):
+            itm1 = p.create_item(key_str=p.pop_uri_based_key("I"), R1="unit test item1")
+            itm2 = p.create_item(key_str=p.pop_uri_based_key("I"), R1="unit test item2")
+            itm3 = p.create_item(key_str=p.pop_uri_based_key("I"), R1="unit test item3")
+            itm2.set_relation(p.R3["is subclass of"], itm1)
+            itm3.set_relation(p.R4["is instance of"], itm2)
+
+        itm1.add_method(test_func)
+        self.assertEqual(itm2.test_func(), "unit test item2")
+        self.assertEqual(itm3.test_func(), "unit test item3")
+
+
     # TODO: trigger loading of unittest version of ocse via envvar
     def test_a02__load_settings(self):
         """

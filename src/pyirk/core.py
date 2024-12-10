@@ -374,6 +374,12 @@ class Entity(abc.ABC):
         self.__dict__[name] = types.MethodType(func, self)
         self._method_prototypes.append(func)
 
+        # make sure that all already defined subclasses and instances also have this method
+        for stm in self.get_inv_relations("R4"):
+            stm.subject.add_method(func, name)
+        for stm in self.get_inv_relations("R3"):
+            stm.subject.add_method(func, name)
+
     def _set_relations_from_init_kwargs(self, **kwargs):
         """
         This method is called explicitly from the __init__-method of subclasses after preprocessing the kwargs

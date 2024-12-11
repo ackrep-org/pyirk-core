@@ -21,6 +21,8 @@ import re
 
 from pyirk import auxiliary as aux
 from pyirk import settings
+
+# allow convenient access to exceptions in downstream applications
 from pyirk.auxiliary import (
     InvalidURIError,
     InvalidPrefixError,
@@ -650,10 +652,10 @@ class Entity(abc.ABC):
         if isinstance(stm, list):
             if len(stm) == 0:
                 msg = f"Unexpectedly found empty statement list for entity {self} and relation {rel}"
-                raise aux.PyIRKException(msg)
+                raise aux.GeneralPyIRKError(msg)
             if len(stm) > 1:
                 msg = f"Unexpectedly found length-{len(stm)} statement list for entity {self} and relation {rel}"
-                raise aux.PyIRKException(msg)
+                raise aux.GeneralPyIRKError(msg)
             stm = stm[0]
 
         assert isinstance(stm, Statement)
@@ -708,7 +710,7 @@ def wrap_function_with_search_uri_context(func, uri=None):
         if uri is None:
             fi = inspect.getframeinfo(frame.f_back)
             msg = f"could not find `__URI__` in module {fi.filename}"
-            raise aux.PyIRKException(msg)
+            raise aux.GeneralPyIRKError(msg)
 
     @functools.wraps(func)
     def wrapped_func(*args, **kwargs):
@@ -1028,7 +1030,7 @@ class DataStore:
         current_scope = self.get_current_scope()
         if current_scope != scope:
             msg = "Refuse to remove scope which is not the topmost on the stack (i.e. the last in the list)"
-            raise PyIRKException(msg)
+            raise aux.GeneralPyIRKError(msg)
 
         self.scope_stack.pop()
 
@@ -1037,7 +1039,7 @@ class DataStore:
             return self.scope_stack[-1]
         except IndexError:
             msg = "unexpectedly found the scope stack empty"
-            raise PyIRKException(msg)
+            raise aux.GeneralPyIRKError(msg)
 
 
 ds = DataStore()
@@ -1399,7 +1401,7 @@ def get_active_mod_uri(strict: bool = True) -> Union[str, None]:
             "when creating entities"
         )
         if strict:
-            raise EmptyURIStackError(msg)
+            raise aux.EmptyURIStackError(msg)
         else:
             return None
     return res

@@ -14,7 +14,7 @@ from .core import Item
 from ipydex import IPS
 
 
-class IrkConsistencyError(core.aux.PyIRKException):
+class IrkConsistencyError(core.aux.GeneralPyIRKError):
     pass
 
 class IrkTypeError(IrkConsistencyError):

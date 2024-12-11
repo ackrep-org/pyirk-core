@@ -144,71 +144,73 @@ class PyIRKException(Exception):
     """
     raised in situations where some IRK-specific conditions are violated
     """
+
+class GeneralPyIRKError(Exception):
     pass
 
 
-class MultilingualityError(PyIRKException):
+class MultilingualityError(GeneralPyIRKError):
     pass
 
 
-class EmptyURIStackError(PyIRKException):
+class EmptyURIStackError(GeneralPyIRKError):
     pass
 
 
-class UnknownPrefixError(PyIRKException):
+class UnknownPrefixError(GeneralPyIRKError):
     pass
 
 
-class UnknownURIError(PyIRKException):
+class UnknownURIError(GeneralPyIRKError):
     pass
 
 
-class InvalidURIError(PyIRKException):
+class InvalidURIError(GeneralPyIRKError):
     pass
 
 
-class InvalidPrefixError(PyIRKException):
+class InvalidPrefixError(GeneralPyIRKError):
     pass
 
 
 # used for syntax problems
-class InvalidShortKeyError(PyIRKException):
+class InvalidShortKeyError(GeneralPyIRKError):
     pass
 
 
-class InvalidGeneralKeyError(PyIRKException):
+class InvalidGeneralKeyError(GeneralPyIRKError):
     pass
 
 
-class InconsistentLabelError(PyIRKException):
+class InconsistentLabelError(GeneralPyIRKError):
     pass
 
 
 # used for syntactically correct keys which could not be found
-class ShortKeyNotFoundError(PyIRKException):
+class ShortKeyNotFoundError(GeneralPyIRKError):
     pass
 
 
-class InvalidScopeNameError(PyIRKException):
+class InvalidScopeNameError(GeneralPyIRKError):
     pass
 
-class InvalidScopeTypeError(PyIRKException):
-    pass
-
-
-class InvalidScopeTypeError(PyIRKException):
+class InvalidScopeTypeError(GeneralPyIRKError):
     pass
 
 
-class ModuleAlreadyLoadedError(PyIRKException):
+class InvalidScopeTypeError(GeneralPyIRKError):
     pass
 
 
-class SemanticRuleError(PyIRKException):
+class ModuleAlreadyLoadedError(GeneralPyIRKError):
     pass
 
 
-class ExplicitlyTriggeredTestException(PyIRKException):
+class SemanticRuleError(GeneralPyIRKError):
+    pass
+
+
+class ExplicitlyTriggeredTestException(GeneralPyIRKError):
     pass
 
 
@@ -219,23 +221,23 @@ class InvalidObjectValue(SemanticRuleError):
     pass
 
 
-class MissingQualifierError(PyIRKException):
+class MissingQualifierError(GeneralPyIRKError):
     pass
 
 
-class AmbiguousQualifierError(PyIRKException):
+class AmbiguousQualifierError(GeneralPyIRKError):
     pass
 
 
-class FunctionalRelationError(PyIRKException):
+class FunctionalRelationError(GeneralPyIRKError):
     pass
 
 
-class UndefinedRelationError(PyIRKException):
+class UndefinedRelationError(GeneralPyIRKError):
     pass
 
 
-class TaxonomicError(PyIRKException):
+class TaxonomicError(GeneralPyIRKError):
     pass
 
 
@@ -252,6 +254,9 @@ class ReasoningGoalReached(RuleTermination):
 
 
 class ContinueOuterLoop(PyIRKException):
+    """
+    This is not an error but indicated that an outside loop should continue.
+    """
     pass
 
 

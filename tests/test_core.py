@@ -136,7 +136,7 @@ class Test_00_Core(HousekeeperMixin, unittest.TestCase):
         self.assertEqual(p.I1.uri, f"{p.BUILTINS_URI}#I1")
         self.assertEqual(p.R1.uri, f"{p.BUILTINS_URI}#R1")
 
-        with self.assertRaises(p.EmptyURIStackError):
+        with self.assertRaises(p.aux.EmptyURIStackError):
             itm = p.create_item(key_str=p.pop_uri_based_key("I"), R1="unit test item")
 
         with p.uri_context(uri=TEST_BASE_URI):
@@ -452,7 +452,7 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
 
         data = (10, 11, 12, 13, p.I1, "some string")
 
-        with self.assertRaises(p.EmptyURIStackError):
+        with self.assertRaises(p.aux.EmptyURIStackError):
             tup = p.new_tuple(*data)
 
         with p.uri_context(uri=TEST_BASE_URI):

@@ -1405,9 +1405,6 @@ def get_active_mod_uri(strict: bool = True) -> Union[str, None]:
     return res
 
 
-
-
-
 def process_kwargs_for_entity_creation(entity_key: str, kwargs: dict) -> tuple[dict, dict]:
     """
     :return:    return new_kwargs, lang_related_kwargs
@@ -1432,10 +1429,14 @@ class KWArgManager:
             skwap.handle_kwarg_stage2(kwarg_value)
 
             if skwap.continue_flag:
+                # in cases where we already have assigned a value but we get another one
+                # for a different language (which would have the same `new_key`-attribute)
+                # we omit it for the `self.new_kwargs[skwap.new_key]` mechanism
+
+                # it will be contained in `self.lang_related_kwargs` and handled later
                 continue
 
             self.new_kwargs[skwap.new_key] = skwap.new_value
-
         return self.new_kwargs, self.lang_related_kwargs
 
 class SingleKWArgProcessor:
@@ -1468,67 +1469,62 @@ class SingleKWArgProcessor:
 
         # handle those relations which might come with multiple languages
         if self.new_key in RELKEYS_WITH_LITERAL_RANGE:
-            self.new_value, self.continue_flag = _handle_relkeys_with_literal_range(
-                self.kwam.entity_key, self.kwam.mod_uri, self.kwam.lang_related_kwargs, kwarg_value, self.processed_key, self.new_key
-            )
+            self.new_value, self.continue_flag = self.handle_relkeys_with_literal_range(kwarg_value)
         else:
             self.new_value = kwarg_value
             self.continue_flag = False
 
+    def handle_relkeys_with_literal_range(self, kwarg_value):
+        """
+        Relation keys like R1, R2 and R77 are used in triples where the object is a Literal.
+        R1__has_label, R2__has_description are functional (R32__is_functional_for_each_language).
+        R77__has_alternative_label is not functional (neither R22__is_functional nor R32).
 
-def _handle_relkeys_with_literal_range(
-    self__entity_key, self__mod_uri, lang_related_kwargs, value, self__processed_key, new_key
-):
-    """
-    Relation keys like R1, R2 and R77 are used in triples where the object is a Literal.
-    R1__has_label, R2__has_description are functional (R32__is_functional_for_each_language).
-    R77__has_alternative_label is not functional.
+        This function handles the different cases
+        """
+        continue_flag = False
+        value_list = self.kwam.lang_related_kwargs[self.new_key]
+        # value_list is supposed to be a list of 2-tuples: (lang_indicator, Literal-instance)
+        if len(value_list) == 0:
+            valid_languages = (None, settings.DEFAULT_DATA_LANGUAGE)
 
-    This function handles the different cases
-    """
-    continue_flag = False
-    value_list = lang_related_kwargs[new_key]
-    # value_list is supposed to be a list of 2-tuples: (lang_indicator, Literal-instance)
-    if len(value_list) == 0:
-        valid_languages = (None, settings.DEFAULT_DATA_LANGUAGE)
+            # note: this is to handle thins like `R1__has_label__de="deutsches label" @ p.de`
+            if self.processed_key.lang_indicator not in valid_languages:
+                msg = (
+                    f"while creating {self.kwam.entity_key}: the first {self.new_key}-argument must be with "
+                    "lang_indicator `None` or explicitly using the default language. "
+                    f"Got {self.processed_key.lang_indicator} instead."
+                )
+                raise aux.MultilingualityError(msg)
+            value_lang = getattr(kwarg_value, "language", None)
+            if value_lang not in valid_languages:
+                msg = (
+                    f"while creating {self.kwam.entity_key}: the first {self.new_key}-argument must be "
+                    f"a flat string or a literal with the default language ({settings.DEFAULT_DATA_LANGUAGE})"
+                    f"Got {value_lang} instead."
+                )
+                raise aux.MultilingualityError(msg)
 
-        # note: this is to handle thins like `R1__has_label__de="deutsches label" @ p.de`
-        if self__processed_key.lang_indicator not in valid_languages:
-            msg = (
-                f"while creating {self__entity_key}: the first {new_key}-argument must be with "
-                "lang_indicator `None` or explicitly using the default language. "
-                f"Got {self__processed_key.lang_indicator} instead."
-            )
-            raise aux.MultilingualityError(msg)
-        value_lang = getattr(value, "language", None)
-        if value_lang not in valid_languages:
-            msg = (
-                f"while creating {self__entity_key}: the first {new_key}-argument must be "
-                f"a flat string or a literal with the default language ({settings.DEFAULT_DATA_LANGUAGE})"
-                f"Got {value_lang} instead."
-            )
-            raise aux.MultilingualityError(msg)
+            kwarg_value = self._handle_value(kwarg_value, value_list)
+        else:
+            value_list.append((self.processed_key.lang_indicator, kwarg_value))
+            # do not pass this key-value-pair to the Item-constructor
+            # it will be handled later
+            continue_flag = True
+        return kwarg_value, continue_flag
 
-        value = _handle_value(self__entity_key, self__mod_uri, value, self__processed_key, new_key, value_list)
-    else:
-        value_list.append((self__processed_key.lang_indicator, value))
-        # do not pass this key-value-pair to the Item-constructor
-        # it will be handled later
-        continue_flag = True
-    return value, continue_flag
-
-def _handle_value(self__entity_key, mod_uri, value, processed_key, new_key, value_list):
-    if not isinstance(value, Literal):
-        if not isinstance(value, str):
-            item_uri = aux.make_uri(mod_uri, self__entity_key)
-            msg = (
-                    f"While creating {item_uri}: the {new_key}-argument must be a string. "
+    def _handle_value(self, value, value_list):
+        if not isinstance(value, Literal):
+            if not isinstance(value, str):
+                item_uri = aux.make_uri(self.kwam.mod_uri, self.kwam.entity_key)
+                msg = (
+                    f"While creating {item_uri}: the {self.new_key}-argument must be a string. "
                     f"Got {type(value)} instead."
                 )
-            raise TypeError(msg)
-        value = Literal(value, lang=settings.DEFAULT_DATA_LANGUAGE)
-    value_list.append((processed_key.lang_indicator, value))
-    return value
+                raise TypeError(msg)
+            value = Literal(value, lang=settings.DEFAULT_DATA_LANGUAGE)
+        value_list.append((self.processed_key.lang_indicator, value))
+        return value
 
 
 def process_lang_related_kwargs_for_entity_creation(entity: Entity, short_key: str, lang_related_kwargs: dict) -> None:

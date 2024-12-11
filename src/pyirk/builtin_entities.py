@@ -2856,11 +2856,17 @@ R82 = create_builtin_relation(
     R11__has_range_of_result=I52["string"],
 )
 
-def add_items(a, b):
-    return I55["add"](a, b)
+# def add_items(a, b):
+#     return I55["add"](a, b)
+def add_items(*args):
+    if len(args) == 2:
+        return I55["add"](*args)
+    else:
+        return I55["add"](add_items(*args[:-1]), args[-1])
 
 def radd_items(a, b):
     return I55["add"](b, a)
+# todo do we need this with for args of arbitrary length?
 
 def sub_items(a, b):
     return I55["add"](a, I56["mul"](-1, b))
@@ -2868,8 +2874,13 @@ def sub_items(a, b):
 def reflective_sub_items(a, b):
     return I55["add"](b, I56["mul"](-1, a))
 
-def mul_items(a, b):
-    return I56["mul"](a, b)
+# def mul_items(a, b):
+#     return I56["mul"](a, b)
+def mul_items(*args):
+    if len(args) == 2:
+        return I56["mul"](*args)
+    else:
+        return I56["mul"](mul_items(*args[:-1]), args[-1])
 
 def rmul_items(a, b):
     return I56["mul"](b, a)

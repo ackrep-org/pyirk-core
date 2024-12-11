@@ -1444,8 +1444,11 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
         with p.uri_context(uri=TEST_BASE_URI, prefix="ut"):
             a = p.instance_of(p.I12["mathematical object"])
             b = p.instance_of(p.I12["mathematical object"])
+            c = p.instance_of(p.I12["mathematical object"])
             res = a + b
             self.assertEqual(res, p.I55["add"](a, b))
+            res = a + b + c + a
+            self.assertEqual(res, a.__add__(b,c,a))
             res = 1 + b
             self.assertEqual(res, p.I55["add"](1, b))
             # todo as soon as implemented, test for a + b == b + a, etc
@@ -1457,6 +1460,8 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
 
             res = a * b
             self.assertEqual(res, p.I56["mul"](a, b))
+            res = a * b * 2 * c
+            self.assertEqual(res, a.__mul__(b, 2, c))
             res = 1 * b
             self.assertEqual(res, p.I56["mul"](1, b))
 

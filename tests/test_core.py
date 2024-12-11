@@ -33,7 +33,9 @@ from .settings import (
 
 
     )
-
+# todo apparantly, this does not effect the tests, i.e. test_e04__overloaded_math_operators
+# if not os.environ.get("PYIRK_DISABLE_CONSISTENCY_CHECKING", "").lower() == "true":
+# p.cc.enable_consistency_checking()
 
 class Test_00_Core(HousekeeperMixin, unittest.TestCase):
 
@@ -1438,6 +1440,7 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
             self.assertRaises(AssertionError, I1234["some theorem"].update_relations)
 
     def test_e04__overloaded_math_operators(self):
+        # p.cc.enable_consistency_checking()
         with p.uri_context(uri=TEST_BASE_URI, prefix="ut"):
             a = p.instance_of(p.I12["mathematical object"])
             b = p.instance_of(p.I12["mathematical object"])
@@ -1459,6 +1462,8 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
 
             res = a ** b
             self.assertEqual(res, p.I57["pow"](a, b))
+            res = a ** 2
+            self.assertEqual(res, p.I57["pow"](a, 2))
 
             res = a / b
             self.assertEqual(res, p.I56["mul"](a, p.I57["pow"](b, -1)))

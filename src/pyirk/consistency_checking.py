@@ -47,6 +47,7 @@ def check_applied_operator(itm: Item):
     assert not itm.get_arguments()[0].R4._unlinked
 
     args = itm.get_arguments()
+    # todo the arg of an operator might reasonable be a number (int, float) in which case arg.R4 will fail
     arg_type_items = [arg.R4__is_instance_of for arg in args]
 
     expected_arg_types = get_expected_arg_types(operator_itm)

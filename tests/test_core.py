@@ -1658,7 +1658,6 @@ class Test_03_Multilinguality(HousekeeperMixin, unittest.TestCase):
         r1_de = I900.R1__has_label.value
         self.assertEqual(r1_de, "deutsches label")
 
-
         if p.settings.DEFAULT_DATA_LANGUAGE == "en":
             p.settings.DEFAULT_DATA_LANGUAGE = "en"
             r1_en = I900.R1__has_label.value
@@ -1846,12 +1845,20 @@ class Test_03_Multilinguality(HousekeeperMixin, unittest.TestCase):
             I1000.R77__has_alternative_label = "more foo"@p.en
             self.assertEqual(I1000.R77__has_alternative_label, ["bar"@p.df, "baz"@p.de, "more foo"@p.df])
 
-
             I1000.set_multiple_relations("R77__has_alternative_label", ["foo-it"@p.it, "bar-es"@p.es])
             self.assertEqual(
                 I1000.R77__has_alternative_label,
                 ["bar"@p.df, "baz"@p.de, "more foo"@p.df, "foo-it"@p.it, "bar-es"@p.es]
             )
+
+            if 0:
+                # this comes from the stafo-project
+                I1001 = p.create_item(
+                    R1__has_label="test item",
+                    R4__is_instance_of=p.I35["real number"],
+                    R77__has_alternative_label=["test1", "test2"],
+                )
+
 
 class Test_Z_Core(HousekeeperMixin, unittest.TestCase):
     """

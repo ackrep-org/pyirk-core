@@ -1405,43 +1405,65 @@ def get_active_mod_uri(strict: bool = True) -> Union[str, None]:
     return res
 
 
+
+
+
 def process_kwargs_for_entity_creation(entity_key: str, kwargs: dict) -> tuple[dict, dict]:
     """
     :return:    return new_kwargs, lang_related_kwargs
     """
+    return KWArgManager(entity_key, kwargs).process()
 
-    mod_uri = get_active_mod_uri()
+class KWArgManager:
+    """
+    This class processes all keyword args for entity creation
+    """
+    def __init__(self, entity_key: str, kwargs: dict):
+        self.entity_key: str = entity_key
+        self.kwargs: dict = kwargs
+        self.mod_uri = get_active_mod_uri()
+        self.new_kwargs = {}
+        self.lang_related_kwargs = defaultdict(list)
 
-    new_kwargs = {}
-    lang_related_kwargs = defaultdict(list)
-    # prepare the kwargs to set relations
-    for dict_key, value in kwargs.items():
-        processed_key = process_key_str(dict_key)
+    def process(self):
+        for dict_key, value in self.kwargs.items():
+            processed_key = process_key_str(dict_key)
 
-        if processed_key.etype != EType.RELATION:
-            msg = f"unexpected key: {dict_key} during creation of item {entity_key}."
-            raise ValueError(msg)
+            if processed_key.etype != EType.RELATION:
+                msg = f"unexpected key: {dict_key} during creation of item {self.entity_key}."
+                raise ValueError(msg)
 
-        if processed_key.prefix:
-            new_key = f"{processed_key.prefix}__{processed_key.short_key}"
-        else:
-            new_key = processed_key.short_key
+            if processed_key.prefix:
+                new_key = f"{processed_key.prefix}__{processed_key.short_key}"
+            else:
+                new_key = processed_key.short_key
 
-        # handle those relations which might come with multiple languages
-        if new_key in RELKEYS_WITH_LITERAL_RANGE:
-            value, continue_flag = _handle_relkeys_with_literal_range(
-                entity_key, mod_uri, lang_related_kwargs, value, processed_key, new_key
-            )
-            if continue_flag:
-                continue
+            # handle those relations which might come with multiple languages
+            if new_key in RELKEYS_WITH_LITERAL_RANGE:
+                value, continue_flag = _handle_relkeys_with_literal_range(
+                    self.entity_key, self.mod_uri, self.lang_related_kwargs, value, processed_key, new_key
+                )
+                if continue_flag:
+                    continue
 
-        new_kwargs[new_key] = value
+            self.new_kwargs[new_key] = value
 
-    return new_kwargs, lang_related_kwargs
+        return self.new_kwargs, self.lang_related_kwargs
 
+class KWArgProcessor:
+    """
+    This class processes a single keyword arg for entity creation
+    """
+
+    def __init__(self, entity_key: str, kwam: KWArgManager):
+        self.entity_key: str = entity_key
+        self.kwam = kwam
+
+    def process(self):
+        pass
 
 def _handle_relkeys_with_literal_range(
-    entity_key, mod_uri, lang_related_kwargs, value, processed_key, new_key
+    self__entity_key, self__mod_uri, lang_related_kwargs, value, self__processed_key, new_key
 ):
     """
     Relation keys like R1, R2 and R77 are used in triples where the object is a Literal.
@@ -1457,38 +1479,42 @@ def _handle_relkeys_with_literal_range(
         valid_languages = (None, settings.DEFAULT_DATA_LANGUAGE)
 
         # note: this is to handle thins like `R1__has_label__de="deutsches label" @ p.de`
-        if processed_key.lang_indicator not in valid_languages:
+        if self__processed_key.lang_indicator not in valid_languages:
             msg = (
-                f"while creating {entity_key}: the first {new_key}-argument must be with "
+                f"while creating {self__entity_key}: the first {new_key}-argument must be with "
                 "lang_indicator `None` or explicitly using the default language. "
-                f"Got {processed_key.lang_indicator} instead."
+                f"Got {self__processed_key.lang_indicator} instead."
             )
             raise aux.MultilingualityError(msg)
         value_lang = getattr(value, "language", None)
         if value_lang not in valid_languages:
             msg = (
-                f"while creating {entity_key}: the first {new_key}-argument must be "
+                f"while creating {self__entity_key}: the first {new_key}-argument must be "
                 f"a flat string or a literal with the default language ({settings.DEFAULT_DATA_LANGUAGE})"
                 f"Got {value_lang} instead."
             )
             raise aux.MultilingualityError(msg)
 
-        if not isinstance(value, Literal):
-            if not isinstance(value, str):
-                item_uri = aux.make_uri(mod_uri, entity_key)
-                msg = (
-                    f"While creating {item_uri}: the {new_key}-argument must be a string. "
-                    f"Got {type(value)} instead."
-                )
-                raise TypeError(msg)
-            value = Literal(value, lang=settings.DEFAULT_DATA_LANGUAGE)
-        value_list.append((processed_key.lang_indicator, value))
+        value = _handle_value(self__entity_key, self__mod_uri, value, self__processed_key, new_key, value_list)
     else:
-        value_list.append((processed_key.lang_indicator, value))
+        value_list.append((self__processed_key.lang_indicator, value))
         # do not pass this key-value-pair to the Item-constructor
         # it will be handled later
         continue_flag = True
     return value, continue_flag
+
+def _handle_value(self__entity_key, mod_uri, value, processed_key, new_key, value_list):
+    if not isinstance(value, Literal):
+        if not isinstance(value, str):
+            item_uri = aux.make_uri(mod_uri, self__entity_key)
+            msg = (
+                    f"While creating {item_uri}: the {new_key}-argument must be a string. "
+                    f"Got {type(value)} instead."
+                )
+            raise TypeError(msg)
+        value = Literal(value, lang=settings.DEFAULT_DATA_LANGUAGE)
+    value_list.append((processed_key.lang_indicator, value))
+    return value
 
 
 def process_lang_related_kwargs_for_entity_creation(entity: Entity, short_key: str, lang_related_kwargs: dict) -> None:

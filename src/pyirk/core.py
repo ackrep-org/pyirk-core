@@ -24,7 +24,7 @@ from pyirk import settings
 from pyirk.auxiliary import (
     InvalidURIError,
     InvalidPrefixError,
-    PyIRKError,
+    PyIRKException,
     EmptyURIStackError,
     InvalidShortKeyError,
     UnknownPrefixError,
@@ -650,10 +650,10 @@ class Entity(abc.ABC):
         if isinstance(stm, list):
             if len(stm) == 0:
                 msg = f"Unexpectedly found empty statement list for entity {self} and relation {rel}"
-                raise aux.PyIRKError(msg)
+                raise aux.PyIRKException(msg)
             if len(stm) > 1:
                 msg = f"Unexpectedly found length-{len(stm)} statement list for entity {self} and relation {rel}"
-                raise aux.PyIRKError(msg)
+                raise aux.PyIRKException(msg)
             stm = stm[0]
 
         assert isinstance(stm, Statement)
@@ -708,7 +708,7 @@ def wrap_function_with_search_uri_context(func, uri=None):
         if uri is None:
             fi = inspect.getframeinfo(frame.f_back)
             msg = f"could not find `__URI__` in module {fi.filename}"
-            raise aux.PyIRKError(msg)
+            raise aux.PyIRKException(msg)
 
     @functools.wraps(func)
     def wrapped_func(*args, **kwargs):
@@ -1028,7 +1028,7 @@ class DataStore:
         current_scope = self.get_current_scope()
         if current_scope != scope:
             msg = "Refuse to remove scope which is not the topmost on the stack (i.e. the last in the list)"
-            raise PyIRKError(msg)
+            raise PyIRKException(msg)
 
         self.scope_stack.pop()
 
@@ -1037,7 +1037,7 @@ class DataStore:
             return self.scope_stack[-1]
         except IndexError:
             msg = "unexpectedly found the scope stack empty"
-            raise PyIRKError(msg)
+            raise PyIRKException(msg)
 
 
 ds = DataStore()

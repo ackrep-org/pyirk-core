@@ -169,12 +169,12 @@ def _load_mod_from_path(
             "the last PyIRK-statement."
         )
 
-        raise pyirk.PyIRKError(msg)
+        raise pyirk.PyIRKException(msg)
 
     mod_uri = getattr(mod, "__URI__")
     if mod_uri is None:
         msg = f"The module from path {modpath} could not be loaded. No valid `__URI__` attribute found."
-        raise pyirk.PyIRKError(msg)
+        raise pyirk.PyIRKException(msg)
 
     pyirk.aux.ensure_valid_baseuri(mod_uri)
 

@@ -140,75 +140,75 @@ def print_inheritance_tree(cls, prefix=''):
         print_inheritance_tree(subclass, new_prefix)
 
 
-class PyIRKError(Exception):
+class PyIRKException(Exception):
     """
     raised in situations where some IRK-specific conditions are violated
     """
     pass
 
 
-class MultilingualityError(PyIRKError):
+class MultilingualityError(PyIRKException):
     pass
 
 
-class EmptyURIStackError(PyIRKError):
+class EmptyURIStackError(PyIRKException):
     pass
 
 
-class UnknownPrefixError(PyIRKError):
+class UnknownPrefixError(PyIRKException):
     pass
 
 
-class UnknownURIError(PyIRKError):
+class UnknownURIError(PyIRKException):
     pass
 
 
-class InvalidURIError(PyIRKError):
+class InvalidURIError(PyIRKException):
     pass
 
 
-class InvalidPrefixError(PyIRKError):
+class InvalidPrefixError(PyIRKException):
     pass
 
 
 # used for syntax problems
-class InvalidShortKeyError(PyIRKError):
+class InvalidShortKeyError(PyIRKException):
     pass
 
 
-class InvalidGeneralKeyError(PyIRKError):
+class InvalidGeneralKeyError(PyIRKException):
     pass
 
 
-class InconsistentLabelError(PyIRKError):
+class InconsistentLabelError(PyIRKException):
     pass
 
 
 # used for syntactically correct keys which could not be found
-class ShortKeyNotFoundError(PyIRKError):
+class ShortKeyNotFoundError(PyIRKException):
     pass
 
 
-class InvalidScopeNameError(PyIRKError):
+class InvalidScopeNameError(PyIRKException):
     pass
 
-class InvalidScopeTypeError(PyIRKError):
-    pass
-
-
-class InvalidScopeTypeError(PyIRKError):
+class InvalidScopeTypeError(PyIRKException):
     pass
 
 
-class ModuleAlreadyLoadedError(PyIRKError):
+class InvalidScopeTypeError(PyIRKException):
     pass
 
 
-class SemanticRuleError(PyIRKError):
+class ModuleAlreadyLoadedError(PyIRKException):
     pass
 
 
-class ExplicitlyTriggeredTestException(PyIRKError):
+class SemanticRuleError(PyIRKException):
+    pass
+
+
+class ExplicitlyTriggeredTestException(PyIRKException):
     pass
 
 
@@ -219,27 +219,27 @@ class InvalidObjectValue(SemanticRuleError):
     pass
 
 
-class MissingQualifierError(PyIRKError):
+class MissingQualifierError(PyIRKException):
     pass
 
 
-class AmbiguousQualifierError(PyIRKError):
+class AmbiguousQualifierError(PyIRKException):
     pass
 
 
-class FunctionalRelationError(PyIRKError):
+class FunctionalRelationError(PyIRKException):
     pass
 
 
-class UndefinedRelationError(PyIRKError):
+class UndefinedRelationError(PyIRKException):
     pass
 
 
-class TaxonomicError(PyIRKError):
+class TaxonomicError(PyIRKException):
     pass
 
 
-class RuleTermination(PyIRKError):
+class RuleTermination(PyIRKException):
     pass
 
 

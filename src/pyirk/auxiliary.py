@@ -251,6 +251,10 @@ class ReasoningGoalReached(RuleTermination):
     pass
 
 
+class ContinueOuterLoop(PyIRKException):
+    pass
+
+
 def ensure_valid_short_key(txt: str, strict: bool = True) -> bool:
     conds = [isinstance(txt, str)]
 

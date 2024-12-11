@@ -1426,9 +1426,10 @@ class KWArgManager:
         for kwarg_name, kwarg_value in self.kwargs.items():
             skwap = SingleKWArgProcessor(kwam=self, kwarg_name=kwarg_name, kwarg_value=kwarg_value)
             skwap.handle_kwarg_stage1()
-            skwap.handle_kwarg_stage2()
 
-            if skwap.continue_flag:
+            try:
+                skwap.handle_kwarg_stage2()
+            except aux.ContinueOuterLoop:
                 # in cases where we already have assigned a value but we get another one
                 # for a different language (which would have the same `new_key`-attribute)
                 # we omit it for the `self.new_kwargs[skwap.new_key]` mechanism
@@ -1452,7 +1453,6 @@ class SingleKWArgProcessor:
         self.processed_key = process_key_str(self.kwarg_name)
         self.new_key: str = None
         self.new_value = None
-        self.continue_flag = None
 
     def handle_kwarg_stage1(self):
         """
@@ -1471,10 +1471,9 @@ class SingleKWArgProcessor:
 
         # handle those relations which might come with multiple languages
         if self.new_key in RELKEYS_WITH_LITERAL_RANGE:
-            self.new_value, self.continue_flag = self.handle_relkeys_with_literal_range()
+            self.new_value = self.handle_relkeys_with_literal_range()
         else:
             self.new_value = self.kwarg_value
-            self.continue_flag = False
 
     def handle_relkeys_with_literal_range(self):
         """
@@ -1484,7 +1483,6 @@ class SingleKWArgProcessor:
 
         This function handles the different cases
         """
-        continue_flag = False
         lang_related_value_list = self.kwam.lang_related_kwargs[self.new_key]
         # lang_related_value_list is supposed to be a list of 2-tuples: (lang_indicator, Literal-instance)
         if len(lang_related_value_list) == 0:
@@ -1510,11 +1508,11 @@ class SingleKWArgProcessor:
             new_kwarg_value = self._handle_value(self.kwarg_value, lang_related_value_list)
         else:
             lang_related_value_list.append((self.processed_key.lang_indicator, self.kwarg_value))
-            # do not pass this key-value-pair to the Item-constructor
+            # do not process the current key-value-pair to the Item-constructor
             # it will be handled later
-            continue_flag = True
-            new_kwarg_value = None
-        return new_kwarg_value, continue_flag
+            self.new_value = None
+            raise aux.ContinueOuterLoop()
+        return new_kwarg_value
 
     def _handle_value(self, kwarg_value, value_list) -> Literal:
         if not isinstance(kwarg_value, Literal):

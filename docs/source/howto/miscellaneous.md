@@ -30,7 +30,7 @@ p.ds.relation_statements[p.R64.uri]
 - Start pyirk in interactive mode: `pyirk -i`
 
 ```
-p.aux.print_tree(p.ScopingCM)
+p.aux.print_inheritance_tree(p.ScopingCM)
 ```
 
 - Result based on version 0.13.2:
@@ -40,7 +40,6 @@ ScopingCM
 └── AbstractMathRelatedScopeCM
     ├── ConditionSubScopeCM
         └── QuantifiedSubScopeCM
-    ├── SubScopeConditionCM
     ├── _proposition__CM
     └── _rule__CM
         └── RulePremiseSubScopeCM

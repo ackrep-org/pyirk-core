@@ -32,9 +32,17 @@ class NotYetFinishedError(NotImplementedError):
 
 
 class OneToOneMapping(object):
-    def __init__(self, **kwargs):
-        self.a = dict(**kwargs)
-        self.b = dict([(v, k) for k, v in kwargs.items()])
+    def __init__(self, a_dict: dict = None, **kwargs):
+        if a_dict is None:
+            self.a = dict(**kwargs)
+            self.b = dict([(v, k) for k, v in kwargs.items()])
+        else:
+            # handle the case where we do not map strings
+            assert len(kwargs) == 0
+
+            # make a copy
+            self.a = dict(a_dict)
+            self.b = dict([(v, k) for k, v in a_dict.items()])
 
         # assert 1to1-property
         assert len(self.a) == len(self.b)
@@ -114,6 +122,24 @@ def ensure_rdf_str_literal(arg, allow_none=True) -> Union[Literal, None]:
     return res
 
 
+# Source: https://stackoverflow.com/a/3862957
+def all_subclasses(cls):
+    return set(cls.__subclasses__()).union(
+        [s for c in cls.__subclasses__() for s in all_subclasses(c)])
+
+
+# Source: perplexity.ai (with some manual tweaking)
+def print_inheritance_tree(cls, prefix=''):
+    """Recursively print the inheritance tree of the given class."""
+    print(prefix + cls.__name__)
+    subclasses = cls.__subclasses__()
+    for i, subclass in enumerate(subclasses):
+        # Determine if this is the last subclass to format the tree correctly
+        connector = "└── " if i == len(subclasses) - 1 else "├── "
+        new_prefix = " "*len(prefix) + connector
+        print_inheritance_tree(subclass, new_prefix)
+
+
 class PyIRKError(Exception):
     """
     raised in situations where some IRK-specific conditions are violated
@@ -164,6 +190,9 @@ class ShortKeyNotFoundError(PyIRKError):
 
 
 class InvalidScopeNameError(PyIRKError):
+    pass
+
+class InvalidScopeTypeError(PyIRKError):
     pass
 
 
@@ -242,7 +271,7 @@ def ensure_valid_short_key(txt: str, strict: bool = True) -> bool:
 
     cond = all(conds)
     if not cond and strict:
-        msg = f"This seems not to be a valid short_key: {txt}. Condition protocoll: {conds}"
+        msg = f"This seems not to be a valid short_key: {txt}. Condition protocol: {conds}"
         raise InvalidShortKeyError(msg)
 
     return cond
@@ -259,7 +288,7 @@ def ensure_valid_uri(txt: str, strict: bool = True) -> bool:
 
     cond = all(conds)
     if not cond and strict:
-        msg = f"This seems not to be a valid URI: {txt}. Condition protocoll: {conds}"
+        msg = f"This seems not to be a valid URI: {txt}. Condition protocol: {conds}"
         raise InvalidURIError(msg)
 
     return cond
@@ -271,7 +300,7 @@ def ensure_valid_relation_uri(txt: str, strict=True):
 
     cond = all(conds)
     if not cond and strict:
-        msg = f"This is not a valid relation URI: {txt}. Condition protocoll: {conds}"
+        msg = f"This is not a valid relation URI: {txt}. Condition protocol: {conds}"
         raise InvalidURIError(msg)
 
 
@@ -281,7 +310,7 @@ def ensure_valid_item_uri(txt: str, strict=True):
 
     cond = all(conds)
     if not cond and strict:
-        msg = f"This is not a valid item URI: {txt}. Condition protocoll: {conds}"
+        msg = f"This is not a valid item URI: {txt}. Condition protocol: {conds}"
         raise InvalidURIError(msg)
 
 
@@ -301,7 +330,7 @@ def ensure_valid_prefix(txt: str, strict: bool = True) -> bool:
 
     cond = all(conds)
     if not cond and strict:
-        msg = f"This seems not to be a valid prefix: {txt}. Condition protocoll: {conds}"
+        msg = f"This seems not to be a valid prefix: {txt}. Condition protocol: {conds}"
         raise InvalidPrefixError(msg)
 
     return cond
@@ -336,7 +365,7 @@ def ensure_valid_baseuri(txt: str, strict: bool = True) -> bool:
 
     cond = all(conds)
     if not cond and strict:
-        msg = f"This seems not to be a valid base uri: {txt}. Condition protocoll: {conds}"
+        msg = f"This seems not to be a valid base uri: {txt}. Condition protocol: {conds}"
         raise InvalidURIError(msg)
 
     return cond

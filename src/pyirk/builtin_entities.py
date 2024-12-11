@@ -1,4 +1,5 @@
 from typing import List, Union, Optional, Any, Tuple
+from collections import defaultdict
 
 from ipydex import IPS  # noqa
 
@@ -646,16 +647,26 @@ class ScopingCM:
     E.g. establishing a relationship between two items as part of the assertions of a theorem-item
     """
 
+    _all_instances = []
+    _instances = defaultdict(list)
+
     valid_subscope_types = None
 
     def __init__(self, itm: Item, namespace: dict, scope: Item, parent_scope_cm=None):
         # prevent the accidental instantiation of abstract subclasses
         assert not __class__.__name__.lower().startswith("abstract")
 
-        self.item = itm
-        self.namespace = namespace
-        self.scope = scope
-        self.parent_scope_cm = parent_scope_cm
+        # the item to which the scope refers e.g. <Item I9223["definition of zero matrix"]>,
+        self.item: Item = itm
+        self.namespace: dict = namespace
+        # the associated scope-item (which has a R64__has_scope_type relation)
+        self.scope: Item = scope
+        self.parent_scope_cm: ScopingCM|None = parent_scope_cm
+
+        # introduced to facilitate debugging and experimentation
+        self._instances[type(self)].append(self)
+        self._all_instances.append(self)
+
 
     def __enter__(self):
         """
@@ -760,28 +771,6 @@ class ScopingCM:
 
             return res
 
-    @classmethod
-    def create_scopingcm_factory(cls):
-        def scopingcm_factory(self: Item, scope_name: str) -> ScopingCM:
-            """
-            This function will be used as a method for Items which can create a scoping context manager.
-            It will return a `cls`-instance, where `cls` is either `ScopingCM` or a subclass of it.
-            For details see examples
-
-            :param self:        Item; the item to which the scope should be associated
-            :param scope_name:  str; the name of the scope
-
-            :return:            an instance of ScopingCM
-            """
-            namespace, scope = self._register_scope(scope_name)
-
-            cm = cls(itm=self, namespace=namespace, scope=scope)
-
-            return cm
-
-        # return that function object
-        return scopingcm_factory
-
     def _check_scope(self):
         active_scope = ds.scope_stack[-1]
 
@@ -791,7 +780,7 @@ class ScopingCM:
 
     def _create_subscope_cm(self, scope_type: str, cls: type):
         """
-        :param scope_type:     a str like "AND" or "OR"
+        :param scope_type:     a str like "AND", "OR", "NOT"
         :param cls:            the class to instantiate, e.g. RulePremiseSubScopeCM
 
         """
@@ -826,6 +815,7 @@ class ScopingCM:
         namespace, scope = self.scope._register_scope(name, scope_type)
 
         cm = cls(itm=self.item, namespace=namespace, scope=scope, parent_scope_cm=self)
+        cm.scope_type = scope_type
         return cm
 
     def copy_from(self, other_obj: Item, scope_name:str = None):
@@ -1005,6 +995,46 @@ class AbstractMathRelatedScopeCM(ScopingCM):
         rel = new_mathematical_relation(lhs, rsgn, rhs, scope=self.scope, force_key=force_key)
         return rel
 
+    def AND(self) -> "ConditionSubScopeCM":
+        """
+        Create a new subscope of type "AND", which can hold arbitrary statements.
+        These statements are considered to be AND-related in a boolean sense.
+        """
+
+        # This is forbidden because it likely means a modeling error
+        self.check_scope_type(forbidden="AND")
+
+        cm = self._create_subscope_cm(scope_type="AND", cls=ConditionSubScopeCM)
+        return cm
+
+    def OR(self) -> "ConditionSubScopeCM":
+        """
+        Create a new subscope of type "OR", which can hold arbitrary statements.
+        These statements are considered to be OR-related in a boolean sense.
+        """
+        # This is forbidden because it likely means a modeling error
+        self.check_scope_type(forbidden="OR")
+
+        cm = self._create_subscope_cm(scope_type="OR", cls=ConditionSubScopeCM)
+        return cm
+
+    def NOT(self) -> "ConditionSubScopeCM":
+        """
+        Create a new subscope of type "NOT", which can hold arbitrary statements.
+        These statements are considered to be negated in a boolean sense.
+        """
+
+        # This is forbidden because it likely means a modeling error
+        self.check_scope_type(forbidden="AND")
+
+        cm = self._create_subscope_cm(scope_type="NOT", cls=ConditionSubScopeCM)
+        return cm
+
+    def check_scope_type(self, *args, **kwargs):
+        """
+        This method might raise an exception in subclasses
+        """
+        pass
 
 
 class ConditionSubScopeCM(AbstractMathRelatedScopeCM):
@@ -1012,23 +1042,61 @@ class ConditionSubScopeCM(AbstractMathRelatedScopeCM):
     A scoping context manager to handle conditions
     """
 
-    valid_subscope_types = {"CONDITION": 1}
+    valid_subscope_types = {
+        "UNIV_QUANT": float("inf"),
+        "EXIS_QUANT": float("inf"),
+        "OR": float("inf"),
+        "AND": float("inf"),
+        "NOT": float("inf"),
+    }
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.condition_cm: AbstractMathRelatedScopeCM = self._create_subscope_cm("CONDITION", SubScopeConditionCM)
+
+        # this will be set from outside (in `_create_subscope_cm()`) after instance-creation
+        self.scope_type = None
 
     def add_condition_statement(self, subj, pred, obj, qualifiers=None):
-        with self.condition_cm:
-            self.condition_cm.new_rel(subj, pred, obj, qualifiers=qualifiers)
+        self.new_rel(subj, pred, obj, qualifiers=qualifiers)
 
     def add_condition_math_relation(self, *args, **kwargs):
-        with self.condition_cm:
-            self.condition_cm.new_math_relation(*args, **kwargs)
+        self.new_math_relation(*args, **kwargs)
 
     def new_condition_var(self, **kwargs):
-        with self.condition_cm:
-            return self.condition_cm.new_var(**kwargs)
+        return self.new_var(**kwargs)
+
+    def check_scope_type(self, forbidden):
+        if self.scope_type == forbidden:
+            msg = f"{forbidden}-scope inside {self.scope_type}-scope is not allowed"
+            raise core.aux.InvalidScopeTypeError(msg)
+
+
+    # note: there used to be a subscope to hold the actual conditions
+    # the ideas was to separate the conditions from "normal statements"
+    # however this seems unnecessary complicated -> subscope removed
+    # class `SubScopeConditionCM` also removed
+
+    # old code for easier comparison:
+
+    # valid_subscope_types = {"CONDITION": 1}
+
+    # def __init__(self, *args, **kwargs):
+    #     super().__init__(*args, **kwargs)
+    #     self.condition_cm: AbstractMathRelatedScopeCM = self._create_subscope_cm("CONDITION", SubScopeConditionCM)
+
+    # todo: these methods should be named the same as the sub-methods they are calling for overall consistency and for easier parsing in stafo
+    # todo: this is apparently not trivial, since the behavior of AND/OR-scopes and Quantifier-scopes depends on it
+    # def add_condition_statement(self, subj, pred, obj, qualifiers=None):
+    #     with self.condition_cm:
+    #         self.condition_cm.new_rel(subj, pred, obj, qualifiers=qualifiers)
+
+    # def add_condition_math_relation(self, *args, **kwargs):
+    #     with self.condition_cm:
+    #         self.condition_cm.new_math_relation(*args, **kwargs)
+
+    # def new_condition_var(self, **kwargs):
+    #     with self.condition_cm:
+    #         return self.condition_cm.new_var(**kwargs)
 
     # this duplication should be resolved, right now it is here so it doesnt mess up uq and exq cm
     def new_rel(self, subj, pred, obj, qualifiers=None):
@@ -1046,17 +1114,19 @@ class ConditionSubScopeCM(AbstractMathRelatedScopeCM):
 
 class QuantifiedSubScopeCM(ConditionSubScopeCM):
     """
-    A scoping context manager for universally or existentially quantified statements
+    A scoping context manager for universally or existentially quantified statements.
+
+    Created by methods universally_quantified() and existentially_quantified() of _proposition__CM
     """
     pass
 
 
-class SubScopeConditionCM(AbstractMathRelatedScopeCM):
-    """
-    A scoping context manager to specify the condition of another scope
-    """
+# class SubScopeConditionCM(AbstractMathRelatedScopeCM):
+#     """
+#     A scoping context manager to specify the condition of another scope
+#     """
 
-    valid_subscope_types = {}
+#     valid_subscope_types = {}
 
 
 class _proposition__CM(AbstractMathRelatedScopeCM):
@@ -1069,6 +1139,7 @@ class _proposition__CM(AbstractMathRelatedScopeCM):
         "EXIS_QUANT": float("inf"),
         "OR": float("inf"),
         "AND": float("inf"),
+        "NOT": float("inf"),
     }
 
     def universally_quantified(self) -> ScopingCM:
@@ -1091,28 +1162,6 @@ class _proposition__CM(AbstractMathRelatedScopeCM):
         # create a new context manager (which implicitly creates a new scope-item), where the user can add statements
         # note: this also creates an internal "CONDITION" subscope
         cm = self._create_subscope_cm(scope_type="EXIS_QUANT", cls=QuantifiedSubScopeCM)
-        return cm
-
-    def AND(self) -> ConditionSubScopeCM:
-        """
-        Create a new subscope of type "AND", which can hold arbitrary statements. That subscope will contain
-        another subscope ("CONDITION") whose statements are considered to be AND-related in a boolean sense.
-        """
-
-        # create a new context manager (which implicitly creates a new scope-item), where the user can add statements
-        # note: this also creates an internal "CONDITION" subscope
-        cm = self._create_subscope_cm(scope_type="AND", cls=ConditionSubScopeCM)
-        return cm
-
-    def OR(self) -> ConditionSubScopeCM:
-        """
-        Create a new subscope of type "OR", which can hold arbitrary statements. That subscope will contain
-        another subscope ("CONDITION") whose statements are considered to be OR-related in a boolean sense.
-        """
-
-        # create a new context manager (which implicitly creates a new scope-item), where the user can add statements
-        # note: this also creates an internal "CONDITION" subscope
-        cm = self._create_subscope_cm(scope_type="EXIS_QUANT", cls=ConditionSubScopeCM)
         return cm
 
 
@@ -1283,6 +1332,11 @@ class _rule__CM(AbstractMathRelatedScopeCM):
             # args are supposed to be variables created in the "setting"-scope
             self.new_rel(factory_anchor, R29["has argument"], arg, qualifiers=[qff_has_rule_ptg_mode(4)])
 
+    # TODO unify these logical rules with the logical rules for theorems etc.
+    def NOT(self):
+        msg = "implementing this is planned for the future"
+        raise NotImplementedError
+
     def OR(self):
         """
         Register a subscope for OR-connected statements
@@ -1297,7 +1351,6 @@ class _rule__CM(AbstractMathRelatedScopeCM):
     def AND(self):
         msg = "AND-logical subscope is only allowed inside a subscope of a 'premise'-scope"
         raise core.aux.SemanticRuleError(msg)
-
 
 class RulePremiseSubScopeCM(_rule__CM):
     """
@@ -1733,6 +1786,10 @@ def create_evaluated_mapping(mapping: Item, *args) -> Item:
 
     return ev_mapping
 
+I6["mathematical operation"].add_method(create_evaluated_mapping, "_custom_call")
+I7["mathematical operation with arity 1"].add_method(create_evaluated_mapping, "_custom_call")
+I8["mathematical operation with arity 2"].add_method(create_evaluated_mapping, "_custom_call")
+I9["mathematical operation with arity 3"].add_method(create_evaluated_mapping, "_custom_call")
 
 # todo: maybe the difference between asserted inheritance and inferred inheritance should be encoded via qualifiers
 R30 = create_builtin_relation(
@@ -2545,7 +2602,7 @@ I44 = create_builtin_item(
 R64 = create_builtin_relation(
     key_str="R64",
     R1__has_label="has scope type",
-    R2__has_description=("specifies the subject (a scope) has a certain type (currently 'OR', 'AND')"),
+    R2__has_description=("specifies the subject (a scope) has a certain type (currently 'OR', 'AND', 'NOT')"),
     R8__has_domain_of_argument_1=I16["scope"],
     R11__has_range_of_result=I52["string"],
     R22__is_functional=True,
@@ -2761,11 +2818,112 @@ R81 = create_builtin_relation(
     R1__has_label="has explanation",
     R2__has_description="states that there is verbal explanation related to the subject",
     R8__has_domain_of_argument_1=I1["general item"],
-    R11__has_range_of_result=I52["string"], #todo should this be type literal?
+    R11__has_range_of_result=I52["string"],
 )
 
+I55 = create_builtin_item(
+    key_str="I55",
+    R1__has_label="add",
+    R2__has_description="general addition operator",
+    R4__is_instance_of=I8["mathematical operation with arity 2"],
+    R8__has_domain_of_argument_1=I12["mathematical object"],
+    R9__has_domain_of_argument_2=I12["mathematical object"],
+    R11__has_range_of_result=I12["mathematical object"],
+)
 
-# next keys: I55, R82
+I56 = create_builtin_item(
+    key_str="I56",
+    R1__has_label="mul",
+    R2__has_description="general multiplication operator",
+    R4__is_instance_of=I8["mathematical operation with arity 2"],
+    R8__has_domain_of_argument_1=I12["mathematical object"],
+    R9__has_domain_of_argument_2=I12["mathematical object"],
+    R11__has_range_of_result=I12["mathematical object"],
+)
+
+I57 = create_builtin_item(
+    key_str="I57",
+    R1__has_label="pow",
+    R2__has_description="general power operator",
+    R4__is_instance_of=I8["mathematical operation with arity 2"],
+    R8__has_domain_of_argument_1=I12["mathematical object"],
+    R9__has_domain_of_argument_2=I12["mathematical object"],
+    R11__has_range_of_result=I12["mathematical object"],
+)
+
+I58 = create_builtin_item(
+    key_str="I58",
+    R1__has_label="neg",
+    R2__has_description="general negation operator",
+    R4__is_instance_of=I7["mathematical operation with arity 1"],
+    R8__has_domain_of_argument_1=I12["mathematical object"],
+    R11__has_range_of_result=I12["mathematical object"],
+)
+
+R82 = create_builtin_relation(
+    key_str="R82",
+    R1__has_label="has alternative latex string",
+    R2__has_description="has alternative latex notation, different from R24['has LaTeX string']",
+    R8__has_domain_of_argument_1=I18["mathematical expression"],
+    R11__has_range_of_result=I52["string"],
+)
+
+def add_items(a, b):
+    return I55["add"](a, b)
+
+def radd_items(a, b):
+    return I55["add"](b, a)
+
+def sub_items(a, b):
+    return I55["add"](a, I56["mul"](-1, b))
+
+def reflective_sub_items(a, b):
+    return I55["add"](b, I56["mul"](-1, a))
+
+def mul_items(a, b):
+    return I56["mul"](a, b)
+
+def rmul_items(a, b):
+    return I56["mul"](b, a)
+
+def div_items(a, b):
+    return I56["mul"](a, I57["pow"](b, -1))
+
+def reflective_div_items(a, b):
+    return I56["mul"](b, I57["pow"](a, -1))
+
+def pow_items(a, b):
+    return I57["pow"](a, b)
+
+def reflective_pow_items(a, b):
+    return I57["pow"](b, a)
+
+def neg_item(a):
+    return I58["neg"](a)
+
+Item.__add__ = add_items
+Item.__radd__ = radd_items # reflective addition for 1 + Item
+Item.__mul__ = mul_items
+Item.__rmul__ = rmul_items
+Item.__sub__ = sub_items
+Item.__rsub__ = reflective_sub_items
+Item.__truediv__ = div_items # truediv is the correct method for / operator
+Item.__rtruediv__ = reflective_div_items
+Item.__pow__ = pow_items
+Item.__rpow__ = reflective_pow_items
+Item.__neg__ = neg_item
+
+
+def unpack_tuple_item(tuple_item):
+    """
+    This is just a convenience alias for .R39__has_element
+    """
+
+    # this will return a list (as R29 is not functional)
+    return tuple_item.R39__has_element
+
+
+# next keys: I59, R83
 
 
 

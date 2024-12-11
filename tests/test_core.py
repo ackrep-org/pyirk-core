@@ -1851,13 +1851,15 @@ class Test_03_Multilinguality(HousekeeperMixin, unittest.TestCase):
                 ["bar"@p.df, "baz"@p.de, "more foo"@p.df, "foo-it"@p.it, "bar-es"@p.es]
             )
 
-            if 0:
-                # this comes from the stafo-project
-                I1001 = p.create_item(
-                    R1__has_label="test item",
-                    R4__is_instance_of=p.I35["real number"],
-                    R77__has_alternative_label=["test1", "test2"],
-                )
+            # this comes from the stafo-project
+            I1001 = p.create_item(
+                R1__has_label="test item",
+                R4__is_instance_of=p.I35["real number"],
+                R77__has_alternative_label=["test1", "test2"],
+            )
+
+            expected_result = [p.Literal("test1", lang="en"), p.Literal("test2", lang="en")]
+            self.assertEqual(I1001.R77__has_alternative_label, expected_result)
 
 
 class Test_Z_Core(HousekeeperMixin, unittest.TestCase):

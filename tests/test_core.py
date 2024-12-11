@@ -1440,7 +1440,7 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
             self.assertRaises(AssertionError, I1234["some theorem"].update_relations)
 
     def test_e04__overloaded_math_operators(self):
-        # p.cc.enable_consistency_checking()
+        p.cc.enable_consistency_checking()
         with p.uri_context(uri=TEST_BASE_URI, prefix="ut"):
             a = p.instance_of(p.I12["mathematical object"])
             b = p.instance_of(p.I12["mathematical object"])

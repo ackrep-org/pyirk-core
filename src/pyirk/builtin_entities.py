@@ -1098,18 +1098,6 @@ class ConditionSubScopeCM(AbstractMathRelatedScopeCM):
     #     with self.condition_cm:
     #         return self.condition_cm.new_var(**kwargs)
 
-    # this duplication should be resolved, right now it is here so it doesnt mess up uq and exq cm
-    def new_rel(self, subj, pred, obj, qualifiers=None):
-        with self.condition_cm:
-            self.condition_cm.new_rel(subj, pred, obj, qualifiers=qualifiers)
-
-    def new_math_relation(self, *args, **kwargs):
-        with self.condition_cm:
-            self.condition_cm.new_math_relation(*args, **kwargs)
-
-    def new_var(self, **kwargs):
-        with self.condition_cm:
-            return self.condition_cm.new_var(**kwargs)
 
 
 class QuantifiedSubScopeCM(ConditionSubScopeCM):

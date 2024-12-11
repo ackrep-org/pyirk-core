@@ -1466,8 +1466,6 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
             self.assertEqual(res, p.I56["mul"](1, p.I57["pow"](b, -1)))
 
 
-
-
 class Test_02_ruleengine(HousekeeperMixin, unittest.TestCase):
     def setUp(self):
         super().setUp()
@@ -1817,7 +1815,7 @@ class Test_03_Multilinguality(HousekeeperMixin, unittest.TestCase):
             with self.assertRaises(p.aux.FunctionalRelationError):
                 itm1.set_relation(p.R1["has label"], "new label")
 
-    def test_b2__multilingual_relations2(self):
+    def test_b02m__multilingual_relations2(self):
         with p.uri_context(uri=TEST_BASE_URI, prefix="ut"):
             R300 = p.create_relation(
                 R1__has_label="default rel-label",
@@ -1833,7 +1831,6 @@ class Test_03_Multilinguality(HousekeeperMixin, unittest.TestCase):
                 self.assertIn(p.I19["language-specified string literal"], rel.R11__has_range_of_result)
 
             # test R77__has_alternative_label
-
             I1000 =  p.create_item(
                     R1__has_label="foo",
                     R1__has_label__de="foo-de",
@@ -1855,7 +1852,6 @@ class Test_03_Multilinguality(HousekeeperMixin, unittest.TestCase):
                 I1000.R77__has_alternative_label,
                 ["bar"@p.df, "baz"@p.de, "more foo"@p.df, "foo-it"@p.it, "bar-es"@p.es]
             )
-
 
 class Test_Z_Core(HousekeeperMixin, unittest.TestCase):
     """

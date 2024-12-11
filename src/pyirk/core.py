@@ -1429,44 +1429,66 @@ def process_kwargs_for_entity_creation(entity_key: str, kwargs: dict) -> tuple[d
 
         # handle those relations which might come with multiple languages
         if new_key in RELKEYS_WITH_LITERAL_RANGE:
-            value_list = lang_related_kwargs[new_key]
-            if len(value_list) == 0:
-                valid_languages = (None, settings.DEFAULT_DATA_LANGUAGE)
-                if processed_key.lang_indicator not in valid_languages:
-                    msg = (
-                        f"while creating {entity_key}: the first {new_key}-argument must be with "
-                        "lang_indicator `None` or explicitly using the default language. "
-                        f"Got {processed_key.lang_indicator} instead."
-                    )
-                    raise aux.MultilingualityError(msg)
-                value_lang = getattr(value, "language", None)
-                if value_lang not in valid_languages:
-                    msg = (
-                        f"while creating {entity_key}: the first {new_key}-argument must be "
-                        f"a flat string or a literal with the default language ({settings.DEFAULT_DATA_LANGUAGE})"
-                        f"Got {value_lang} instead."
-                    )
-                    raise aux.MultilingualityError(msg)
-
-                if not isinstance(value, Literal):
-                    if not isinstance(value, str):
-                        item_uri = aux.make_uri(mod_uri, entity_key)
-                        msg = (
-                            f"While creating {item_uri}: the {new_key}-argument must be a string. "
-                            f"Got {type(value)} instead."
-                        )
-                        raise TypeError(msg)
-                    value = Literal(value, lang=settings.DEFAULT_DATA_LANGUAGE)
-                value_list.append((processed_key.lang_indicator, value))
-            else:
-                value_list.append((processed_key.lang_indicator, value))
-                # do not pass this key-value-pair to the Item-constructor
-                # it will be handled later
+            value, continue_flag = _handle_relkeys_with_literal_range(
+                entity_key, mod_uri, lang_related_kwargs, value, processed_key, new_key
+            )
+            if continue_flag:
                 continue
 
         new_kwargs[new_key] = value
 
     return new_kwargs, lang_related_kwargs
+
+
+def _handle_relkeys_with_literal_range(
+    entity_key, mod_uri, lang_related_kwargs, value, processed_key, new_key
+):
+    """
+    Relation keys like R1, R2 and R77 are used in triples where the object is a Literal.
+    R1__has_label, R2__has_description are functional (R32__is_functional_for_each_language).
+    R77__has_alternative_label is not functional.
+
+    This function handles the different cases
+    """
+    continue_flag = False
+    value_list = lang_related_kwargs[new_key]
+    # value_list is supposed to be a list of 2-tuples: (lang_indicator, Literal-instance)
+    if len(value_list) == 0:
+        valid_languages = (None, settings.DEFAULT_DATA_LANGUAGE)
+
+        # note: this is to handle thins like `R1__has_label__de="deutsches label" @ p.de`
+        if processed_key.lang_indicator not in valid_languages:
+            msg = (
+                f"while creating {entity_key}: the first {new_key}-argument must be with "
+                "lang_indicator `None` or explicitly using the default language. "
+                f"Got {processed_key.lang_indicator} instead."
+            )
+            raise aux.MultilingualityError(msg)
+        value_lang = getattr(value, "language", None)
+        if value_lang not in valid_languages:
+            msg = (
+                f"while creating {entity_key}: the first {new_key}-argument must be "
+                f"a flat string or a literal with the default language ({settings.DEFAULT_DATA_LANGUAGE})"
+                f"Got {value_lang} instead."
+            )
+            raise aux.MultilingualityError(msg)
+
+        if not isinstance(value, Literal):
+            if not isinstance(value, str):
+                item_uri = aux.make_uri(mod_uri, entity_key)
+                msg = (
+                    f"While creating {item_uri}: the {new_key}-argument must be a string. "
+                    f"Got {type(value)} instead."
+                )
+                raise TypeError(msg)
+            value = Literal(value, lang=settings.DEFAULT_DATA_LANGUAGE)
+        value_list.append((processed_key.lang_indicator, value))
+    else:
+        value_list.append((processed_key.lang_indicator, value))
+        # do not pass this key-value-pair to the Item-constructor
+        # it will be handled later
+        continue_flag = True
+    return value, continue_flag
 
 
 def process_lang_related_kwargs_for_entity_creation(entity: Entity, short_key: str, lang_related_kwargs: dict) -> None:

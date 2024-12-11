@@ -1426,41 +1426,55 @@ class KWArgManager:
         self.lang_related_kwargs = defaultdict(list)
 
     def process(self):
-        for dict_key, value in self.kwargs.items():
-            processed_key = process_key_str(dict_key)
+        for kwarg_name, kwarg_value in self.kwargs.items():
+            skwap = SingleKWArgProcessor(kwam=self, kwarg_name=kwarg_name)
+            skwap.handle_kwarg_stage1()
+            skwap.handle_kwarg_stage2(kwarg_value)
 
-            if processed_key.etype != EType.RELATION:
-                msg = f"unexpected key: {dict_key} during creation of item {self.entity_key}."
-                raise ValueError(msg)
+            if skwap.continue_flag:
+                continue
 
-            if processed_key.prefix:
-                new_key = f"{processed_key.prefix}__{processed_key.short_key}"
-            else:
-                new_key = processed_key.short_key
-
-            # handle those relations which might come with multiple languages
-            if new_key in RELKEYS_WITH_LITERAL_RANGE:
-                value, continue_flag = _handle_relkeys_with_literal_range(
-                    self.entity_key, self.mod_uri, self.lang_related_kwargs, value, processed_key, new_key
-                )
-                if continue_flag:
-                    continue
-
-            self.new_kwargs[new_key] = value
+            self.new_kwargs[skwap.new_key] = skwap.new_value
 
         return self.new_kwargs, self.lang_related_kwargs
 
-class KWArgProcessor:
+class SingleKWArgProcessor:
     """
     This class processes a single keyword arg for entity creation
     """
 
-    def __init__(self, entity_key: str, kwam: KWArgManager):
-        self.entity_key: str = entity_key
+    def __init__(self, kwam: KWArgManager, kwarg_name: str):
         self.kwam = kwam
+        self.kwarg_name: str = kwarg_name
+        self.processed_key = process_key_str(self.kwarg_name)
+        self.new_key: str = None
+        self.new_value = None
+        self.continue_flag = None
 
-    def process(self):
-        pass
+    def handle_kwarg_stage1(self):
+        """
+        Determine new_key
+        """
+        if self.processed_key.etype != EType.RELATION:
+            msg = f"unexpected key: {self.kwarg_name} during creation of item {self.entity_key}."
+            raise ValueError(msg)
+
+        if self.processed_key.prefix:
+            self.new_key = f"{self.processed_key.prefix}__{self.processed_key.short_key}"
+        else:
+            self.new_key = self.processed_key.short_key
+
+    def handle_kwarg_stage2(self, kwarg_value):
+
+        # handle those relations which might come with multiple languages
+        if self.new_key in RELKEYS_WITH_LITERAL_RANGE:
+            self.new_value, self.continue_flag = _handle_relkeys_with_literal_range(
+                self.kwam.entity_key, self.kwam.mod_uri, self.kwam.lang_related_kwargs, kwarg_value, self.processed_key, self.new_key
+            )
+        else:
+            self.new_value = kwarg_value
+            self.continue_flag = False
+
 
 def _handle_relkeys_with_literal_range(
     self__entity_key, self__mod_uri, lang_related_kwargs, value, self__processed_key, new_key

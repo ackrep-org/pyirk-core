@@ -1456,6 +1456,7 @@ class SingleKWArgProcessor:
         self.processed_rel_key = process_key_str(self.kwarg_name)
         self.new_key: str = None
         self.new_value = None
+        self.rel_is_functional = None
 
     def handle_kwarg_stage1(self):
         """
@@ -1487,13 +1488,21 @@ class SingleKWArgProcessor:
 
         if isinstance(self.kwarg_value, list):
             rel_obj = ds.get_entity_by_uri(self.processed_rel_key.uri)
-            if rel_obj.R22__is_functional or rel_obj.R32__is_functional_for_each_language:
+
+            self.rel_is_functional = (
+                rel_obj.R22__is_functional or rel_obj.R32__is_functional_for_each_language
+            ) != None
+
+            if self.rel_is_functional:
                 msg = f"List argument for functional relation {self.kwarg_name} is not allowed."
                 raise aux.GeneralPyIRKError(msg)
             self.new_value = []
             for scalar_kwarg_value in self.kwarg_value:
                 new_scalar_value = self.handle_rk_with_lr(scalar_kwarg_value=scalar_kwarg_value)
+
+                IPS("test" in scalar_kwarg_value)
                 self.new_value.append(new_scalar_value)
+            return self.new_value
         else:
             return self.handle_rk_with_lr(scalar_kwarg_value=self.kwarg_value)
 
@@ -1511,7 +1520,14 @@ class SingleKWArgProcessor:
         """
         lang_related_value_list = self.kwam.lang_related_kwargs[self.new_key]
         # lang_related_value_list is supposed to be a list of 2-tuples: (lang_indicator, Literal-instance)
-        if len(lang_related_value_list) == 0:
+
+        if (len(lang_related_value_list) == 0) or (not self.rel_is_functional):
+            # if neither of those conditions is true then we have a functional (R22 or R32) relation which
+            # already got a value and now we get another one for a different language
+            # this is handled in the else branch
+
+            # here we handle the normal case
+
             valid_languages = (None, settings.DEFAULT_DATA_LANGUAGE)
 
             # note: this is to handle thins like `R1__has_label__de="deutsches label" @ p.de`

@@ -3,7 +3,7 @@ Core module of pyirk
 """
 import os
 import sys
-from collections import defaultdict
+from collections import defaultdict, Counter
 from dataclasses import dataclass
 import inspect
 import types
@@ -1466,7 +1466,8 @@ class SingleKWArgProcessor:
         self.processed_rel_key = process_key_str(self.kwarg_name)
         self.new_key: str = None
         self.new_value = None
-        self.rel_is_functional = None
+        self.rel_is_functional = None  # (R22)
+        self.rel_is_functional_fel = None  # ... for each language (R32)
 
     def handle_kwarg_stage1(self):
         """
@@ -1486,12 +1487,16 @@ class SingleKWArgProcessor:
         rel_obj = ds.get_entity_by_uri(self.processed_rel_key.uri)
 
         try:
-            self.rel_is_functional = (
-                    rel_obj.R22__is_functional or rel_obj.R32__is_functional_for_each_language
-                ) != None
+            self.rel_is_functional = (rel_obj.R22__is_functional != None)
         except aux.ShortKeyNotFoundError:
             # this happens at the beginning if R22/R32 is not yet defined
             self.rel_is_functional = False
+
+        try:
+            self.rel_is_functional_fel = (rel_obj.R32__is_functional_for_each_language != None)
+        except aux.ShortKeyNotFoundError:
+            # this happens at the beginning if R22/R32 is not yet defined
+            self.rel_is_functional_fel = False
 
         # handle those relations which might come with multiple languages
         if self.new_key in RELKEYS_WITH_LITERAL_RANGE:
@@ -1511,6 +1516,13 @@ class SingleKWArgProcessor:
             if self.rel_is_functional:
                 msg = f"List argument for functional relation {self.kwarg_name} is not allowed."
                 raise aux.GeneralPyIRKError(msg)
+            if self.rel_is_functional_fel:
+                msg = f"List argument for functional (R32) relation {self.kwarg_name} is not allowed."
+                raise aux.GeneralPyIRKError(msg)
+
+                # TODO: in the future it might be nice to allow this again (however: low priority)
+                # currently disallowed to reduce complexity
+                # self._ensure_different_languages()
             self.new_value = []
             for scalar_kwarg_value in self.kwarg_value:
                 new_scalar_value = self.handle_rk_with_lr(scalar_kwarg_value=scalar_kwarg_value)
@@ -1532,7 +1544,7 @@ class SingleKWArgProcessor:
 
         This function handles the different cases
         """
-        if self.rel_is_functional:
+        if self.rel_is_functional_fel:
             new_kwarg_value = self._handle_kwarg_for_functional_rel(scalar_kwarg_value)
         else:
             # handle the non-functional case here:
@@ -1559,6 +1571,26 @@ class SingleKWArgProcessor:
             raise aux.ContinueOuterLoop()
 
         return new_kwarg_value
+
+    # currently not used
+    def _ensure_different_languages(self):
+        """
+        Handle call option like `R1__has_label=["default label", "deutsches label" @ p.de]`
+        """
+
+        assert isinstance(self.kwarg_value, list)
+        counter = Counter()
+
+        for arg in self.kwarg_value:
+            if isinstance(arg, Literal):
+                lang = arg.language
+            else:
+                lang = None
+            counter[lang] += 1
+
+            if counter[lang] > 1:
+                msg = f"The language indicator {lang} occurred multiple times for {self.kwarg_name}."
+                raise aux.GeneralPyIRKError(msg)
 
     def _check_for_valid_language(self, scalar_kwarg_value, first_value=False):
         valid_languages = (None, settings.DEFAULT_DATA_LANGUAGE)
@@ -1597,8 +1629,8 @@ class SingleKWArgProcessor:
             # we already have a literal object
             new_kwarg_value = kwarg_value
         if lang_related_value_list is not None:
-            # this is important for the functional case
-            assert self.rel_is_functional
+            # this is important for the functional_for_each_language case
+            assert self.rel_is_functional_fel
             assert isinstance(lang_related_value_list, list)
             lang_related_value_list.append((self.processed_rel_key.lang_indicator, new_kwarg_value))
         return new_kwarg_value

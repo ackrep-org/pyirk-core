@@ -1633,7 +1633,7 @@ class Test_03_Multilinguality(HousekeeperMixin, unittest.TestCase):
                     R1__has_label__es="deutsches label" @ p.de,
                 )
 
-            with self.assertRaises(TypeError):
+            with self.assertRaises(p.aux.GeneralPyIRKError):
                 # the following ensures that some old syntax is correctly reported as error
                 I902 = p.create_item(
                     R1__has_label=["default label", "deutsches label" @ p.de],

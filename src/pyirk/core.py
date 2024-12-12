@@ -1517,12 +1517,9 @@ class SingleKWArgProcessor:
                 msg = f"List argument for functional relation {self.kwarg_name} is not allowed."
                 raise aux.GeneralPyIRKError(msg)
             if self.rel_is_functional_fel:
-                msg = f"List argument for functional (R32) relation {self.kwarg_name} is not allowed."
+                msg = f"List argument for lang-functional (R32) relation {self.kwarg_name} is not allowed."
                 raise aux.GeneralPyIRKError(msg)
 
-                # TODO: in the future it might be nice to allow this again (however: low priority)
-                # currently disallowed to reduce complexity
-                # self._ensure_different_languages()
             self.new_value = []
             for scalar_kwarg_value in self.kwarg_value:
                 new_scalar_value = self.handle_rk_with_lr(scalar_kwarg_value=scalar_kwarg_value)
@@ -1571,26 +1568,6 @@ class SingleKWArgProcessor:
             raise aux.ContinueOuterLoop()
 
         return new_kwarg_value
-
-    # currently not used
-    def _ensure_different_languages(self):
-        """
-        Handle call option like `R1__has_label=["default label", "deutsches label" @ p.de]`
-        """
-
-        assert isinstance(self.kwarg_value, list)
-        counter = Counter()
-
-        for arg in self.kwarg_value:
-            if isinstance(arg, Literal):
-                lang = arg.language
-            else:
-                lang = None
-            counter[lang] += 1
-
-            if counter[lang] > 1:
-                msg = f"The language indicator {lang} occurred multiple times for {self.kwarg_name}."
-                raise aux.GeneralPyIRKError(msg)
 
     def _check_for_valid_language(self, scalar_kwarg_value, first_value=False):
         valid_languages = (None, settings.DEFAULT_DATA_LANGUAGE)

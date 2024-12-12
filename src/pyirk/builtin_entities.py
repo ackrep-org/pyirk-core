@@ -1071,34 +1071,6 @@ class ConditionSubScopeCM(AbstractMathRelatedScopeCM):
             raise core.aux.InvalidScopeTypeError(msg)
 
 
-    # note: there used to be a subscope to hold the actual conditions
-    # the ideas was to separate the conditions from "normal statements"
-    # however this seems unnecessary complicated -> subscope removed
-    # class `SubScopeConditionCM` also removed
-
-    # old code for easier comparison:
-
-    # valid_subscope_types = {"CONDITION": 1}
-
-    # def __init__(self, *args, **kwargs):
-    #     super().__init__(*args, **kwargs)
-    #     self.condition_cm: AbstractMathRelatedScopeCM = self._create_subscope_cm("CONDITION", SubScopeConditionCM)
-
-    # todo: these methods should be named the same as the sub-methods they are calling for overall consistency and for easier parsing in stafo
-    # todo: this is apparently not trivial, since the behavior of AND/OR-scopes and Quantifier-scopes depends on it
-    # def add_condition_statement(self, subj, pred, obj, qualifiers=None):
-    #     with self.condition_cm:
-    #         self.condition_cm.new_rel(subj, pred, obj, qualifiers=qualifiers)
-
-    # def add_condition_math_relation(self, *args, **kwargs):
-    #     with self.condition_cm:
-    #         self.condition_cm.new_math_relation(*args, **kwargs)
-
-    # def new_condition_var(self, **kwargs):
-    #     with self.condition_cm:
-    #         return self.condition_cm.new_var(**kwargs)
-
-
 class QuantifiedSubScopeCM(ConditionSubScopeCM):
     """
     A scoping context manager for universally or existentially quantified statements.
@@ -2855,11 +2827,17 @@ R82 = create_builtin_relation(
     R11__has_range_of_result=I52["string"],
 )
 
-def add_items(a, b):
-    return I55["add"](a, b)
+# def add_items(a, b):
+#     return I55["add"](a, b)
+def add_items(*args):
+    if len(args) == 2:
+        return I55["add"](*args)
+    else:
+        return I55["add"](add_items(*args[:-1]), args[-1])
 
 def radd_items(a, b):
     return I55["add"](b, a)
+# todo do we need this with for args of arbitrary length?
 
 def sub_items(a, b):
     return I55["add"](a, I56["mul"](-1, b))
@@ -2867,8 +2845,13 @@ def sub_items(a, b):
 def reflective_sub_items(a, b):
     return I55["add"](b, I56["mul"](-1, a))
 
-def mul_items(a, b):
-    return I56["mul"](a, b)
+# def mul_items(a, b):
+#     return I56["mul"](a, b)
+def mul_items(*args):
+    if len(args) == 2:
+        return I56["mul"](*args)
+    else:
+        return I56["mul"](mul_items(*args[:-1]), args[-1])
 
 def rmul_items(a, b):
     return I56["mul"](b, a)

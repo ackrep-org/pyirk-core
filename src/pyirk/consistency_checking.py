@@ -44,10 +44,22 @@ def check_applied_operator(itm: Item):
     assert operator_itm is not None
 
     # prevent unnoticed module reload issues
-    assert not itm.get_arguments()[0].R4._unlinked
+    # todo the arg of an operator might reasonable be a number (int, float) in which case arg.R4 will fail
+    if hasattr(itm.get_arguments()[0], "R4__is_instance_of"):
+        assert not itm.get_arguments()[0].R4._unlinked
 
     args = itm.get_arguments()
-    arg_type_items = [arg.R4__is_instance_of for arg in args]
+    # todo the arg of an operator might reasonable be a number (int, float) in which case arg.R4 will fail
+    arg_type_items = []
+    for arg in args:
+        if hasattr(arg, "R4__is_instance_of"):
+            arg_type_items.append(arg.R4__is_instance_of)
+        elif isinstance(arg, int):
+            arg_type_items.append(bi.I37["integer number"])
+        elif isinstance(arg, float):
+            arg_type_items.append(bi.I35["real number"])
+        elif isinstance(arg, complex):
+            arg_type_items.append(bi.I34["complex number"])
 
     expected_arg_types = get_expected_arg_types(operator_itm)
     # IPS()
@@ -59,7 +71,10 @@ def check_applied_operator(itm: Item):
     # the lengths match, now check the types
 
     for i, (actual_type, expected_type_list) in enumerate(zip(arg_type_items, expected_arg_types)):
-        secondary_class_items = args[i].R30__is_secondary_instance_of
+        try:
+            secondary_class_items = args[i].R30__is_secondary_instance_of
+        except AttributeError:
+            secondary_class_items = []
         for expected_type in expected_type_list:
             res = check_type(actual_type, secondary_class_items, expected_type, raise_exception=False)
             if res:

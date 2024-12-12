@@ -1071,35 +1071,6 @@ class ConditionSubScopeCM(AbstractMathRelatedScopeCM):
             raise core.aux.InvalidScopeTypeError(msg)
 
 
-    # note: there used to be a subscope to hold the actual conditions
-    # the ideas was to separate the conditions from "normal statements"
-    # however this seems unnecessary complicated -> subscope removed
-    # class `SubScopeConditionCM` also removed
-
-    # old code for easier comparison:
-
-    # valid_subscope_types = {"CONDITION": 1}
-
-    # def __init__(self, *args, **kwargs):
-    #     super().__init__(*args, **kwargs)
-    #     self.condition_cm: AbstractMathRelatedScopeCM = self._create_subscope_cm("CONDITION", SubScopeConditionCM)
-
-    # todo: these methods should be named the same as the sub-methods they are calling for overall consistency and for easier parsing in stafo
-    # todo: this is apparently not trivial, since the behavior of AND/OR-scopes and Quantifier-scopes depends on it
-    # def add_condition_statement(self, subj, pred, obj, qualifiers=None):
-    #     with self.condition_cm:
-    #         self.condition_cm.new_rel(subj, pred, obj, qualifiers=qualifiers)
-
-    # def add_condition_math_relation(self, *args, **kwargs):
-    #     with self.condition_cm:
-    #         self.condition_cm.new_math_relation(*args, **kwargs)
-
-    # def new_condition_var(self, **kwargs):
-    #     with self.condition_cm:
-    #         return self.condition_cm.new_var(**kwargs)
-
-
-
 class QuantifiedSubScopeCM(ConditionSubScopeCM):
     """
     A scoping context manager for universally or existentially quantified statements.

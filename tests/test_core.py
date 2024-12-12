@@ -1859,7 +1859,6 @@ class Test_03_Multilinguality(HousekeeperMixin, unittest.TestCase):
             )
 
             expected_result = [p.Literal("test1", lang="en"), p.Literal("test2", lang="en")]
-            IPS()
             self.assertEqual(I1001.R77__has_alternative_label, expected_result)
 
 

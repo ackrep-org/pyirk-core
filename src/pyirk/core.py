@@ -3,7 +3,7 @@ Core module of pyirk
 """
 import os
 import sys
-from collections import defaultdict
+from collections import defaultdict, Counter
 from dataclasses import dataclass
 import inspect
 import types
@@ -21,10 +21,12 @@ import re
 
 from pyirk import auxiliary as aux
 from pyirk import settings
+
+# allow convenient access to exceptions in downstream applications
 from pyirk.auxiliary import (
     InvalidURIError,
     InvalidPrefixError,
-    PyIRKError,
+    PyIRKException,
     EmptyURIStackError,
     InvalidShortKeyError,
     UnknownPrefixError,
@@ -650,10 +652,10 @@ class Entity(abc.ABC):
         if isinstance(stm, list):
             if len(stm) == 0:
                 msg = f"Unexpectedly found empty statement list for entity {self} and relation {rel}"
-                raise aux.PyIRKError(msg)
+                raise aux.GeneralPyIRKError(msg)
             if len(stm) > 1:
                 msg = f"Unexpectedly found length-{len(stm)} statement list for entity {self} and relation {rel}"
-                raise aux.PyIRKError(msg)
+                raise aux.GeneralPyIRKError(msg)
             stm = stm[0]
 
         assert isinstance(stm, Statement)
@@ -708,7 +710,7 @@ def wrap_function_with_search_uri_context(func, uri=None):
         if uri is None:
             fi = inspect.getframeinfo(frame.f_back)
             msg = f"could not find `__URI__` in module {fi.filename}"
-            raise aux.PyIRKError(msg)
+            raise aux.GeneralPyIRKError(msg)
 
     @functools.wraps(func)
     def wrapped_func(*args, **kwargs):
@@ -1028,7 +1030,7 @@ class DataStore:
         current_scope = self.get_current_scope()
         if current_scope != scope:
             msg = "Refuse to remove scope which is not the topmost on the stack (i.e. the last in the list)"
-            raise PyIRKError(msg)
+            raise aux.GeneralPyIRKError(msg)
 
         self.scope_stack.pop()
 
@@ -1037,7 +1039,7 @@ class DataStore:
             return self.scope_stack[-1]
         except IndexError:
             msg = "unexpectedly found the scope stack empty"
-            raise PyIRKError(msg)
+            raise aux.GeneralPyIRKError(msg)
 
 
 ds = DataStore()
@@ -1399,7 +1401,7 @@ def get_active_mod_uri(strict: bool = True) -> Union[str, None]:
             "when creating entities"
         )
         if strict:
-            raise EmptyURIStackError(msg)
+            raise aux.EmptyURIStackError(msg)
         else:
             return None
     return res
@@ -1409,89 +1411,215 @@ def process_kwargs_for_entity_creation(entity_key: str, kwargs: dict) -> tuple[d
     """
     :return:    return new_kwargs, lang_related_kwargs
     """
+    return KWArgManager(entity_key, kwargs).process()
 
-    mod_uri = get_active_mod_uri()
 
-    new_kwargs = {}
-    lang_related_kwargs = defaultdict(list)
-    # prepare the kwargs to set relations
-    for dict_key, value in kwargs.items():
-        processed_key = process_key_str(dict_key)
+class KWArgManager:
+    """
+    This class processes all keyword args for entity creation
+    """
+    def __init__(self, entity_key: str, kwargs: dict):
+        self.entity_key: str = entity_key
+        self.kwargs: dict = kwargs
+        self.mod_uri = get_active_mod_uri()
+        self.new_kwargs = {}
+        self.lang_related_kwargs = defaultdict(list)
 
-        if processed_key.etype != EType.RELATION:
-            msg = f"unexpected key: {dict_key} during creation of item {entity_key}."
-            raise ValueError(msg)
+    def process(self):
+        for kwarg_name, kwarg_value in self.kwargs.items():
+            skwap = SingleKWArgProcessor(kwam=self, kwarg_name=kwarg_name, kwarg_value=kwarg_value)
+            skwap.handle_kwarg_stage1()
 
-        if processed_key.prefix:
-            new_key = f"{processed_key.prefix}__{processed_key.short_key}"
-        else:
-            new_key = processed_key.short_key
+            try:
+                skwap.handle_kwarg_stage2()
+            except aux.ContinueOuterLoop:
+                # in cases where we already have assigned a value but we get another one
+                # for a different language (which would have the same `new_key`-attribute)
+                # we omit it for the `self.new_kwargs[skwap.new_key]` mechanism
 
-        # handle those relations which might come with multiple languages
-        if new_key in RELKEYS_WITH_LITERAL_RANGE:
-            value, continue_flag = _handle_relkeys_with_literal_range(
-                entity_key, mod_uri, lang_related_kwargs, value, processed_key, new_key
-            )
-            if continue_flag:
+                # it will be contained in `self.lang_related_kwargs` and handled later
+                assert skwap.new_value is None
                 continue
 
-        new_kwargs[new_key] = value
+            # for non-functional (R32) relations there might be several kwargs like R77 and R77__de
+            # which result in the same `skwap.new_key` -> in this case we create a list
 
-    return new_kwargs, lang_related_kwargs
+            existing_value = self.new_kwargs.get(skwap.new_key)
+            if existing_value is None:
+                self.new_kwargs[skwap.new_key] = skwap.new_value
+            elif isinstance(existing_value, list):
+                existing_value.append(skwap.new_value)
+            else:
+                self.new_kwargs[skwap.new_key] = [existing_value, skwap.new_value]
 
+        return self.new_kwargs, self.lang_related_kwargs
 
-def _handle_relkeys_with_literal_range(
-    entity_key, mod_uri, lang_related_kwargs, value, processed_key, new_key
-):
+class SingleKWArgProcessor:
     """
-    Relation keys like R1, R2 and R77 are used in triples where the object is a Literal.
-    R1__has_label, R2__has_description are functional (R32__is_functional_for_each_language).
-    R77__has_alternative_label is not functional.
-
-    This function handles the different cases
+    This class processes a single keyword arg for entity creation
     """
-    continue_flag = False
-    value_list = lang_related_kwargs[new_key]
-    # value_list is supposed to be a list of 2-tuples: (lang_indicator, Literal-instance)
-    if len(value_list) == 0:
+
+    def __init__(self, kwam: KWArgManager, kwarg_name: str, kwarg_value: str):
+        self.kwam = kwam
+        self.kwarg_name: str = kwarg_name
+        self.kwarg_value: str = kwarg_value
+        self.processed_rel_key = process_key_str(self.kwarg_name)
+        self.new_key: str = None
+        self.new_value = None
+        self.rel_is_functional = None  # (R22)
+        self.rel_is_functional_fel = None  # ... for each language (R32)
+
+    def handle_kwarg_stage1(self):
+        """
+        Determine new_key
+        """
+        if self.processed_rel_key.etype != EType.RELATION:
+            msg = f"unexpected key: {self.kwarg_name} during creation of item {self.entity_key}."
+            raise ValueError(msg)
+
+        if self.processed_rel_key.prefix:
+            self.new_key = f"{self.processed_rel_key.prefix}__{self.processed_rel_key.short_key}"
+        else:
+            self.new_key = self.processed_rel_key.short_key
+
+    def handle_kwarg_stage2(self):
+
+        rel_obj = ds.get_entity_by_uri(self.processed_rel_key.uri)
+
+        try:
+            self.rel_is_functional = (rel_obj.R22__is_functional != None)
+        except aux.ShortKeyNotFoundError:
+            # this happens at the beginning if R22/R32 is not yet defined
+            self.rel_is_functional = False
+
+        try:
+            self.rel_is_functional_fel = (rel_obj.R32__is_functional_for_each_language != None)
+        except aux.ShortKeyNotFoundError:
+            # this happens at the beginning if R22/R32 is not yet defined
+            self.rel_is_functional_fel = False
+
+        # handle those relations which might come with multiple languages
+        if self.new_key in RELKEYS_WITH_LITERAL_RANGE:
+            self.new_value = self.dispatch_value_multiplicity_for_rk_with_lr()
+        else:
+            self.new_value = self.kwarg_value
+
+    def dispatch_value_multiplicity_for_rk_with_lr(self):
+        """
+        Situation for relkeys with literal range:
+        self.kwarg_value might be a 'scalar' value or list of 'scalar' values.
+        This method handles the difference and then calls the actual processing
+        """
+
+        if isinstance(self.kwarg_value, list):
+
+            if self.rel_is_functional:
+                msg = f"List argument for functional relation {self.kwarg_name} is not allowed."
+                raise aux.GeneralPyIRKError(msg)
+            if self.rel_is_functional_fel:
+                msg = f"List argument for lang-functional (R32) relation {self.kwarg_name} is not allowed."
+                raise aux.GeneralPyIRKError(msg)
+
+            self.new_value = []
+            for scalar_kwarg_value in self.kwarg_value:
+                new_scalar_value = self.handle_rk_with_lr(scalar_kwarg_value=scalar_kwarg_value)
+
+                self.new_value.append(new_scalar_value)
+            return self.new_value
+        else:
+            return self.handle_rk_with_lr(scalar_kwarg_value=self.kwarg_value)
+
+    def handle_rk_with_lr(self, scalar_kwarg_value):
+        """
+        'rk' means relkeys
+        'lr' means literal range
+
+        Background:
+        Relation keys like R1, R2 and R77 are used in triples where the object is a Literal.
+        R1__has_label, R2__has_description are functional (R32__is_functional_for_each_language).
+        R77__has_alternative_label is not functional (neither R22__is_functional nor R32).
+
+        This function handles the different cases
+        """
+        if self.rel_is_functional_fel:
+            new_kwarg_value = self._handle_kwarg_for_functional_rel(scalar_kwarg_value)
+        else:
+            # handle the non-functional case here:
+            self._check_for_valid_language(scalar_kwarg_value)
+            new_kwarg_value = self._handle_value(scalar_kwarg_value)
+        return new_kwarg_value
+
+    def _handle_kwarg_for_functional_rel(self, scalar_kwarg_value):
+
+        lang_related_value_list = self.kwam.lang_related_kwargs[self.new_key]
+        # lang_related_value_list is supposed to be a list of 2-tuples: (lang_indicator, Literal-inst.)
+        # this list might be updated here as a side effect. It does not need to be returned
+
+        if len(lang_related_value_list) == 0:
+            # this is the first value for this kwarg. Maybe more will come later for other languages.
+            # They will be handled in the else branch
+            self._check_for_valid_language(scalar_kwarg_value, first_value=True)
+            new_kwarg_value = self._handle_value(scalar_kwarg_value, lang_related_value_list)
+        else:
+            lang_related_value_list.append((self.processed_rel_key.lang_indicator, scalar_kwarg_value))
+            # do not process the current key-value-pair to the Item-constructor
+            # it will be handled later
+            self.new_value = None
+            raise aux.ContinueOuterLoop()
+
+        return new_kwarg_value
+
+    def _check_for_valid_language(self, scalar_kwarg_value, first_value=False):
         valid_languages = (None, settings.DEFAULT_DATA_LANGUAGE)
 
-        # note: this is to handle thins like `R1__has_label__de="deutsches label" @ p.de`
-        if processed_key.lang_indicator not in valid_languages:
+            # note: this is to handle thins like `R1__has_label__de="deutsches label" @ p.de`
+        if first_value and self.processed_rel_key.lang_indicator not in valid_languages:
             msg = (
-                f"while creating {entity_key}: the first {new_key}-argument must be with "
-                "lang_indicator `None` or explicitly using the default language. "
-                f"Got {processed_key.lang_indicator} instead."
-            )
+                        f"while creating {self.kwam.entity_key}: the first {self.new_key}-argument must be "
+                        " with lang_indicator `None` or explicitly using the default language. "
+                        f"Got {self.processed_rel_key.lang_indicator} instead."
+                    )
             raise aux.MultilingualityError(msg)
-        value_lang = getattr(value, "language", None)
+        value_lang = getattr(scalar_kwarg_value, "language", None)
         if value_lang not in valid_languages:
             msg = (
-                f"while creating {entity_key}: the first {new_key}-argument must be "
-                f"a flat string or a literal with the default language ({settings.DEFAULT_DATA_LANGUAGE})"
-                f"Got {value_lang} instead."
-            )
+                        f"while creating {self.kwam.entity_key}: the first {self.new_key}-argument must be "
+                        f"a flat string or a literal with the default language "
+                        f"({settings.DEFAULT_DATA_LANGUAGE}). Got {value_lang} instead."
+                    )
             raise aux.MultilingualityError(msg)
 
-        if not isinstance(value, Literal):
-            if not isinstance(value, str):
-                item_uri = aux.make_uri(mod_uri, entity_key)
+    def _handle_value(self, kwarg_value, lang_related_value_list=None) -> Literal:
+        if not isinstance(kwarg_value, Literal):
+            if not isinstance(kwarg_value, str):
+                item_uri = aux.make_uri(self.kwam.mod_uri, self.kwam.entity_key)
                 msg = (
-                    f"While creating {item_uri}: the {new_key}-argument must be a string. "
-                    f"Got {type(value)} instead."
+                    f"While creating {item_uri}: the {self.new_key}-argument must be a string. "
+                    f"Got {type(kwarg_value)} instead."
                 )
                 raise TypeError(msg)
-            value = Literal(value, lang=settings.DEFAULT_DATA_LANGUAGE)
-        value_list.append((processed_key.lang_indicator, value))
-    else:
-        value_list.append((processed_key.lang_indicator, value))
-        # do not pass this key-value-pair to the Item-constructor
-        # it will be handled later
-        continue_flag = True
-    return value, continue_flag
+            lang = self.processed_rel_key.lang_indicator
+            if lang is None:
+                lang = settings.DEFAULT_DATA_LANGUAGE
+            new_kwarg_value = Literal(kwarg_value, lang=lang)
+        else:
+            # we already have a literal object
+            new_kwarg_value = kwarg_value
+        if lang_related_value_list is not None:
+            # this is important for the functional_for_each_language case
+            assert self.rel_is_functional_fel
+            assert isinstance(lang_related_value_list, list)
+            lang_related_value_list.append((self.processed_rel_key.lang_indicator, new_kwarg_value))
+        return new_kwarg_value
 
 
-def process_lang_related_kwargs_for_entity_creation(entity: Entity, short_key: str, lang_related_kwargs: dict) -> None:
+def process_lang_related_kwargs_for_entity_creation(
+    entity: Entity, short_key: str, lang_related_kwargs: dict
+) -> None:
+    """
+    This function processes language related keyword args for relations which have
+    R32__is_functional_for_each_language=True
+    """
     for rel_key, value_list in lang_related_kwargs.items():
         # omit the first argument as it was already passed to the Item-constructor
         for lang_indicator, value in value_list[1:]:

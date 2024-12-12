@@ -136,7 +136,7 @@ class Test_00_Core(HousekeeperMixin, unittest.TestCase):
         self.assertEqual(p.I1.uri, f"{p.BUILTINS_URI}#I1")
         self.assertEqual(p.R1.uri, f"{p.BUILTINS_URI}#R1")
 
-        with self.assertRaises(p.EmptyURIStackError):
+        with self.assertRaises(p.aux.EmptyURIStackError):
             itm = p.create_item(key_str=p.pop_uri_based_key("I"), R1="unit test item")
 
         with p.uri_context(uri=TEST_BASE_URI):
@@ -452,7 +452,7 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
 
         data = (10, 11, 12, 13, p.I1, "some string")
 
-        with self.assertRaises(p.EmptyURIStackError):
+        with self.assertRaises(p.aux.EmptyURIStackError):
             tup = p.new_tuple(*data)
 
         with p.uri_context(uri=TEST_BASE_URI):
@@ -1633,7 +1633,7 @@ class Test_03_Multilinguality(HousekeeperMixin, unittest.TestCase):
                     R1__has_label__es="deutsches label" @ p.de,
                 )
 
-            with self.assertRaises(TypeError):
+            with self.assertRaises(p.aux.GeneralPyIRKError):
                 # the following ensures that some old syntax is correctly reported as error
                 I902 = p.create_item(
                     R1__has_label=["default label", "deutsches label" @ p.de],
@@ -1657,7 +1657,6 @@ class Test_03_Multilinguality(HousekeeperMixin, unittest.TestCase):
         p.settings.DEFAULT_DATA_LANGUAGE = "de"
         r1_de = I900.R1__has_label.value
         self.assertEqual(r1_de, "deutsches label")
-
 
         if p.settings.DEFAULT_DATA_LANGUAGE == "en":
             p.settings.DEFAULT_DATA_LANGUAGE = "en"
@@ -1846,12 +1845,22 @@ class Test_03_Multilinguality(HousekeeperMixin, unittest.TestCase):
             I1000.R77__has_alternative_label = "more foo"@p.en
             self.assertEqual(I1000.R77__has_alternative_label, ["bar"@p.df, "baz"@p.de, "more foo"@p.df])
 
-
             I1000.set_multiple_relations("R77__has_alternative_label", ["foo-it"@p.it, "bar-es"@p.es])
             self.assertEqual(
                 I1000.R77__has_alternative_label,
                 ["bar"@p.df, "baz"@p.de, "more foo"@p.df, "foo-it"@p.it, "bar-es"@p.es]
             )
+
+            # this comes from the stafo-project
+            I1001 = p.create_item(
+                R1__has_label="test item",
+                R4__is_instance_of=p.I35["real number"],
+                R77__has_alternative_label=["test1", "test2"],
+            )
+
+            expected_result = [p.Literal("test1", lang="en"), p.Literal("test2", lang="en")]
+            self.assertEqual(I1001.R77__has_alternative_label, expected_result)
+
 
 class Test_Z_Core(HousekeeperMixin, unittest.TestCase):
     """

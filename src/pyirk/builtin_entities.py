@@ -907,7 +907,7 @@ class ScopingCM:
 
         if strict:
             msg = f"Unexpected: Could not find a copied item associated to {old_var}"
-            raise core.aux.PyIRKError(msg)
+            raise core.aux.GeneralPyIRKError(msg)
 
         # last resort return the original variable (because it was an external var)
         return old_var

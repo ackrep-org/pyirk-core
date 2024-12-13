@@ -691,7 +691,10 @@ class Entity(abc.ABC):
         new_kwargs, lang_related_kwargs = process_kwargs_for_entity_creation(item_key, kwargs)
 
         for dict_key, value in new_kwargs.items():
-            self.set_relation(dict_key, value)
+            if type(value) == list:
+                self.set_multiple_relations(dict_key, value)
+            else:
+                self.set_relation(dict_key, value)
 
         process_lang_related_kwargs_for_entity_creation(self, item_key, lang_related_kwargs)
 

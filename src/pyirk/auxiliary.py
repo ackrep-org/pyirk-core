@@ -198,10 +198,6 @@ class InvalidScopeTypeError(GeneralPyIRKError):
     pass
 
 
-class InvalidScopeTypeError(GeneralPyIRKError):
-    pass
-
-
 class ModuleAlreadyLoadedError(GeneralPyIRKError):
     pass
 

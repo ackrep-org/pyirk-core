@@ -63,6 +63,6 @@ to type. Solutions:
   - Use fuzzy **autocompletion** via the VS Code extension [irk-fzf](https://github.com/ackrep-org/irk-fzf/releases):
     - Install the extension from the `.vsix`-File (see [README.md](https://github.com/ackrep-org/irk-fzf/blob/main/README.md))
     - Use `pyirk --load-mod my_mod.py mm -ac` to create a file called `.ac_candidates.txt`.
-    - The extension uses the entries in this file to offer auto-complete suggestions when the `erkfzf` command is triggered (either via the VS code command pallette or via a manually assigned keyboard shortcut (recommended, see [README.md](https://github.com/ackrep-org/irk-fzf/blob/main/README.md)).
-    - The command `erkfzf` performs a fuzzy search using the string left of the cursor (and then the user input).
+    - The extension uses the entries in this file to offer auto-complete suggestions when the `erk-fzf.search` command is triggered (either via the VS code command pallette or via a manually assigned keyboard shortcut (recommended, see [README.md](https://github.com/ackrep-org/irk-fzf/blob/main/README.md)).
+    - The command `erk-fzf.search` performs a fuzzy search using the string left of the cursor (and then the user input).
     It displays fuzzy-matching lines from `.ac_candidates.txt`. It searches short_keys, labels and descriptions.

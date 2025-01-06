@@ -44,3 +44,25 @@ ScopingCM
     └── _rule__CM
         └── RulePremiseSubScopeCM
 ```
+
+
+
+(sec_practical_work_with_keys)=
+## Practically working with keys
+
+To learn about the different kinds of keys in PyIRK see section [Keys](sec_keys).
+
+With a growing module it becomes infeasible to memorize the keys like `R1234['is in special relation with']` and it is also time-consuming
+to type. Solutions:
+  - Search in existing code and use copy-paste.
+    - Advantage:
+      - Simple.
+      - Acceptably convenient for smaller modules or small editing tasks.
+    - Disadvantage:
+      - Too much effort for larger editing jobs.
+  - Use fuzzy **autocompletion** via the VS Code extension [irk-fzf](https://github.com/ackrep-org/irk-fzf/releases):
+    - Install the extension from the `.vsix`-File (see [README.md](https://github.com/ackrep-org/irk-fzf/blob/main/README.md))
+    - Use `pyirk --load-mod my_mod.py mm -ac` to create a file called `.ac_candidates.txt`.
+    - The extension uses the entries in this file to offer auto-complete suggestions when the `erkfzf` command is triggered (either via the VS code command pallette or via a manually assigned keyboard shortcut (recommended, see [README.md](https://github.com/ackrep-org/irk-fzf/blob/main/README.md)).
+    - The command `erkfzf` performs a fuzzy search using the string left of the cursor (and then the user input).
+    It displays fuzzy-matching lines from `.ac_candidates.txt`. It searches short_keys, labels and descriptions.

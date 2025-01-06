@@ -2892,9 +2892,15 @@ def unpack_tuple_item(tuple_item):
     # this will return a list (as R29 is not functional)
     return tuple_item.R39__has_element
 
+I59 = create_builtin_item(
+    key_str="I59",
+    R1__has_label="basic statement",
+    R2__has_description="an ordinary statement (e.g. from the plain text of a book or a paper)",
+    R3__is_subclass_of=I15["implication proposition"],
+    R18__has_usage_hint="usually such statements do not need a premise and might even omit the setting."
+)
 
-# next keys: I59, R83
-
+# next keys: I60, R83
 
 
 # ######################################################################################################################

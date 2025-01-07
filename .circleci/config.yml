@@ -1,7 +1,7 @@
 jobs: # A basic unit of work in a run
   setup:
     # directory where steps are run
-    working_directory: ~/erk/pyerk-core
+    working_directory: ~/irk/pyirk-core
     docker: # run the steps with Docker
       # CircleCI Python images available at: https://hub.docker.com/r/circleci/python/
       - image: cimg/python:3.8
@@ -28,17 +28,17 @@ jobs: # A basic unit of work in a run
       - run:
           name: Test cli
           command: |
-            pyerk --help
+            pyirk --help
       - run:
           name: Load ERK Modules
           command: |
-            echo Cloning erk-data
+            echo Cloning irk-data
             cd ..
-            mkdir erk-data-for-unittests
-            cd erk-data-for-unittests
+            mkdir irk-data-for-unittests
+            cd irk-data-for-unittests
             git clone https://github.com/ackrep-org/ocse.git ocse
             cd ocse
-            git checkout ut__pyerk__main
+            git checkout ut__pyirk__main
             cd ..
             ls -R
       - run:

@@ -185,6 +185,22 @@ I2738 = p.create_item(
     # R3033__has_type_of_elements=p.I34["complex number"],
 )
 
+I5005 = p.create_item(
+    R1__has_label="real part",
+    R2__has_description="returns the real part of a complex number",
+    R4__is_instance_of=I4895["mathematical operator"],
+    R8__has_domain_of_argument_1=p.I34["complex number"],
+    R11__has_range_of_result=p.I35["real number"],
+)
+
+I5006 = p.create_item(
+    R1__has_label="imaginary part",
+    R2__has_description="returns the imaginary part of a complex number",
+    R4__is_instance_of=I4895["mathematical operator"],
+    R8__has_domain_of_argument_1=p.I34["complex number"],
+    R11__has_range_of_result=p.I35["real number"],
+)
+
 I5807 = p.create_item(
     R1__has_label="sign",
     R2__has_description="returns the sign of a real number, i.e. on element of {-1, 0, 1}",

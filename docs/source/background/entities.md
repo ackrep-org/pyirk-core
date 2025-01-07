@@ -1,52 +1,106 @@
 # Entities
 
-This section will explain how **Entities** in Pyirk work. 
-(Remember? The **Items** and **Relations** you can use in your **Statements**.) 
+This section will explain how **Entities** in Pyirk work.
+(Remember? The **Items** and **Relations** you can use in your **Statements**.)
 But before that we should talk about **Keys**.
 
 (sec_keys)=
 ## Keys, Labels and URIs in Pyirk
 
 Sooner or later, you will need the reference your precious knowledge from somewhere else
-in your code. 
+in your code.
 For this purpose, Pyirk has **Keys**.
 The most prominent one is the so-called *short_key* (`entity.short_key`) this is a unique.
-string whose leading character indicates the entity type 
-(called `EType` in the code), so far we have `I` for an **Item** and `R` for a 
+string whose leading character indicates the entity type
+(called `EType` in the code), so far we have `I` for an **Item** and `R` for a
 **Relation** and ends with a sequence of number characters (maximum sequence length not yet specified)
 Furthermore, every **entity** has an uri (`entity.uri`).
 It is recommended but not required that every entity has a label (by means of relation
 `R1["has label"]`) and a description (by means of `R2["has description"]`).
 
-For example, think of a **Relation** with the short key `"R1234"` and label `"my_relation"`.
+For example, think of a **Relation** with the short key `"R1234"` and label `"is in special relation with"`.
 To reference that, we can use:
 
 - a) *short_key* like `"R1234"`
-- b) name-labeled key like `"R1234__my_relation"` (consisting of a *short_key*, 
-  a delimiter (`__`) and a *label*)
-- c) prefixed short_key like `"bi__R1234"` (here the prefix `bi` refers to the module `builtin_entities`)
-- d) prefixed name-labeled key like `"bi__R1234__my_relation"`
-- e) index-labeled key like  `"R1234['my relation']"`
+- b) name-labeled key like `"R1234__is_in_special_relation_with"` (consisting of a *short_key*,
+  a delimiter (`__`) and the *label* but where all space spaces have been replaced by single underscores)
+- c) prefixed short_key like `"mm__R1234"`
+  - useful if multiple modules are loaded.
+  - here the prefix `mm` refers to the (fictive) module `my_module` e.g. loaded with:
+  ```python
+  mod = p.irkloader.load_mod_from_path("./my_module.py", prefix="mm")
+  ```
+    - Note: In general it is recommended to use the same identifier for the variable name (here: `mod`) and the prefix-argument (here: `"mm"`).
+      We use different identifiers here to document the technicalities.
+- d) prefixed name-labeled key like `"mm__R1234__is_in_special_relation_with"` (combination of b) and c))
+- e) index-labeled key like  `"R1234['is in special relation with']"`
 
-```{error}
-Add URI part and maybe a code example.
+**Why** are there these different possibilities to specify keys? Because in PyIRK we want to achieve the following goals:
+- (1) Every entity should have a unique machine readable identifier.
+- (2) The source code should be readable by humans.
+- (3) The source code should be valid python code.
+
+Goal (1) is achieved via URIs. The uri of each entity is composed of the URI of its defining module plus the short key of the entity. Goal (2) is achieved by adding the labels into the source code as strings or identifiers. This allows them to be checked for consistency. Goal (3) is achieved by using either index-labeled keys or name-labeled keys – depending what the context allows.
+
+
+```{warning}
+Not yet (fully) documented:
+- keys and multilinguality
+- URIs
+- code example
 ```
 
+
 ```{tip}
-Prefixed and name-labeled keys can optionally have a language indicator. Examples: ``"bi__R1__de"`` or `"R1__has_label__fr"`.
+Prefixed and name-labeled keys can optionally have a language indicator. Example: `"R1234__ist_in_spezieller_relation_mit__de"`.
 The usage of these syntax variants depends on the context.
 ```
 For more information see See also {ref}`sec_modules`.
 
+### Key Numbers
+
+The short key of entities consists of a leading letter usually followed by a number e.g. `"R1234"` for a relation and `"I5678"` for an item.
+Exception: for automatically created items the second character is the letter `a`.
+If you want to create entities and relations in a module the question arises: **Which numbers to take?** the answer is simple:
+It does not really matter as long as the numbers are unique. There are two approaches:
+
+- Manual enumeration like `"I1001"`, `"I1002"`, ...
+  - Advantages:
+    - Simple to use.
+    - Similar entities have similar keys like `I38["non-negative integer"]` and `I39["positive integer"]`
+  - Disadvantages:
+    - Sooner or later there will be a situation where the order breaks because you want to create an entity which
+    ontologically comes higher in the hierarchy (i.e. more abstract) and would deserve a lower number but all those
+    numbers are already in use.
+- Automatic generation of *random* keys
+  - Command: `pyirk --load-mod my_module.py mm -nk 100`
+    - Creates 100 keys for items and relations respectively (printed to stdout).
+    - Loading the module (`my_module.py` in the example) ensures that no keys are output which are already used in the module.
+  - Advantages:
+    - Does not require manual book-keeping.
+  - Disadvantages:
+    - Might be confusing at the beginning.
+
+
+```{tip}
+A useful practice is to automatically create e.g. 100 keys and store them as a comment at the bottom of your module file.
+Every used key is deleted from this comment section. If for some items consecutive numbering is desirable this can be done anyway.
+If those 100 keys are used up (all lines deleted) you can generate the next ones.
+```
+
+
+```{tip}
+See [Practically working with keys](sec_practical_work_with_keys) for hints on who to deal with such lengthy keys conveniently.
+```
 
 (sec_items)=
 ## Items (Python Subclass of `core.Entity`)
 
-The `short_key` of any items starts with "`I`" . Optionally the second character is 
-"`a`" which indicates that this item was generated automatically 
+The `short_key` of any items starts with "`I`" . Optionally the second character is
+"`a`" which indicates that this item was generated automatically
 (see [below](sec_auto_gen_items)).
 
-(Almost) all items are part of a taxonomy, i.e. a hierarchy of *"is-a"*-relations. 
+(Almost) all items are part of a taxonomy, i.e. a hierarchy of *"is-a"*-relations.
 This is expressed by the relations `R3["is_subclass_of"]` and `R4["is instance of"]`.
 
 ```{error}
@@ -60,11 +114,11 @@ Unlike in OWL (but like in Wikidata) an item can be an instance and a class at t
 (sec_auto_gen_items)=
 ### Automatically Generated Items
 
-One consequence of expressing knowledge as a collection of triples is the necessity of 
-auxiliary items. E.g. consider the equation {math}`y = \sin(x)` where `x, y, sin` can 
-be assumed to be well defined items. Because the predicate must be a relation, it is 
-not possible to relate these three items in one triple. 
-The usual approach to deal with such situations is to introduce auxiliary items and 
+One consequence of expressing knowledge as a collection of triples is the necessity of
+auxiliary items. E.g. consider the equation {math}`y = \sin(x)` where `x, y, sin` can
+be assumed to be well defined items. Because the predicate must be a relation, it is
+not possible to relate these three items in one triple.
+The usual approach to deal with such situations is to introduce auxiliary items and
 more triples (see also [wikipedia on "reification"](https://en.wikipedia.org/wiki/Reification_(knowledge_representation))).
 One possible (fictional) triple representation of the above equation is
 
@@ -74,8 +128,8 @@ auxiliary_expr has_arg x
 y is_equal_to expr
 ```
 
-One of the main goals of Pyirk is to simplify the creation of triples which involves 
-creating auxiliary items (such as evaluated expressions). This can be achieved by calling functions such as `pyirk.instance_of(...)`. 
+One of the main goals of Pyirk is to simplify the creation of triples which involves
+creating auxiliary items (such as evaluated expressions). This can be achieved by calling functions such as `pyirk.instance_of(...)`.
 
 ```{error}
 Add code example.
@@ -103,10 +157,10 @@ The method `core.Entity.add_method(...)` can be used to add arbitrary methods to
 ## Relations (`core.Relation`, subclass of `core.Entity`)
 
 The `.short_key` of any relation starts with `R`.
-From a graph perspective the relation defines the type of the edge between two nodes 
+From a graph perspective the relation defines the type of the edge between two nodes
 while nodes are typically `Item`-instances.
-The *predicate* part of a semantic triple must always be a (python) instance of 
-`Core.Relation`.  
+The *predicate* part of a semantic triple must always be a (python) instance of
+`Core.Relation`.
 In general they can occur as *subject* or *object* as well.
 
 

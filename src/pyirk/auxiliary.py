@@ -122,72 +122,91 @@ def ensure_rdf_str_literal(arg, allow_none=True) -> Union[Literal, None]:
     return res
 
 
-class PyIRKError(Exception):
+# Source: https://stackoverflow.com/a/3862957
+def all_subclasses(cls):
+    return set(cls.__subclasses__()).union(
+        [s for c in cls.__subclasses__() for s in all_subclasses(c)])
+
+
+# Source: perplexity.ai (with some manual tweaking)
+def print_inheritance_tree(cls, prefix=''):
+    """Recursively print the inheritance tree of the given class."""
+    print(prefix + cls.__name__)
+    subclasses = cls.__subclasses__()
+    for i, subclass in enumerate(subclasses):
+        # Determine if this is the last subclass to format the tree correctly
+        connector = "└── " if i == len(subclasses) - 1 else "├── "
+        new_prefix = " "*len(prefix) + connector
+        print_inheritance_tree(subclass, new_prefix)
+
+
+class PyIRKException(Exception):
     """
     raised in situations where some IRK-specific conditions are violated
     """
+
+class GeneralPyIRKError(Exception):
     pass
 
 
-class MultilingualityError(PyIRKError):
+class MultilingualityError(GeneralPyIRKError):
     pass
 
 
-class EmptyURIStackError(PyIRKError):
+class EmptyURIStackError(GeneralPyIRKError):
     pass
 
 
-class UnknownPrefixError(PyIRKError):
+class UnknownPrefixError(GeneralPyIRKError):
     pass
 
 
-class UnknownURIError(PyIRKError):
+class UnknownURIError(GeneralPyIRKError):
     pass
 
 
-class InvalidURIError(PyIRKError):
+class InvalidURIError(GeneralPyIRKError):
     pass
 
 
-class InvalidPrefixError(PyIRKError):
+class InvalidPrefixError(GeneralPyIRKError):
     pass
 
 
 # used for syntax problems
-class InvalidShortKeyError(PyIRKError):
+class InvalidShortKeyError(GeneralPyIRKError):
     pass
 
 
-class InvalidGeneralKeyError(PyIRKError):
+class InvalidGeneralKeyError(GeneralPyIRKError):
     pass
 
 
-class InconsistentLabelError(PyIRKError):
+class InconsistentLabelError(GeneralPyIRKError):
     pass
 
 
 # used for syntactically correct keys which could not be found
-class ShortKeyNotFoundError(PyIRKError):
+class ShortKeyNotFoundError(GeneralPyIRKError):
     pass
 
 
-class InvalidScopeNameError(PyIRKError):
+class InvalidScopeNameError(GeneralPyIRKError):
+    pass
+
+class InvalidScopeTypeError(GeneralPyIRKError):
     pass
 
 
-class InvalidScopeTypeError(PyIRKError):
+class ModuleAlreadyLoadedError(GeneralPyIRKError):
     pass
 
 
-class ModuleAlreadyLoadedError(PyIRKError):
+class SemanticRuleError(GeneralPyIRKError):
     pass
 
 
-class SemanticRuleError(PyIRKError):
-    pass
-
-
-class ExplicitlyTriggeredTestException(PyIRKError):
+class ExplicitlyTriggeredTestException(GeneralPyIRKError):
     pass
 
 
@@ -198,27 +217,27 @@ class InvalidObjectValue(SemanticRuleError):
     pass
 
 
-class MissingQualifierError(PyIRKError):
+class MissingQualifierError(GeneralPyIRKError):
     pass
 
 
-class AmbiguousQualifierError(PyIRKError):
+class AmbiguousQualifierError(GeneralPyIRKError):
     pass
 
 
-class FunctionalRelationError(PyIRKError):
+class FunctionalRelationError(GeneralPyIRKError):
     pass
 
 
-class UndefinedRelationError(PyIRKError):
+class UndefinedRelationError(GeneralPyIRKError):
     pass
 
 
-class TaxonomicError(PyIRKError):
+class TaxonomicError(GeneralPyIRKError):
     pass
 
 
-class RuleTermination(PyIRKError):
+class RuleTermination(PyIRKException):
     pass
 
 
@@ -227,6 +246,13 @@ class LogicalContradiction(RuleTermination):
 
 
 class ReasoningGoalReached(RuleTermination):
+    pass
+
+
+class ContinueOuterLoop(PyIRKException):
+    """
+    This is not an error but indicated that an outside loop should continue.
+    """
     pass
 
 

@@ -5,6 +5,7 @@ from typing import Union, List, Tuple, Optional
 import os
 import urllib
 from rdflib import Literal
+import re
 
 import networkx as nx
 import nxv  # for graphviz visualization of networkx graphs
@@ -592,7 +593,7 @@ def svg_replace(raw_svg_data: str, REPLACEMENTS: dict) -> str:
     return svg_data1
 
 
-def visualize_entity(uri: str, url_template="", write_tmp_files: bool = False) -> str:
+def visualize_entity(uri: str, url_template="", write_tmp_files: bool = False, radius=1) -> str:
     """
 
     :param uri:             entity uri (like "irk:/my/module#I0123")
@@ -602,8 +603,30 @@ def visualize_entity(uri: str, url_template="", write_tmp_files: bool = False) -
     :return:                svg_data as string
     """
 
-    G = create_nx_graph_from_entity(uri, url_template)
-    raw_dot_data = render_graph_to_dot(G)
+    # G = create_nx_graph_from_entity(uri, url_template)
+    pattern = r"#(I\d+)"
+
+    # Extracting the match
+    match = re.search(pattern, uri)
+    if match:
+        short_key_of_interest = match.group(1)
+
+    big_G = create_complete_graph(url_template)
+
+    # Find the node corresponding to the short_key
+    node_of_interest = None
+    for node, data in big_G.nodes(data=True):
+        label = data.get('label', '')
+        if label.startswith(short_key_of_interest):
+            node_of_interest = node
+            break
+
+    if node_of_interest:
+        small_G = nx.ego_graph(big_G, node_of_interest, radius, undirected=True)
+    else:
+        print(f"Node with short_key '{short_key_of_interest}' not found in the graph.")
+
+    raw_dot_data = render_graph_to_dot(small_G)
 
     dot_data0 = raw_dot_data
     for old, new in NEWLINE_REPLACEMENTS:
@@ -616,8 +639,7 @@ def visualize_entity(uri: str, url_template="", write_tmp_files: bool = False) -
     dot_data = "\n".join((dot_lines[0], inner_dot_code, dot_lines[-1]))
 
     # noinspection PyUnresolvedReferences,PyProtectedMember
-    # choose one: "circo", "dot", "fdp", "neato", "osage", "sfdp", "twopi"
-    raw_svg_data = nxv._graphviz.run(dot_data, algorithm="sfdp", format="svg", graphviz_bin=None)
+    raw_svg_data = nxv._graphviz.run(dot_data, algorithm="dot", format="svg", graphviz_bin=None)
     raw_svg_data = raw_svg_data.decode("utf8")
     svg_data1 = svg_replace(raw_svg_data, REPLACEMENTS)
 

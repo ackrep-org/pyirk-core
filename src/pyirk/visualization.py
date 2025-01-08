@@ -423,7 +423,9 @@ def create_complete_graph(
 
     added_items_nodes = {}
     added_statements = {}
-    G = nx.DiGraph()
+
+    # using this subclass ensures our html-wrapping is called when a node is added
+    G = CustomizedDiGraph()
 
     i = 0
     relation_dict: dict

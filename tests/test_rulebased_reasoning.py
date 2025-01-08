@@ -25,7 +25,6 @@ from .settings import (
     # TEST_ACKREP_DATA_FOR_UT_PATH,
     TEST_BASE_URI,
     HousekeeperMixin,
-
 )
 
 
@@ -230,7 +229,9 @@ class Test_01_rulebased_reasoning(HousekeeperMixin, unittest.TestCase):
 
         with p.uri_context(uri=TEST_BASE_URI):
 
-            itm1.set_relation(p.R31["is in mathematical relation with"], itm3)  # itm3 will be replaced by the rule
+            itm1.set_relation(
+                p.R31["is in mathematical relation with"], itm3
+            )  # itm3 will be replaced by the rule
 
             self.assertEqual(itm1.R31__is_in_mathematical_relation_with, [itm3])
 
@@ -247,10 +248,10 @@ class Test_01_rulebased_reasoning(HousekeeperMixin, unittest.TestCase):
             with I704.scope("setting") as cm:
                 cm.new_var(x=p.instance_of(p.I1["general item"]))
                 cm.new_var(y=p.instance_of(p.I1["general item"]))
-                cm.uses_external_entities(p.I36['rational number'])
+                cm.uses_external_entities(p.I36["rational number"])
 
             with I704.scope("premise") as cm:
-                cm.new_rel(cm.x, p.R4["is instance of"], p.I36['rational number'], overwrite=True)
+                cm.new_rel(cm.x, p.R4["is instance of"], p.I36["rational number"], overwrite=True)
                 cm.new_rel(cm.x, p.R47["is same as"], cm.y)
 
             with I704.scope("assertion") as cm:
@@ -342,7 +343,8 @@ class Test_01_rulebased_reasoning(HousekeeperMixin, unittest.TestCase):
         self.assertEqual(neighbor_before, None)
 
         res = p.ruleengine.apply_semantic_rule(
-            zp.zr.I710["rule: identify same items via zb__R2850__is_functional_activity"], mod_context_uri=zp.__URI__
+            zp.zr.I710["rule: identify same items via zb__R2850__is_functional_activity"],
+            mod_context_uri=zp.__URI__,
         )
         self.assertEqual(zp.person1.R47__is_same_as, [zp.person2])
 
@@ -406,7 +408,7 @@ class Test_01_rulebased_reasoning(HousekeeperMixin, unittest.TestCase):
                 cm.uses_external_entities(I702)
 
             with I702.scope("premise") as cm:
-                cm.new_rel(cm.rel1, p.R1["has label"], "another relation"@p.df, overwrite=True)
+                cm.new_rel(cm.rel1, p.R1["has label"], "another relation" @ p.df, overwrite=True)
 
             with I702.scope("assertion") as cm:
                 cm.new_rel(cm.rel1, p.R54["is matched by rule"], I702)
@@ -669,7 +671,6 @@ class Test_01_rulebased_reasoning(HousekeeperMixin, unittest.TestCase):
             # test the presence of the reporting data structures
             self.assertEqual(len(res.partial_results[0].statement_reports), 4)
 
-
     def test_d11__zebra_puzzle_stage02(self):
         """
         test to match the nonexistence of some specific statements
@@ -835,7 +836,6 @@ class Test_01_rulebased_reasoning(HousekeeperMixin, unittest.TestCase):
             x0.set_relation(R302, x1)
             x1.set_relation(R302, x2)
 
-
             I601 = p.create_item(
                 R1__has_label="simple rule",
                 R4__is_instance_of=p.I41["semantic rule"],
@@ -877,7 +877,7 @@ class Test_01_rulebased_reasoning(HousekeeperMixin, unittest.TestCase):
 
             res_I800 = res = p.ruleengine.apply_semantic_rule(
                 zp.zr.I800["rule: mark relations which are opposite of functional activities"],
-                mod_context_uri=TEST_BASE_URI
+                mod_context_uri=TEST_BASE_URI,
             )
 
             self.assertGreaterEqual(len(res.new_statements), 5)
@@ -901,9 +901,7 @@ class Test_01_rulebased_reasoning(HousekeeperMixin, unittest.TestCase):
         # this will change soon
         self.assertNotIn(zb.I5209["red"], zp.person3.zb__R1055__has_not_house_color)
 
-        res = p.ruleengine.apply_semantic_rules(
-            zr.I803, mod_context_uri=zb.__URI__
-        )
+        res = p.ruleengine.apply_semantic_rules(zr.I803, mod_context_uri=zb.__URI__)
         self.assertEqual(len(res.new_statements), 88)
         self.assertIn(zb.I5209["red"], zp.person3.zb__R1055__has_not_house_color)
 
@@ -918,7 +916,7 @@ class Test_01_rulebased_reasoning(HousekeeperMixin, unittest.TestCase):
         pred_report = araw.get_predicates_report(predicate_list=func_act_list)
 
         # number of possibilities for each predicate
-        self.assertEqual(pred_report.counters, [120]*5)
+        self.assertEqual(pred_report.counters, [120] * 5)
         # number of total possibilities
         self.assertEqual(pred_report.total_prod, 24883200000)
         self.assertTrue(p.check_type(pred_report.stable_candidates, Dict[str, List[Tuple[int, str]]]))
@@ -943,7 +941,9 @@ class Test_01_rulebased_reasoning(HousekeeperMixin, unittest.TestCase):
 
             # this does nothing because we only have 'meaningless' R50-statements
             res = p.ruleengine.apply_semantic_rules(
-                zr.I830["rule: ensure absence of contradictions (5 different-from statements) (hardcoded cheat)"]
+                zr.I830[
+                    "rule: ensure absence of contradictions (5 different-from statements) (hardcoded cheat)"
+                ]
             )
             self.assertEqual(len(res.new_statements), 0)
 
@@ -951,7 +951,9 @@ class Test_01_rulebased_reasoning(HousekeeperMixin, unittest.TestCase):
 
             with self.assertRaises(p.aux.LogicalContradiction) as err:
                 res = p.ruleengine.apply_semantic_rules(
-                    zr.I830["rule: ensure absence of contradictions (5 different-from statements) (hardcoded cheat)"]
+                    zr.I830[
+                        "rule: ensure absence of contradictions (5 different-from statements) (hardcoded cheat)"
+                    ]
                 )
                 if res.exception:
                     raise res.exception
@@ -970,7 +972,7 @@ class Test_01_rulebased_reasoning(HousekeeperMixin, unittest.TestCase):
 
         fpath = pjoin(TEST_DATA_DIR1, "test_zebra_triples2.nt")
         with p.uri_context(uri=TEST_BASE_URI):
-            c = p.io.import_stms_from_rdf_triples(fpath)  #noqa
+            c = p.io.import_stms_from_rdf_triples(fpath)  # noqa
 
             # these two entities had been replaced by rule I720["rule: replace (some) same_as-items"]
             p.core._unlink_entity(zp.person9.uri, remove_from_mod=True)
@@ -980,7 +982,7 @@ class Test_01_rulebased_reasoning(HousekeeperMixin, unittest.TestCase):
             zr.I800["rule: mark relations which are opposite of functional activities"],
             zr.I810["rule: deduce positive fact from 4 negative facts (hardcoded cheat)"],
             zr.I710["rule: identify same items via zb__R2850__is_functional_activity"],
-            mod_context_uri=TEST_BASE_URI
+            mod_context_uri=TEST_BASE_URI,
         )
 
         fpath = "tmp_report.html"
@@ -1113,7 +1115,8 @@ class Test_01_rulebased_reasoning(HousekeeperMixin, unittest.TestCase):
 
         # apply next rule:
         res_I763 = res = p.ruleengine.apply_semantic_rule(
-            zp.zr.I763["rule: deduce impossible house index for left-right neighbors"], mod_context_uri=TEST_BASE_URI
+            zp.zr.I763["rule: deduce impossible house index for left-right neighbors"],
+            mod_context_uri=TEST_BASE_URI,
         )
         reports.append(zb.report(display=False, title="I763"))
         result_history.append(res)
@@ -1125,7 +1128,7 @@ class Test_01_rulebased_reasoning(HousekeeperMixin, unittest.TestCase):
         # apply next rule:
         res_I770 = res = p.ruleengine.apply_semantic_rule(
             zp.zr.I770["rule: deduce impossible house_number items from impossible indices"],
-            mod_context_uri=TEST_BASE_URI
+            mod_context_uri=TEST_BASE_URI,
         )
         reports.append(zb.report(display=False, title="I770"))
         result_history.append(res)
@@ -1200,11 +1203,11 @@ class Test_01_rulebased_reasoning(HousekeeperMixin, unittest.TestCase):
         if 0:
             # save the current knowledge state
             fpath = pjoin(TEST_DATA_DIR1, "test_zebra_triples2.nt")
-            p.io.export_rdf_triples(fpath, add_qualifiers=True,  modfilter=TEST_BASE_URI)
+            p.io.export_rdf_triples(fpath, add_qualifiers=True, modfilter=TEST_BASE_URI)
 
         res_I800 = res = p.ruleengine.apply_semantic_rule(
             zp.zr.I800["rule: mark relations which are opposite of functional activities"],
-            mod_context_uri=TEST_BASE_URI
+            mod_context_uri=TEST_BASE_URI,
         )
         reports.append(zb.report(display=False, title="I800"))
         result_history.append(res)
@@ -1224,7 +1227,7 @@ class Test_01_rulebased_reasoning(HousekeeperMixin, unittest.TestCase):
 
         fpath = pjoin(TEST_DATA_DIR1, "test_zebra_triples2.nt")
         with p.uri_context(uri=TEST_BASE_URI):
-            c = p.io.import_stms_from_rdf_triples(fpath)  #noqa
+            c = p.io.import_stms_from_rdf_triples(fpath)  # noqa
 
             # these two entities had been replaced by rule I720["rule: replace (some) same_as-items"]
             p.core._unlink_entity(zp.person9.uri, remove_from_mod=True)
@@ -1232,7 +1235,7 @@ class Test_01_rulebased_reasoning(HousekeeperMixin, unittest.TestCase):
 
         res_I800 = res = p.ruleengine.apply_semantic_rule(
             zp.zr.I800["rule: mark relations which are opposite of functional activities"],
-            mod_context_uri=TEST_BASE_URI
+            mod_context_uri=TEST_BASE_URI,
         )
 
         reports.append(zb.report(display=False, title="I800"))
@@ -1253,7 +1256,7 @@ class Test_01_rulebased_reasoning(HousekeeperMixin, unittest.TestCase):
 
         res = p.ruleengine.apply_semantic_rule(
             zp.zr.I710["rule: identify same items via zb__R2850__is_functional_activity"],
-            mod_context_uri=TEST_BASE_URI
+            mod_context_uri=TEST_BASE_URI,
         )
 
         reports.append(zb.report(display=False, title="I710_(2)"))
@@ -1264,8 +1267,7 @@ class Test_01_rulebased_reasoning(HousekeeperMixin, unittest.TestCase):
         # next (old) rule
         self.assertEqual(len(zb.I9848["Norwegian"].zb__R9803__drinks_not), 3)
         res = p.ruleengine.apply_semantic_rule(
-            zp.zr.I720["rule: replace (some) same_as-items"],
-            mod_context_uri=TEST_BASE_URI
+            zp.zr.I720["rule: replace (some) same_as-items"], mod_context_uri=TEST_BASE_URI
         )
 
         reports.append(zb.report(display=False, title="I720_(2)"))
@@ -1312,10 +1314,9 @@ class Test_01_rulebased_reasoning(HousekeeperMixin, unittest.TestCase):
         reports.append(zb.report(display=False, title="I760_(2)"))
         result_history.append(res)
 
-
         res = p.ruleengine.apply_semantic_rule(
             zp.zr.I770["rule: deduce impossible house_number items from impossible indices"],
-            mod_context_uri=TEST_BASE_URI
+            mod_context_uri=TEST_BASE_URI,
         )
 
         # contains 3 trivial facts of non-placeholder houses, but on good fact
@@ -1344,7 +1345,7 @@ class Test_01_rulebased_reasoning(HousekeeperMixin, unittest.TestCase):
 
         res = p.ruleengine.apply_semantic_rule(
             zp.zr.I710["rule: identify same items via zb__R2850__is_functional_activity"],
-            mod_context_uri=TEST_BASE_URI
+            mod_context_uri=TEST_BASE_URI,
         )
 
         reports.append(zb.report(display=False, title="I710_(3)"))
@@ -1413,15 +1414,18 @@ class Test_01_rulebased_reasoning(HousekeeperMixin, unittest.TestCase):
         zr = p.irkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA_RULES, prefix="zr", reuse_loaded=True)
         zp = p.irkloader.load_mod_from_path(TEST_DATA_PATH_ZEBRA02, prefix="zp")
 
-        args = (zp.person8, zb.R2835["lives not in numbered house"], zb.I7582["house 2"], zb.I4735["house 3"],
-         zb.I4785["house 4"], zb.I1383["house 5"])
-
-
-
+        args = (
+            zp.person8,
+            zb.R2835["lives not in numbered house"],
+            zb.I7582["house 2"],
+            zb.I4735["house 3"],
+            zb.I4785["house 4"],
+            zb.I1383["house 5"],
+        )
 
         fpath = pjoin(TEST_DATA_DIR1, "test_zebra_triples3.nt")
         with p.uri_context(uri=TEST_BASE_URI):
-            c = p.io.import_stms_from_rdf_triples(fpath)  #noqa
+            c = p.io.import_stms_from_rdf_triples(fpath)  # noqa
 
             # these entities had been replaced by rule I720["rule: replace (some) same_as-items"]
             p.core._unlink_entity(zp.person9.uri, remove_from_mod=True)
@@ -1431,7 +1435,6 @@ class Test_01_rulebased_reasoning(HousekeeperMixin, unittest.TestCase):
 
             # not sure were this comes from but it has to go (disconnected artifact)
             p.core._unlink_entity("irk:/local/unittest#Ia9473", remove_from_mod=True)
-
 
         all_relevant_rules = [
             # zr.I701["rule: imply parent relation of a subrelation"],
@@ -1470,15 +1473,15 @@ class Test_01_rulebased_reasoning(HousekeeperMixin, unittest.TestCase):
             IPS()
             return
             # res = p.ruleengine.apply_semantic_rules(*all_relevant_rules[1:])
-            func_act_list = p.ds.get_subjects_for_relation(zb.R2850["is functional activity"].uri, filter=True)
+            func_act_list = p.ds.get_subjects_for_relation(
+                zb.R2850["is functional activity"].uri, filter=True
+            )
             pred_report = araw.get_predicates_report(predicate_list=func_act_list)
 
         hyre = p.ruleengine.HypothesisReasoner(zb, base_uri=TEST_BASE_URI)
         res = hyre.hypothesis_reasoning_step(all_relevant_rules)
 
-
         # manually unload internal module:
         p.unload_mod(hyre.context_uri, strict=False)
-
 
         # IPS() # WIP

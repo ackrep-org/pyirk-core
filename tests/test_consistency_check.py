@@ -15,13 +15,11 @@ from .settings import (
     TEST_BASE_URI,
     HousekeeperMixin,
     TEST_DATA_PATH2,
-
-    )
+)
 
 
 # noinspection PyPep8Naming
 class Test_01_CC(HousekeeperMixin, unittest.TestCase):
-
 
     def create_operators(self):
         with p.uri_context(uri=TEST_BASE_URI):
@@ -67,7 +65,11 @@ class Test_01_CC(HousekeeperMixin, unittest.TestCase):
             with self.assertRaises(p.cc.WrongArgNumber):
                 p.cc.check(I0111["test operator"](general_int))
             with self.assertRaises(p.cc.WrongArgNumber):
-                p.cc.check(I0111["test operator"](general_int, ))
+                p.cc.check(
+                    I0111["test operator"](
+                        general_int,
+                    )
+                )
 
             with self.assertRaises(p.cc.WrongArgType):
                 # type error for arg2
@@ -169,7 +171,6 @@ class Test_01_CC(HousekeeperMixin, unittest.TestCase):
             with I502.scope("assertion") as cm:
                 cm.new_consequent_func(raise_error_for_item, cm.rule, cm.x, anchor_item=None)
 
-
             # this rule creates I48["constraint violation"]-Items instead of raising exceptions
             I503 = p.create_item(
                 R1__has_label="create I48__constraint_violation for invalid matmul calls",
@@ -183,7 +184,6 @@ class Test_01_CC(HousekeeperMixin, unittest.TestCase):
 
                 # needed here because used in scp__premise of I501
                 cm.uses_external_entities(ct.ma.I5177["matmul"])
-
 
                 cm.new_var(m1=p.instance_of(p.I39["positive integer"]))
                 cm.new_var(n2=p.instance_of(p.I39["positive integer"]))
@@ -275,7 +275,9 @@ class Test_01_CC(HousekeeperMixin, unittest.TestCase):
         #
         # test the rule which raises an exception
         with self.assertRaises(p.cc.IrkConsistencyError):
-            p.ruleengine.apply_semantic_rule(I502["raise exception on invalid mat mul dimensions"], TEST_BASE_URI)
+            p.ruleengine.apply_semantic_rule(
+                I502["raise exception on invalid mat mul dimensions"], TEST_BASE_URI
+            )
 
         #
         # test the rule which produces a I48["constraint violation"] instance
@@ -283,9 +285,9 @@ class Test_01_CC(HousekeeperMixin, unittest.TestCase):
 
         self.assertEqual(len(res.new_entities), 1)
 
-        cvio, = A1B.R74__has_constraint_violation
+        (cvio,) = A1B.R74__has_constraint_violation
         self.assertEqual(cvio.R76__has_associated_rule, I503)
-        self.assertTrue(p.is_instance_of, p.I48["constraint violation"]) # TODO
+        self.assertTrue(p.is_instance_of, p.I48["constraint violation"])  # TODO
 
         self.assertEqual(A2B.R74__has_constraint_violation, [])
 

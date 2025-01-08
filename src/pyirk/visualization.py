@@ -1,6 +1,7 @@
 """
 This module contains code for the visualization of IRK-entities.
 """
+
 from typing import Union, List, Tuple, Optional
 import os
 import urllib
@@ -85,10 +86,12 @@ class AbstractGraphObject(ABC):
 
         # TODO: replace this by prefixed short_key
         if self.short_key.startswith("Ia"):
-            unformatted_repr_str = f'{self.short_key}'
+            unformatted_repr_str = f"{self.short_key}"
         else:
-            unformatted_repr_str = f'{self.short_key}[{self.label}]'
-        self.label_segment_keys, self.label_segments = create_label_segments(unformatted_repr_str, maxlen=self.maxlen)
+            unformatted_repr_str = f"{self.short_key}[{self.label}]"
+        self.label_segment_keys, self.label_segments = create_label_segments(
+            unformatted_repr_str, maxlen=self.maxlen
+        )
         self.label_segment_items = zip(self.label_segment_keys, self.label_segments)
 
         # wrap the each key with curly braces to allow application of .format(...) later]
@@ -383,13 +386,27 @@ def create_nx_graph_from_entity(uri, url_template="") -> nx.DiGraph:
                     continue
                 other_node = create_node(obj, url_template)
                 G.add_node(other_node, color=other_node.get_color())
-                G.add_edge(base_node, other_node, edge=edge, short_key=edge.short_key, label=edge.get_dot_label(), color=edge.get_color())
+                G.add_edge(
+                    base_node,
+                    other_node,
+                    edge=edge,
+                    short_key=edge.short_key,
+                    label=edge.get_dot_label(),
+                    color=edge.get_color(),
+                )
             else:
                 if "Ia" in subj.short_key and a_node_cnt > 2:
                     continue
                 other_node = create_node(subj, url_template)
                 G.add_node(other_node, color=other_node.get_color())
-                G.add_edge(other_node, base_node, edge=edge, hort_key=edge.short_key, label=edge.get_dot_label(), color=edge.get_color())
+                G.add_edge(
+                    other_node,
+                    base_node,
+                    edge=edge,
+                    hort_key=edge.short_key,
+                    label=edge.get_dot_label(),
+                    color=edge.get_color(),
+                )
 
             if "Ia" in other_node.short_key:
                 a_node_cnt += 1
@@ -408,7 +425,7 @@ def get_color_for_item(item: p.Item) -> str:
 
 def get_color_for_stm(stm: p.Statement) -> str:
     # TODO: unfuck this
-    return mpl_colors[(int(stm.rsk[1:])-1) % len(mpl_colors)]
+    return mpl_colors[(int(stm.rsk[1:]) - 1) % len(mpl_colors)]
 
 
 def create_complete_graph(
@@ -537,7 +554,7 @@ def render_graph_to_dot(G: nx.DiGraph) -> str:
                 if _u == u:
                     return float(_d["edge"].short_key[1:])
                 elif _v == u:
-                    return float(_d["edge"].short_key[1:]) + .5
+                    return float(_d["edge"].short_key[1:]) + 0.5
             else:
                 print(f"Node {u} has no edge")
         return u.short_key

@@ -17,6 +17,7 @@ from ipydex import IPS
 class IrkConsistencyError(core.aux.GeneralPyIRKError):
     pass
 
+
 class IrkTypeError(IrkConsistencyError):
     pass
 
@@ -65,7 +66,10 @@ def check_applied_operator(itm: Item):
     # IPS()
 
     if len(arg_type_items) != len(expected_arg_types):
-        msg = f"While checking {itm}: got {len(arg_type_items)} arg(s) but " f"{len(expected_arg_types)} where expected"
+        msg = (
+            f"While checking {itm}: got {len(arg_type_items)} arg(s) but "
+            f"{len(expected_arg_types)} where expected"
+        )
         raise WrongArgNumber(msg)
 
     # the lengths match, now check the types
@@ -108,7 +112,10 @@ def check_type(actual_type, secondary_class_items, expected_type, raise_exceptio
         return True
 
     # handle some special cases (TODO: I41["semantic rule"]-instances for this, see zebra puzzle test data)
-    if bi.is_subclass_of(actual_type, bi.I34["complex number"], allow_id=True) and expected_type == bi.I18["mathematical expression"]:
+    if (
+        bi.is_subclass_of(actual_type, bi.I34["complex number"], allow_id=True)
+        and expected_type == bi.I18["mathematical expression"]
+    ):
         return True
 
     # if we reach this there was no match -> error
@@ -122,12 +129,12 @@ def check_type(actual_type, secondary_class_items, expected_type, raise_exceptio
     return False
 
 
-
 def get_error_location():
     # TODO: This function gives only useful results if error occurs during module loading
     # but not if it occurs in a test_method
     import inspect
     import os
+
     f = inspect.currentframe()
     MAX_STACK_DEPTH = 100
     for i in range(MAX_STACK_DEPTH):

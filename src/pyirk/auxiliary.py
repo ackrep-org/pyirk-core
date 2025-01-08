@@ -124,19 +124,18 @@ def ensure_rdf_str_literal(arg, allow_none=True) -> Union[Literal, None]:
 
 # Source: https://stackoverflow.com/a/3862957
 def all_subclasses(cls):
-    return set(cls.__subclasses__()).union(
-        [s for c in cls.__subclasses__() for s in all_subclasses(c)])
+    return set(cls.__subclasses__()).union([s for c in cls.__subclasses__() for s in all_subclasses(c)])
 
 
 # Source: perplexity.ai (with some manual tweaking)
-def print_inheritance_tree(cls, prefix=''):
+def print_inheritance_tree(cls, prefix=""):
     """Recursively print the inheritance tree of the given class."""
     print(prefix + cls.__name__)
     subclasses = cls.__subclasses__()
     for i, subclass in enumerate(subclasses):
         # Determine if this is the last subclass to format the tree correctly
         connector = "└── " if i == len(subclasses) - 1 else "├── "
-        new_prefix = " "*len(prefix) + connector
+        new_prefix = " " * len(prefix) + connector
         print_inheritance_tree(subclass, new_prefix)
 
 
@@ -144,6 +143,7 @@ class PyIRKException(Exception):
     """
     raised in situations where some IRK-specific conditions are violated
     """
+
 
 class GeneralPyIRKError(Exception):
     pass
@@ -194,6 +194,7 @@ class ShortKeyNotFoundError(GeneralPyIRKError):
 class InvalidScopeNameError(GeneralPyIRKError):
     pass
 
+
 class InvalidScopeTypeError(GeneralPyIRKError):
     pass
 
@@ -212,6 +213,7 @@ class ExplicitlyTriggeredTestException(GeneralPyIRKError):
 
 class InconsistentEdgeRelations(SemanticRuleError):
     pass
+
 
 class InvalidObjectValue(SemanticRuleError):
     pass
@@ -253,6 +255,7 @@ class ContinueOuterLoop(PyIRKException):
     """
     This is not an error but indicated that an outside loop should continue.
     """
+
     pass
 
 

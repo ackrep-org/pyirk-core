@@ -1,6 +1,7 @@
 """
 This module serves to perform integrity checks on the knowledge base
 """
+
 from typing import Union
 
 from . import core as pyirk, auxiliary as aux

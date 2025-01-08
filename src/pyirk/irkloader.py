@@ -64,7 +64,9 @@ def load_mod_from_path(
             reuse_loaded__actual = pyirk.ds.reuse_loaded_module
 
     try:
-        mod = _load_mod_from_path(modpath, prefix, modname, allow_reload, smart_relative, reuse_loaded__actual)
+        mod = _load_mod_from_path(
+            modpath, prefix, modname, allow_reload, smart_relative, reuse_loaded__actual
+        )
     except:
         if reuse_loaded is not None:
             # we had changed the default
@@ -94,7 +96,9 @@ def _load_mod_from_path(
     original_loaded_mod_uris = list(pyirk.ds.mod_path_mapping.a.keys())
 
     if smart_relative is not None:
-        msg = "Using 'smart_relative' paths is deprecated since pyirk version 0.6.0. Please use real paths now."
+        msg = (
+            "Using 'smart_relative' paths is deprecated since pyirk version 0.6.0. Please use real paths now."
+        )
         raise DeprecationWarning(msg)
 
     smart_relative = False

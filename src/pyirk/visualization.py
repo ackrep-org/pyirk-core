@@ -5,7 +5,6 @@ from typing import Union, List, Tuple, Optional
 import os
 import urllib
 from rdflib import Literal
-import re
 
 import networkx as nx
 import nxv  # for graphviz visualization of networkx graphs
@@ -474,6 +473,9 @@ def create_complete_graph(
                 assert stm.uri not in added_statements
                 added_statements[stm.uri] = 1
 
+    # for easier uri-based access to the nodes we store these dicts as attributes to the Graph
+    G._items = added_items_nodes
+    G._statements = added_statements
     return G
 
 
@@ -603,29 +605,15 @@ def visualize_entity(uri: str, url_template="", write_tmp_files: bool = False, r
     :return:                svg_data as string
     """
 
-    # G = create_nx_graph_from_entity(uri, url_template)
-    pattern = r"#(I\d+)"
-
-    # Extracting the match
-    match = re.search(pattern, uri)
-    if match:
-        short_key_of_interest = match.group(1)
 
     big_G = create_complete_graph(url_template)
+    try:
+        node_of_interest = big_G._items[uri]
+    except KeyError:
+        msg = f"URI '{uri}' could not be found in the complete knowledge graph"
+        raise p.InvalidURIError(msg)
 
-    # Find the node corresponding to the short_key
-    node_of_interest = None
-    for node, data in big_G.nodes(data=True):
-        label = data.get('label', '')
-        if label.startswith(short_key_of_interest):
-            node_of_interest = node
-            break
-
-    if node_of_interest:
-        small_G = nx.ego_graph(big_G, node_of_interest, radius, undirected=True)
-    else:
-        print(f"Node with short_key '{short_key_of_interest}' not found in the graph.")
-
+    small_G = nx.ego_graph(big_G, node_of_interest, radius, undirected=True)
     raw_dot_data = render_graph_to_dot(small_G)
 
     dot_data0 = raw_dot_data

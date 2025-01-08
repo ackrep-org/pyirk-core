@@ -1033,8 +1033,13 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
     def test_c16__visualize_entity_with_radius(self):
 
         res1 = visualization.visualize_entity(p.u("I21__mathematical_relation"), write_tmp_files=WRITE_TMP_FILES)
-        # res2 = visualization.visualize_entity(p.u("I21__mathematical_relation"), write_tmp_files=WRITE_TMP_FILES, radius=2)
-        # IPS()
+        res2 = visualization.visualize_entity(p.u("I21__mathematical_relation"), write_tmp_files=WRITE_TMP_FILES, radius=2)
+        res3 = visualization.visualize_entity(p.u("I21__mathematical_relation"), write_tmp_files=WRITE_TMP_FILES, radius=3)
+
+        # simple check that radius argument has an influence:
+        self.assertEqual(res1.count("<ellipse "), 5)
+        self.assertEqual(res2.count("<ellipse "), 9)
+        self.assertEqual(res3.count("<ellipse "), 17)
 
     def test_d01__wrap_function_with_uri_context(self):
         ma = p.irkloader.load_mod_from_path(TEST_DATA_PATH_MA, prefix="ma")

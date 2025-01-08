@@ -43,7 +43,6 @@ I5167 = p.create_item(
     R1__has_label="state space",
     R2__has_description="type for a state space of a dynamical system (I6886)",
     R3__is_subclass_of=I5166["vector space"],
-
     # this should be defined via inheritance from vector space
     # TODO: test that this is the case
     # R41__has_required_instance_relation=R3326["has dimension"],
@@ -311,7 +310,9 @@ R8736 = p.create_relation(
     R2__has_description="subject has a polynomial dependency object",
     R8__has_domain_of_argument_1=p.I12["mathematical object"],
     R11__has_range_of_result=I5030["variable"],
-    R18__has_usage_hint=("This relation is intentionally not functional to model multivariate polynomial dependency"),
+    R18__has_usage_hint=(
+        "This relation is intentionally not functional to model multivariate polynomial dependency"
+    ),
 )
 
 I1935 = p.create_item(
@@ -335,6 +336,7 @@ I5359 = p.create_item(
     R11__has_range_of_result=I7765["scalar mathematical object"],
 )
 
+
 def I5359_cc_pp(self, res, *args, **kwargs):
     """
     Function which will be attached as custom-call-post-process-method to I5359["determinant"].
@@ -357,6 +359,7 @@ def I5359_cc_pp(self, res, *args, **kwargs):
 
     return res
 
+
 I5359["determinant"].add_method(I5359_cc_pp, "_custom_call_post_process")
 
 
@@ -368,6 +371,7 @@ I6324 = p.create_item(
     R9__has_domain_of_argument_2=I5030["variable"],
     R11__has_range_of_result=I1935["polynomial matrix"],
 )
+
 
 def I6324_cc_pp(self, res, *args, **kwargs):
     """
@@ -384,6 +388,7 @@ def I6324_cc_pp(self, res, *args, **kwargs):
     res.set_relation(R8736["depends polynomially on"], var)
 
     return res
+
 
 I6324["canonical first order monic polynomial matrix"].add_method(I6324_cc_pp, "_custom_call_post_process")
 
@@ -427,6 +432,7 @@ I6012 = p.create_item(
         "should be created via the context manager IntegerRangeElement (see below)"
     ),
 )
+
 
 class IntegerRangeElement:
     """
@@ -502,6 +508,7 @@ class IntegerRangeElement:
     def __exit__(self, exc_type, exc_val, exc_tb):
         # this is the place to handle exceptions
         pass
+
 
 I3240 = p.create_item(
     R1__has_label="matrix element",

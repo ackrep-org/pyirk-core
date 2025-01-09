@@ -2814,21 +2814,33 @@ R81 = create_builtin_relation(
     R11__has_range_of_result=I52["string"],
 )
 
+I60 = create_builtin_item(
+    key_str="I60",
+    R1__has_label="abstract addition class",
+    R3__is_subclass_of=I8["mathematical operation with arity 2"],
+)
+
 I55 = create_builtin_item(
     key_str="I55",
     R1__has_label="add",
     R2__has_description="general addition operator",
-    R4__is_instance_of=I8["mathematical operation with arity 2"],
+    R4__is_instance_of=I60["abstract addition class"],
     R8__has_domain_of_argument_1=I12["mathematical object"],
     R9__has_domain_of_argument_2=I12["mathematical object"],
     R11__has_range_of_result=I12["mathematical object"],
+)
+
+I61 = create_builtin_item(
+    key_str="I61",
+    R1__has_label="abstract multiplication class",
+    R3__is_subclass_of=I8["mathematical operation with arity 2"],
 )
 
 I56 = create_builtin_item(
     key_str="I56",
     R1__has_label="mul",
     R2__has_description="general multiplication operator",
-    R4__is_instance_of=I8["mathematical operation with arity 2"],
+    R4__is_instance_of=I61["abstract multiplication class"],
     R8__has_domain_of_argument_1=I12["mathematical object"],
     R9__has_domain_of_argument_2=I12["mathematical object"],
     R11__has_range_of_result=I12["mathematical object"],
@@ -2862,8 +2874,6 @@ R82 = create_builtin_relation(
 )
 
 
-# def add_items(a, b):
-#     return I55["add"](a, b)
 def add_items(*args):
     if len(args) == 2:
         return I55["add"](*args)
@@ -2886,8 +2896,6 @@ def reflective_sub_items(a, b):
     return I55["add"](b, I56["mul"](-1, a))
 
 
-# def mul_items(a, b):
-#     return I56["mul"](a, b)
 def mul_items(*args):
     if len(args) == 2:
         return I56["mul"](*args)
@@ -2949,7 +2957,7 @@ I59 = create_builtin_item(
     R18__has_usage_hint="usually such statements do not need a premise and might even omit the setting.",
 )
 
-# next keys: I60, R83
+# next keys: I62, R83
 
 
 # ######################################################################################################################

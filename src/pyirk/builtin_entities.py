@@ -2846,21 +2846,33 @@ I56 = create_builtin_item(
     R11__has_range_of_result=I12["mathematical object"],
 )
 
+I62 = create_builtin_item(
+    key_str="I62",
+    R1__has_label="abstract power class",
+    R3__is_subclass_of=I8["mathematical operation with arity 2"],
+)
+
 I57 = create_builtin_item(
     key_str="I57",
     R1__has_label="pow",
     R2__has_description="general power operator",
-    R4__is_instance_of=I8["mathematical operation with arity 2"],
+    R4__is_instance_of=I62["abstract power class"],
     R8__has_domain_of_argument_1=I12["mathematical object"],
     R9__has_domain_of_argument_2=I12["mathematical object"],
     R11__has_range_of_result=I12["mathematical object"],
+)
+
+I63 = create_builtin_item(
+    key_str="I63",
+    R1__has_label="abstract negation class",
+    R3__is_subclass_of=I7["mathematical operation with arity 1"],
 )
 
 I58 = create_builtin_item(
     key_str="I58",
     R1__has_label="neg",
     R2__has_description="general negation operator",
-    R4__is_instance_of=I7["mathematical operation with arity 1"],
+    R4__is_instance_of=I63["abstract negation class"],
     R8__has_domain_of_argument_1=I12["mathematical object"],
     R11__has_range_of_result=I12["mathematical object"],
 )

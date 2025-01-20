@@ -1769,7 +1769,7 @@ class KeyManager:
     # TODO: the term "maxval" is misleading because it will be used in range where the upper bound is exclusive
     # however, using range(minval, maxval+1) would results in different shuffling and thus will probably need some
     # refactoring of existing modules
-    def __init__(self, minval=1000, maxval=9999, keyseed=None):
+    def __init__(self, minval=1000, maxval=99999, keyseed=None):
         """
 
         :param minval:  int

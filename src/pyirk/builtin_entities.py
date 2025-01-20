@@ -1966,9 +1966,9 @@ R46 = create_builtin_relation(
 
 I42 = create_builtin_item(
     key_str="I42",
-    R1__has_label="scalar mathematical object",
+    R1__has_label="scalar mathematical expression",
     R2__has_description="base class of mathematical data types",
-    R3__is_subclass_of=I12["mathematical object"],
+    R3__is_subclass_of=I18["mathematical expression"],
 )
 
 
@@ -1976,7 +1976,7 @@ I34 = create_builtin_item(
     key_str="I34",
     R1__has_label="complex number",
     R2__has_description="mathematical type representing all complex numbers",
-    R3__is_subclass_of=I42["scalar mathematical object"],
+    R3__is_subclass_of=I42["scalar mathematical expression"],
 )
 
 I35 = create_builtin_item(

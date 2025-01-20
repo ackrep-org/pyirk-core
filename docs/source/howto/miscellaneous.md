@@ -66,3 +66,27 @@ to type. Solutions:
     - The extension uses the entries in this file to offer auto-complete suggestions when the `erk-fzf.search` command is triggered (either via the VS code command pallette or via a manually assigned keyboard shortcut (recommended, see [README.md](https://github.com/ackrep-org/irk-fzf/blob/main/README.md)).
     - The command `erk-fzf.search` performs a fuzzy search using the string left of the cursor (and then the user input).
     It displays fuzzy-matching lines from `.ac_candidates.txt`. It searches short_keys, labels and descriptions.
+
+
+## How to perform a SPARQL query
+
+
+Example from `test_core.py:Test_04_Core.test_c020__sparql_query2`
+
+```python
+
+import pyirk as p
+p.ds.rdfgraph = p.rdfstack.create_rdf_triples()
+
+qsrc = f"""
+PREFIX : <{p.rdfstack.IRK_URI}>
+PREFIX ct: <{mod1.__URI__}#>
+SELECT ?s ?o
+WHERE {{
+    ?s :R16 ct:I7864.
+}}
+"""
+res = p.ds.rdfgraph.query(qsrc)
+res2 = p.aux.apply_func_to_table_cells(p.rdfstack.convert_from_rdf_to_pyirk, res)
+
+```

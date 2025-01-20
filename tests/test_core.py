@@ -1900,13 +1900,13 @@ class Test_03_Multilinguality(HousekeeperMixin, unittest.TestCase):
             self.assertEqual(I1001.R77__has_alternative_label, expected_result)
 
 
-class Test_Z_Core(HousekeeperMixin, unittest.TestCase):
+class Test_04_Core(HousekeeperMixin, unittest.TestCase):
     """
     Collection of test that should be executed last (because they seem to influence other tests).
     This is achieved by putting "ZZ" in the name (assuming that test classes are executed in alphabetical order).
     """
 
-    def test_sparql_query(self):
+    def test_c010_sparql_query(self):
         # This test seems somehow to influence later tests
         mod1 = p.irkloader.load_mod_from_path(TEST_DATA_PATH2, TEST_MOD_NAME)
         p.ds.rdfgraph = p.rdfstack.create_rdf_triples()
@@ -1921,7 +1921,7 @@ class Test_Z_Core(HousekeeperMixin, unittest.TestCase):
         ]
         self.assertEqual(res2[:2], expected_result)
 
-    def test_c01__sparql_query2(self):
+    def test_c020__sparql_query2(self):
         # TODO: replace by Model entity once it exists
         mod1 = p.irkloader.load_mod_from_path(TEST_DATA_PATH2, TEST_MOD_NAME)
 
@@ -1951,7 +1951,7 @@ class Test_Z_Core(HousekeeperMixin, unittest.TestCase):
         ]
         self.assertEqual(res2, expected_result)
 
-    def test_c02__sparql_zz_preprocessing(self):
+    def test_c030__sparql_zz_preprocessing(self):
         mod1 = p.irkloader.load_mod_from_path(TEST_DATA_PATH2, TEST_MOD_NAME)
 
         with p.uri_context(uri=TEST_BASE_URI):

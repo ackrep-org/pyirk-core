@@ -440,7 +440,9 @@ def create_complete_graph(
 
     added_items_nodes = {}
     added_statements = {}
-    G = nx.DiGraph()
+
+    # using this subclass ensures our html-wrapping is called when a node is added
+    G = CustomizedDiGraph()
 
     i = 0
     relation_dict: dict
@@ -490,6 +492,9 @@ def create_complete_graph(
                 assert stm.uri not in added_statements
                 added_statements[stm.uri] = 1
 
+    # for easier uri-based access to the nodes we store these dicts as attributes to the Graph
+    G._items = added_items_nodes
+    G._statements = added_statements
     return G
 
 
@@ -609,7 +614,7 @@ def svg_replace(raw_svg_data: str, REPLACEMENTS: dict) -> str:
     return svg_data1
 
 
-def visualize_entity(uri: str, url_template="", write_tmp_files: bool = False) -> str:
+def visualize_entity(uri: str, url_template="", write_tmp_files: bool = False, radius=1) -> str:
     """
 
     :param uri:             entity uri (like "irk:/my/module#I0123")
@@ -619,8 +624,16 @@ def visualize_entity(uri: str, url_template="", write_tmp_files: bool = False) -
     :return:                svg_data as string
     """
 
-    G = create_nx_graph_from_entity(uri, url_template)
-    raw_dot_data = render_graph_to_dot(G)
+
+    big_G = create_complete_graph(url_template)
+    try:
+        node_of_interest = big_G._items[uri]
+    except KeyError:
+        msg = f"URI '{uri}' could not be found in the complete knowledge graph"
+        raise p.InvalidURIError(msg)
+
+    small_G = nx.ego_graph(big_G, node_of_interest, radius, undirected=True)
+    raw_dot_data = render_graph_to_dot(small_G)
 
     dot_data0 = raw_dot_data
     for old, new in NEWLINE_REPLACEMENTS:
@@ -633,8 +646,7 @@ def visualize_entity(uri: str, url_template="", write_tmp_files: bool = False) -
     dot_data = "\n".join((dot_lines[0], inner_dot_code, dot_lines[-1]))
 
     # noinspection PyUnresolvedReferences,PyProtectedMember
-    # choose one: "circo", "dot", "fdp", "neato", "osage", "sfdp", "twopi"
-    raw_svg_data = nxv._graphviz.run(dot_data, algorithm="sfdp", format="svg", graphviz_bin=None)
+    raw_svg_data = nxv._graphviz.run(dot_data, algorithm="dot", format="svg", graphviz_bin=None)
     raw_svg_data = raw_svg_data.decode("utf8")
     svg_data1 = svg_replace(raw_svg_data, REPLACEMENTS)
 

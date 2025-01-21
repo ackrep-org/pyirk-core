@@ -958,7 +958,8 @@ class Test_01_rulebased_reasoning(HousekeeperMixin, unittest.TestCase):
                 if res.exception:
                     raise res.exception
 
-            msg = '<Item Ia1158["person1"]> has too many `R50__is_different_from` statements'
+            sk = zp.person1.short_key
+            msg = f'<Item {sk}["person1"]> has too many `R50__is_different_from` statements'
             self.assertEqual(err.exception.args[0], msg)
 
     @unittest.skip("currently too slow")

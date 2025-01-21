@@ -45,7 +45,7 @@ class Test_01_Script(HousekeeperMixin, unittest.TestCase):
         self.assertNotIn("I000", txt)
 
         # ensure that the module is loadable
-        mod = p.irkloader.load_mod_from_path(modpath, prefix="tm1")
+        mod = p.irkloader.load_mod_from_path(modpath, prefix="tm1", delete_bytecode=True)
 
         # test I000["key insertion by label"]
         (itm3,) = mod.I1000.R72__is_generally_related_to

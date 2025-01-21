@@ -1,6 +1,7 @@
 import importlib.util
 import sys
 import os
+import glob
 import inspect
 import pyirk
 import pathlib
@@ -27,6 +28,17 @@ def preserve_cwd(function):
     return decorator
 
 
+def delete_bytecode_files(modpath):
+
+    dirpath, fname = os.path.split(modpath)
+    basename, _ = os.path.splitext(fname)
+    bytecode_pattern = f'{os.path.join(dirpath, "__pycache__", basename)}*'
+
+    bytecode_paths = glob.glob(bytecode_pattern)
+    for bc_path in bytecode_paths:
+        os.unlink(bc_path)
+
+
 # noinspection PyProtectedMember
 @preserve_cwd
 def load_mod_from_path(
@@ -36,6 +48,7 @@ def load_mod_from_path(
     allow_reload=True,
     smart_relative=None,
     reuse_loaded=None,
+    delete_bytecode=None
 ) -> ModuleType:
     """
 
@@ -47,8 +60,12 @@ def load_mod_from_path(
                             (not w.r.t. current working path)
     :param reuse_loaded:    flag; if True and the module was already loaded before, then just use this
                             if False:: reload; if None use the default action from pyirk.ds
+    :param delete_bytecode: flag; if true delete the matching content of __pycache__
     :return:
     """
+
+    if delete_bytecode:
+        delete_bytecode_files(modpath)
 
     reuse_loaded_original = pyirk.ds.reuse_loaded_module
 

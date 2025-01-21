@@ -344,6 +344,8 @@ def insert_keys_for_placeholders(modpath):
     key_count = old_txt.count(f"\n{placeholder}")
 
     pattern = f"{start_tag}.*?{end_tag}"
+
+    # create a module which excludes everything between `start_tag` and `end_tag`
     tmp_txt = re.sub(pattern=pattern, repl="", string=old_txt, flags=re.DOTALL)
     assert start_tag not in tmp_txt
     assert end_tag not in tmp_txt
@@ -356,6 +358,8 @@ def insert_keys_for_placeholders(modpath):
 
     # load this temporary module
     loaded_mod = process_mod(path=tmp_modpath, prefix="mod", relative_to_workdir=True)
+
+    # generate keys for the new items
     item_keys = [core.generate_new_key("I", mod_uri=loaded_mod.__URI__) for i in range(key_count)]
 
     old_lines = old_txt.split("\n")

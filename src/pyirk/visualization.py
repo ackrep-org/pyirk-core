@@ -595,7 +595,7 @@ def svg_replace(raw_svg_data: str, REPLACEMENTS: dict) -> str:
     assert isinstance(raw_svg_data, str)
 
     # prevent some latex stuff to interfere with the handing of the `REPLACEMENTS`
-    # TODO: handle the whole problme more elegantly
+    # TODO: handle the whole problem more elegantly
 
     latex_replacements = [(r"\dot{x}", "__LATEX1__")]
     for orig, subs in latex_replacements:

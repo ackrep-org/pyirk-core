@@ -180,6 +180,6 @@ You can of course always create your own ones.
 * {py:obj}`pyirk.builtin_entities.R68`: `is_inverse_of`
 
 ```{hint}
-Do not be afraid: There is no need to remember all of these, the syntac completion of your IDE will help
-you here.
+Do not be afraid: There is no need to remember all of these, the syntax completion of your IDE will help
+you here. See also notes on *irk-fzf* in the section [Practically working with keys](sec_practical_work_with_keys).
 ```

@@ -31,7 +31,7 @@ activate_ips_on_exception()
 
 def create_parser():
     """
-    Returns the parser object which is then evaluated in  main(). This is neccessary for sphinx to automatically
+    Returns the parser object which is then evaluated in  main(). This is necessary for sphinx to automatically
     generate the cli docs.
     """
 
@@ -66,7 +66,7 @@ def create_parser():
     parser.add_argument(
         "-lp",
         "--load-package",
-        help="load irk package (represented by irkpackage.tomle file)",
+        help="load irk package (represented by irkpackage.toml file)",
         default=None,
         metavar=("PACKAGE_TOML_PATH"),
     )
@@ -383,10 +383,10 @@ def insert_keys_for_placeholders(modpath):
     core.unload_mod(loaded_mod.__URI__)
     os.unlink(tmp_modpath)
 
-    replace_dummy_enties_by_label(modpath)
+    replace_dummy_entities_by_label(modpath)
 
 
-def replace_dummy_enties_by_label(modpath):
+def replace_dummy_entities_by_label(modpath):
     """
     load the module, additionally load its source, replace entities like I000["some label"] with
     real entities like I7654["some label"].
@@ -525,7 +525,7 @@ def path_to_ast_container(mod_path: str) -> core.aux.Container:
 
         assert isinstance(name, str)
 
-        # subtract 1 because the line numberse are human-oriented (1-indexed)
+        # subtract 1 because the line numbers are human-oriented (1-indexed)
         src_txt = "".join(lines[elt.lineno - 1 : elt.end_lineno])
         c.line_data[name] = src_txt
 
@@ -538,8 +538,8 @@ def get_lines_for_short_key(short_key: str) -> str:
 
 def interactive_session(loaded_mod, prefix):
     """
-    Start an interactive IPython session where the (optinally) loaded mod is available under its prefix name.
-    Also: perepare interactive pyirk-module -- a namespacew for experimentally creating entities.
+    Start an interactive IPython session where the (optionally) loaded mod is available under its prefix name.
+    Also: prepare interactive pyirk-module -- a namespace for experimentally creating entities.
     """
     import pyirk as p  # noqa
 

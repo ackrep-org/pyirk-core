@@ -2172,7 +2172,7 @@ R44 = create_builtin_relation(
 univ_quant = QualifierFactory(R44["is universally quantified"])
 
 
-# TODO: this sould use qualifier approach
+# TODO: this should use qualifier approach
 def uq_instance_of(type_entity: Item, r1: str = None, r2: str = None) -> Item:
     """
     Shortcut to create an instance and set the relation R44["is universally quantified"] to True in one step

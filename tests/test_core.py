@@ -32,7 +32,7 @@ from .settings import (
     HousekeeperMixin,
 )
 
-# todo apparantly, this does not effect the tests, i.e. test_e04__overloaded_math_operators
+# todo apparently, this does not effect the tests, i.e. test_e04__overloaded_math_operators
 # if not os.environ.get("PYIRK_DISABLE_CONSISTENCY_CHECKING", "").lower() == "true":
 # p.cc.enable_consistency_checking()
 

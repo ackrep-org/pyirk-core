@@ -2763,7 +2763,7 @@ def is_instance(item: Item, parent_item: Item):
 
 
 def is_subproperty(item: Item, parent_property: Item):
-    """check if item is subproperty of parent_property. item == parent_p will return True aswell."""
+    """check if item is subproperty of parent_property. item == parent_p will return True as well."""
     if item == parent_property:
         return True
     if not hasattr(item, "R17"):

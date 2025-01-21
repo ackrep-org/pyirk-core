@@ -8,7 +8,7 @@ The resulting script can be found [here](theorem.py).
 
 ## The example theorem
 
-As an example, we want to encode a simplified version of the pythagorean theorem, which reads:
+As an example, we want to encode a simplified version of the Pythagorean theorem, which reads:
 > Let {math}`(a, b, c)` be the sides of a triangle, ordered from shortest to longest, and {math}`(l_a, l_b, l_c)` the
 > respective lengths. If the angle between a and b is a right angle then the equation {math}`l_c^2 = l_a^2 + l_b^2` holds.
 
@@ -25,7 +25,7 @@ In the following, we will see how this structure can be exploited to encode the 
 ## The theorem item
 
 As usual, we start by creating a "blank" item to encode the theorem.
-Note however, that we make it an instance of {py:class}`I15["implication propostion"] <pyirk.builtin_entities.I15>`,
+Note however, that we make it an instance of {py:class}`I15["implication proposition"] <pyirk.builtin_entities.I15>`,
 which is one of several mathematical propositions are already included in pyirk.
 ```{eval-rst}
 .. literalinclude:: theorem.py
@@ -35,9 +35,9 @@ which is one of several mathematical propositions are already included in pyirk.
 ```
 
 
-## Defining setting, premise and assertion 
+## Defining setting, premise and assertion
 
-With our theorem `I5000` being an implication, it possesses a `scope()` method 
+With our theorem `I5000` being an implication, it possesses a `scope()` method
 that returns a context manager that we can use in a `with` statement to define the setting:
 ```{eval-rst}
 .. literalinclude:: theorem.py

@@ -964,6 +964,21 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
         with p.uri_context(uri=ct.__URI__):
             self.assertEqual(e2.R7641__has_approximation[0], e0)
 
+    def test_c12b__dummy_items_and_relations(self):
+        """
+        Test that constructions like `I000["any label"]` and `R000__any_other_label` work
+        """
+
+        self.assertEqual(p.I000["foo"], p.I000["bar"])
+        self.assertEqual(p.R000["foo"], p.R000["bar"])
+        with p.uri_context(uri=TEST_BASE_URI):
+            e1 = p.create_item(
+                key_str="I0124",
+                R1="test item",
+                R000__foo=p.I000["foo"],
+                R000__bar=p.I000["bar"],
+            )
+
     @unittest.skipIf(os.environ.get("CI"), "Skipping visualization test on CI to prevent graphviz-dependency")
     def test_c13__format_label(self):
         with p.uri_context(uri=TEST_BASE_URI):

@@ -1335,6 +1335,11 @@ def check_processed_key_label(pkey: ProcessedStmtKey) -> None:
         # entity does not exist -> no label to compare with
         return
 
+    if getattr(entity, "_ignore_mismatching_adhoc_label", False):
+        # This entity is 'magically' allowed to have any adhoc label
+        # used for I000 and R000
+        return
+
     if entity.R1 is None:
         # no label was set for the default language -> nothing to compare
         return

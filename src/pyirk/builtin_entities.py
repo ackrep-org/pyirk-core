@@ -164,11 +164,12 @@ def is_subclass_of(itm1: Item, itm2: Item, allow_id=False, strict=True) -> bool:
 
 def is_instance_of(inst_itm: Item, cls_itm: Item, allow_R30_secondary: bool = False, strict=True) -> bool:
     """
-    Returns True if instance_itm.R4 is a subclass (R3) of itm2
+    Returns True if instance_itm.R4 is cls_itm or an (indirect) subclass (R3) of cls_itm.
 
     :param inst_itm:                Item representing the instance
     :param cls_itm:                 Item representing the class
     :param allow_R30_secondary:     bool, accept also relations via R30__is_secondary_instance_of
+    :param strict:                  bool; if true we raise an exception if there is no parent class
     """
     parent_class = inst_itm.R4__is_instance_of
 

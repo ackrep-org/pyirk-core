@@ -1,6 +1,7 @@
 """
 Core module of pyirk
 """
+
 import os
 import sys
 from collections import defaultdict, Counter
@@ -181,7 +182,9 @@ class Entity(abc.ABC):
 
         try:
             # TODO: introduce prefixes here, which are mapped to uris
-            etyrel = self._get_relation_contents(rel_uri=processed_key.uri, lang_indicator=processed_key.lang_indicator)
+            etyrel = self._get_relation_contents(
+                rel_uri=processed_key.uri, lang_indicator=processed_key.lang_indicator
+            )
         except KeyError:
             msg = f"'{type(self)}' object has no attribute '{processed_key.short_key}'"
             raise AttributeError(msg)
@@ -193,18 +196,20 @@ class Entity(abc.ABC):
             super().__setattr__(attr_name, attr_value)
             return
         try:
-            processed_key = self.__process_attribute_name(attr_name, exception_type=aux.UndefinedRelationError)
+            processed_key = self.__process_attribute_name(
+                attr_name, exception_type=aux.UndefinedRelationError
+            )
         except aux.UndefinedRelationError:
             # attr_name could not be resolved to an defined relation
             super().__setattr__(attr_name, attr_value)
             return
         self.set_relation(ds.get_entity_by_uri(processed_key.uri), attr_value)
 
-    def __process_attribute_name(self, attr_name:str, exception_type=AttributeError) -> "ProcessedStmtKey":
+    def __process_attribute_name(self, attr_name: str, exception_type=AttributeError) -> "ProcessedStmtKey":
         pass
         try:
             processed_key = process_key_str(attr_name)
-        except (aux.ShortKeyNotFoundError) as err:
+        except aux.ShortKeyNotFoundError as err:
             raise
         except (aux.InvalidGeneralKeyError, aux.InvalidShortKeyError, aux.UnknownURIError) as err:
             # this happens if a syntactically valid key string could not be resolved
@@ -462,7 +467,9 @@ class Entity(abc.ABC):
             obj = Literal(obj, lang=settings.DEFAULT_DATA_LANGUAGE)
 
         if isinstance(obj, (Entity, *allowed_literal_types)) or obj in allowed_literal_types:
-            return self._set_relation(relation.uri, obj, scope=scope, qualifiers=qualifiers, proxyitem=proxyitem)
+            return self._set_relation(
+                relation.uri, obj, scope=scope, qualifiers=qualifiers, proxyitem=proxyitem
+            )
         else:
             msg = f"Unsupported type ({type(obj)}) of {obj}, while setting relation {relation.short_key} of {self}"
             raise TypeError(msg)
@@ -661,7 +668,9 @@ class Entity(abc.ABC):
         assert isinstance(stm, Statement)
 
         if stm.qualifiers:
-            raise NotImplementedError("Processing old qualifiers is not yet implemented while overwriting statements")
+            raise NotImplementedError(
+                "Processing old qualifiers is not yet implemented while overwriting statements"
+            )
 
         stm.unlink()
         return self.set_relation(rel, new_obj, qualifiers=qualifiers)
@@ -684,7 +693,9 @@ class Entity(abc.ABC):
         return hash(self.uri)
 
     def update_relations(self, **kwargs):
-        assert self.updated == False, "This function can be called only once for each object, this is the second time."
+        assert (
+            self.updated == False
+        ), "This function can be called only once for each object, this is the second time."
 
         item_key = self.short_key
 
@@ -708,6 +719,7 @@ def wrap_function_with_search_uri_context(func, uri=None):
     if uri is None:
         # assume that this function is used as decorator in a module which defines __URI__ globally
         import inspect
+
         frame = inspect.currentframe()
         uri = frame.f_back.f_globals.get("__URI__")
         if uri is None:
@@ -1209,7 +1221,7 @@ def process_key_str(
         match_list = langcode_end_pattern.findall(res.label)
         if match_list:
             assert len(match_list) == 1
-            match, = match_list
+            (match,) = match_list
             assert match.startswith("__")
             res.label = langcode_end_pattern.sub("", res.label)
 
@@ -1299,8 +1311,10 @@ def _resolve_prefix(pr_key: ProcessedStmtKey, passed_mod_uri: str = None) -> Non
 
     pr_key.uri = aux.make_uri(mod_uri, pr_key.short_key)
 
+
 # regex pattern which represents a language indicator
 langcode_end_pattern = re.compile("__[a-z]{2}$")
+
 
 def check_processed_key_label(pkey: ProcessedStmtKey) -> None:
     """
@@ -1319,6 +1333,11 @@ def check_processed_key_label(pkey: ProcessedStmtKey) -> None:
         entity = ds.get_entity_by_uri(pkey.uri)
     except KeyError:
         # entity does not exist -> no label to compare with
+        return
+
+    if getattr(entity, "_ignore_mismatching_adhoc_label", False):
+        # This entity is 'magically' allowed to have any adhoc label
+        # used for I000 and R000
         return
 
     if entity.R1 is None:
@@ -1421,6 +1440,7 @@ class KWArgManager:
     """
     This class processes all keyword args for entity creation
     """
+
     def __init__(self, entity_key: str, kwargs: dict):
         self.entity_key: str = entity_key
         self.kwargs: dict = kwargs
@@ -1457,6 +1477,7 @@ class KWArgManager:
 
         return self.new_kwargs, self.lang_related_kwargs
 
+
 class SingleKWArgProcessor:
     """
     This class processes a single keyword arg for entity creation
@@ -1490,13 +1511,13 @@ class SingleKWArgProcessor:
         rel_obj = ds.get_entity_by_uri(self.processed_rel_key.uri)
 
         try:
-            self.rel_is_functional = (rel_obj.R22__is_functional != None)
+            self.rel_is_functional = rel_obj.R22__is_functional != None
         except aux.ShortKeyNotFoundError:
             # this happens at the beginning if R22/R32 is not yet defined
             self.rel_is_functional = False
 
         try:
-            self.rel_is_functional_fel = (rel_obj.R32__is_functional_for_each_language != None)
+            self.rel_is_functional_fel = rel_obj.R32__is_functional_for_each_language != None
         except aux.ShortKeyNotFoundError:
             # this happens at the beginning if R22/R32 is not yet defined
             self.rel_is_functional_fel = False
@@ -1575,21 +1596,21 @@ class SingleKWArgProcessor:
     def _check_for_valid_language(self, scalar_kwarg_value, first_value=False):
         valid_languages = (None, settings.DEFAULT_DATA_LANGUAGE)
 
-            # note: this is to handle thins like `R1__has_label__de="deutsches label" @ p.de`
+        # note: this is to handle thins like `R1__has_label__de="deutsches label" @ p.de`
         if first_value and self.processed_rel_key.lang_indicator not in valid_languages:
             msg = (
-                        f"while creating {self.kwam.entity_key}: the first {self.new_key}-argument must be "
-                        " with lang_indicator `None` or explicitly using the default language. "
-                        f"Got {self.processed_rel_key.lang_indicator} instead."
-                    )
+                f"while creating {self.kwam.entity_key}: the first {self.new_key}-argument must be "
+                " with lang_indicator `None` or explicitly using the default language. "
+                f"Got {self.processed_rel_key.lang_indicator} instead."
+            )
             raise aux.MultilingualityError(msg)
         value_lang = getattr(scalar_kwarg_value, "language", None)
         if value_lang not in valid_languages:
             msg = (
-                        f"while creating {self.kwam.entity_key}: the first {self.new_key}-argument must be "
-                        f"a flat string or a literal with the default language "
-                        f"({settings.DEFAULT_DATA_LANGUAGE}). Got {value_lang} instead."
-                    )
+                f"while creating {self.kwam.entity_key}: the first {self.new_key}-argument must be "
+                f"a flat string or a literal with the default language "
+                f"({settings.DEFAULT_DATA_LANGUAGE}). Got {value_lang} instead."
+            )
             raise aux.MultilingualityError(msg)
 
     def _handle_value(self, kwarg_value, lang_related_value_list=None) -> Literal:
@@ -1629,8 +1650,8 @@ def process_lang_related_kwargs_for_entity_creation(
             if isinstance(value, Literal):
                 if value.language != lang_indicator:
                     msg = (
-                         f"while creating {short_key} ({rel_key}-argument) got inconsistent language indicators: "
-                         f"in argument_name: {lang_indicator} but in value (Literal-instance) {value.language}"
+                        f"while creating {short_key} ({rel_key}-argument) got inconsistent language indicators: "
+                        f"in argument_name: {lang_indicator} but in value (Literal-instance) {value.language}"
                     )
                     raise aux.MultilingualityError(msg)
             elif isinstance(value, str):
@@ -1753,7 +1774,7 @@ class KeyManager:
     # TODO: the term "maxval" is misleading because it will be used in range where the upper bound is exclusive
     # however, using range(minval, maxval+1) would results in different shuffling and thus will probably need some
     # refactoring of existing modules
-    def __init__(self, minval=1000, maxval=9999, keyseed=None):
+    def __init__(self, minval=1000, maxval=99999, keyseed=None):
         """
 
         :param minval:  int
@@ -2352,7 +2373,9 @@ def unload_mod(mod_uri: str, strict=True) -> None:
     stm_dict = ds.stms_created_in_mod.pop(mod_uri, {})
 
     if strict and (not entity_uris and not stm_dict):
-        msg = f"Seems like neither entities nor statements from {mod_uri} have been loaded. This is unexpected."
+        msg = (
+            f"Seems like neither entities nor statements from {mod_uri} have been loaded. This is unexpected."
+        )
         raise KeyError(msg)
 
     for uri in entity_uris:
@@ -2584,6 +2607,7 @@ def end_mod():
     _uri_stack.pop()
     assert len(_uri_stack) == 0
 
+
 # TODO: obsolete?
 def get_language_of_str_literal(obj: Union[str, Literal]):
     if isinstance(obj, Literal):
@@ -2676,9 +2700,7 @@ class RuleResult:
             aplt = "? s"
         else:
             aplt = f"{round(self.apply_time, 3)} s"
-        res = (
-            f"{type(self).__name__} ({aplt}): new_stms: {len(self.new_statements)}, parts: {len(self.partial_results)}"
-        )
+        res = f"{type(self).__name__} ({aplt}): new_stms: {len(self.new_statements)}, parts: {len(self.partial_results)}"
         return res
 
     @property
@@ -2726,6 +2748,7 @@ def is_subclass(item: Item, parent_item: Item):
     else:
         return is_subclass(item.R3, parent_item)
 
+
 def is_instance(item: Item, parent_item: Item):
 
     msg = "`core.is_instance` is deprecated in favor of `builtins.is_instance_of`"
@@ -2740,7 +2763,7 @@ def is_instance(item: Item, parent_item: Item):
 
 
 def is_subproperty(item: Item, parent_property: Item):
-    """check if item is subproperty of parent_property. item == parent_p will return True aswell."""
+    """check if item is subproperty of parent_property. item == parent_p will return True as well."""
     if item == parent_property:
         return True
     if not hasattr(item, "R17"):

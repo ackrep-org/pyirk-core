@@ -164,11 +164,12 @@ def is_subclass_of(itm1: Item, itm2: Item, allow_id=False, strict=True) -> bool:
 
 def is_instance_of(inst_itm: Item, cls_itm: Item, allow_R30_secondary: bool = False, strict=True) -> bool:
     """
-    Returns True if instance_itm.R4 is a subclass (R3) of itm2
+    Returns True if instance_itm.R4 is cls_itm or an (indirect) subclass (R3) of cls_itm.
 
     :param inst_itm:                Item representing the instance
     :param cls_itm:                 Item representing the class
     :param allow_R30_secondary:     bool, accept also relations via R30__is_secondary_instance_of
+    :param strict:                  bool; if true we raise an exception if there is no parent class
     """
     parent_class = inst_itm.R4__is_instance_of
 
@@ -189,14 +190,16 @@ def is_instance_of(inst_itm: Item, cls_itm: Item, allow_R30_secondary: bool = Fa
     if allow_R30_secondary:
 
         for test_cls_item in inst_itm.R30__is_secondary_instance_of:
-                if test_cls_item == cls_itm:
-                    return True
-                if is_subclass_of(test_cls_item, cls_itm, strict=strict):
-                    return True
+            if test_cls_item == cls_itm:
+                return True
+            if is_subclass_of(test_cls_item, cls_itm, strict=strict):
+                return True
     return False
 
 
-def instance_of(cls_entity, r1: str = None, r2: str = None, qualifiers: List[Item] = None, force_key: str = None) -> Item:
+def instance_of(
+    cls_entity, r1: str = None, r2: str = None, qualifiers: List[Item] = None, force_key: str = None
+) -> Item:
     """
     Create an instance (R4) of an item. Try to obtain the label by inspection of the calling context (if r1 is None).
 
@@ -298,7 +301,8 @@ R2 = create_builtin_relation("R2", R1="has description", R32=True)
 R2.set_relation(R2, "specifies a natural language description")
 R1.set_relation(R2, "specifies a short natural language label")
 R32.set_relation(
-    R2, "specifies that for each subject there is at most one 'R30-Statement' for a given language tag (e.g. en)"
+    R2,
+    "specifies that for each subject there is at most one 'R30-Statement' for a given language tag (e.g. en)",
 )
 
 R22 = create_builtin_relation(
@@ -320,7 +324,9 @@ R7 = create_builtin_relation("R7", R1="has arity", R22__is_functional=True)
 R8 = create_builtin_relation("R8", R1="has domain of argument 1")
 R9 = create_builtin_relation("R9", R1="has domain of argument 2")
 R10 = create_builtin_relation("R10", R1="has domain of argument 3")
-R11 = create_builtin_relation("R11", R1="has range of result", R2="specifies the range of the result (last arg)")
+R11 = create_builtin_relation(
+    "R11", R1="has range of result", R2="specifies the range of the result (last arg)"
+)
 R12 = create_builtin_relation("R12", R1="is defined by means of")
 R13 = create_builtin_relation("R13", R1="has canonical symbol", R22__is_functional=True)
 R14 = create_builtin_relation("R14", R1="is subset of")
@@ -349,13 +355,17 @@ R18 = create_builtin_relation(
     "R18", R1="has usage hint", R2="specifies a hint (str) on how this relation should be used"
 )
 
-R16.set_relation(R18["has usage hint"], "this relation should be used on concrete instances, not on generic types")
-R61.set_relation(R18["has usage hint"], "this relation should be used on concrete instances, not on generic types")
+R16.set_relation(
+    R18["has usage hint"], "this relation should be used on concrete instances, not on generic types"
+)
+R61.set_relation(
+    R18["has usage hint"], "this relation should be used on concrete instances, not on generic types"
+)
 
 R19 = create_builtin_relation(
     key_str="R19",
     R1="defines method",
-    R2="specifies that an entity has a special method (defined by executable code)"
+    R2="specifies that an entity has a special method (defined by executable code)",
     # R10__has_range_of_result=callable !!
 )
 
@@ -438,7 +448,8 @@ I2 = create_builtin_item(
     "I2",
     R1="Metaclass",
     R2__has_description=(
-        "Parent class for other classes; subclasses of this are also metaclasses " "instances are ordinary classes"
+        "Parent class for other classes; subclasses of this are also metaclasses "
+        "instances are ordinary classes"
     ),
     R3__is_subclass_of=I1,
 )
@@ -661,12 +672,11 @@ class ScopingCM:
         self.namespace: dict = namespace
         # the associated scope-item (which has a R64__has_scope_type relation)
         self.scope: Item = scope
-        self.parent_scope_cm: ScopingCM|None = parent_scope_cm
+        self.parent_scope_cm: ScopingCM | None = parent_scope_cm
 
         # introduced to facilitate debugging and experimentation
         self._instances[type(self)].append(self)
         self._all_instances.append(self)
-
 
     def __enter__(self):
         """
@@ -740,7 +750,9 @@ class ScopingCM:
         return variable_object
 
     # TODO: this should be renamed to new_statement
-    def new_rel(self, sub: Entity, pred: Relation, obj: Entity, qualifiers=None, overwrite=False) -> Statement:
+    def new_rel(
+        self, sub: Entity, pred: Relation, obj: Entity, qualifiers=None, overwrite=False
+    ) -> Statement:
         """
         Create a new statement ("relation edge") in the current scope
 
@@ -818,7 +830,7 @@ class ScopingCM:
         cm.scope_type = scope_type
         return cm
 
-    def copy_from(self, other_obj: Item, scope_name:str = None):
+    def copy_from(self, other_obj: Item, scope_name: str = None):
         assert isinstance(other_obj, Item)
         if scope_name is None:
             other_scope = other_obj
@@ -852,9 +864,11 @@ class ScopingCM:
             if var_item.R35__is_applied_mapping_of:
                 new_var_item = self._copy_mapping(var_item)
             else:
-                new_var_item = self._new_var(variable_name=name, variable_object=instance_of(class_item, r1=name))
+                new_var_item = self._new_var(
+                    variable_name=name, variable_object=instance_of(class_item, r1=name)
+                )
 
-        # to keep track of which old variables correspond to which new ones
+            # to keep track of which old variables correspond to which new ones
             ds.scope_var_mappings[(self.scope.uri, var_item.uri)] = new_var_item
 
         # create relations
@@ -887,7 +901,7 @@ class ScopingCM:
         # 1st try: vars created in this scope
         new_var = ds.scope_var_mappings.get((self.scope.uri, old_var.uri))
 
-        if new_var is not  None:
+        if new_var is not None:
             return new_var
 
         # 2nd try: vars created in the setting scope
@@ -900,7 +914,7 @@ class ScopingCM:
 
         new_var = ds.scope_var_mappings.get((setting_scope.uri, old_var.uri))
 
-        if new_var is not  None:
+        if new_var is not None:
             return new_var
 
         # TODO: look in the premise scope?
@@ -948,7 +962,9 @@ class ScopingCM:
         setting_scope = setting_scopes[0]
         defined_items = setting_scope.get_inv_relations("R20__has_defining_scope")
 
-        settings_vars_mapping = dict((stm.subject.R23__has_name_in_scope, stm.subject) for stm in defined_items)
+        settings_vars_mapping = dict(
+            (stm.subject.R23__has_name_in_scope, stm.subject) for stm in defined_items
+        )
         return settings_vars_mapping
 
 
@@ -1077,6 +1093,7 @@ class QuantifiedSubScopeCM(ConditionSubScopeCM):
 
     Created by methods universally_quantified() and existentially_quantified() of _proposition__CM
     """
+
     pass
 
 
@@ -1217,7 +1234,9 @@ class _rule__CM(AbstractMathRelatedScopeCM):
         """
 
         variable_object = instance_of(
-            I40["general relation"], r1=f"{name} (I40__general_relation)", qualifiers=[qff_has_rule_ptg_mode(1)]
+            I40["general relation"],
+            r1=f"{name} (I40__general_relation)",
+            qualifiers=[qff_has_rule_ptg_mode(1)],
         )
 
         return self._new_var(name, variable_object)
@@ -1310,6 +1329,7 @@ class _rule__CM(AbstractMathRelatedScopeCM):
     def AND(self):
         msg = "AND-logical subscope is only allowed inside a subscope of a 'premise'-scope"
         raise core.aux.SemanticRuleError(msg)
+
 
 class RulePremiseSubScopeCM(_rule__CM):
     """
@@ -1458,7 +1478,7 @@ I53 = create_builtin_item(
 
 I18 = create_builtin_item(
     key_str="I18",
-    R1__has_label="mathematical expression", # = math. term
+    R1__has_label="mathematical expression",  # = math. term
     R2__has_description=(
         "mathematical expression, e.g. represented by a LaTeX-string; this might change in the future to MathMl"
     ),
@@ -1745,6 +1765,7 @@ def create_evaluated_mapping(mapping: Item, *args) -> Item:
 
     return ev_mapping
 
+
 I6["mathematical operation"].add_method(create_evaluated_mapping, "_custom_call")
 I7["mathematical operation with arity 1"].add_method(create_evaluated_mapping, "_custom_call")
 I8["mathematical operation with arity 2"].add_method(create_evaluated_mapping, "_custom_call")
@@ -1786,7 +1807,9 @@ def new_equation(lhs: Item, rhs: Item, doc=None, scope: Optional[Item] = None, f
     return eq
 
 
-def new_mathematical_relation(lhs: Item, rsgn: str, rhs: Item, doc=None, scope: Optional[Item] = None, force_key: str = None) -> Item:
+def new_mathematical_relation(
+    lhs: Item, rsgn: str, rhs: Item, doc=None, scope: Optional[Item] = None, force_key: str = None
+) -> Item:
     rsgn_dict = {
         "==": I23["equation"],
         "<": I29["less-than-relation"],
@@ -1808,7 +1831,9 @@ def new_mathematical_relation(lhs: Item, rsgn: str, rhs: Item, doc=None, scope: 
     mr.set_relation(R26["has lhs"], lhs)
     mr.set_relation(R27["has rhs"], rhs)
 
-    re = lhs.set_relation(R31["is in mathematical relation with"], rhs, scope=scope, qualifiers=[proxy_item(mr)])
+    re = lhs.set_relation(
+        R31["is in mathematical relation with"], rhs, scope=scope, qualifiers=[proxy_item(mr)]
+    )
 
     return mr
 
@@ -1850,7 +1875,9 @@ def get_proxy_item(stm: Statement, strict=True) -> Item:
 
     if not relevant_qualifiers:
         if strict:
-            msg = f"No R34__has_proxy_item-qualifier found while searching for proxy-item-qualifier for {stm}."
+            msg = (
+                f"No R34__has_proxy_item-qualifier found while searching for proxy-item-qualifier for {stm}."
+            )
             raise core.aux.MissingQualifierError(msg)
         else:
             return None
@@ -1940,9 +1967,9 @@ R46 = create_builtin_relation(
 
 I42 = create_builtin_item(
     key_str="I42",
-    R1__has_label="scalar mathematical object",
+    R1__has_label="scalar mathematical expression",
     R2__has_description="base class of mathematical data types",
-    R3__is_subclass_of=I12["mathematical object"],
+    R3__is_subclass_of=I18["mathematical expression"],
 )
 
 
@@ -1950,7 +1977,7 @@ I34 = create_builtin_item(
     key_str="I34",
     R1__has_label="complex number",
     R2__has_description="mathematical type representing all complex numbers",
-    R3__is_subclass_of=I42["scalar mathematical object"],
+    R3__is_subclass_of=I42["scalar mathematical expression"],
 )
 
 I35 = create_builtin_item(
@@ -2145,7 +2172,7 @@ R44 = create_builtin_relation(
 univ_quant = QualifierFactory(R44["is universally quantified"])
 
 
-# TODO: this sould use qualifier approach
+# TODO: this should use qualifier approach
 def uq_instance_of(type_entity: Item, r1: str = None, r2: str = None) -> Item:
     """
     Shortcut to create an instance and set the relation R44["is universally quantified"] to True in one step
@@ -2297,9 +2324,11 @@ R50 = create_builtin_relation(
 R51 = create_builtin_relation(
     key_str="R51",
     R1__has_label="instances are from",
-    R2__has_description=("specifies that every instance of the subject (class) is one of the elements of the object"),
+    R2__has_description=(
+        "specifies that every instance of the subject (class) is one of the elements of the object"
+    ),
     R8__has_domain_of_argument_1=I2["Metaclass"],
-    R11__has_range_of_result=I33["tuple"]
+    R11__has_range_of_result=I33["tuple"],
     # TODO: model that this is (probably) equivalent to "owl:oneOf"
 )
 
@@ -2394,7 +2423,7 @@ R52 = create_builtin_relation(
         "specifies that every instance of the subject (class) is different from each of the elements of the object"
     ),
     R8__has_domain_of_argument_1=I2["Metaclass"],
-    R11__has_range_of_result=I33["tuple"]
+    R11__has_range_of_result=I33["tuple"],
     # TODO: find out whether there is an owl equivalent for this relation
 )
 # http://www.w3.org/2002/07/owl#distinctMembers, http://www.w3.org/2002/07/owl#AllDifferent
@@ -2414,7 +2443,7 @@ R54 = create_builtin_relation(
     R2__has_description=("specifies that subject entity is matched by a semantic rule"),
     # R8__has_domain_of_argument_1=I1["general item"],  # unsure here
     R11__has_range_of_result=I41["semantic rule"],
-    R18__has_usage_hint="useful for debugging and testing semantic rules"
+    R18__has_usage_hint="useful for debugging and testing semantic rules",
     # TODO: model that this is (probably) equivalent to "owl:InverseFunctionalProperty"
 )
 
@@ -2426,7 +2455,7 @@ R55 = create_builtin_relation(
     ),
     R8__has_domain_of_argument_1=I16["scope"],
     R11__has_range_of_result=I1["general item"],
-    R18__has_usage_hint="useful for inside semantic rules"
+    R18__has_usage_hint="useful for inside semantic rules",
     # TODO: model that this is (probably) equivalent to "owl:InverseFunctionalProperty"
 )
 
@@ -2436,7 +2465,7 @@ R56 = create_builtin_relation(
     R1__has_label="is one of",
     R2__has_description=("specifies that the subject is equivalent to one of the elements of the object"),
     R8__has_domain_of_argument_1=I2["Metaclass"],
-    R11__has_range_of_result=I33["tuple"]
+    R11__has_range_of_result=I33["tuple"],
     # TODO: model that this is (probably) NOT equivalent to "owl:oneOf" (see R51 above)
     # TODO: decide whether this is the inverse of R52__is_none_of
 )
@@ -2542,7 +2571,9 @@ def get_relation_properties(rel_entity: Entity) -> List[str]:
 R63 = create_builtin_relation(
     key_str="R63",
     R1__has_label="has SPARQL source",
-    R2__has_description=("specifies that the subject (a scope) is featured by some unique SPARQL source code"),
+    R2__has_description=(
+        "specifies that the subject (a scope) is featured by some unique SPARQL source code"
+    ),
     R8__has_domain_of_argument_1=I16["scope"],
     R11__has_range_of_result=I52["string"],
     R22__is_functional=True,
@@ -2665,7 +2696,7 @@ I47 = create_builtin_item(
     key_str="I47",
     R1__has_label="constraint rule",
     R2__has_description="rule that specifies which constraints a set of entities has to fulfill",
-    R3__is_subclass_of=I41["semantic rule"]
+    R3__is_subclass_of=I41["semantic rule"],
 )
 
 I48 = create_builtin_item(
@@ -2717,7 +2748,9 @@ I50 = create_builtin_item(
     key_str="I50",
     R1__has_label="stub",
     R2__has_description="instances of this class represent incompletely modelled items (like wikipedia stub-articles)",
-    R3__is_subclass_of=I2["Metaclass"],  # could be also R4 here but does not matter because stubs are very unspecific
+    R3__is_subclass_of=I2[
+        "Metaclass"
+    ],  # could be also R4 here but does not matter because stubs are very unspecific
     R18__has_usage_hint="This class can be used to preliminarily introduce items and refine them later",
 )
 
@@ -2727,8 +2760,10 @@ R77 = create_builtin_relation(
     R1__has_label="has alternative label",
     R2__has_description="specifies alternative labels for entities in the sense of 'also called ...'",
     R8__has_domain_of_argument_1=I45["general entity"],
-    R11__has_range_of_result=I19["language-specified string literal"],  # the labels should have a language specified
-    R18__has_usage_hint="allows multiple values per language (in contrast to R1__has_label)"
+    R11__has_range_of_result=I19[
+        "language-specified string literal"
+    ],  # the labels should have a language specified
+    R18__has_usage_hint="allows multiple values per language (in contrast to R1__has_label)",
 )
 
 
@@ -2780,41 +2815,65 @@ R81 = create_builtin_relation(
     R11__has_range_of_result=I52["string"],
 )
 
+I60 = create_builtin_item(
+    key_str="I60",
+    R1__has_label="abstract addition class",
+    R3__is_subclass_of=I8["mathematical operation with arity 2"],
+)
+
 I55 = create_builtin_item(
     key_str="I55",
     R1__has_label="add",
     R2__has_description="general addition operator",
-    R4__is_instance_of=I8["mathematical operation with arity 2"],
+    R4__is_instance_of=I60["abstract addition class"],
     R8__has_domain_of_argument_1=I12["mathematical object"],
     R9__has_domain_of_argument_2=I12["mathematical object"],
     R11__has_range_of_result=I12["mathematical object"],
+)
+
+I61 = create_builtin_item(
+    key_str="I61",
+    R1__has_label="abstract multiplication class",
+    R3__is_subclass_of=I8["mathematical operation with arity 2"],
 )
 
 I56 = create_builtin_item(
     key_str="I56",
     R1__has_label="mul",
     R2__has_description="general multiplication operator",
-    R4__is_instance_of=I8["mathematical operation with arity 2"],
+    R4__is_instance_of=I61["abstract multiplication class"],
     R8__has_domain_of_argument_1=I12["mathematical object"],
     R9__has_domain_of_argument_2=I12["mathematical object"],
     R11__has_range_of_result=I12["mathematical object"],
+)
+
+I62 = create_builtin_item(
+    key_str="I62",
+    R1__has_label="abstract power class",
+    R3__is_subclass_of=I8["mathematical operation with arity 2"],
 )
 
 I57 = create_builtin_item(
     key_str="I57",
     R1__has_label="pow",
     R2__has_description="general power operator",
-    R4__is_instance_of=I8["mathematical operation with arity 2"],
+    R4__is_instance_of=I62["abstract power class"],
     R8__has_domain_of_argument_1=I12["mathematical object"],
     R9__has_domain_of_argument_2=I12["mathematical object"],
     R11__has_range_of_result=I12["mathematical object"],
+)
+
+I63 = create_builtin_item(
+    key_str="I63",
+    R1__has_label="abstract negation class",
+    R3__is_subclass_of=I7["mathematical operation with arity 1"],
 )
 
 I58 = create_builtin_item(
     key_str="I58",
     R1__has_label="neg",
     R2__has_description="general negation operator",
-    R4__is_instance_of=I7["mathematical operation with arity 1"],
+    R4__is_instance_of=I63["abstract negation class"],
     R8__has_domain_of_argument_1=I12["mathematical object"],
     R11__has_range_of_result=I12["mathematical object"],
 )
@@ -2827,57 +2886,67 @@ R82 = create_builtin_relation(
     R11__has_range_of_result=I52["string"],
 )
 
-# def add_items(a, b):
-#     return I55["add"](a, b)
+
 def add_items(*args):
     if len(args) == 2:
         return I55["add"](*args)
     else:
         return I55["add"](add_items(*args[:-1]), args[-1])
 
+
 def radd_items(a, b):
     return I55["add"](b, a)
+
+
 # todo do we need this with for args of arbitrary length?
+
 
 def sub_items(a, b):
     return I55["add"](a, I56["mul"](-1, b))
 
+
 def reflective_sub_items(a, b):
     return I55["add"](b, I56["mul"](-1, a))
 
-# def mul_items(a, b):
-#     return I56["mul"](a, b)
+
 def mul_items(*args):
     if len(args) == 2:
         return I56["mul"](*args)
     else:
         return I56["mul"](mul_items(*args[:-1]), args[-1])
 
+
 def rmul_items(a, b):
     return I56["mul"](b, a)
+
 
 def div_items(a, b):
     return I56["mul"](a, I57["pow"](b, -1))
 
+
 def reflective_div_items(a, b):
     return I56["mul"](b, I57["pow"](a, -1))
+
 
 def pow_items(a, b):
     return I57["pow"](a, b)
 
+
 def reflective_pow_items(a, b):
     return I57["pow"](b, a)
+
 
 def neg_item(a):
     return I58["neg"](a)
 
+
 Item.__add__ = add_items
-Item.__radd__ = radd_items # reflective addition for 1 + Item
+Item.__radd__ = radd_items  # reflective addition for 1 + Item
 Item.__mul__ = mul_items
 Item.__rmul__ = rmul_items
 Item.__sub__ = sub_items
 Item.__rsub__ = reflective_sub_items
-Item.__truediv__ = div_items # truediv is the correct method for / operator
+Item.__truediv__ = div_items  # truediv is the correct method for / operator
 Item.__rtruediv__ = reflective_div_items
 Item.__pow__ = pow_items
 Item.__rpow__ = reflective_pow_items
@@ -2892,15 +2961,16 @@ def unpack_tuple_item(tuple_item):
     # this will return a list (as R29 is not functional)
     return tuple_item.R39__has_element
 
+
 I59 = create_builtin_item(
     key_str="I59",
     R1__has_label="basic statement",
     R2__has_description="an ordinary statement (e.g. from the plain text of a book or a paper)",
     R3__is_subclass_of=I15["implication proposition"],
-    R18__has_usage_hint="usually such statements do not need a premise and might even omit the setting."
+    R18__has_usage_hint="usually such statements do not need a premise and might even omit the setting.",
 )
 
-# next keys: I60, R83
+# next keys: I62, R83
 
 
 # ######################################################################################################################

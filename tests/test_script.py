@@ -16,8 +16,7 @@ from .settings import (
     TEST_DATA_DIR1,
     HousekeeperMixin,
     TEST_DATA_DIR_OCSE,
-
-    )
+)
 
 
 # noinspection PyPep8Naming
@@ -46,15 +45,14 @@ class Test_01_Script(HousekeeperMixin, unittest.TestCase):
         self.assertNotIn("I000", txt)
 
         # ensure that the module is loadable
-        mod = p.irkloader.load_mod_from_path(modpath, prefix="tm1")
+        mod = p.irkloader.load_mod_from_path(modpath, prefix="tm1", delete_bytecode=True)
 
         # test I000["key insertion by label"]
-        itm3, = mod.I1000.R72__is_generally_related_to
+        (itm3,) = mod.I1000.R72__is_generally_related_to
         itm2 = itm3.R4__is_instance_of
         itm1 = itm2.R3__is_subclass_of
 
         self.assertEqual(itm1.R1__has_label.value, "some new item")
-
 
     @unittest.skipIf(os.environ.get("CI"), "Skipping visualization test on CI to prevent graphviz-dependency")
     def test_c01__visualization(self):

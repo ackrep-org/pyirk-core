@@ -1,6 +1,7 @@
 """
 This module contains code for the visualization of IRK-entities.
 """
+
 from typing import Union, List, Tuple, Optional
 import os
 import urllib
@@ -85,10 +86,12 @@ class AbstractGraphObject(ABC):
 
         # TODO: replace this by prefixed short_key
         if self.short_key.startswith("Ia"):
-            unformatted_repr_str = f'{self.short_key}'
+            unformatted_repr_str = f"{self.short_key}"
         else:
-            unformatted_repr_str = f'{self.short_key}[{self.label}]'
-        self.label_segment_keys, self.label_segments = create_label_segments(unformatted_repr_str, maxlen=self.maxlen)
+            unformatted_repr_str = f"{self.short_key}[{self.label}]"
+        self.label_segment_keys, self.label_segments = create_label_segments(
+            unformatted_repr_str, maxlen=self.maxlen
+        )
         self.label_segment_items = zip(self.label_segment_keys, self.label_segments)
 
         # wrap the each key with curly braces to allow application of .format(...) later]
@@ -383,13 +386,27 @@ def create_nx_graph_from_entity(uri, url_template="") -> nx.DiGraph:
                     continue
                 other_node = create_node(obj, url_template)
                 G.add_node(other_node, color=other_node.get_color())
-                G.add_edge(base_node, other_node, edge=edge, short_key=edge.short_key, label=edge.get_dot_label(), color=edge.get_color())
+                G.add_edge(
+                    base_node,
+                    other_node,
+                    edge=edge,
+                    short_key=edge.short_key,
+                    label=edge.get_dot_label(),
+                    color=edge.get_color(),
+                )
             else:
                 if "Ia" in subj.short_key and a_node_cnt > 2:
                     continue
                 other_node = create_node(subj, url_template)
                 G.add_node(other_node, color=other_node.get_color())
-                G.add_edge(other_node, base_node, edge=edge, hort_key=edge.short_key, label=edge.get_dot_label(), color=edge.get_color())
+                G.add_edge(
+                    other_node,
+                    base_node,
+                    edge=edge,
+                    hort_key=edge.short_key,
+                    label=edge.get_dot_label(),
+                    color=edge.get_color(),
+                )
 
             if "Ia" in other_node.short_key:
                 a_node_cnt += 1
@@ -408,7 +425,7 @@ def get_color_for_item(item: p.Item) -> str:
 
 def get_color_for_stm(stm: p.Statement) -> str:
     # TODO: unfuck this
-    return mpl_colors[(int(stm.rsk[1:])-1) % len(mpl_colors)]
+    return mpl_colors[(int(stm.rsk[1:]) - 1) % len(mpl_colors)]
 
 
 def create_complete_graph(
@@ -423,7 +440,9 @@ def create_complete_graph(
 
     added_items_nodes = {}
     added_statements = {}
-    G = nx.DiGraph()
+
+    # using this subclass ensures our html-wrapping is called when a node is added
+    G = CustomizedDiGraph()
 
     i = 0
     relation_dict: dict
@@ -473,6 +492,9 @@ def create_complete_graph(
                 assert stm.uri not in added_statements
                 added_statements[stm.uri] = 1
 
+    # for easier uri-based access to the nodes we store these dicts as attributes to the Graph
+    G._items = added_items_nodes
+    G._statements = added_statements
     return G
 
 
@@ -537,7 +559,7 @@ def render_graph_to_dot(G: nx.DiGraph) -> str:
                 if _u == u:
                     return float(_d["edge"].short_key[1:])
                 elif _v == u:
-                    return float(_d["edge"].short_key[1:]) + .5
+                    return float(_d["edge"].short_key[1:]) + 0.5
             else:
                 print(f"Node {u} has no edge")
         return u.short_key
@@ -578,7 +600,7 @@ def svg_replace(raw_svg_data: str, REPLACEMENTS: dict) -> str:
     assert isinstance(raw_svg_data, str)
 
     # prevent some latex stuff to interfere with the handing of the `REPLACEMENTS`
-    # TODO: handle the whole problme more elegantly
+    # TODO: handle the whole problem more elegantly
 
     latex_replacements = [(r"\dot{x}", "__LATEX1__")]
     for orig, subs in latex_replacements:
@@ -592,7 +614,7 @@ def svg_replace(raw_svg_data: str, REPLACEMENTS: dict) -> str:
     return svg_data1
 
 
-def visualize_entity(uri: str, url_template="", write_tmp_files: bool = False) -> str:
+def visualize_entity(uri: str, url_template="", write_tmp_files: bool = False, radius=1) -> str:
     """
 
     :param uri:             entity uri (like "irk:/my/module#I0123")
@@ -602,8 +624,16 @@ def visualize_entity(uri: str, url_template="", write_tmp_files: bool = False) -
     :return:                svg_data as string
     """
 
-    G = create_nx_graph_from_entity(uri, url_template)
-    raw_dot_data = render_graph_to_dot(G)
+
+    big_G = create_complete_graph(url_template)
+    try:
+        node_of_interest = big_G._items[uri]
+    except KeyError:
+        msg = f"URI '{uri}' could not be found in the complete knowledge graph"
+        raise p.InvalidURIError(msg)
+
+    small_G = nx.ego_graph(big_G, node_of_interest, radius, undirected=True)
+    raw_dot_data = render_graph_to_dot(small_G)
 
     dot_data0 = raw_dot_data
     for old, new in NEWLINE_REPLACEMENTS:
@@ -616,8 +646,7 @@ def visualize_entity(uri: str, url_template="", write_tmp_files: bool = False) -
     dot_data = "\n".join((dot_lines[0], inner_dot_code, dot_lines[-1]))
 
     # noinspection PyUnresolvedReferences,PyProtectedMember
-    # choose one: "circo", "dot", "fdp", "neato", "osage", "sfdp", "twopi"
-    raw_svg_data = nxv._graphviz.run(dot_data, algorithm="sfdp", format="svg", graphviz_bin=None)
+    raw_svg_data = nxv._graphviz.run(dot_data, algorithm="dot", format="svg", graphviz_bin=None)
     raw_svg_data = raw_svg_data.decode("utf8")
     svg_data1 = svg_replace(raw_svg_data, REPLACEMENTS)
 

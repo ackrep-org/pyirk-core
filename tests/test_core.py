@@ -30,12 +30,12 @@ from .settings import (
     TEST_BASE_URI,
     WRITE_TMP_FILES,
     HousekeeperMixin,
+)
 
-
-    )
-# todo apparantly, this does not effect the tests, i.e. test_e04__overloaded_math_operators
+# todo apparently, this does not effect the tests, i.e. test_e04__overloaded_math_operators
 # if not os.environ.get("PYIRK_DISABLE_CONSISTENCY_CHECKING", "").lower() == "true":
 # p.cc.enable_consistency_checking()
+
 
 class Test_00_Core(HousekeeperMixin, unittest.TestCase):
 
@@ -256,6 +256,7 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
         Test the mechanism to endow the Entity class with custom methods (on class and on instance level)
         :return:
         """
+
         # class level
         def example_func(slf, a):
             return f"{slf.R1.value}--{a}"
@@ -290,8 +291,10 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
         """
         ensure inheritance of custom methods works regardless of declaration order
         """
+
         def test_func(slf):
             return slf.R1.value
+
         with p.uri_context(uri=TEST_BASE_URI):
             itm1 = p.create_item(key_str=p.pop_uri_based_key("I"), R1="unit test item1")
             itm2 = p.create_item(key_str=p.pop_uri_based_key("I"), R1="unit test item2")
@@ -302,7 +305,6 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
         itm1.add_method(test_func)
         self.assertEqual(itm2.test_func(), "unit test item2")
         self.assertEqual(itm3.test_func(), "unit test item3")
-
 
     # TODO: trigger loading of unittest version of ocse via envvar
     def test_a02__load_settings(self):
@@ -378,13 +380,15 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
         all_subclasses = p.get_all_subclasses_of(cls_item)
 
         self.assertEqual(direct_subclasses, [p.I35["real number"]])
-        expected_subclasses = set((
-            p.I35["real number"],
-            p.I36["rational number"],
-            p.I37["integer number"],
-            p.I38["non-negative integer"],
-            p.I39["positive integer"],
-        ))
+        expected_subclasses = set(
+            (
+                p.I35["real number"],
+                p.I36["rational number"],
+                p.I37["integer number"],
+                p.I38["non-negative integer"],
+                p.I39["positive integer"],
+            )
+        )
         self.assertEqual(set(all_subclasses), expected_subclasses)
 
     def test_c01__ct_loads_math(self):
@@ -481,8 +485,8 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
         """
         with p.uri_context(uri=TEST_BASE_URI):
             I7324 = p.create_item(
-                R1__has_label = "definition of something",
-                R4__is_instance_of =p.I20["mathematical definition"],
+                R1__has_label="definition of something",
+                R4__is_instance_of=p.I20["mathematical definition"],
             )
 
             my_set = p.instance_of(p.I13["mathematical set"])
@@ -530,7 +534,7 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
             self.assertEqual(stm1.object, my_set)
 
             # check the actual statement (which is an equation)
-            stm1, = uq_scp.get_statements_for_scope()
+            (stm1,) = uq_scp.get_statements_for_scope()
             self.assertEqual(stm1.subject, x)
             self.assertEqual(stm1.predicate, p.R31["is in mathematical relation with"])
             self.assertEqual(stm1.object, y)
@@ -574,7 +578,7 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
             self.assertEqual(cond_proxy_item.R27__has_rhs, x)
 
             # check the actual statement (which is an equation)
-            stm1, = ex_scp.get_statements_for_scope()
+            (stm1,) = ex_scp.get_statements_for_scope()
             self.assertEqual(stm1.subject, z)
             self.assertEqual(stm1.predicate, p.R31["is in mathematical relation with"])
             self.assertEqual(stm1.object, y)
@@ -591,8 +595,8 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
 
         with p.uri_context(uri=TEST_BASE_URI):
             I7000 = p.create_item(
-                R1__has_label = "definition of countable",
-                R4__is_instance_of =p.I20["mathematical definition"],
+                R1__has_label="definition of countable",
+                R4__is_instance_of=p.I20["mathematical definition"],
             )
 
             finite = p.instance_of(p.I54["mathematical property"])
@@ -613,8 +617,8 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
             # now test AND
 
             I7100 = p.create_item(
-                R1__has_label = "definition of positive integer",
-                R4__is_instance_of =p.I20["mathematical definition"],
+                R1__has_label="definition of positive integer",
+                R4__is_instance_of=p.I20["mathematical definition"],
             )
 
             cm: p.builtin_entities._proposition__CM
@@ -633,8 +637,8 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
             # now test NOT
 
             I7200 = p.create_item(
-                R1__has_label = "definition of non-negative integer",
-                R4__is_instance_of =p.I20["mathematical definition"],
+                R1__has_label="definition of non-negative integer",
+                R4__is_instance_of=p.I20["mathematical definition"],
             )
 
             cm: p.builtin_entities._proposition__CM
@@ -654,14 +658,14 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
         with p.uri_context(uri=TEST_BASE_URI):
 
             I0100 = p.create_item(
-                R1__has_label = "test-region in complex plane",
-                R4__is_instance_of = p.I13["mathematical set"],
-                R14__is_subset_of = ct.ma.I2738["field of complex numbers"]
+                R1__has_label="test-region in complex plane",
+                R4__is_instance_of=p.I13["mathematical set"],
+                R14__is_subset_of=ct.ma.I2738["field of complex numbers"],
             )
 
             I0101 = p.create_item(
-                R1__has_label = "definition test-region in complex plane",
-                R4__is_instance_of =p.I20["mathematical definition"],
+                R1__has_label="definition test-region in complex plane",
+                R4__is_instance_of=p.I20["mathematical definition"],
             )
 
             with I0101["definition test-region in complex plane"].scope("setting") as cm:
@@ -698,8 +702,8 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
         ct = p.irkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
         with p.uri_context(uri=TEST_BASE_URI):
             I0111 = p.create_item(
-                R1__has_label = "definition of something",
-                R4__is_instance_of =p.I20["mathematical definition"],
+                R1__has_label="definition of something",
+                R4__is_instance_of=p.I20["mathematical definition"],
             )
 
             my_set = p.instance_of(p.I13["mathematical set"])
@@ -726,8 +730,8 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
 
             # create a new definition and copy statements from the old one
             I0222 = p.create_item(
-                R1__has_label = "definition of something different",
-                R4__is_instance_of = p.I20["mathematical definition"],
+                R1__has_label="definition of something different",
+                R4__is_instance_of=p.I20["mathematical definition"],
             )
             with I0222["definition of something different"].scope("setting") as cm:
                 cm.copy_from(I0111_setting)
@@ -862,7 +866,8 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
         Z: p.Item = itm1_setting_namespace["Z"]
 
         r31_list = Z.get_inv_relations("R31__is_in_mathematical_relation_with")
-        stm: p.Statement = r31_list[0].dual_statement  # taking the dual because we got it via the inverse relation
+        # taking the dual because we got it via the inverse relation
+        stm: p.Statement = r31_list[0].dual_statement
         self.assertEqual(len(r31_list), 1)
 
         # test the expected qualifier
@@ -930,7 +935,10 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
             # third: create a relation which has a short key collision with a relation from the ct module
             _ = p.create_relation(key_str="R7641", R1="some test relation")
             e2 = p.create_item(
-                key_str="I0126", R1="some label", ct__R7641__has_approximation=e0, R7641__some_test_relation="foo"
+                key_str="I0126",
+                R1="some label",
+                ct__R7641__has_approximation=e0,
+                R7641__some_test_relation="foo",
             )
 
         # this is the verbose way to address a builtin relation
@@ -956,6 +964,21 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
         with p.uri_context(uri=ct.__URI__):
             self.assertEqual(e2.R7641__has_approximation[0], e0)
 
+    def test_c12b__dummy_items_and_relations(self):
+        """
+        Test that constructions like `I000["any label"]` and `R000__any_other_label` work
+        """
+
+        self.assertEqual(p.I000["foo"], p.I000["bar"])
+        self.assertEqual(p.R000["foo"], p.R000["bar"])
+        with p.uri_context(uri=TEST_BASE_URI):
+            e1 = p.create_item(
+                key_str="I0124",
+                R1="test item",
+                R000__foo=p.I000["foo"],
+                R000__bar=p.I000["bar"],
+            )
+
     @unittest.skipIf(os.environ.get("CI"), "Skipping visualization test on CI to prevent graphviz-dependency")
     def test_c13__format_label(self):
         with p.uri_context(uri=TEST_BASE_URI):
@@ -965,28 +988,28 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
         label = node.get_dot_label(render=True)
 
         # note: for the sake of brevity we skip quotes inside of [...] for the node-labels in visualization
-        self.assertEqual(label, 'I0123\\n[1234567890]')
+        self.assertEqual(label, "I0123\\n[1234567890]")
 
         with p.uri_context(uri=TEST_BASE_URI):
             e1 = p.create_item(key_str="I0124", R1="1234567890abcdefgh")
         node = visualization.create_node(e1, url_template="")
         node.perform_html_wrapping(use_html=False)
         label = node.get_dot_label(render=True)
-        self.assertEqual(label, 'I0124\\n[1234567890a\\nbcdefgh]')
+        self.assertEqual(label, "I0124\\n[1234567890a\\nbcdefgh]")
 
         with p.uri_context(uri=TEST_BASE_URI):
             e1 = p.create_item(key_str="I0125", R1="12 34567 890abcdefgh")
         node = visualization.create_node(e1, url_template="")
         node.perform_html_wrapping(use_html=False)
         label = node.get_dot_label(render=True)
-        self.assertEqual(label, 'I0125\\n[12 34567\\n890abcdefgh]')
+        self.assertEqual(label, "I0125\\n[12 34567\\n890abcdefgh]")
 
         with p.uri_context(uri=TEST_BASE_URI):
             e1 = p.create_item(key_str="I0126", R1="12 34567-890abcdefgh")
         node = visualization.create_node(e1, url_template="")
         node.perform_html_wrapping(use_html=False)
         label = node.get_dot_label(render=True)
-        self.assertEqual(label, 'I0126\\n[12 34567-\\n890abcdefgh]')
+        self.assertEqual(label, "I0126\\n[12 34567-\\n890abcdefgh]")
 
     @unittest.skipIf(os.environ.get("CI"), "Skipping visualization test on CI to prevent graphviz-dependency")
     def test_c14__visualization1(self):
@@ -1007,7 +1030,9 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
     def test_c15__visualization2(self):
         # test rendering of dot
 
-        res = visualization.visualize_entity(p.u("I21__mathematical_relation"), write_tmp_files=WRITE_TMP_FILES)
+        res = visualization.visualize_entity(
+            p.u("I21__mathematical_relation"), write_tmp_files=WRITE_TMP_FILES
+        )
 
         mod1 = p.irkloader.load_mod_from_path(TEST_DATA_PATH2, TEST_MOD_NAME)
 
@@ -1028,6 +1053,18 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
         else:
             # now relation labels are just ordinary text
             self.assertIn('font-size="20.00">R35</text>', res)
+
+    @unittest.skipIf(os.environ.get("CI"), "Skipping visualization test on CI to prevent graphviz-dependency")
+    def test_c16__visualize_entity_with_radius(self):
+
+        res1 = visualization.visualize_entity(p.u("I21__mathematical_relation"), write_tmp_files=WRITE_TMP_FILES)
+        res2 = visualization.visualize_entity(p.u("I21__mathematical_relation"), write_tmp_files=WRITE_TMP_FILES, radius=2)
+        res3 = visualization.visualize_entity(p.u("I21__mathematical_relation"), write_tmp_files=WRITE_TMP_FILES, radius=3)
+
+        # simple check that radius argument has an influence:
+        self.assertEqual(res1.count("<ellipse "), 5)
+        self.assertEqual(res2.count("<ellipse "), 9)
+        self.assertEqual(res3.count("<ellipse "), 17)
 
     def test_d01__wrap_function_with_uri_context(self):
         ma = p.irkloader.load_mod_from_path(TEST_DATA_PATH_MA, prefix="ma")
@@ -1241,7 +1278,9 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
             self.assertEqual(itm2.R57__is_placeholder, True)
 
             tup = p.new_tuple(itm1, itm2, itm3)
-            stms = p.set_multiple_statements(tup.R39__has_element, p.R31["is in mathematical relation with"], x)
+            stms = p.set_multiple_statements(
+                tup.R39__has_element, p.R31["is in mathematical relation with"], x
+            )
 
             self.assertEqual(len(stms), 3)
 
@@ -1309,7 +1348,9 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
         "irk:/ocse/0.2/zebra_base_data#R8592": [[5, "irk:/ocse/0.2/zebra_base_data#I4037"], [5,
         "irk:/ocse/0.2/zebra_base_data#I9848"], [5, "irk:/ocse/0.2/zebra_base_data#I3132"], [5,
         "irk:/ocse/0.2/zebra_base_data#I2552"], [5, "irk:/ocse/0.2/zebra_base_data#I5931"]]}
-        """.replace("\n","")
+        """.replace(
+            "\n", ""
+        )
         data = json.loads(raw_data)
 
         self.assertFalse(p.check_type(data, Dict[str, int], strict=False))
@@ -1319,7 +1360,7 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
         self.assertFalse(p.check_type(data, Dict[str, List[List[int]]], strict=False))
 
         # pydantic has nontrivial behavior about Unions. This requires smart_unions=True
-        q = [5, 'irk:/ocse/0.2/zebra_base_data#I9848']
+        q = [5, "irk:/ocse/0.2/zebra_base_data#I9848"]
         p.check_type(q, List[Union[int, str]])
 
         # this is what we actually want to test (note that the inner list could be specified more precisely)
@@ -1423,14 +1464,15 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
     def test_e02__is_true(self):
         ma = p.irkloader.load_mod_from_path(TEST_DATA_PATH_MA, prefix="ma")
         self.assertTrue(p.is_true(ma.I5359, p.R4, ma.I4895))
-        self.assertTrue(p.is_true(ma.I5359["determinant"], p.R4["is instance of"], ma.I4895["mathematical operator"]))
+        self.assertTrue(
+            p.is_true(ma.I5359["determinant"], p.R4["is instance of"], ma.I4895["mathematical operator"])
+        )
 
     def test_e03__update_relations(self):
         with p.uri_context(uri=TEST_BASE_URI, prefix="ut"):
             I1234 = p.create_item(R1__has_label="some theorem")
             I1234["some theorem"].update_relations(
-                R2__has_description="bla",
-                R4__is_instance_of=p.I14["mathematical proposition"]
+                R2__has_description="bla", R4__is_instance_of=p.I14["mathematical proposition"]
             )
             # check basic relations
             self.assertTrue(hasattr(I1234, "R2"))
@@ -1448,7 +1490,7 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
             res = a + b
             self.assertEqual(res, p.I55["add"](a, b))
             res = a + b + c + a
-            self.assertEqual(res, a.__add__(b,c,a))
+            self.assertEqual(res, a.__add__(b, c, a))
             res = 1 + b
             self.assertEqual(res, p.I55["add"](1, b))
             # todo as soon as implemented, test for a + b == b + a, etc
@@ -1465,9 +1507,9 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
             res = 1 * b
             self.assertEqual(res, p.I56["mul"](1, b))
 
-            res = a ** b
+            res = a**b
             self.assertEqual(res, p.I57["pow"](a, b))
-            res = a ** 2
+            res = a**2
             self.assertEqual(res, p.I57["pow"](a, 2))
 
             res = a / b
@@ -1583,13 +1625,17 @@ class Test_02_ruleengine(HousekeeperMixin, unittest.TestCase):
         self.setup_data1()
 
         mod1 = p.irkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct", modname=TEST_MOD_NAME)
-        self.assertEqual(len(mod1.I9642["local exponential stability"].get_relations("R17__is_subproperty_of")), 1)
+        self.assertEqual(
+            len(mod1.I9642["local exponential stability"].get_relations("R17__is_subproperty_of")), 1
+        )
 
         ra = p.ruleengine.RuleApplicator(self.rule1, mod_context_uri=TEST_BASE_URI)
         res = ra.apply()
 
         # ensure that after rule application there new relations
-        self.assertEqual(len(mod1.I9642["local exponential stability"].get_relations("R17__is_subproperty_of")), 3)
+        self.assertEqual(
+            len(mod1.I9642["local exponential stability"].get_relations("R17__is_subproperty_of")), 3
+        )
 
     def test_c06__ruleengine05(self):
         self.setup_data1()
@@ -1618,7 +1664,7 @@ class Test_03_Multilinguality(HousekeeperMixin, unittest.TestCase):
         # (it would need some further work to make it independent of the concrete default lang)
         self.assertEqual(p.settings.DEFAULT_DATA_LANGUAGE, "en")
 
-        self.assertEqual(p.I39["positive integer"], p.I39["positive Ganzzahl"@p.de])
+        self.assertEqual(p.I39["positive integer"], p.I39["positive Ganzzahl" @ p.de])
 
         with p.uri_context(uri=TEST_BASE_URI):
 
@@ -1685,7 +1731,6 @@ class Test_03_Multilinguality(HousekeeperMixin, unittest.TestCase):
             I1001 = p.create_item(
                 R1__has_label="default label",
                 R1__has_label__de="deutsches label" @ p.de,
-
                 # we do not need to pass a Literal-instance (it is created automatically)
                 R1__has_label__fr="dénomination française",
             )
@@ -1693,15 +1738,23 @@ class Test_03_Multilinguality(HousekeeperMixin, unittest.TestCase):
 
         labels = I1001.get_relations("R1", return_obj=True)
 
-        self.assertEqual(labels, ["default label"@p.df, "deutsches label"@p.de, "dénomination française"@p.fr, "nombre español"@p.es])
+        self.assertEqual(
+            labels,
+            [
+                "default label" @ p.df,
+                "deutsches label" @ p.de,
+                "dénomination française" @ p.fr,
+                "nombre español" @ p.es,
+            ],
+        )
 
         r1_default = I1001.R1__has_label
         r1_de = I1001.R1__has_label__de
         r1_es = I1001.R1__has_label__es
 
-        self.assertEqual(r1_default, "default label"@p.df)
-        self.assertEqual(r1_de, "deutsches label"@p.de)
-        self.assertEqual(r1_es, "nombre español"@p.es)
+        self.assertEqual(r1_default, "default label" @ p.df)
+        self.assertEqual(r1_de, "deutsches label" @ p.de)
+        self.assertEqual(r1_es, "nombre español" @ p.es)
 
     def test_b1__multilingual_relations1(self):
         """
@@ -1832,7 +1885,7 @@ class Test_03_Multilinguality(HousekeeperMixin, unittest.TestCase):
             )
 
             labels = R300.get_relations("R1", return_obj=True)
-            self.assertEqual(labels, ["default rel-label"@p.df, "deutsches rel-label"@p.de])
+            self.assertEqual(labels, ["default rel-label" @ p.df, "deutsches rel-label" @ p.de])
 
             # ensure the correct range for the hardcoded relations
             for short_key in p.RELKEYS_WITH_LITERAL_RANGE:
@@ -1840,25 +1893,27 @@ class Test_03_Multilinguality(HousekeeperMixin, unittest.TestCase):
                 self.assertIn(p.I19["language-specified string literal"], rel.R11__has_range_of_result)
 
             # test R77__has_alternative_label
-            I1000 =  p.create_item(
-                    R1__has_label="foo",
-                    R1__has_label__de="foo-de",
-                    R77__has_alternative_label="bar",
-                    R77__has_alternative_label__de="baz",
-                )
+            I1000 = p.create_item(
+                R1__has_label="foo",
+                R1__has_label__de="foo-de",
+                R77__has_alternative_label="bar",
+                R77__has_alternative_label__de="baz",
+            )
 
-            self.assertEqual(I1000.R77__has_alternative_label, ["bar"@p.df, "baz"@p.de])
+            self.assertEqual(I1000.R77__has_alternative_label, ["bar" @ p.df, "baz" @ p.de])
 
             # TODO: this should be automatically converted to default language
             # I1000.R77__has_alternative_label = "more foo"
 
-            I1000.R77__has_alternative_label = "more foo"@p.en
-            self.assertEqual(I1000.R77__has_alternative_label, ["bar"@p.df, "baz"@p.de, "more foo"@p.df])
+            I1000.R77__has_alternative_label = "more foo" @ p.en
+            self.assertEqual(
+                I1000.R77__has_alternative_label, ["bar" @ p.df, "baz" @ p.de, "more foo" @ p.df]
+            )
 
-            I1000.set_multiple_relations("R77__has_alternative_label", ["foo-it"@p.it, "bar-es"@p.es])
+            I1000.set_multiple_relations("R77__has_alternative_label", ["foo-it" @ p.it, "bar-es" @ p.es])
             self.assertEqual(
                 I1000.R77__has_alternative_label,
-                ["bar"@p.df, "baz"@p.de, "more foo"@p.df, "foo-it"@p.it, "bar-es"@p.es]
+                ["bar" @ p.df, "baz" @ p.de, "more foo" @ p.df, "foo-it" @ p.it, "bar-es" @ p.es],
             )
 
             # this comes from the stafo-project
@@ -1872,13 +1927,13 @@ class Test_03_Multilinguality(HousekeeperMixin, unittest.TestCase):
             self.assertEqual(I1001.R77__has_alternative_label, expected_result)
 
 
-class Test_Z_Core(HousekeeperMixin, unittest.TestCase):
+class Test_04_Core(HousekeeperMixin, unittest.TestCase):
     """
     Collection of test that should be executed last (because they seem to influence other tests).
     This is achieved by putting "ZZ" in the name (assuming that test classes are executed in alphabetical order).
     """
 
-    def test_sparql_query(self):
+    def test_c010_sparql_query(self):
         # This test seems somehow to influence later tests
         mod1 = p.irkloader.load_mod_from_path(TEST_DATA_PATH2, TEST_MOD_NAME)
         p.ds.rdfgraph = p.rdfstack.create_rdf_triples()
@@ -1893,7 +1948,7 @@ class Test_Z_Core(HousekeeperMixin, unittest.TestCase):
         ]
         self.assertEqual(res2[:2], expected_result)
 
-    def test_c01__sparql_query2(self):
+    def test_c020__sparql_query2(self):
         # TODO: replace by Model entity once it exists
         mod1 = p.irkloader.load_mod_from_path(TEST_DATA_PATH2, TEST_MOD_NAME)
 
@@ -1923,7 +1978,7 @@ class Test_Z_Core(HousekeeperMixin, unittest.TestCase):
         ]
         self.assertEqual(res2, expected_result)
 
-    def test_c02__sparql_zz_preprocessing(self):
+    def test_c030__sparql_zz_preprocessing(self):
         mod1 = p.irkloader.load_mod_from_path(TEST_DATA_PATH2, TEST_MOD_NAME)
 
         with p.uri_context(uri=TEST_BASE_URI):
@@ -2042,7 +2097,7 @@ class Test_07_import_export(HousekeeperMixin, unittest.TestCase):
         self.assertEqual(len(q_stms), 2)
 
         fpath = pjoin(TEST_DATA_DIR1, "tmp_test.nt")
-        p.io.export_rdf_triples(fpath, add_qualifiers=True,  modfilter=TEST_BASE_URI)
+        p.io.export_rdf_triples(fpath, add_qualifiers=True, modfilter=TEST_BASE_URI)
         g = p.io.import_raw_rdf_triples(fpath)
         os.unlink(fpath)
 
@@ -2082,7 +2137,7 @@ class Test_07_import_export(HousekeeperMixin, unittest.TestCase):
 
         fpath = pjoin(TEST_DATA_DIR1, "test_zebra_triples1.nt")
         with p.uri_context(uri=TEST_BASE_URI):
-            c = p.io.import_stms_from_rdf_triples(fpath)  #noqa
+            c = p.io.import_stms_from_rdf_triples(fpath)  # noqa
         self.assertEqual(zb.I9848["Norwegian"].zb__R8098__has_house_color, zb.I4118["yellow"])
         self.assertEqual(len(zb.I9848["Norwegian"].zb__R1055__has_not_house_color), 4)
 
@@ -2100,9 +2155,8 @@ class Test_07_import_export(HousekeeperMixin, unittest.TestCase):
             zp.person11.set_relation(zb.R8098["has house color"], zb.I4118["yellow"])
             zp.person10.set_relation(zb.R3606["lives next to"], zp.person11)
 
-
         fpath = pjoin(TEST_DATA_DIR1, "tmp_test.nt")
-        p.io.export_rdf_triples(fpath, add_qualifiers=True,  modfilter=TEST_BASE_URI)
+        p.io.export_rdf_triples(fpath, add_qualifiers=True, modfilter=TEST_BASE_URI)
         g = p.io.import_raw_rdf_triples(fpath)
 
         self.assertTrue(rdflib.URIRef(zp.person11.uri) in g.subjects())
@@ -2110,7 +2164,7 @@ class Test_07_import_export(HousekeeperMixin, unittest.TestCase):
 
         p.core._unlink_entity(zp.person11.uri, remove_from_mod=True)
 
-        p.io.export_rdf_triples(fpath, add_qualifiers=True,  modfilter=TEST_BASE_URI)
+        p.io.export_rdf_triples(fpath, add_qualifiers=True, modfilter=TEST_BASE_URI)
         g = p.io.import_raw_rdf_triples(fpath)
 
         self.assertFalse(rdflib.URIRef(zp.person11.uri) in g.subjects())

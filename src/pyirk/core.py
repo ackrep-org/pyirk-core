@@ -1061,6 +1061,16 @@ ds = DataStore()
 
 YAML_VALUE = Union[str, list, dict]
 
+def get_label_to_item_dict():
+    d = {}
+    for uri, item in ds.items.items():
+        if "a" in item.short_key:
+            continue
+        label = item.R1.value
+        if label in d.keys():
+            print(aux.byellow(f"Warning: duplicate items with same label: {item}, {d[label]}"))
+        d[label] = item
+    return d
 
 @unique
 class EType(Enum):

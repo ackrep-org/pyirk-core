@@ -2724,6 +2724,9 @@ class RuleResult:
 
         return self._rule
 
+    def get_new_triples(self) -> list[tuple[Entity]]:
+        return [stm.relation_tuple for stm in self.new_statements]
+
 
 def is_true(subject: Entity, predicate: Relation, object) -> tuple[bool, None]:
     assert isinstance(subject, Entity)

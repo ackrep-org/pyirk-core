@@ -66,7 +66,7 @@ def apply_semantic_rules(*rules: List, mod_context_uri: str = None) -> List[core
     return total_res
 
 
-def apply_semantic_rule(rule: core.Item, mod_context_uri: str = None) -> List[core.Statement]:
+def apply_semantic_rule(rule: core.Item, mod_context_uri: str = None) -> "ReportingRuleResult":
     """
     Create a RuleApplicator instance for the rules, execute its apply-method, return the result (list of new statements)
     """

@@ -39,10 +39,41 @@ class Test_01_rulebased_reasoning(HousekeeperMixin, unittest.TestCase):
         pass
 
     def test_a010_generalized_subclass(self):
+        """
+        This test checks:
+            - R83__is_generalized_subclass_of
+            - p.qf_prevent_duplicate_stms
+        """
+        p.qf_prevent_duplicate_stms
         res1 = p.ruleengine.apply_semantic_rule(p.I64, mod_context_uri=p.builtin_entities.__URI__)
         res2 = p.ruleengine.apply_semantic_rule(p.I65, mod_context_uri=p.builtin_entities.__URI__)
-
+        new_triples2 = res2.get_new_triples()
         self.assertIn(p.I37["integer number"], p.I39["positive integer"].R83__is_generalized_subclass_of)
+
+        res3 = p.ruleengine.apply_semantic_rule(p.I65, mod_context_uri=p.builtin_entities.__URI__)
+        new_triples3 = res3.get_new_triples()
+
+        # intersection should be empty
+        self.assertEqual(set(new_triples2).intersection(new_triples3), set())
+
+        res4 = p.ruleengine.apply_semantic_rule(p.I65, mod_context_uri=p.builtin_entities.__URI__)
+        self.assertTrue(res4.new_statements)
+
+        res5 = p.ruleengine.apply_semantic_rule(p.I65, mod_context_uri=p.builtin_entities.__URI__)
+        self.assertFalse(res5.new_statements)
+
+        expected_R83_res = set([
+            p.I38["non-negative integer"],
+            p.I37["integer number"],
+            p.I35["real number"],
+            p.I36["rational number"],
+            p.I12["mathematical object"],
+            p.I18["mathematical expression"],
+            p.I34["complex number"],
+            p.I42["scalar mathematical expression"],
+        ])
+
+        self.assertEqual(set(p.I39["positive integer"].R83__is_generalized_subclass_of), expected_R83_res)
 
     def test_c07__zebra_puzzle01(self):
         """

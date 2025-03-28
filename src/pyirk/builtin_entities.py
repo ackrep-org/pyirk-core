@@ -2980,6 +2980,10 @@ R83 = create_builtin_relation(
     R11__has_range_of_result=I2["Metaclass"],
 )
 
+# create necessary qualifier, see R59["has rule-prototype-graph-mode"] above
+qf_prevent_duplicate_stms = qff_has_rule_ptg_mode(5)
+
+
 I64 = create_builtin_item(
     key_str="I64",
     R1__has_label="introduction of generalized subclass statements",
@@ -2998,7 +3002,7 @@ with I64.scope("premise") as cm:
     cm.new_rel(cm.i2, R3["is subclass of"], cm.i1)
 
 with I64.scope("assertion") as cm:
-    cm.new_rel(cm.i2, R83["is generalized subclass of"], cm.i1)
+    cm.new_rel(cm.i2, R83["is generalized subclass of"], cm.i1, qualifiers=[qf_prevent_duplicate_stms])
 
 
 I65 = create_builtin_item(
@@ -3020,7 +3024,8 @@ with I65.scope("premise") as cm:
     cm.new_rel(cm.i3, R83["is generalized subclass of"], cm.i2)
 
 with I65.scope("assertion") as cm:
-    cm.new_rel(cm.i3, R83["is generalized subclass of"], cm.i1)
+    # the qualifier prevents the creation of duplicated
+    cm.new_rel(cm.i3, R83["is generalized subclass of"], cm.i1, qualifiers=[qf_prevent_duplicate_stms])
 
 # next keys: I66, R84
 

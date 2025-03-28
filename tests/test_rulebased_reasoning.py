@@ -8,7 +8,6 @@ import rdflib
 # noinspection PyUnresolvedReferences
 from ipydex import IPS, activate_ips_on_exception, set_trace  # noqa
 import pyirk as p
-import pyirk.builtin_entities as bi
 from addict import Addict as Container
 import pyirk.reportgenerator as rgen
 
@@ -59,28 +58,28 @@ class Test_01_rulebased_reasoning(HousekeeperMixin, unittest.TestCase):
             - R83__is_generalized_subclass_of
             - p.qf_prevent_duplicate_stms
         """
-        res1 = p.ruleengine.apply_semantic_rule(p.I64, mod_context_uri=bi.__URI__)
-        res2 = p.ruleengine.apply_semantic_rule(p.I65, mod_context_uri=bi.__URI__)
+        res1 = p.ruleengine.apply_semantic_rule(p.I64, mod_context_uri=TEST_BASE_URI,)
+        res2 = p.ruleengine.apply_semantic_rule(p.I65, mod_context_uri=TEST_BASE_URI,)
         new_triples2 = res2.get_new_triples()
         self.assertIn(p.I37["integer number"], p.I39["positive integer"].R83__is_generalized_subclass_of)
 
-        res3 = p.ruleengine.apply_semantic_rule(p.I65, mod_context_uri=bi.__URI__)
+        res3 = p.ruleengine.apply_semantic_rule(p.I65, mod_context_uri=TEST_BASE_URI,)
         new_triples3 = res3.get_new_triples()
 
         # intersection should be empty
         self.assertEqual(set(new_triples2).intersection(new_triples3), set())
 
-        res4 = p.ruleengine.apply_semantic_rule(p.I65, mod_context_uri=bi.__URI__)
+        res4 = p.ruleengine.apply_semantic_rule(p.I65, mod_context_uri=TEST_BASE_URI,)
         self.assertTrue(res4.new_statements)
 
-        res5 = p.ruleengine.apply_semantic_rule(p.I65, mod_context_uri=bi.__URI__)
+        res5 = p.ruleengine.apply_semantic_rule(p.I65, mod_context_uri=TEST_BASE_URI,)
         self.assertFalse(res5.new_statements)
         self._check_R83_conditions()
 
     def test_a011_generalized_subclass_compact(self):
-        res = p.ruleengine.apply_semantic_rules(p.I64, p.I65, mod_context_uri=bi.__URI__, exhaust=True)
+        res = p.ruleengine.apply_semantic_rules(p.I64, p.I65, mod_context_uri=TEST_BASE_URI, exhaust=True)
         self._check_R83_conditions()
-        IPS()
+        self.assertGreater(len(res.new_statements), 100)
 
     def test_c07__zebra_puzzle01(self):
         """

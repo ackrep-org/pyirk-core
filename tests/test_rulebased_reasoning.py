@@ -38,6 +38,12 @@ class Test_01_rulebased_reasoning(HousekeeperMixin, unittest.TestCase):
     def setup_data1(self):
         pass
 
+    def test_a010_generalized_subclass(self):
+        res1 = p.ruleengine.apply_semantic_rule(p.I64, mod_context_uri=p.builtin_entities.__URI__)
+        res2 = p.ruleengine.apply_semantic_rule(p.I65, mod_context_uri=p.builtin_entities.__URI__)
+
+        self.assertIn(p.I37["integer number"], p.I39["positive integer"].R83__is_generalized_subclass_of)
+
     def test_c07__zebra_puzzle01(self):
         """
         Test one special rule I901, with new features from builtin_entities

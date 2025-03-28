@@ -55,7 +55,7 @@ def apply_all_semantic_rules(mod_context_uri=None) -> List[core.Statement]:
     return total_res
 
 
-def apply_semantic_rules(*rules: List, mod_context_uri: str = None, exhaust=False) -> List[core.Statement]:
+def apply_semantic_rules(*rules: List, mod_context_uri: str = None, exhaust=False) -> "ReportingMultiRuleResult":
     """
     Apply multiple rules
 
@@ -758,7 +758,7 @@ class RuleApplicatorWorker:
 
         return relations
 
-    def get_condition_funcs_and_args(self) -> (List[callable], List[Tuple[int]]):
+    def get_condition_funcs_and_args(self) -> Tuple[List[callable], List[Tuple[int]]]:
         """ """
         self._fill_extended_local_nodes()
 
@@ -783,7 +783,7 @@ class RuleApplicatorWorker:
 
         return func_list, args_node_list
 
-    def prepare_consequent_functions(self) -> (List[callable], List[Tuple[int]], List[str]):
+    def prepare_consequent_functions(self) -> Tuple[List[callable], List[Tuple[int]], List[str]]:
         """
         Creates 3 lists:
             - a list of the consequent functions (might create a new item, new statement or have other side effects)

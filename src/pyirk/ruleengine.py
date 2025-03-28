@@ -55,13 +55,28 @@ def apply_all_semantic_rules(mod_context_uri=None) -> List[core.Statement]:
     return total_res
 
 
-def apply_semantic_rules(*rules: List, mod_context_uri: str = None) -> List[core.Statement]:
+def apply_semantic_rules(*rules: List, mod_context_uri: str = None, exhaust=False) -> List[core.Statement]:
+    """
+    Apply multiple rules
+
+    :param exhaust:     boolean flag; if True: repeat rule application until no new statements are created
+    """
     total_res = ReportingMultiRuleResult(rule_list=rules)
-    for rule in rules:
-        res = apply_semantic_rule(rule, mod_context_uri)
-        total_res.add_partial(res)
-        if res.exception:
+
+    existing_statements = len(total_res.new_statements)
+    while True:
+        # the outer loop handles the exhaust-case
+        for rule in rules:
+            res = apply_semantic_rule(rule, mod_context_uri)
+            total_res.add_partial(res)
+            if res.exception:
+                break
+        if not exhaust:
             break
+        new_statements = len(total_res.new_statements) - existing_statements
+        if not new_statements:
+            break
+        existing_statements = len(total_res.new_statements)
 
     return total_res
 

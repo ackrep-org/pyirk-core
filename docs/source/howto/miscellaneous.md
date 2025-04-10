@@ -71,12 +71,13 @@ to type. Solutions:
 ## How to perform a SPARQL query
 
 
+### Simple Query
+
 Example from `test_core.py:Test_04_Core.test_c020__sparql_query2`
 
 ```python
 
 import pyirk as p
-p.ds.rdfgraph = p.rdfstack.create_rdf_triples()
 
 qsrc = f"""
 PREFIX : <{p.rdfstack.IRK_URI}>
@@ -86,7 +87,40 @@ WHERE {{
     ?s :R16 ct:I7864.
 }}
 """
-res = p.ds.rdfgraph.query(qsrc)
-res2 = p.aux.apply_func_to_table_cells(p.rdfstack.convert_from_rdf_to_pyirk, res)
+
+res = p.rdfstack.perform_sparql_query(qsrc)
+```
+
+
+### Query Involving Qualifiers
+
+Example from `test_core.py:Test_04_Core.test_c040__sparql_queries_with_qualifiers`
+
+```python
+
+import pyirk as p
+ag = p.irkloader.load_mod_from_path(TEST_DATA_PATH3, prefix="ag")
+
+qsrc = f"""
+  PREFIX : <{p.rdfstack.IRK_URI}>
+  PREFIX qf: <{p.rdfstack.IRK_QF_URI}>
+  PREFIX ag: <{ag.__URI__}#>
+  PREFIX ag_s: <{ag.__URI__}/STATEMENTS#>
+  PREFIX ag_p: <{ag.__URI__}/PREDICATES#>
+  SELECT ?emp ?start_time ?end_time
+  WHERE {{
+      ag:I2746 ag_s:R1833 ?stm.
+      ?stm ag_p:R1833 ?emp.
+      ?stm qf:R48 ?start_time.
+      ?stm qf:R49 ?end_time.
+  }}
+"""
+
+  # due to the keyword arguments it is necessary to call this explicitly
+  p.ds.rdfgraph = p.rdfstack.create_rdf_triples(add_qualifiers=True, modfilter=ag.__URI__)
+  res1 = p.rdfstack.perform_sparql_query(qsrc)
+
+  self.assertIn([ag.I9942["Stanford University"], "1964", "1971"], res1)
+  self.assertIn([ag.I7301["ETH Zürich"], "1973", "1997"], res1)
 
 ```

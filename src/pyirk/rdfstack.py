@@ -2,7 +2,7 @@
 This module serves to perform integrity checks on the knowledge base
 """
 
-from typing import Union
+from typing import Union, Iterable
 
 from . import core as pyirk, auxiliary as aux
 from .auxiliary import STATEMENTS_URI_PART, PREDICATES_URI_PART, QUALIFIERS_URI_PART
@@ -21,6 +21,7 @@ from pyparsing import ParseException  # noqa
 
 
 IRK_URI = f"{pyirk.settings.BUILTINS_URI}{pyirk.settings.URI_SEP}"
+IRK_QF_URI = f"{pyirk.settings.BUILTINS_URI}/QUALIFIERS{pyirk.settings.URI_SEP}"
 
 
 def _make_rel_uri_with_suffix(rel_uri: str, suffix: str):
@@ -134,7 +135,8 @@ def create_rdf_triples(add_qualifiers=False, add_statements=None, modfilter=None
                 processed_statements[qstm.uri] = qstm
 
             # add the actual qualifier information
-            g.add([URIRef(subj_stm.uri), URIRef(make_qualifier_uri(pred.uri)), serialize_object(obj)])
+            qf_info = [URIRef(subj_stm.uri), URIRef(make_qualifier_uri(pred.uri)), serialize_object(obj)]
+            g.add(qf_info)
     return g
 
 
@@ -197,6 +199,10 @@ def convert_from_rdf_to_pyirk(rdfnode) -> object:
         raise TypeError(msg)
 
     return entity_object
+
+
+def convert_table_to_pyirk(table: Iterable):
+    return aux.apply_func_to_table_cells(convert_from_rdf_to_pyirk, table)
 
 
 def get_sparql_example_query():

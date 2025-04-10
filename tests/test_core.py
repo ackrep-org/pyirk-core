@@ -2037,7 +2037,6 @@ class Test_04_Core(HousekeeperMixin, unittest.TestCase):
     def test_c040__sparql_queries_with_qualifiers(self):
         # R20["has defining scope"]
 
-        ct = p.irkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
         ag = p.irkloader.load_mod_from_path(TEST_DATA_PATH3, prefix="ag")
 
         itm1: p.Item = p.ds.get_entity_by_key_str("ag__I2746__Rudolf_Kalman")
@@ -2045,9 +2044,11 @@ class Test_04_Core(HousekeeperMixin, unittest.TestCase):
         self.assertEqual(len(stm1.qualifiers), 2)
         self.assertEqual(len(stm2.qualifiers), 2)
 
-        qsrc_corr = f"""
+        p.ds.rdfgraph = p.rdfstack.create_rdf_triples(add_qualifiers=True, modfilter=ag.__URI__)
+
+        # normal query
+        qsrc = f"""
         PREFIX : <{p.rdfstack.IRK_URI}>
-        PREFIX ct: <{ct.__URI__}#>
         PREFIX ag: <{ag.__URI__}#>
         SELECT ?emp
         WHERE {{
@@ -2055,13 +2056,28 @@ class Test_04_Core(HousekeeperMixin, unittest.TestCase):
         }}
         """
 
-        q = p.ds.preprocess_query(qsrc_corr)
-        p.ds.rdfgraph = p.rdfstack.create_rdf_triples()
+        res0 = p.rdfstack.perform_sparql_query(qsrc)
 
-        res = p.ds.rdfgraph.query(q)
-        res2 = p.aux.apply_func_to_table_cells(p.rdfstack.convert_from_rdf_to_pyirk, res)
+        # query involving qualifiers
+        qsrc = f"""
+        PREFIX : <{p.rdfstack.IRK_URI}>
+        PREFIX qf: <{p.rdfstack.IRK_QF_URI}>
+        PREFIX ag: <{ag.__URI__}#>
+        PREFIX ag_s: <{ag.__URI__}/STATEMENTS#>
+        PREFIX ag_p: <{ag.__URI__}/PREDICATES#>
+        SELECT ?emp ?start_time ?end_time
+        WHERE {{
+            ag:I2746 ag_s:R1833 ?stm.
+            ?stm ag_p:R1833 ?emp.
+            ?stm qf:R48 ?start_time.
+            ?stm qf:R49 ?end_time.
+        }}
+        """
 
-        IPS()
+        res1 = p.rdfstack.perform_sparql_query(qsrc)
+
+        self.assertIn([ag.I9942["Stanford University"], "1964", "1971"], res1)
+        self.assertIn([ag.I7301["ETH Zürich"], "1973", "1997"], res1)
 
 
 @unittest.skipIf(os.environ.get("CI"), "Skipping report tests on CI to prevent dependencies")

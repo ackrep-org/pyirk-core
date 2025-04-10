@@ -53,13 +53,32 @@ def serialize_object(obj):
 
 
 def get_statement_rows(stm: pyirk.Statement):
+    """
+    Example:
+
+    stm: S50915(
+        <Item I2746["Rudolf Kalman"]>, <Relation R1833["has employer"]>, <Item I9942["Stanford University"]>
+    )
+
+    row1: [
+        URIRef('irk:/ocse/0.2/agents#I2746'),
+        URIRef('irk:/ocse/0.2/agents/STATEMENTS#R1833'),
+        URIRef('irk:/ocse/0.2/agents#S50915')
+    ]
+
+    row2: [
+        URIRef('irk:/ocse/0.2/agents#S50915'),
+        URIRef('irk:/ocse/0.2/agents/PREDICATES#R1833'),
+        URIRef('irk:/ocse/0.2/agents#I9942')
+    ]
+    """
     row1 = [URIRef(stm.subject.uri), URIRef(make_statement_uri(stm.predicate.uri)), URIRef(stm.uri)]
     row2 = [URIRef(stm.uri), URIRef(make_predicate_uri(stm.predicate.uri)), serialize_object(stm.object)]
 
     return row1, row2
 
 
-def create_rdf_triples(add_qualifiers=False, add_statements=False, modfilter=None) -> rdflib.Graph:
+def create_rdf_triples(add_qualifiers=False, add_statements=None, modfilter=None) -> rdflib.Graph:
     """
     :param add_qualifiers:     bool; implies add_statements
     :param add_statements:     bool;
@@ -82,7 +101,7 @@ def create_rdf_triples(add_qualifiers=False, add_statements=False, modfilter=Non
         for i, entity in enumerate(stm.relation_tuple):
             if isinstance(entity, pyirk.Statement):
                 # stm is a qualifier-statement which has another statement as subject
-                assert i == 0
+                assert i == 0, "Statement is not allowed as predicate or object"
                 qualifier_statements.append(stm)
                 break
             row.append(serialize_object(entity))

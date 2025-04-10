@@ -2034,6 +2034,35 @@ class Test_04_Core(HousekeeperMixin, unittest.TestCase):
                 p.ds.preprocess_query(qsrc_incorr_1)
             self.assertEqual(cm.exception.args[0], msg)
 
+    def test_c040__sparql_queries_with_qualifiers(self):
+        # R20["has defining scope"]
+
+        ct = p.irkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
+        ag = p.irkloader.load_mod_from_path(TEST_DATA_PATH3, prefix="ag")
+
+        itm1: p.Item = p.ds.get_entity_by_key_str("ag__I2746__Rudolf_Kalman")
+        stm1, stm2 = itm1.get_relations("ag__R1833__has_employer")[:2]
+        self.assertEqual(len(stm1.qualifiers), 2)
+        self.assertEqual(len(stm2.qualifiers), 2)
+
+        qsrc_corr = f"""
+        PREFIX : <{p.rdfstack.IRK_URI}>
+        PREFIX ct: <{ct.__URI__}#>
+        PREFIX ag: <{ag.__URI__}#>
+        SELECT ?emp
+        WHERE {{
+            ag:I2746 ag:R1833 ?emp.
+        }}
+        """
+
+        q = p.ds.preprocess_query(qsrc_corr)
+        p.ds.rdfgraph = p.rdfstack.create_rdf_triples()
+
+        res = p.ds.rdfgraph.query(q)
+        res2 = p.aux.apply_func_to_table_cells(p.rdfstack.convert_from_rdf_to_pyirk, res)
+
+        IPS()
+
 
 @unittest.skipIf(os.environ.get("CI"), "Skipping report tests on CI to prevent dependencies")
 class Test_06_reportgenerator(HousekeeperMixin, unittest.TestCase):

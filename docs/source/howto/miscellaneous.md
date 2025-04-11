@@ -101,6 +101,19 @@ Example from `test_core.py:Test_04_Core.test_c040__sparql_queries_with_qualifier
 import pyirk as p
 ag = p.irkloader.load_mod_from_path(TEST_DATA_PATH3, prefix="ag")
 
+# the ag-module specifies the following two statements:
+#
+# I2746["Rudolf Kalman"].set_relation(
+#     R1833["has employer"], I9942["Stanford University"], qualifiers=[start_time("1964"), end_time("1971")]
+# )
+#
+#
+# I2746["Rudolf Kalman"].set_relation(
+#     R1833["has employer"], I7301["ETH Zürich"], qualifiers=[start_time("1973"), end_time("1997")]
+# )
+
+# The following query retrieves this data
+
 qsrc = f"""
   PREFIX : <{p.rdfstack.IRK_URI}>
   PREFIX qf: <{p.rdfstack.IRK_QF_URI}>

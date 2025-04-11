@@ -3,6 +3,7 @@ This module serves to perform integrity checks on the knowledge base
 """
 
 from typing import Union, Iterable
+import pandas as pd
 
 from . import core as pyirk, auxiliary as aux
 from .auxiliary import STATEMENTS_URI_PART, PREDICATES_URI_PART, QUALIFIERS_URI_PART
@@ -170,7 +171,10 @@ def check_subclass(entity, class_item):
 Sparql_results_type = Union[aux.ListWithAttributes, SPARQLResult, Result]
 
 
-def perform_sparql_query(qsrc: str, return_raw=False) -> Sparql_results_type:
+def perform_sparql_query(qsrc: str, return_raw=False, preprocessing=True) -> Sparql_results_type:
+    if preprocessing:
+        qsrc = pyirk.ds.preprocess_query(qsrc)
+
     if pyirk.ds.rdfgraph is None:
         pyirk.ds.rdfgraph = create_rdf_triples()
 
@@ -183,6 +187,18 @@ def perform_sparql_query(qsrc: str, return_raw=False) -> Sparql_results_type:
         res2.vars = res.vars
         return res2
 
+def query_result_to_table(res, labels_only=False):
+    df = pd.DataFrame(columns=[str(head) for head in res.vars])
+    for i in range(len(res)):
+        df.loc[i] = res[i]
+    if labels_only:
+        def get_label(something):
+            if hasattr(something, "R1"):
+                return something.R1
+            else:
+                return something
+        df = df.applymap(get_label)
+    return df
 
 def convert_from_rdf_to_pyirk(rdfnode) -> object:
     if isinstance(rdfnode, URIRef):

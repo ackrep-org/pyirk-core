@@ -995,35 +995,40 @@ class DataStore:
             raise UnknownPrefixError(msg)
         return res
 
-    def preprocess_query(self, query):
+    def preprocess_query(self, query, sanity_check=True):
         if "__" in query:
-            prefixes = re.findall(r"[\w]*:[ ]*<.*?>", query)
-            prefix_dict = {}
-            for prefix in prefixes:
-                parts = prefix.split(" ")
-                key = parts[0]
-                value = parts[-1].replace("<", "").replace(">", "")
-                prefix_dict[key] = value
-            # print(prefix_dict)
+            if sanity_check:
+                prefixes = re.findall(r"[\w]*:[ ]*<.*?>", query)
+                prefix_dict = {}
+                for prefix in prefixes:
+                    parts = prefix.split(" ")
+                    key = parts[0]
+                    value = parts[-1].replace("<", "").replace(">", "")
+                    if value.split("/")[-1].upper() == value.split("/")[-1]:
+                        # this removes special qualifier prefixes that lead to uri not found error
+                        value = "/".join(value.split("/")[:-1]) + "#"
+                    prefix_dict[key] = value
+                # print(prefix_dict)
 
-            entities = re.findall(r"[\w]*:[\w]+__[\w]+(?:–_instance)?", query)
-            for e in entities:
-                # check sanity
-                prefix, rest = e.split(":")
-                prefix = prefix + ":"
-                irk_key, description = rest.split("__")
+                entities = re.findall(r"[\w]*:[\w]+__[\w]+(?:–_instance)?", query)
+                for e in entities:
+                    # check sanity
+                    prefix, rest = e.split(":")
+                    prefix = prefix + ":"
+                    irk_key, description = rest.split("__")
 
-                entity_uri = prefix_dict.get(prefix) + irk_key
-                entity = self.get_entity_by_uri(entity_uri)
+                    entity_uri = prefix_dict.get(prefix) + irk_key
+                    entity = self.get_entity_by_uri(entity_uri)
 
-                label = description.replace("_", " ")
+                    label = description.replace("_", " ")
 
-                assert isinstance(entity.R1, Literal)
-                r1 = entity.R1.value
+                    assert isinstance(entity.R1, Literal)
+                    r1 = entity.R1.value
 
-                if r1 != label:
-                    msg = f"Entity label '{r1}' for entity '{e}' and given label '{label}' do not match!"
-                    raise aux.InconsistentLabelError(msg)
+                    if r1 != label:
+                        msg = f"Entity label '{r1}' for entity '{e}' and given label '{label}' do not match!"
+                        raise aux.InconsistentLabelError(msg)
+                    # todo: do not raise if wrong entity is in comment
 
             new_query = re.sub(r"__[\w]+(?:–_instance)?", "", query)
         else:

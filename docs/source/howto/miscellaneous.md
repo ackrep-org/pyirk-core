@@ -180,9 +180,11 @@ for human in ag.I7435["human"].get_inv_relations("R4", return_subj=True):
 
 ```python
 
-# find taxonomically orphaned items (no associated R3__is_subclass_of and no R4__is_instance_of statements):
+# find taxonomically orphaned items (no associated R3__is_subclass_of and no
+# R4__is_instance_of statements):
 
 orphans = [
-  (i, i.uri) for i in p.ds.items.values() if (i != p.I45["general item"] and i.R3 is None and i.R4 is None)
+  (i, i.uri) for i in p.ds.items.values()
+      if (i != p.I45["general item"] and i.R3 is None and i.R4 is None)
 ]
 ```

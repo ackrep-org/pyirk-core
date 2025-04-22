@@ -197,7 +197,7 @@ def query_result_to_table(res, labels_only=False):
                 return something.R1
             else:
                 return something
-        df = df.applymap(get_label)
+        df = df.map(get_label)
     return df
 
 def convert_from_rdf_to_pyirk(rdfnode) -> object:

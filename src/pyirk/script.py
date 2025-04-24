@@ -9,6 +9,7 @@ import re
 from typing import Tuple
 import ast
 import inspect
+from textwrap import dedent
 
 try:
     # this will be part of standard library for python >= 3.11
@@ -16,11 +17,15 @@ try:
 except ModuleNotFoundError:
     import tomli as tomllib
 
+import platformdirs
+
 
 from . import core, irkloader, rdfstack
 from . import visualization
 from . import reportgenerator
 from . import auxiliary as aux
+
+# TODO: remove obsolete import
 from . import settings
 from . import release
 
@@ -158,6 +163,12 @@ def create_parser():
         action="store_true",
     )
 
+    parser.add_argument(
+        "--bootstrap-config",
+        help="create an empty config.toml file in the user config directory",
+        action="store_true",
+    )
+
     return parser
 
 
@@ -238,6 +249,8 @@ def main():
         insert_keys_for_placeholders(args.insert_keys_for_placeholders)
     elif args.update_test_data:
         update_test_data(args.update_test_data)
+    elif args.bootstrap_config:
+        bootstrap_config()
     else:
         print("nothing to do, see option `--help` for more info")
 
@@ -534,6 +547,34 @@ def path_to_ast_container(mod_path: str) -> core.aux.Container:
         c.line_data[name] = src_txt
 
     return c
+
+
+def bootstrap_config():
+    """
+    Create an empty config.toml file in the user config directory.
+    """
+    config_dir = platformdirs.user_config_dir("pyirk")
+    os.makedirs(config_dir, exist_ok=True)
+
+    config_path = os.path.join(config_dir, "config.toml")
+
+    if os.path.exists(config_path):
+        print(f"Config file already exists at: {config_path}")
+        return
+
+    initial_content = dedent("""
+    # PyIRK configuration file
+
+    # example:
+    # [ocse]
+    # path = "/home/username/irk-data/ocse"
+
+    """)
+
+    with open(config_path, "w") as f:
+        f.write(initial_content)
+
+    print(f"Empty config file created at: {config_path}")
 
 
 def get_lines_for_short_key(short_key: str) -> str:

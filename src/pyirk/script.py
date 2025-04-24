@@ -397,7 +397,7 @@ def replace_dummy_entities_by_label(modpath):
     """
 
     loaded_mod = process_mod(path=modpath, prefix="mod", relative_to_workdir=True)
-    pattern = re.compile("""(p.I000\[['"](.*?)['"]\])""")
+    pattern = re.compile(r"""(p.I000\[['"](.*?)['"]\])""")
 
     with open(modpath) as fp:
         txt = fp.read()

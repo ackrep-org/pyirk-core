@@ -4,6 +4,8 @@ import os
 import sys
 import logging
 
+import platformdirs
+
 try:
     # this will be part of standard library for python >= 3.11
     import tomllib
@@ -11,6 +13,27 @@ except ModuleNotFoundError:
     import tomli as tomllib
 
 logger = logging.getLogger("pyirk")
+
+
+
+# load config.toml via platformdirs
+# this file can be created by pyirk --bootstrap-config
+
+config = {}
+config_path = platformdirs.user_config_dir("pyirk")
+config_file = os.path.join(config_path, "config.toml")
+
+if os.path.isfile(config_file):
+    try:
+        with open(config_file, "rb") as f:
+            config = tomllib.load(f)
+    except Exception as e:
+        msg = (
+            f"Warning: Could not load existing config file {config_file}: {e}. Maybe syntax error?\n\n"
+            f"Original exception: {str(e)}"
+        )
+        print(msg)
+
 
 # for now we only support a subset of languages with wich the authors are familiar
 # if you miss a language, please consider contributing
@@ -38,6 +61,9 @@ URI_SEP = "#"
 OCSE_URI = "irk:/ocse/0.2"
 
 
+# below is the old config mechanism
+# TODO: merge it with the platformdirs-based approach
+
 # this is relevant to look for pyirk-data to load (specified by a configuration file)
 BASE_DIR = os.path.abspath(os.getenv("PYIRK_BASE_DIR", "./"))
 
@@ -53,3 +79,6 @@ except FileNotFoundError:
     msg = f"file not found: {confpath}"
     logger.warning(msg)
     CONF = {}
+
+# For now just add the content from the global config file
+CONF.update(config)

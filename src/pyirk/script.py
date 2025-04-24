@@ -566,7 +566,7 @@ def bootstrap_config():
     # PyIRK configuration file
 
     # example:
-    # [ocse]
+    # [package.ocse]
     # path = "/home/username/irk-data/ocse"
 
     """)

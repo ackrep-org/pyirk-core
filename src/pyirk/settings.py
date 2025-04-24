@@ -29,10 +29,13 @@ if os.path.isfile(config_file):
             config = tomllib.load(f)
     except Exception as e:
         msg = (
-            f"Warning: Could not load existing config file {config_file}: {e}. Maybe syntax error?\n\n"
-            f"Original exception: {str(e)}"
+            f"Warning: Could not load existing config file {config_file}. Maybe syntax error?\n"
+            f"Original exception ({type(e)}):\n\n{str(e)}"
         )
         print(msg)
+
+
+DEBUG = False
 
 
 # for now we only support a subset of languages with wich the authors are familiar

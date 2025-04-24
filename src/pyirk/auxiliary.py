@@ -1,15 +1,27 @@
 import os
 import sys
 import re as regex
+import logging
 from typing import Iterable, Union, Dict, Any
 from rdflib import Literal
 from colorama import Style, Fore
 from addict import Addict as Container
+
+try:
+    # this will be part of standard library for python >= 3.11
+    import tomllib
+except ModuleNotFoundError:
+    import tomli as tomllib
+
+
+
 from . import settings
 
 """
 Some auxiliary classes and functions for pyirk.
 """
+
+logger = logging.getLogger("pyirk")
 
 startup_workdir = os.path.abspath(os.getcwd())
 
@@ -25,6 +37,10 @@ PREDICATES_URI_PART = "/PREDICATES"
 
 # corresponds to `pq` ("http://www.wikidata.org/property_qualifier/" ?) -> used for qualifying pred-obj-tuples
 QUALIFIERS_URI_PART = "/QUALIFIERS"
+
+# these dict maps uris to paths
+AVAILABLE_PACKAGES: dict[str, str] = {}
+AVAILABLE_MODULES: dict[str, str] = {}
 
 
 class NotYetFinishedError(NotImplementedError):
@@ -496,3 +512,66 @@ def get_irk_path(dirname=None):
 
     msg = f"unexpected dirname: {dirname}"
     raise ValueError(msg)
+
+
+def _handle_exception(e: Exception, msg):
+    final_msg = (
+        f"{msg}\n"
+        f"Original exception ({type(e)}):\n\n{str(e)}"
+    )
+    logger.error(final_msg)
+    if settings.DEBUG:
+        raise
+
+    raise
+
+
+def load_module_configs_from_general_config():
+    """
+    This function loads all irkpackage.toml files for every key in CONF["packages"]
+    """
+    package_data: dict = settings.CONF.get("package")
+
+    data: dict
+    for name, data in package_data.items():
+        try:
+            package_path = data["path"]
+        except KeyError as ex:
+            msg = f"Error while loading config data for package {name}:\n\n{str(ex)}"
+            logger.warning(ex)
+
+        # load toml
+        toml_path = os.path.join(package_path, "irkpackage.toml")
+        try:
+            with open(toml_path, "rb") as f:
+                package_data = tomllib.load(f)
+        except Exception as e:
+            _handle_exception(e, msg=f"Warning: Could not load {toml_path}.")
+            # !!
+            continue
+        main_mod_path = os.path.join(package_path, package_data["main_module"])
+
+        try:
+            uri = _extract_uri_from_python_file(main_mod_path)
+        except Exception as e:
+            _handle_exception(e, msg=f"Could not extract __URI__ from {main_mod_path}.")
+
+
+    from ipydex import IPS
+    IPS()
+
+
+def _extract_uri_from_python_file(fpath):
+    with open(fpath) as fp:
+        src_txt = fp.read()
+
+    end_of_preamble_idx = src_txt.index("start_mod(__URI__)")
+
+    preamble = src_txt[:end_of_preamble_idx]
+
+    # find lines like: `__URI__  = "irk:/ocse/0.2/control_theory"`
+    # (with some robustness against insignificant whitespaces and comments)
+    res = regex.findall("""\n__URI__ *= *["'](.*)["'].*\n""", preamble)
+
+    assert len(res) == 1, f"Invalid number of regex results: {len(res)} (expected 1)"
+    return res[0]

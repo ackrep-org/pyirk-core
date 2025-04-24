@@ -163,6 +163,11 @@ class Test_00_Core(HousekeeperMixin, unittest.TestCase):
         self.assertTrue(stm1.uri.startswith(mod1.__URI__))
         self.assertTrue(stm2.uri.startswith(mod1.__URI__))
 
+    # TODO: include config.toml testdata
+    @unittest.skipIf(os.environ.get("CI"), "Skipping config.toml-dependent tests on CI")
+    def test_c011__load_mod_by_uri_aux(self):
+        p.aux.load_module_configs_from_general_config()
+
     def test_c02__exception_handling(self):
 
         os.environ["PYIRK_TRIGGER_TEST_EXCEPTION"] = "True"

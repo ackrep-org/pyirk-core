@@ -10,3 +10,4 @@ src/*.egg-info/*
 tmp*
 dist
 build
+.aider*

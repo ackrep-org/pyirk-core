@@ -42,6 +42,10 @@ QUALIFIERS_URI_PART = "/QUALIFIERS"
 AVAILABLE_PACKAGES: dict[str, str] = {}
 AVAILABLE_MODULES: dict[str, str] = {}
 
+STATES = Container({"available_modules_detected": False})
+
+
+
 
 class NotYetFinishedError(NotImplementedError):
     pass
@@ -551,14 +555,25 @@ def load_module_configs_from_general_config():
             continue
         main_mod_path = os.path.join(package_path, package_data["main_module"])
 
-        try:
-            uri = _extract_uri_from_python_file(main_mod_path)
-        except Exception as e:
-            _handle_exception(e, msg=f"Could not extract __URI__ from {main_mod_path}.")
+        def get_uri(mod_path):
+            try:
+                uri = _extract_uri_from_python_file(mod_path)
+            except Exception as e:
+                _handle_exception(e, msg=f"Could not extract __URI__ from {mod_path}.")
+            return uri
+
+        uri = get_uri(main_mod_path)
+
+        # not yet used but might be useful in the future
+        AVAILABLE_PACKAGES[uri] = package_data
+        AVAILABLE_MODULES[uri] = main_mod_path
 
 
-    from ipydex import IPS
-    IPS()
+        for mod_fname in package_data.get("further_modules", []):
+            mod_path = os.path.join(package_path, mod_fname)
+            AVAILABLE_MODULES[get_uri(mod_path)] = mod_path
+
+    STATES.available_modules_detected = True
 
 
 def _extract_uri_from_python_file(fpath):

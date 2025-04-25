@@ -165,7 +165,7 @@ class Test_00_Core(HousekeeperMixin, unittest.TestCase):
 
     # TODO: include config.toml testdata
     @unittest.skipIf(os.environ.get("CI"), "Skipping config.toml-dependent tests on CI")
-    def test_c011__load_mod_by_uri_aux(self):
+    def test_c011__load_mod_from_uri(self):
         ag = p.irkloader.load_mod_from_uri("irk:/ocse/0.2/agents", "ag")
 
         # this requires OCSE-path configured (see "Global Configuration" in docs)

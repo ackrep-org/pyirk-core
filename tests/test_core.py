@@ -163,6 +163,14 @@ class Test_00_Core(HousekeeperMixin, unittest.TestCase):
         self.assertTrue(stm1.uri.startswith(mod1.__URI__))
         self.assertTrue(stm2.uri.startswith(mod1.__URI__))
 
+    # TODO: include config.toml testdata
+    @unittest.skipIf(os.environ.get("CI"), "Skipping config.toml-dependent tests on CI")
+    def test_c011__load_mod_from_uri(self):
+        ag = p.irkloader.load_mod_from_uri("irk:/ocse/0.2/agents", "ag")
+
+        # this requires OCSE-path configured (see "Global Configuration" in docs)
+        self.assertEqual(str(ag.I7435.R1), "human")
+
     def test_c02__exception_handling(self):
 
         os.environ["PYIRK_TRIGGER_TEST_EXCEPTION"] = "True"

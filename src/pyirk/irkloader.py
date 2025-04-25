@@ -38,6 +38,24 @@ def delete_bytecode_files(modpath):
     for bc_path in bytecode_paths:
         os.unlink(bc_path)
 
+@preserve_cwd
+def load_mod_from_uri(uri: str, prefix: str, *args, **kwargs):
+
+    if not pyirk.aux.STATES.available_modules_detected:
+        pyirk.aux.load_module_configs_from_general_config()
+
+    try:
+        mod_path = pyirk.aux.AVAILABLE_MODULES[uri]
+    except KeyError:
+        length = len(pyirk.aux.AVAILABLE_MODULES)
+        msg = f"could not find {uri} among the f{length} available modules."
+        pyirk.logger.error(msg)
+        raise KeyError(msg)
+
+    return load_mod_from_path(mod_path, prefix, *args, **kwargs)
+
+
+
 
 # noinspection PyProtectedMember
 @preserve_cwd

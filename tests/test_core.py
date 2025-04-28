@@ -163,6 +163,14 @@ class Test_00_Core(HousekeeperMixin, unittest.TestCase):
         self.assertTrue(stm1.uri.startswith(mod1.__URI__))
         self.assertTrue(stm2.uri.startswith(mod1.__URI__))
 
+    # TODO: include config.toml testdata
+    @unittest.skipIf(os.environ.get("CI"), "Skipping config.toml-dependent tests on CI")
+    def test_c011__load_mod_from_uri(self):
+        ag = p.irkloader.load_mod_from_uri("irk:/ocse/0.2/agents", "ag")
+
+        # this requires OCSE-path configured (see "Global Configuration" in docs)
+        self.assertEqual(str(ag.I7435.R1), "human")
+
     def test_c02__exception_handling(self):
 
         os.environ["PYIRK_TRIGGER_TEST_EXCEPTION"] = "True"
@@ -2033,6 +2041,51 @@ class Test_04_Core(HousekeeperMixin, unittest.TestCase):
             with self.assertRaises(p.aux.InconsistentLabelError) as cm:
                 p.ds.preprocess_query(qsrc_incorr_1)
             self.assertEqual(cm.exception.args[0], msg)
+
+    def test_c040__sparql_queries_with_qualifiers(self):
+        # R20["has defining scope"]
+
+        ag = p.irkloader.load_mod_from_path(TEST_DATA_PATH3, prefix="ag")
+
+        itm1: p.Item = p.ds.get_entity_by_key_str("ag__I2746__Rudolf_Kalman")
+        stm1, stm2 = itm1.get_relations("ag__R1833__has_employer")[:2]
+        self.assertEqual(len(stm1.qualifiers), 2)
+        self.assertEqual(len(stm2.qualifiers), 2)
+
+        p.ds.rdfgraph = p.rdfstack.create_rdf_triples(add_qualifiers=True, modfilter=ag.__URI__)
+
+        # normal query
+        qsrc = f"""
+        PREFIX : <{p.rdfstack.IRK_URI}>
+        PREFIX ag: <{ag.__URI__}#>
+        SELECT ?emp
+        WHERE {{
+            ag:I2746 ag:R1833 ?emp.
+        }}
+        """
+
+        res0 = p.rdfstack.perform_sparql_query(qsrc)
+
+        # query involving qualifiers
+        qsrc = f"""
+        PREFIX : <{p.rdfstack.IRK_URI}>
+        PREFIX qf: <{p.rdfstack.IRK_QF_URI}>
+        PREFIX ag: <{ag.__URI__}#>
+        PREFIX ag_s: <{ag.__URI__}/STATEMENTS#>
+        PREFIX ag_p: <{ag.__URI__}/PREDICATES#>
+        SELECT ?emp ?start_time ?end_time
+        WHERE {{
+            ag:I2746 ag_s:R1833 ?stm.
+            ?stm ag_p:R1833 ?emp.
+            ?stm qf:R48 ?start_time.
+            ?stm qf:R49 ?end_time.
+        }}
+        """
+
+        res1 = p.rdfstack.perform_sparql_query(qsrc)
+
+        self.assertIn([ag.I9942["Stanford University"], "1964", "1971"], res1)
+        self.assertIn([ag.I7301["ETH Zürich"], "1973", "1997"], res1)
 
 
 @unittest.skipIf(os.environ.get("CI"), "Skipping report tests on CI to prevent dependencies")

@@ -55,18 +55,33 @@ def apply_all_semantic_rules(mod_context_uri=None) -> List[core.Statement]:
     return total_res
 
 
-def apply_semantic_rules(*rules: List, mod_context_uri: str = None) -> List[core.Statement]:
+def apply_semantic_rules(*rules: List, mod_context_uri: str = None, exhaust=False) -> "ReportingMultiRuleResult":
+    """
+    Apply multiple rules
+
+    :param exhaust:     boolean flag; if True: repeat rule application until no new statements are created
+    """
     total_res = ReportingMultiRuleResult(rule_list=rules)
-    for rule in rules:
-        res = apply_semantic_rule(rule, mod_context_uri)
-        total_res.add_partial(res)
-        if res.exception:
+
+    existing_statements = len(total_res.new_statements)
+    while True:
+        # the outer loop handles the exhaust-case
+        for rule in rules:
+            res = apply_semantic_rule(rule, mod_context_uri)
+            total_res.add_partial(res)
+            if res.exception:
+                break
+        if not exhaust:
             break
+        new_statements = len(total_res.new_statements) - existing_statements
+        if not new_statements:
+            break
+        existing_statements = len(total_res.new_statements)
 
     return total_res
 
 
-def apply_semantic_rule(rule: core.Item, mod_context_uri: str = None) -> List[core.Statement]:
+def apply_semantic_rule(rule: core.Item, mod_context_uri: str = None) -> "ReportingRuleResult":
     """
     Create a RuleApplicator instance for the rules, execute its apply-method, return the result (list of new statements)
     """
@@ -743,7 +758,7 @@ class RuleApplicatorWorker:
 
         return relations
 
-    def get_condition_funcs_and_args(self) -> (List[callable], List[Tuple[int]]):
+    def get_condition_funcs_and_args(self) -> Tuple[List[callable], List[Tuple[int]]]:
         """ """
         self._fill_extended_local_nodes()
 
@@ -768,7 +783,7 @@ class RuleApplicatorWorker:
 
         return func_list, args_node_list
 
-    def prepare_consequent_functions(self) -> (List[callable], List[Tuple[int]], List[str]):
+    def prepare_consequent_functions(self) -> Tuple[List[callable], List[Tuple[int]], List[str]]:
         """
         Creates 3 lists:
             - a list of the consequent functions (might create a new item, new statement or have other side effects)

@@ -446,7 +446,7 @@ def create_complete_graph(
 
     i = 0
     relation_dict: dict
-    for item_uri, relation_dict in p.ds.statements.items():
+    for item_uri, relation_dict in list(p.ds.statements.items()):
         item = p.ds.get_entity_by_uri(item_uri, strict=None)
         if item is None:
             # this is the case for some statements which are subject of a qualifier relation

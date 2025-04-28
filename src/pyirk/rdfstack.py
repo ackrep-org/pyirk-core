@@ -2,7 +2,8 @@
 This module serves to perform integrity checks on the knowledge base
 """
 
-from typing import Union
+from typing import Union, Iterable
+import pandas as pd
 
 from . import core as pyirk, auxiliary as aux
 from .auxiliary import STATEMENTS_URI_PART, PREDICATES_URI_PART, QUALIFIERS_URI_PART
@@ -21,6 +22,7 @@ from pyparsing import ParseException  # noqa
 
 
 IRK_URI = f"{pyirk.settings.BUILTINS_URI}{pyirk.settings.URI_SEP}"
+IRK_QF_URI = f"{pyirk.settings.BUILTINS_URI}/QUALIFIERS{pyirk.settings.URI_SEP}"
 
 
 def _make_rel_uri_with_suffix(rel_uri: str, suffix: str):
@@ -53,13 +55,32 @@ def serialize_object(obj):
 
 
 def get_statement_rows(stm: pyirk.Statement):
+    """
+    Example:
+
+    stm: S50915(
+        <Item I2746["Rudolf Kalman"]>, <Relation R1833["has employer"]>, <Item I9942["Stanford University"]>
+    )
+
+    row1: [
+        URIRef('irk:/ocse/0.2/agents#I2746'),
+        URIRef('irk:/ocse/0.2/agents/STATEMENTS#R1833'),
+        URIRef('irk:/ocse/0.2/agents#S50915')
+    ]
+
+    row2: [
+        URIRef('irk:/ocse/0.2/agents#S50915'),
+        URIRef('irk:/ocse/0.2/agents/PREDICATES#R1833'),
+        URIRef('irk:/ocse/0.2/agents#I9942')
+    ]
+    """
     row1 = [URIRef(stm.subject.uri), URIRef(make_statement_uri(stm.predicate.uri)), URIRef(stm.uri)]
     row2 = [URIRef(stm.uri), URIRef(make_predicate_uri(stm.predicate.uri)), serialize_object(stm.object)]
 
     return row1, row2
 
 
-def create_rdf_triples(add_qualifiers=False, add_statements=False, modfilter=None) -> rdflib.Graph:
+def create_rdf_triples(add_qualifiers=False, add_statements=None, modfilter=None) -> rdflib.Graph:
     """
     :param add_qualifiers:     bool; implies add_statements
     :param add_statements:     bool;
@@ -82,7 +103,7 @@ def create_rdf_triples(add_qualifiers=False, add_statements=False, modfilter=Non
         for i, entity in enumerate(stm.relation_tuple):
             if isinstance(entity, pyirk.Statement):
                 # stm is a qualifier-statement which has another statement as subject
-                assert i == 0
+                assert i == 0, "Statement is not allowed as predicate or object"
                 qualifier_statements.append(stm)
                 break
             row.append(serialize_object(entity))
@@ -115,7 +136,8 @@ def create_rdf_triples(add_qualifiers=False, add_statements=False, modfilter=Non
                 processed_statements[qstm.uri] = qstm
 
             # add the actual qualifier information
-            g.add([URIRef(subj_stm.uri), URIRef(make_qualifier_uri(pred.uri)), serialize_object(obj)])
+            qf_info = [URIRef(subj_stm.uri), URIRef(make_qualifier_uri(pred.uri)), serialize_object(obj)]
+            g.add(qf_info)
     return g
 
 
@@ -149,7 +171,10 @@ def check_subclass(entity, class_item):
 Sparql_results_type = Union[aux.ListWithAttributes, SPARQLResult, Result]
 
 
-def perform_sparql_query(qsrc: str, return_raw=False) -> Sparql_results_type:
+def perform_sparql_query(qsrc: str, return_raw=False, preprocessing=True) -> Sparql_results_type:
+    if preprocessing:
+        qsrc = pyirk.ds.preprocess_query(qsrc)
+
     if pyirk.ds.rdfgraph is None:
         pyirk.ds.rdfgraph = create_rdf_triples()
 
@@ -162,6 +187,18 @@ def perform_sparql_query(qsrc: str, return_raw=False) -> Sparql_results_type:
         res2.vars = res.vars
         return res2
 
+def query_result_to_table(res, labels_only=False):
+    df = pd.DataFrame(columns=[str(head) for head in res.vars])
+    for i in range(len(res)):
+        df.loc[i] = res[i]
+    if labels_only:
+        def get_label(something):
+            if hasattr(something, "R1"):
+                return something.R1
+            else:
+                return something
+        df = df.map(get_label)
+    return df
 
 def convert_from_rdf_to_pyirk(rdfnode) -> object:
     if isinstance(rdfnode, URIRef):
@@ -178,6 +215,10 @@ def convert_from_rdf_to_pyirk(rdfnode) -> object:
         raise TypeError(msg)
 
     return entity_object
+
+
+def convert_table_to_pyirk(table: Iterable):
+    return aux.apply_func_to_table_cells(convert_from_rdf_to_pyirk, table)
 
 
 def get_sparql_example_query():

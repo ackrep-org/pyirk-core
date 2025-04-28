@@ -2970,7 +2970,64 @@ I59 = create_builtin_item(
     R18__has_usage_hint="usually such statements do not need a premise and might even omit the setting.",
 )
 
-# next keys: I62, R83
+
+R83 = create_builtin_relation(
+    key_str="R83",
+    R1__has_label="is generalized subclass of",
+    R2__has_description="specifies that the object is either a direct or indirect subclass of the subject",
+    R18__has_usage_hint="this relation is intended to be set by a semantic rule, but not manually",
+    R8__has_domain_of_argument_1=I2["Metaclass"],
+    R11__has_range_of_result=I2["Metaclass"],
+)
+
+# create necessary qualifier, see R59["has rule-prototype-graph-mode"] above
+qf_prevent_duplicate_stms = qff_has_rule_ptg_mode(5)
+
+
+I64 = create_builtin_item(
+    key_str="I64",
+    R1__has_label="introduction of generalized subclass statements",
+    R2__has_description=(
+        "this rule creates R83__is_generalized_subclass_of statements parallel to "
+        "R3__is_subclass of statements"
+    ),
+    R4__is_instance_of=I41["semantic rule"],
+)
+
+with I64.scope("setting") as cm:
+    cm.new_var(i1=instance_of(I1["general item"]))
+    cm.new_var(i2=instance_of(I1["general item"]))
+
+with I64.scope("premise") as cm:
+    cm.new_rel(cm.i2, R3["is subclass of"], cm.i1)
+
+with I64.scope("assertion") as cm:
+    cm.new_rel(cm.i2, R83["is generalized subclass of"], cm.i1, qualifiers=[qf_prevent_duplicate_stms])
+
+
+I65 = create_builtin_item(
+    key_str="I65",
+    R1__has_label="propagation of generalized subclass",
+    R2__has_description=(
+        "this rule creates R83__is_generalized_subclass_of statements for inheritance structures"
+    ),
+    R4__is_instance_of=I41["semantic rule"],
+)
+
+with I65.scope("setting") as cm:
+    cm.new_var(i1=instance_of(I1["general item"]))
+    cm.new_var(i2=instance_of(I1["general item"]))
+    cm.new_var(i3=instance_of(I1["general item"]))
+
+with I65.scope("premise") as cm:
+    cm.new_rel(cm.i2, R83["is generalized subclass of"], cm.i1)
+    cm.new_rel(cm.i3, R83["is generalized subclass of"], cm.i2)
+
+with I65.scope("assertion") as cm:
+    # the qualifier prevents the creation of duplicated
+    cm.new_rel(cm.i3, R83["is generalized subclass of"], cm.i1, qualifiers=[qf_prevent_duplicate_stms])
+
+# next keys: I66, R84
 
 
 # ######################################################################################################################

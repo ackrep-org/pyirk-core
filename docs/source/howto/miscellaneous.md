@@ -47,6 +47,33 @@ ScopingCM
 
 
 
+## Visualize Single Node with Given Radius (or Level)
+
+```python
+
+os.makedirs("vis", exist_ok=True)
+
+def visualize(label, radius):
+    uri = p.ds.get_item_by_label(label).uri
+    vis = p.visualize_entity(uri, radius=radius)
+    with open(f"vis/visu_{label}_r{radius}.svg", "wt", encoding="utf-8") as f:
+        f.write(vis)
+
+###################
+visualize("platinum", 1)
+visualize("platinum", 2)
+
+```
+## Visualize Whole Graph
+
+```python
+vis = p.visualize_all_entities()
+with open(f"vis/whole_graph.svg", "wt", encoding="utf-8") as f:
+    f.write(vis)
+
+```
+
+
 (sec_practical_work_with_keys)=
 ## Practically working with keys
 
@@ -71,12 +98,13 @@ to type. Solutions:
 ## How to perform a SPARQL query
 
 
+### Simple Query
+
 Example from `test_core.py:Test_04_Core.test_c020__sparql_query2`
 
 ```python
 
 import pyirk as p
-p.ds.rdfgraph = p.rdfstack.create_rdf_triples()
 
 qsrc = f"""
 PREFIX : <{p.rdfstack.IRK_URI}>
@@ -86,7 +114,77 @@ WHERE {{
     ?s :R16 ct:I7864.
 }}
 """
-res = p.ds.rdfgraph.query(qsrc)
-res2 = p.aux.apply_func_to_table_cells(p.rdfstack.convert_from_rdf_to_pyirk, res)
 
+res = p.rdfstack.perform_sparql_query(qsrc)
+```
+
+
+### Query Involving Qualifiers
+
+Example from `test_core.py:Test_04_Core.test_c040__sparql_queries_with_qualifiers`
+
+```python
+
+import pyirk as p
+ag = p.irkloader.load_mod_from_path(TEST_DATA_PATH3, prefix="ag")
+
+# the ag-module specifies the following two statements:
+#
+# I2746["Rudolf Kalman"].set_relation(
+#     R1833["has employer"], I9942["Stanford University"], qualifiers=[start_time("1964"), end_time("1971")]
+# )
+#
+#
+# I2746["Rudolf Kalman"].set_relation(
+#     R1833["has employer"], I7301["ETH Zürich"], qualifiers=[start_time("1973"), end_time("1997")]
+# )
+
+# The following query retrieves this data
+
+qsrc = f"""
+  PREFIX : <{p.rdfstack.IRK_URI}>
+  PREFIX qf: <{p.rdfstack.IRK_QF_URI}>
+  PREFIX ag: <{ag.__URI__}#>
+  PREFIX ag_s: <{ag.__URI__}/STATEMENTS#>
+  PREFIX ag_p: <{ag.__URI__}/PREDICATES#>
+  SELECT ?emp ?start_time ?end_time
+  WHERE {{
+      ag:I2746 ag_s:R1833 ?stm.
+      ?stm ag_p:R1833 ?emp.
+      ?stm qf:R48 ?start_time.
+      ?stm qf:R49 ?end_time.
+  }}
+"""
+
+  # due to the keyword arguments it is necessary to call this explicitly
+  p.ds.rdfgraph = p.rdfstack.create_rdf_triples(add_qualifiers=True, modfilter=ag.__URI__)
+  res1 = p.rdfstack.perform_sparql_query(qsrc)
+
+  self.assertIn([ag.I9942["Stanford University"], "1964", "1971"], res1)
+  self.assertIn([ag.I7301["ETH Zürich"], "1973", "1997"], res1)
+
+```
+
+## Find Certain Items (Without SPARQL)
+
+
+```python
+
+# delete all human-instance from agent (but keep those defined in other modules)
+humans_to_delete = []
+for human in ag.I7435["human"].get_inv_relations("R4", return_subj=True):
+    if ag.__URI__ in human.uri:
+        humans_to_delete.append(human)
+
+```
+
+```python
+
+# find taxonomically orphaned items (no associated R3__is_subclass_of and no
+# R4__is_instance_of statements):
+
+orphans = [
+  (i, i.uri) for i in p.ds.items.values()
+      if (i != p.I45["general item"] and i.R3 is None and i.R4 is None)
+]
 ```

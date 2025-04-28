@@ -10,7 +10,5 @@ theorem
 build_docs
 generate_test_data
 miscellaneous
+troubleshooting
 ```
-
-
-bar

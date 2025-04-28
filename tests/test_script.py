@@ -32,7 +32,7 @@ class Test_01_Script(HousekeeperMixin, unittest.TestCase):
 
         N = len(os.listdir(TEST_DATA_DIR1))
 
-        cmd = f"pyirk --insert-keys-for-placeholders {modpath}"
+        cmd = f'pyirk --insert-keys-for-placeholders "{modpath}"'
         os.system(cmd)
 
         # ensure that temporary file is deleted correctly

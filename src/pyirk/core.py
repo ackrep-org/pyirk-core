@@ -995,35 +995,40 @@ class DataStore:
             raise UnknownPrefixError(msg)
         return res
 
-    def preprocess_query(self, query):
+    def preprocess_query(self, query, sanity_check=True):
         if "__" in query:
-            prefixes = re.findall(r"[\w]*:[ ]*<.*?>", query)
-            prefix_dict = {}
-            for prefix in prefixes:
-                parts = prefix.split(" ")
-                key = parts[0]
-                value = parts[-1].replace("<", "").replace(">", "")
-                prefix_dict[key] = value
-            # print(prefix_dict)
+            if sanity_check:
+                prefixes = re.findall(r"[\w]*:[ ]*<.*?>", query)
+                prefix_dict = {}
+                for prefix in prefixes:
+                    parts = prefix.split(" ")
+                    key = parts[0]
+                    value = parts[-1].replace("<", "").replace(">", "")
+                    if value.split("/")[-1].upper() == value.split("/")[-1]:
+                        # this removes special qualifier prefixes that lead to uri not found error
+                        value = "/".join(value.split("/")[:-1]) + "#"
+                    prefix_dict[key] = value
+                # print(prefix_dict)
 
-            entities = re.findall(r"[\w]*:[\w]+__[\w]+(?:–_instance)?", query)
-            for e in entities:
-                # check sanity
-                prefix, rest = e.split(":")
-                prefix = prefix + ":"
-                irk_key, description = rest.split("__")
+                entities = re.findall(r"[\w]*:[\w]+__[\w]+(?:–_instance)?", query)
+                for e in entities:
+                    # check sanity
+                    prefix, rest = e.split(":")
+                    prefix = prefix + ":"
+                    irk_key, description = rest.split("__")
 
-                entity_uri = prefix_dict.get(prefix) + irk_key
-                entity = self.get_entity_by_uri(entity_uri)
+                    entity_uri = prefix_dict.get(prefix) + irk_key
+                    entity = self.get_entity_by_uri(entity_uri)
 
-                label = description.replace("_", " ")
+                    label = description.replace("_", " ")
 
-                assert isinstance(entity.R1, Literal)
-                r1 = entity.R1.value
+                    assert isinstance(entity.R1, Literal)
+                    r1 = entity.R1.value
 
-                if r1 != label:
-                    msg = f"Entity label '{r1}' for entity '{e}' and given label '{label}' do not match!"
-                    raise aux.InconsistentLabelError(msg)
+                    if r1 != label:
+                        msg = f"Entity label '{r1}' for entity '{e}' and given label '{label}' do not match!"
+                        raise aux.InconsistentLabelError(msg)
+                    # todo: do not raise if wrong entity is in comment
 
             new_query = re.sub(r"__[\w]+(?:–_instance)?", "", query)
         else:
@@ -1061,6 +1066,31 @@ ds = DataStore()
 
 YAML_VALUE = Union[str, list, dict]
 
+def get_label_to_item_dict(known_duplicates: list = None):
+    """
+    Returns a map from labels to items.
+    If a label occurs multiple times the last occurrence is decisive.
+    If this is not declared as expected via `known_duplicates` a warning is generated.
+
+    :param known_duplicates:    sequence of labels which are known to occur multiple times
+    """
+
+    if known_duplicates is None:
+        known_duplicates = []
+
+    d = {}
+    for uri, item in ds.items.items():
+        if "a" in item.short_key:
+            continue
+        label = item.R1.value
+        if label in d.keys() and label not in known_duplicates:
+            msg = f"items with same label ('{label}'): {item.uri}, {d[label].uri}"
+            if settings.STRICT:
+                raise Warning(msg)
+            else:
+                print(aux.byellow(f"Warning: {msg}"))
+        d[label] = item
+    return d
 
 @unique
 class EType(Enum):
@@ -2175,7 +2205,11 @@ def generate_new_key(prefix, prefix2="", mod_uri=None):
 
     if mod_uri is None:
         mod_uri = settings.BUILTINS_URI
-        print(aux.byellow(f"Warning: creating key based on module {mod_uri}, which is probably unintended"))
+        msg = f"Creating key based on module {mod_uri}, which is probably unintended"
+        if settings.STRICT:
+            raise Warning(msg)
+        else:
+            print(aux.byellow(f"Warning: {msg}"))
 
     with uri_context(mod_uri):
         while True:
@@ -2580,7 +2614,12 @@ def register_mod(uri: str, keymanager: KeyManager = None, check_uri=True, prefix
         ds.mod_path_mapping.add_pair(key_a=uri, key_b=path)
 
     if keymanager is None:
-        keymanager = KeyManager()
+        # there are use cases (e.g. in stafo where the key manager is created before the module is registered)
+        # -> we want to reuse that key manager
+        if uri in ds.uri_keymanager_dict:
+            keymanager = ds.uri_keymanager_dict[uri]
+        else:
+            keymanager = KeyManager()
     # all modules should have their own key manager
     ds.uri_keymanager_dict[uri] = keymanager
 
@@ -2713,6 +2752,9 @@ class RuleResult:
                 return self.partial_results[0].rule
 
         return self._rule
+
+    def get_new_triples(self) -> list[tuple[Entity]]:
+        return [stm.relation_tuple for stm in self.new_statements]
 
 
 def is_true(subject: Entity, predicate: Relation, object) -> tuple[bool, None]:

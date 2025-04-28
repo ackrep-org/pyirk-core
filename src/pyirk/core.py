@@ -2599,7 +2599,12 @@ def register_mod(uri: str, keymanager: KeyManager = None, check_uri=True, prefix
         ds.mod_path_mapping.add_pair(key_a=uri, key_b=path)
 
     if keymanager is None:
-        keymanager = KeyManager()
+        # there are use cases (e.g. in stafo where the key manager is created before the module is registered)
+        # -> we want to reuse that key manager
+        if uri in ds.uri_keymanager_dict:
+            keymanager = ds.uri_keymanager_dict[uri]
+        else:
+            keymanager = KeyManager()
     # all modules should have their own key manager
     ds.uri_keymanager_dict[uri] = keymanager
 

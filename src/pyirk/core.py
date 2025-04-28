@@ -1066,14 +1066,29 @@ ds = DataStore()
 
 YAML_VALUE = Union[str, list, dict]
 
-def get_label_to_item_dict():
+def get_label_to_item_dict(known_duplicates: list = None):
+    """
+    Returns a map from labels to items.
+    If a label occurs multiple times the last occurrence is decisive.
+    If this is not declared as expected via `known_duplicates` a warning is generated.
+
+    :param known_duplicates:    sequence of labels which are known to occur multiple times
+    """
+
+    if known_duplicates is None:
+        known_duplicates = []
+
     d = {}
     for uri, item in ds.items.items():
         if "a" in item.short_key:
             continue
         label = item.R1.value
-        if label in d.keys():
-            print(aux.byellow(f"Warning: duplicate items with same label: {item}, {d[label]}"))
+        if label in d.keys() and label not in known_duplicates:
+            msg = f"items with same label ('{label}'): {item.uri}, {d[label].uri}"
+            if settings.STRICT:
+                raise Warning(msg)
+            else:
+                print(aux.byellow(f"Warning: {msg}"))
         d[label] = item
     return d
 

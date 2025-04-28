@@ -577,7 +577,7 @@ def load_module_configs_from_general_config():
 
 
 def _extract_uri_from_python_file(fpath):
-    with open(fpath) as fp:
+    with open(fpath, encoding="utf-8") as fp:
         src_txt = fp.read()
 
     end_of_preamble_idx = src_txt.index("start_mod(__URI__)")

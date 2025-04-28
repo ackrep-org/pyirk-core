@@ -83,5 +83,9 @@ except FileNotFoundError:
     logger.warning(msg)
     CONF = {}
 
+
+# this might be changed by unittests to trigger some warnings
+STRICT = False
+
 # For now just add the content from the global config file
 CONF.update(config)

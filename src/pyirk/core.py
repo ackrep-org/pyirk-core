@@ -2190,7 +2190,11 @@ def generate_new_key(prefix, prefix2="", mod_uri=None):
 
     if mod_uri is None:
         mod_uri = settings.BUILTINS_URI
-        print(aux.byellow(f"Warning: creating key based on module {mod_uri}, which is probably unintended"))
+        msg = f"Creating key based on module {mod_uri}, which is probably unintended"
+        if settings.STRICT:
+            raise Warning(msg)
+        else:
+            print(aux.byellow(f"Warning: {msg}"))
 
     with uri_context(mod_uri):
         while True:

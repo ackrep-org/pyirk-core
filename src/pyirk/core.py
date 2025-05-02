@@ -1092,6 +1092,32 @@ def get_label_to_item_dict(known_duplicates: list = None):
         d[label] = item
     return d
 
+def get_label_to_relation_dict(known_duplicates: list = None):
+    """
+    Returns a map from labels to relations.
+    If a label occurs multiple times the last occurrence is decisive.
+    If this is not declared as expected via `known_duplicates` a warning is generated.
+
+    :param known_duplicates:    sequence of labels which are known to occur multiple times
+    """
+
+    if known_duplicates is None:
+        known_duplicates = []
+
+    d = {}
+    for uri, rel in ds.relations.items():
+        if "a" in rel.short_key:
+            continue
+        label = rel.R1.value
+        if label in d.keys() and label not in known_duplicates:
+            msg = f"items with same label ('{label}'): {rel.uri}, {d[label].uri}"
+            if settings.STRICT:
+                raise Warning(msg)
+            else:
+                print(aux.byellow(f"Warning: {msg}"))
+        d[label] = rel
+    return d
+
 @unique
 class EType(Enum):
     """

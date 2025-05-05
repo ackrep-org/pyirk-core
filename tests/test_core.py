@@ -298,6 +298,7 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
     def test_a01b_add_method_recursively(self):
         """
         ensure inheritance of custom methods works regardless of declaration order
+        this only tests the case of add_method being called last
         """
 
         def test_func(slf):
@@ -313,6 +314,31 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
         itm1.add_method(test_func)
         self.assertEqual(itm2.test_func(), "unit test item2")
         self.assertEqual(itm3.test_func(), "unit test item3")
+
+    def test_a01c__ensure_custom_call_inheritance(self):
+        """
+        This tests the case of a jumbled entity declaration order, with add_method being called first
+        (in this case in builtins for I6)
+        so the standard inheritance of just looking at the parent class fails
+        """
+        with p.uri_context(uri=TEST_BASE_URI):
+            I60323 = p.create_item(R1__has_label="Funktion")
+            I19098 = p.create_item(R1__has_label="komplexwertige Funktion")
+            I44484 = p.create_item(R1__has_label="reellwertige Funktion")
+
+            I44484["reellwertige Funktion"].update_relations(
+                R3__is_subclass_of=I19098["komplexwertige Funktion"],
+            )
+            I19098["komplexwertige Funktion"].update_relations(
+                R3__is_subclass_of=I60323["Funktion"],
+            )
+            I60323["Funktion"].update_relations(
+                R3__is_subclass_of=p.I6["mathematical operation"],
+            )
+            I1234 = p.create_item(R1="testfunc", R4=I44484["reellwertige Funktion"])
+            res = I1234(0)
+        self.assertEqual(res.get_relations("R4", return_obj=True)[0], p.I32["evaluated mapping"])
+
 
     # TODO: trigger loading of unittest version of ocse via envvar
     def test_a02__load_settings(self):

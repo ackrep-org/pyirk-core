@@ -254,14 +254,12 @@ class Entity(abc.ABC):
             # TODO: assert metaclass-property of `parent_class`
             self._method_prototypes.extend(parent_class._method_prototypes)
 
-        # also propagate _method_prototypes down the line to potential children of self
-        #! the follwoing lines should be indented
-        def set_method_prototypes_recursively(item: Item):
-            # the next line is a fix for part of the problem
-            for child in item.get_inv_relations("R3", return_subj=True):
-                child._method_prototypes.extend(parent_class._method_prototypes)
-                set_method_prototypes_recursively(child)
-        set_method_prototypes_recursively(self)
+            # also propagate _method_prototypes down the line to potential children of self
+            def set_method_prototypes_recursively(item: Item):
+                for child in item.get_inv_relations("R3", return_subj=True):
+                    child._method_prototypes.extend(parent_class._method_prototypes)
+                    set_method_prototypes_recursively(child)
+            set_method_prototypes_recursively(self)
 
 
     def _perform_instantiation(self):

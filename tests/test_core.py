@@ -163,8 +163,6 @@ class Test_00_Core(HousekeeperMixin, unittest.TestCase):
         self.assertTrue(stm1.uri.startswith(mod1.__URI__))
         self.assertTrue(stm2.uri.startswith(mod1.__URI__))
 
-    # TODO: include config.toml testdata
-    @unittest.skipIf(os.environ.get("CI"), "Skipping config.toml-dependent tests on CI")
     def test_c011__load_mod_from_uri(self):
         ag = p.irkloader.load_mod_from_uri("irk:/ocse/0.2/agents", "ag")
 

@@ -25,8 +25,6 @@ from . import visualization
 from . import reportgenerator
 from . import auxiliary as aux
 
-# TODO: remove obsolete import
-from . import settings
 from . import release
 
 from ipydex import IPS, activate_ips_on_exception
@@ -169,6 +167,12 @@ def create_parser():
         action="store_true",
     )
 
+    parser.add_argument(
+        "--ci-mode",
+        help="indicate that pyirk (e.g. --bootstrap-config) is run on CI",
+        action="store_true",
+    )
+
     return parser
 
 
@@ -250,7 +254,7 @@ def main():
     elif args.update_test_data:
         update_test_data(args.update_test_data)
     elif args.bootstrap_config:
-        bootstrap_config()
+        bootstrap_config(args.ci_mode)
     else:
         print("nothing to do, see option `--help` for more info")
 
@@ -549,7 +553,7 @@ def path_to_ast_container(mod_path: str) -> core.aux.Container:
     return c
 
 
-def bootstrap_config():
+def bootstrap_config(ci_mode: bool = False):
     """
     Create an empty config.toml file in the user config directory.
     """
@@ -558,18 +562,21 @@ def bootstrap_config():
 
     config_path = os.path.join(config_dir, "config.toml")
 
+    if ci_mode:
+        initial_content = aux.get_initial_config_content_for_ci()
+    else:
+        initial_content = dedent("""
+        # PyIRK configuration file
+
+        # example:
+        # [package.ocse]
+        # path = "/home/username/irk-data/ocse"
+
+        """)
+
     if os.path.exists(config_path):
         print(f"Config file already exists at: {config_path}")
         return
-
-    initial_content = dedent("""
-    # PyIRK configuration file
-
-    # example:
-    # [package.ocse]
-    # path = "/home/username/irk-data/ocse"
-
-    """)
 
     with open(config_path, "w") as f:
         f.write(initial_content)

@@ -258,7 +258,6 @@ class Entity(abc.ABC):
         #! the follwoing lines should be indented
         def set_method_prototypes_recursively(item: Item):
             # the next line is a fix for part of the problem
-            # if "irk:/builtins#R3" in item.get_inv_relations().keys():
             for child in item.get_inv_relations("R3", return_subj=True):
                 child._method_prototypes.extend(parent_class._method_prototypes)
                 set_method_prototypes_recursively(child)
@@ -625,7 +624,11 @@ class Entity(abc.ABC):
         else:
             # we try to resolve a prefix and use the active module and finally builtins as fallback
             key_str = key_str_or_uri
-            pr_key = process_key_str(key_str)
+            try:
+                pr_key = process_key_str(key_str)
+            except aux.ShortKeyNotFoundError:
+                # during the construction of builtins we might ask for keys which do not exist
+                return []
             uri = pr_key.uri
 
         stm_res: Union[Statement, List[Statement]] = base_dict.get(uri, [])
@@ -647,6 +650,7 @@ class Entity(abc.ABC):
                 res = stm_res.object
 
         else:
+            # neither return_subj nor return_obj -> return full statements
             res = stm_res
         return res
 

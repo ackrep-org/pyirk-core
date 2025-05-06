@@ -1,15 +1,27 @@
 import os
 import sys
 import re as regex
+import logging
 from typing import Iterable, Union, Dict, Any
 from rdflib import Literal
 from colorama import Style, Fore
 from addict import Addict as Container
+
+try:
+    # this will be part of standard library for python >= 3.11
+    import tomllib
+except ModuleNotFoundError:
+    import tomli as tomllib
+
+
+
 from . import settings
 
 """
 Some auxiliary classes and functions for pyirk.
 """
+
+logger = logging.getLogger("pyirk")
 
 startup_workdir = os.path.abspath(os.getcwd())
 
@@ -25,6 +37,14 @@ PREDICATES_URI_PART = "/PREDICATES"
 
 # corresponds to `pq` ("http://www.wikidata.org/property_qualifier/" ?) -> used for qualifying pred-obj-tuples
 QUALIFIERS_URI_PART = "/QUALIFIERS"
+
+# these dict maps uris to paths
+AVAILABLE_PACKAGES: dict[str, str] = {}
+AVAILABLE_MODULES: dict[str, str] = {}
+
+STATES = Container({"available_modules_detected": False})
+
+
 
 
 class NotYetFinishedError(NotImplementedError):
@@ -124,122 +144,122 @@ def ensure_rdf_str_literal(arg, allow_none=True) -> Union[Literal, None]:
 
 # Source: https://stackoverflow.com/a/3862957
 def all_subclasses(cls):
-    return set(cls.__subclasses__()).union(
-        [s for c in cls.__subclasses__() for s in all_subclasses(c)])
+    return set(cls.__subclasses__()).union([s for c in cls.__subclasses__() for s in all_subclasses(c)])
 
 
 # Source: perplexity.ai (with some manual tweaking)
-def print_inheritance_tree(cls, prefix=''):
+def print_inheritance_tree(cls, prefix=""):
     """Recursively print the inheritance tree of the given class."""
     print(prefix + cls.__name__)
     subclasses = cls.__subclasses__()
     for i, subclass in enumerate(subclasses):
         # Determine if this is the last subclass to format the tree correctly
         connector = "└── " if i == len(subclasses) - 1 else "├── "
-        new_prefix = " "*len(prefix) + connector
+        new_prefix = " " * len(prefix) + connector
         print_inheritance_tree(subclass, new_prefix)
 
 
-class PyIRKError(Exception):
+class PyIRKException(Exception):
     """
     raised in situations where some IRK-specific conditions are violated
     """
+
+
+class GeneralPyIRKError(Exception):
     pass
 
 
-class MultilingualityError(PyIRKError):
+class MultilingualityError(GeneralPyIRKError):
     pass
 
 
-class EmptyURIStackError(PyIRKError):
+class EmptyURIStackError(GeneralPyIRKError):
     pass
 
 
-class UnknownPrefixError(PyIRKError):
+class UnknownPrefixError(GeneralPyIRKError):
     pass
 
 
-class UnknownURIError(PyIRKError):
+class UnknownURIError(GeneralPyIRKError):
     pass
 
 
-class InvalidURIError(PyIRKError):
+class InvalidURIError(GeneralPyIRKError):
     pass
 
 
-class InvalidPrefixError(PyIRKError):
+class InvalidPrefixError(GeneralPyIRKError):
     pass
 
 
 # used for syntax problems
-class InvalidShortKeyError(PyIRKError):
+class InvalidShortKeyError(GeneralPyIRKError):
     pass
 
 
-class InvalidGeneralKeyError(PyIRKError):
+class InvalidGeneralKeyError(GeneralPyIRKError):
     pass
 
 
-class InconsistentLabelError(PyIRKError):
+class InconsistentLabelError(GeneralPyIRKError):
     pass
 
 
 # used for syntactically correct keys which could not be found
-class ShortKeyNotFoundError(PyIRKError):
+class ShortKeyNotFoundError(GeneralPyIRKError):
     pass
 
 
-class InvalidScopeNameError(PyIRKError):
-    pass
-
-class InvalidScopeTypeError(PyIRKError):
+class InvalidScopeNameError(GeneralPyIRKError):
     pass
 
 
-class InvalidScopeTypeError(PyIRKError):
+class InvalidScopeTypeError(GeneralPyIRKError):
     pass
 
 
-class ModuleAlreadyLoadedError(PyIRKError):
+class ModuleAlreadyLoadedError(GeneralPyIRKError):
     pass
 
 
-class SemanticRuleError(PyIRKError):
+class SemanticRuleError(GeneralPyIRKError):
     pass
 
 
-class ExplicitlyTriggeredTestException(PyIRKError):
+class ExplicitlyTriggeredTestException(GeneralPyIRKError):
     pass
 
 
 class InconsistentEdgeRelations(SemanticRuleError):
     pass
 
+
 class InvalidObjectValue(SemanticRuleError):
     pass
 
 
-class MissingQualifierError(PyIRKError):
+class MissingQualifierError(GeneralPyIRKError):
     pass
 
 
-class AmbiguousQualifierError(PyIRKError):
+class AmbiguousQualifierError(GeneralPyIRKError):
     pass
 
 
-class FunctionalRelationError(PyIRKError):
+class FunctionalRelationError(GeneralPyIRKError):
     pass
 
 
-class UndefinedRelationError(PyIRKError):
+class UndefinedRelationError(GeneralPyIRKError):
     pass
 
 
-class TaxonomicError(PyIRKError):
+class TaxonomicError(GeneralPyIRKError):
     pass
 
 
-class RuleTermination(PyIRKError):
+class RuleTermination(PyIRKException):
     pass
 
 
@@ -248,6 +268,14 @@ class LogicalContradiction(RuleTermination):
 
 
 class ReasoningGoalReached(RuleTermination):
+    pass
+
+
+class ContinueOuterLoop(PyIRKException):
+    """
+    This is not an error but indicated that an outside loop should continue.
+    """
+
     pass
 
 
@@ -488,3 +516,77 @@ def get_irk_path(dirname=None):
 
     msg = f"unexpected dirname: {dirname}"
     raise ValueError(msg)
+
+
+def _handle_exception(e: Exception, msg):
+    final_msg = (
+        f"{msg}\n"
+        f"Original exception ({type(e)}):\n\n{str(e)}"
+    )
+    logger.error(final_msg)
+    if settings.DEBUG:
+        raise
+
+    raise
+
+
+def load_module_configs_from_general_config():
+    """
+    This function loads all irkpackage.toml files for every key in CONF["packages"]
+    """
+    package_data: dict = settings.CONF.get("package")
+
+    data: dict
+    for name, data in package_data.items():
+        try:
+            package_path = data["path"]
+        except KeyError as ex:
+            msg = f"Error while loading config data for package {name}:\n\n{str(ex)}"
+            logger.warning(ex)
+
+        # load toml
+        toml_path = os.path.join(package_path, "irkpackage.toml")
+        try:
+            with open(toml_path, "rb") as f:
+                package_data = tomllib.load(f)
+        except Exception as e:
+            _handle_exception(e, msg=f"Warning: Could not load {toml_path}.")
+            # !!
+            continue
+        main_mod_path = os.path.join(package_path, package_data["main_module"])
+
+        def get_uri(mod_path):
+            try:
+                uri = _extract_uri_from_python_file(mod_path)
+            except Exception as e:
+                _handle_exception(e, msg=f"Could not extract __URI__ from {mod_path}.")
+            return uri
+
+        uri = get_uri(main_mod_path)
+
+        # not yet used but might be useful in the future
+        AVAILABLE_PACKAGES[uri] = package_data
+        AVAILABLE_MODULES[uri] = main_mod_path
+
+
+        for mod_fname in package_data.get("further_modules", []):
+            mod_path = os.path.join(package_path, mod_fname)
+            AVAILABLE_MODULES[get_uri(mod_path)] = mod_path
+
+    STATES.available_modules_detected = True
+
+
+def _extract_uri_from_python_file(fpath):
+    with open(fpath, encoding="utf-8") as fp:
+        src_txt = fp.read()
+
+    end_of_preamble_idx = src_txt.index("start_mod(__URI__)")
+
+    preamble = src_txt[:end_of_preamble_idx]
+
+    # find lines like: `__URI__  = "irk:/ocse/0.2/control_theory"`
+    # (with some robustness against insignificant whitespaces and comments)
+    res = regex.findall("""\n__URI__ *= *["'](.*)["'].*\n""", preamble)
+
+    assert len(res) == 1, f"Invalid number of regex results: {len(res)} (expected 1)"
+    return res[0]

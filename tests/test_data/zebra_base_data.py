@@ -10,7 +10,6 @@ See also https://en.wikipedia.org/wiki/Zebra_Puzzle
 This module is to be imported in other modules
 """
 
-
 import pyirk as p
 
 
@@ -340,7 +339,7 @@ R8768 = p.create_relation(
     R22__is_functional=True,
     R17__is_subproperty_of=R3606["lives next to"],
     R2850__is_functional_activity=True,
-    R68__is_inverse_of=R2353["lives immediately right of"]
+    R68__is_inverse_of=R2353["lives immediately right of"],
 )
 
 R2693 = p.create_relation(
@@ -357,7 +356,7 @@ R2183 = p.create_relation(
     R8__has_domain_of_argument_1=I7435["human"],
     R11__has_range_of_result=I7435["human"],
     R22__is_functional=True,
-    R68__is_inverse_of=R2693["is located immediately right of"]
+    R68__is_inverse_of=R2693["is located immediately right of"],
 )
 
 
@@ -447,7 +446,6 @@ p.set_multiple_statements(all_cigerette_brands_tuple.R39__has_element, p.R57["is
 p.set_multiple_statements(all_house_number_tuple.R39__has_element, p.R57["is placeholder"], False)
 
 
-
 # ###############################################################################
 
 """
@@ -507,7 +505,7 @@ def report(display=True, title=""):
             stms.extend(v)
 
         for stm in stms:
-            if (stm.predicate.zb__R2850__is_functional_activity):
+            if stm.predicate.zb__R2850__is_functional_activity:
                 if stm.object.R57__is_placeholder:
                     log(f"  {stm.predicate.R1:>30}  {stm.object.R1}")
                 else:

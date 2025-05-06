@@ -30,7 +30,7 @@ p.ds.relation_statements[p.R64.uri]
 - Start pyirk in interactive mode: `pyirk -i`
 
 ```
-p.aux.print_tree(p.ScopingCM)
+p.aux.print_inheritance_tree(p.ScopingCM)
 ```
 
 - Result based on version 0.13.2:
@@ -40,8 +40,151 @@ ScopingCM
 └── AbstractMathRelatedScopeCM
     ├── ConditionSubScopeCM
         └── QuantifiedSubScopeCM
-    ├── SubScopeConditionCM
     ├── _proposition__CM
     └── _rule__CM
         └── RulePremiseSubScopeCM
+```
+
+
+
+## Visualize Single Node with Given Radius (or Level)
+
+```python
+
+os.makedirs("vis", exist_ok=True)
+
+def visualize(label, radius):
+    uri = p.ds.get_item_by_label(label).uri
+    vis = p.visualize_entity(uri, radius=radius)
+    with open(f"vis/visu_{label}_r{radius}.svg", "wt", encoding="utf-8") as f:
+        f.write(vis)
+
+###################
+visualize("platinum", 1)
+visualize("platinum", 2)
+
+```
+## Visualize Whole Graph
+
+```python
+vis = p.visualize_all_entities()
+with open(f"vis/whole_graph.svg", "wt", encoding="utf-8") as f:
+    f.write(vis)
+
+```
+
+
+(sec_practical_work_with_keys)=
+## Practically working with keys
+
+To learn about the different kinds of keys in PyIRK see section [Keys](sec_keys).
+
+With a growing module it becomes infeasible to memorize the keys like `R1234['is in special relation with']` and it is also time-consuming
+to type. Solutions:
+  - Search in existing code and use copy-paste.
+    - Advantage:
+      - Simple.
+      - Acceptably convenient for smaller modules or small editing tasks.
+    - Disadvantage:
+      - Too much effort for larger editing jobs.
+  - Use fuzzy **autocompletion** via the VS Code extension [irk-fzf](https://github.com/ackrep-org/irk-fzf/releases):
+    - Install the extension from the `.vsix`-File (see [README.md](https://github.com/ackrep-org/irk-fzf/blob/main/README.md))
+    - Use `pyirk --load-mod my_mod.py mm -ac` to create a file called `.ac_candidates.txt`.
+    - The extension uses the entries in this file to offer auto-complete suggestions when the `erk-fzf.search` command is triggered (either via the VS code command pallette or via a manually assigned keyboard shortcut (recommended, see [README.md](https://github.com/ackrep-org/irk-fzf/blob/main/README.md)).
+    - The command `erk-fzf.search` performs a fuzzy search using the string left of the cursor (and then the user input).
+    It displays fuzzy-matching lines from `.ac_candidates.txt`. It searches short_keys, labels and descriptions.
+
+
+## How to perform a SPARQL query
+
+
+### Simple Query
+
+Example from `test_core.py:Test_04_Core.test_c020__sparql_query2`
+
+```python
+
+import pyirk as p
+
+qsrc = f"""
+PREFIX : <{p.rdfstack.IRK_URI}>
+PREFIX ct: <{mod1.__URI__}#>
+SELECT ?s ?o
+WHERE {{
+    ?s :R16 ct:I7864.
+}}
+"""
+
+res = p.rdfstack.perform_sparql_query(qsrc)
+```
+
+
+### Query Involving Qualifiers
+
+Example from `test_core.py:Test_04_Core.test_c040__sparql_queries_with_qualifiers`
+
+```python
+
+import pyirk as p
+ag = p.irkloader.load_mod_from_path(TEST_DATA_PATH3, prefix="ag")
+
+# the ag-module specifies the following two statements:
+#
+# I2746["Rudolf Kalman"].set_relation(
+#     R1833["has employer"], I9942["Stanford University"], qualifiers=[start_time("1964"), end_time("1971")]
+# )
+#
+#
+# I2746["Rudolf Kalman"].set_relation(
+#     R1833["has employer"], I7301["ETH Zürich"], qualifiers=[start_time("1973"), end_time("1997")]
+# )
+
+# The following query retrieves this data
+
+qsrc = f"""
+  PREFIX : <{p.rdfstack.IRK_URI}>
+  PREFIX qf: <{p.rdfstack.IRK_QF_URI}>
+  PREFIX ag: <{ag.__URI__}#>
+  PREFIX ag_s: <{ag.__URI__}/STATEMENTS#>
+  PREFIX ag_p: <{ag.__URI__}/PREDICATES#>
+  SELECT ?emp ?start_time ?end_time
+  WHERE {{
+      ag:I2746 ag_s:R1833 ?stm.
+      ?stm ag_p:R1833 ?emp.
+      ?stm qf:R48 ?start_time.
+      ?stm qf:R49 ?end_time.
+  }}
+"""
+
+  # due to the keyword arguments it is necessary to call this explicitly
+  p.ds.rdfgraph = p.rdfstack.create_rdf_triples(add_qualifiers=True, modfilter=ag.__URI__)
+  res1 = p.rdfstack.perform_sparql_query(qsrc)
+
+  self.assertIn([ag.I9942["Stanford University"], "1964", "1971"], res1)
+  self.assertIn([ag.I7301["ETH Zürich"], "1973", "1997"], res1)
+
+```
+
+## Find Certain Items (Without SPARQL)
+
+
+```python
+
+# delete all human-instance from agent (but keep those defined in other modules)
+humans_to_delete = []
+for human in ag.I7435["human"].get_inv_relations("R4", return_subj=True):
+    if ag.__URI__ in human.uri:
+        humans_to_delete.append(human)
+
+```
+
+```python
+
+# find taxonomically orphaned items (no associated R3__is_subclass_of and no
+# R4__is_instance_of statements):
+
+orphans = [
+  (i, i.uri) for i in p.ds.items.values()
+      if (i != p.I45["general item"] and i.R3 is None and i.R4 is None)
+]
 ```

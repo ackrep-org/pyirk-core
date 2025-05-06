@@ -12,6 +12,7 @@ at the [basics](basics.md).
 :maxdepth: 1
 
 basics
+configuration
 entities
 statements
 qualifiers

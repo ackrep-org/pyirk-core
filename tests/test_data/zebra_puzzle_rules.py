@@ -23,7 +23,9 @@ p.start_mod(__URI__)
 
 I701 = p.create_item(
     R1__has_label="rule: imply parent relation of a subrelation",
-    R2__has_description=("items which are related by a subrelation should also be related by the parent relation"),
+    R2__has_description=(
+        "items which are related by a subrelation should also be related by the parent relation"
+    ),
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
@@ -42,7 +44,9 @@ with I701.scope("assertion") as cm:
 
 I702 = p.create_item(
     R1__has_label="rule: add reverse statement for symmetrical relations",
-    R2__has_description=("given statement (s, p, o) where p.R42__is_symmetrical==True implies statement (o, p, s)"),
+    R2__has_description=(
+        "given statement (s, p, o) where p.R42__is_symmetrical==True implies statement (o, p, s)"
+    ),
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
@@ -163,7 +167,9 @@ with I720.scope("premise") as cm:
             cm_AND.new_condition_func(p.does_not_have_relation, cm.itm1, p.R57["is placeholder"])
 
         # case 3:  itm1 is not a placeholder (explicit statement with object `False`)
-        cm_OR.new_rel(cm.itm1, p.R57["is placeholder"], False, qualifiers=[p.qff_allows_alt_functional_value(True)])
+        cm_OR.new_rel(
+            cm.itm1, p.R57["is placeholder"], False, qualifiers=[p.qff_allows_alt_functional_value(True)]
+        )
 
     # TODO: this blocks the second application because only one itm is placeholder -> introduce logical OR
     # cm.new_condition_func(p.label_compare_method, cm.itm1, cm.itm2)
@@ -176,7 +182,9 @@ with I720.scope("assertion") as cm:
 
 I725 = p.create_item(
     R1__has_label="rule: deduce facts from inverse relations",
-    R2__has_description=("deduce facts from inverse relations e.g. if p1 lives right of p2 then p2 lives left of p1"),
+    R2__has_description=(
+        "deduce facts from inverse relations e.g. if p1 lives right of p2 then p2 lives left of p1"
+    ),
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
@@ -243,7 +251,9 @@ with I730.scope("assertion") as cm:
 
 I740 = p.create_item(
     R1__has_label="rule: deduce more negative facts from negative facts",
-    R2__has_description=("deduce e.g. if h1 owns dog and h1 drinks milk and h2 owns zebra then h2 drinks not milk"),
+    R2__has_description=(
+        "deduce e.g. if h1 owns dog and h1 drinks milk and h2 owns zebra then h2 drinks not milk"
+    ),
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
@@ -301,7 +311,9 @@ I750 = p.create_item(
 
 with I750.scope("setting") as cm:
     cm.new_var(p1=p.instance_of(zb.I7435["human"]))
-    cm.uses_external_entities(zb.I7435["human"], zb.R9040["lives in numbered house"], zb.I8809["house number"])
+    cm.uses_external_entities(
+        zb.I7435["human"], zb.R9040["lives in numbered house"], zb.I8809["house number"]
+    )
 
 with I750.scope("premise") as cm:
     cm.new_rel(cm.p1, p.R4["is instance of"], zb.I7435["human"], overwrite=True)
@@ -395,12 +407,17 @@ with I763.scope("premise") as cm:
 
 with I763.scope("assertion") as cm:
     cm.new_rel(
-        cm.p1, zb.R2835["lives not in numbered house"], zb.I6448["house 1"], qualifiers=[p.qff_has_rule_ptg_mode(5)]
+        cm.p1,
+        zb.R2835["lives not in numbered house"],
+        zb.I6448["house 1"],
+        qualifiers=[p.qff_has_rule_ptg_mode(5)],
     )
     cm.new_rel(
-        cm.p2, zb.R2835["lives not in numbered house"], zb.I1383["house 5"], qualifiers=[p.qff_has_rule_ptg_mode(5)]
+        cm.p2,
+        zb.R2835["lives not in numbered house"],
+        zb.I1383["house 5"],
+        qualifiers=[p.qff_has_rule_ptg_mode(5)],
     )
-
 
 
 # ###############################################################################
@@ -531,7 +548,9 @@ with I790.scope("assertion") as cm:
 
 I741 = p.create_item(
     R1__has_label="rule: deduce more negative facts from negative facts",
-    R2__has_description=("deduce e.g. if h1 owns dog and h1 drinks milk and h2 owns zebra then h2 drinks not milk"),
+    R2__has_description=(
+        "deduce e.g. if h1 owns dog and h1 drinks milk and h2 owns zebra then h2 drinks not milk"
+    ),
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
@@ -591,7 +610,9 @@ I741.set_relation(p.R69["has explanation text template"], txt)
 
 I792 = p.create_item(
     R1__has_label="rule: deduce different-from-facts from negative facts",
-    R2__has_description=("deduce e.g. if h1 not owns dog and h2 owns dog then h2 different from h1 and vice versa."),
+    R2__has_description=(
+        "deduce e.g. if h1 not owns dog and h2 owns dog then h2 different from h1 and vice versa."
+    ),
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
@@ -660,7 +681,7 @@ with I794.scope("premise") as cm:
     cm.new_rel(cm.hn1, p.R40["has index"], cm.house_index1)
     cm.new_rel(cm.hn2, p.R40["has index"], cm.house_index2)
 
-    cm.new_condition_func(lambda self, x, y: y == x+1, cm.house_index1, cm.house_index2)
+    cm.new_condition_func(lambda self, x, y: y == x + 1, cm.house_index1, cm.house_index2)
 
 I794.set_relation(p.R70["has number of prototype-graph-components"], 2)
 
@@ -765,9 +786,15 @@ with I800.scope("premise") as cm:
     cm.new_rel(cm.rel1, zb.R2850["is functional activity"], True)
 
 with I800.scope("assertion") as cm:
-    cm.new_rel(cm.rel1_not, zb.R6020["is opposite of functional activity"], True, qualifiers=[p.qff_has_rule_ptg_mode(5)])
-    cm.new_rel(cm.rel1_not, p.R71["enforce matching result type"], True, qualifiers=[p.qff_has_rule_ptg_mode(5)])
-
+    cm.new_rel(
+        cm.rel1_not,
+        zb.R6020["is opposite of functional activity"],
+        True,
+        qualifiers=[p.qff_has_rule_ptg_mode(5)],
+    )
+    cm.new_rel(
+        cm.rel1_not, p.R71["enforce matching result type"], True, qualifiers=[p.qff_has_rule_ptg_mode(5)]
+    )
 
 
 # ###############################################################################
@@ -815,6 +842,7 @@ with I803.scope("assertion") as cm:
 
 # this function is needed by ruleengine.AlgorithmicRuleApplicationWorker.experiment
 
+
 def add_stm_by_exclusion(self, p1, oppo_rel, not_itm1, not_itm2, not_itm3, not_itm4):
     """
     Assume that four negative facts are known and add the corresponding positive fact
@@ -832,9 +860,7 @@ def add_stm_by_exclusion(self, p1, oppo_rel, not_itm1, not_itm2, not_itm3, not_i
 
     all_itms = itm_type.get_inv_relations("R4__is_instance_of", return_subj=True)
 
-    all_itms_map = dict(
-        [(itm.uri, itm) for itm in all_itms if p.is_relevant_item(itm)]
-    )
+    all_itms_map = dict([(itm.uri, itm) for itm in all_itms if p.is_relevant_item(itm)])
     all_itms_set = set(all_itms_map.keys())
 
     assert len(all_itms_set) == 5
@@ -857,6 +883,7 @@ def add_stm_by_exclusion(self, p1, oppo_rel, not_itm1, not_itm2, not_itm3, not_i
         res.changed_statements.append(chgd_stm)
 
     return res
+
 
 # ###############################################################################
 
@@ -933,8 +960,9 @@ I830 = p.create_item(
 
 I830.cheat = [
     p.ruleengine.AlgorithmicRuleApplicationWorker.hardcoded_I830,
-    zb, p.raise_contradiction,
-    "{} has too many `R50__is_different_from` statements"
+    zb,
+    p.raise_contradiction,
+    "{} has too many `R50__is_different_from` statements",
 ]
 
 
@@ -974,7 +1002,9 @@ with I830.scope("premise") as cm:
     cm.new_rel(cm.p5, p.R57["is placeholder"], False)
 
 with I830.scope("assertion") as cm:
-    cm.new_consequent_func(p.raise_contradiction, "{} has too many `R50__is_different_from` statements", cm.p0)
+    cm.new_consequent_func(
+        p.raise_contradiction, "{} has too many `R50__is_different_from` statements", cm.p0
+    )
 
 # ###############################################################################
 
@@ -986,8 +1016,9 @@ I840 = p.create_item(
 
 I840.cheat = [
     p.ruleengine.AlgorithmicRuleApplicationWorker.hardcoded_I840,
-    zb, p.raise_reasoning_goal_reached,
-    "puzzle solved"
+    zb,
+    p.raise_reasoning_goal_reached,
+    "puzzle solved",
 ]
 
 with I840.scope("setting") as cm:
@@ -1024,6 +1055,7 @@ with I825.scope("premise") as cm:
     cm.new_rel(cm.p2, zb.R9040["lives in numbered house"], cm.hn2)
 
     cm.new_rel(cm.hn2, p.R40["has index"], cm.house_index2)
+
 
 def exclude_houses(self, p1, nbr_hn):
 

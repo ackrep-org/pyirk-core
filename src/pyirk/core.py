@@ -1,9 +1,10 @@
 """
 Core module of pyirk
 """
+
 import os
 import sys
-from collections import defaultdict
+from collections import defaultdict, Counter
 from dataclasses import dataclass
 import inspect
 import types
@@ -21,10 +22,12 @@ import re
 
 from pyirk import auxiliary as aux
 from pyirk import settings
+
+# allow convenient access to exceptions in downstream applications
 from pyirk.auxiliary import (
     InvalidURIError,
     InvalidPrefixError,
-    PyIRKError,
+    PyIRKException,
     EmptyURIStackError,
     InvalidShortKeyError,
     UnknownPrefixError,
@@ -179,7 +182,9 @@ class Entity(abc.ABC):
 
         try:
             # TODO: introduce prefixes here, which are mapped to uris
-            etyrel = self._get_relation_contents(rel_uri=processed_key.uri, lang_indicator=processed_key.lang_indicator)
+            etyrel = self._get_relation_contents(
+                rel_uri=processed_key.uri, lang_indicator=processed_key.lang_indicator
+            )
         except KeyError:
             msg = f"'{type(self)}' object has no attribute '{processed_key.short_key}'"
             raise AttributeError(msg)
@@ -191,18 +196,20 @@ class Entity(abc.ABC):
             super().__setattr__(attr_name, attr_value)
             return
         try:
-            processed_key = self.__process_attribute_name(attr_name, exception_type=aux.UndefinedRelationError)
+            processed_key = self.__process_attribute_name(
+                attr_name, exception_type=aux.UndefinedRelationError
+            )
         except aux.UndefinedRelationError:
             # attr_name could not be resolved to an defined relation
             super().__setattr__(attr_name, attr_value)
             return
         self.set_relation(ds.get_entity_by_uri(processed_key.uri), attr_value)
 
-    def __process_attribute_name(self, attr_name:str, exception_type=AttributeError) -> "ProcessedStmtKey":
+    def __process_attribute_name(self, attr_name: str, exception_type=AttributeError) -> "ProcessedStmtKey":
         pass
         try:
             processed_key = process_key_str(attr_name)
-        except (aux.ShortKeyNotFoundError) as err:
+        except aux.ShortKeyNotFoundError as err:
             raise
         except (aux.InvalidGeneralKeyError, aux.InvalidShortKeyError, aux.UnknownURIError) as err:
             # this happens if a syntactically valid key string could not be resolved
@@ -246,6 +253,14 @@ class Entity(abc.ABC):
             assert isinstance(parent_class, Item)
             # TODO: assert metaclass-property of `parent_class`
             self._method_prototypes.extend(parent_class._method_prototypes)
+
+            # also propagate _method_prototypes down the line to potential children of self
+            def set_method_prototypes_recursively(item: Item):
+                for child in item.get_inv_relations("R3", return_subj=True):
+                    child._method_prototypes.extend(parent_class._method_prototypes)
+                    set_method_prototypes_recursively(child)
+            set_method_prototypes_recursively(self)
+
 
     def _perform_instantiation(self):
         """
@@ -460,7 +475,9 @@ class Entity(abc.ABC):
             obj = Literal(obj, lang=settings.DEFAULT_DATA_LANGUAGE)
 
         if isinstance(obj, (Entity, *allowed_literal_types)) or obj in allowed_literal_types:
-            return self._set_relation(relation.uri, obj, scope=scope, qualifiers=qualifiers, proxyitem=proxyitem)
+            return self._set_relation(
+                relation.uri, obj, scope=scope, qualifiers=qualifiers, proxyitem=proxyitem
+            )
         else:
             msg = f"Unsupported type ({type(obj)}) of {obj}, while setting relation {relation.short_key} of {self}"
             raise TypeError(msg)
@@ -650,16 +667,18 @@ class Entity(abc.ABC):
         if isinstance(stm, list):
             if len(stm) == 0:
                 msg = f"Unexpectedly found empty statement list for entity {self} and relation {rel}"
-                raise aux.PyIRKError(msg)
+                raise aux.GeneralPyIRKError(msg)
             if len(stm) > 1:
                 msg = f"Unexpectedly found length-{len(stm)} statement list for entity {self} and relation {rel}"
-                raise aux.PyIRKError(msg)
+                raise aux.GeneralPyIRKError(msg)
             stm = stm[0]
 
         assert isinstance(stm, Statement)
 
         if stm.qualifiers:
-            raise NotImplementedError("Processing old qualifiers is not yet implemented while overwriting statements")
+            raise NotImplementedError(
+                "Processing old qualifiers is not yet implemented while overwriting statements"
+            )
 
         stm.unlink()
         return self.set_relation(rel, new_obj, qualifiers=qualifiers)
@@ -682,14 +701,19 @@ class Entity(abc.ABC):
         return hash(self.uri)
 
     def update_relations(self, **kwargs):
-        assert self.updated == False, "This function can be called only once for each object, this is the second time."
+        assert (
+            self.updated == False
+        ), "This function can be called only once for each object, this is the second time."
 
         item_key = self.short_key
 
         new_kwargs, lang_related_kwargs = process_kwargs_for_entity_creation(item_key, kwargs)
 
         for dict_key, value in new_kwargs.items():
-            self.set_relation(dict_key, value)
+            if type(value) == list:
+                self.set_multiple_relations(dict_key, value)
+            else:
+                self.set_relation(dict_key, value)
 
         process_lang_related_kwargs_for_entity_creation(self, item_key, lang_related_kwargs)
 
@@ -703,12 +727,13 @@ def wrap_function_with_search_uri_context(func, uri=None):
     if uri is None:
         # assume that this function is used as decorator in a module which defines __URI__ globally
         import inspect
+
         frame = inspect.currentframe()
         uri = frame.f_back.f_globals.get("__URI__")
         if uri is None:
             fi = inspect.getframeinfo(frame.f_back)
             msg = f"could not find `__URI__` in module {fi.filename}"
-            raise aux.PyIRKError(msg)
+            raise aux.GeneralPyIRKError(msg)
 
     @functools.wraps(func)
     def wrapped_func(*args, **kwargs):
@@ -978,35 +1003,40 @@ class DataStore:
             raise UnknownPrefixError(msg)
         return res
 
-    def preprocess_query(self, query):
+    def preprocess_query(self, query, sanity_check=True):
         if "__" in query:
-            prefixes = re.findall(r"[\w]*:[ ]*<.*?>", query)
-            prefix_dict = {}
-            for prefix in prefixes:
-                parts = prefix.split(" ")
-                key = parts[0]
-                value = parts[-1].replace("<", "").replace(">", "")
-                prefix_dict[key] = value
-            # print(prefix_dict)
+            if sanity_check:
+                prefixes = re.findall(r"[\w]*:[ ]*<.*?>", query)
+                prefix_dict = {}
+                for prefix in prefixes:
+                    parts = prefix.split(" ")
+                    key = parts[0]
+                    value = parts[-1].replace("<", "").replace(">", "")
+                    if value.split("/")[-1].upper() == value.split("/")[-1]:
+                        # this removes special qualifier prefixes that lead to uri not found error
+                        value = "/".join(value.split("/")[:-1]) + "#"
+                    prefix_dict[key] = value
+                # print(prefix_dict)
 
-            entities = re.findall(r"[\w]*:[\w]+__[\w]+(?:–_instance)?", query)
-            for e in entities:
-                # check sanity
-                prefix, rest = e.split(":")
-                prefix = prefix + ":"
-                irk_key, description = rest.split("__")
+                entities = re.findall(r"[\w]*:[\w]+__[\w]+(?:–_instance)?", query)
+                for e in entities:
+                    # check sanity
+                    prefix, rest = e.split(":")
+                    prefix = prefix + ":"
+                    irk_key, description = rest.split("__")
 
-                entity_uri = prefix_dict.get(prefix) + irk_key
-                entity = self.get_entity_by_uri(entity_uri)
+                    entity_uri = prefix_dict.get(prefix) + irk_key
+                    entity = self.get_entity_by_uri(entity_uri)
 
-                label = description.replace("_", " ")
+                    label = description.replace("_", " ")
 
-                assert isinstance(entity.R1, Literal)
-                r1 = entity.R1.value
+                    assert isinstance(entity.R1, Literal)
+                    r1 = entity.R1.value
 
-                if r1 != label:
-                    msg = f"Entity label '{r1}' for entity '{e}' and given label '{label}' do not match!"
-                    raise aux.InconsistentLabelError(msg)
+                    if r1 != label:
+                        msg = f"Entity label '{r1}' for entity '{e}' and given label '{label}' do not match!"
+                        raise aux.InconsistentLabelError(msg)
+                    # todo: do not raise if wrong entity is in comment
 
             new_query = re.sub(r"__[\w]+(?:–_instance)?", "", query)
         else:
@@ -1028,7 +1058,7 @@ class DataStore:
         current_scope = self.get_current_scope()
         if current_scope != scope:
             msg = "Refuse to remove scope which is not the topmost on the stack (i.e. the last in the list)"
-            raise PyIRKError(msg)
+            raise aux.GeneralPyIRKError(msg)
 
         self.scope_stack.pop()
 
@@ -1037,13 +1067,64 @@ class DataStore:
             return self.scope_stack[-1]
         except IndexError:
             msg = "unexpectedly found the scope stack empty"
-            raise PyIRKError(msg)
+            raise aux.GeneralPyIRKError(msg)
 
 
 ds = DataStore()
 
 YAML_VALUE = Union[str, list, dict]
 
+def get_label_to_item_dict(known_duplicates: list = None):
+    """
+    Returns a map from labels to items.
+    If a label occurs multiple times the last occurrence is decisive.
+    If this is not declared as expected via `known_duplicates` a warning is generated.
+
+    :param known_duplicates:    sequence of labels which are known to occur multiple times
+    """
+
+    if known_duplicates is None:
+        known_duplicates = []
+
+    d = {}
+    for uri, item in ds.items.items():
+        if "a" in item.short_key:
+            continue
+        label = item.R1.value
+        if label in d.keys() and label not in known_duplicates:
+            msg = f"items with same label ('{label}'): {item.uri}, {d[label].uri}"
+            if settings.STRICT:
+                raise Warning(msg)
+            else:
+                print(aux.byellow(f"Warning: {msg}"))
+        d[label] = item
+    return d
+
+def get_label_to_relation_dict(known_duplicates: list = None):
+    """
+    Returns a map from labels to relations.
+    If a label occurs multiple times the last occurrence is decisive.
+    If this is not declared as expected via `known_duplicates` a warning is generated.
+
+    :param known_duplicates:    sequence of labels which are known to occur multiple times
+    """
+
+    if known_duplicates is None:
+        known_duplicates = []
+
+    d = {}
+    for uri, rel in ds.relations.items():
+        if "a" in rel.short_key:
+            continue
+        label = rel.R1.value
+        if label in d.keys() and label not in known_duplicates:
+            msg = f"items with same label ('{label}'): {rel.uri}, {d[label].uri}"
+            if settings.STRICT:
+                raise Warning(msg)
+            else:
+                print(aux.byellow(f"Warning: {msg}"))
+        d[label] = rel
+    return d
 
 @unique
 class EType(Enum):
@@ -1204,7 +1285,7 @@ def process_key_str(
         match_list = langcode_end_pattern.findall(res.label)
         if match_list:
             assert len(match_list) == 1
-            match, = match_list
+            (match,) = match_list
             assert match.startswith("__")
             res.label = langcode_end_pattern.sub("", res.label)
 
@@ -1294,8 +1375,10 @@ def _resolve_prefix(pr_key: ProcessedStmtKey, passed_mod_uri: str = None) -> Non
 
     pr_key.uri = aux.make_uri(mod_uri, pr_key.short_key)
 
+
 # regex pattern which represents a language indicator
 langcode_end_pattern = re.compile("__[a-z]{2}$")
+
 
 def check_processed_key_label(pkey: ProcessedStmtKey) -> None:
     """
@@ -1314,6 +1397,11 @@ def check_processed_key_label(pkey: ProcessedStmtKey) -> None:
         entity = ds.get_entity_by_uri(pkey.uri)
     except KeyError:
         # entity does not exist -> no label to compare with
+        return
+
+    if getattr(entity, "_ignore_mismatching_adhoc_label", False):
+        # This entity is 'magically' allowed to have any adhoc label
+        # used for I000 and R000
         return
 
     if entity.R1 is None:
@@ -1399,7 +1487,7 @@ def get_active_mod_uri(strict: bool = True) -> Union[str, None]:
             "when creating entities"
         )
         if strict:
-            raise EmptyURIStackError(msg)
+            raise aux.EmptyURIStackError(msg)
         else:
             return None
     return res
@@ -1409,97 +1497,225 @@ def process_kwargs_for_entity_creation(entity_key: str, kwargs: dict) -> tuple[d
     """
     :return:    return new_kwargs, lang_related_kwargs
     """
+    return KWArgManager(entity_key, kwargs).process()
 
-    mod_uri = get_active_mod_uri()
 
-    new_kwargs = {}
-    lang_related_kwargs = defaultdict(list)
-    # prepare the kwargs to set relations
-    for dict_key, value in kwargs.items():
-        processed_key = process_key_str(dict_key)
+class KWArgManager:
+    """
+    This class processes all keyword args for entity creation
+    """
 
-        if processed_key.etype != EType.RELATION:
-            msg = f"unexpected key: {dict_key} during creation of item {entity_key}."
-            raise ValueError(msg)
+    def __init__(self, entity_key: str, kwargs: dict):
+        self.entity_key: str = entity_key
+        self.kwargs: dict = kwargs
+        self.mod_uri = get_active_mod_uri()
+        self.new_kwargs = {}
+        self.lang_related_kwargs = defaultdict(list)
 
-        if processed_key.prefix:
-            new_key = f"{processed_key.prefix}__{processed_key.short_key}"
-        else:
-            new_key = processed_key.short_key
+    def process(self):
+        for kwarg_name, kwarg_value in self.kwargs.items():
+            skwap = SingleKWArgProcessor(kwam=self, kwarg_name=kwarg_name, kwarg_value=kwarg_value)
+            skwap.handle_kwarg_stage1()
 
-        # handle those relations which might come with multiple languages
-        if new_key in RELKEYS_WITH_LITERAL_RANGE:
-            value, continue_flag = _handle_relkeys_with_literal_range(
-                entity_key, mod_uri, lang_related_kwargs, value, processed_key, new_key
-            )
-            if continue_flag:
+            try:
+                skwap.handle_kwarg_stage2()
+            except aux.ContinueOuterLoop:
+                # in cases where we already have assigned a value but we get another one
+                # for a different language (which would have the same `new_key`-attribute)
+                # we omit it for the `self.new_kwargs[skwap.new_key]` mechanism
+
+                # it will be contained in `self.lang_related_kwargs` and handled later
+                assert skwap.new_value is None
                 continue
 
-        new_kwargs[new_key] = value
+            # for non-functional (R32) relations there might be several kwargs like R77 and R77__de
+            # which result in the same `skwap.new_key` -> in this case we create a list
 
-    return new_kwargs, lang_related_kwargs
+            existing_value = self.new_kwargs.get(skwap.new_key)
+            if existing_value is None:
+                self.new_kwargs[skwap.new_key] = skwap.new_value
+            elif isinstance(existing_value, list):
+                existing_value.append(skwap.new_value)
+            else:
+                self.new_kwargs[skwap.new_key] = [existing_value, skwap.new_value]
+
+        return self.new_kwargs, self.lang_related_kwargs
 
 
-def _handle_relkeys_with_literal_range(
-    entity_key, mod_uri, lang_related_kwargs, value, processed_key, new_key
-):
+class SingleKWArgProcessor:
     """
-    Relation keys like R1, R2 and R77 are used in triples where the object is a Literal.
-    R1__has_label, R2__has_description are functional (R32__is_functional_for_each_language).
-    R77__has_alternative_label is not functional.
-
-    This function handles the different cases
+    This class processes a single keyword arg for entity creation
     """
-    continue_flag = False
-    value_list = lang_related_kwargs[new_key]
-    # value_list is supposed to be a list of 2-tuples: (lang_indicator, Literal-instance)
-    if len(value_list) == 0:
+
+    def __init__(self, kwam: KWArgManager, kwarg_name: str, kwarg_value: str):
+        self.kwam = kwam
+        self.kwarg_name: str = kwarg_name
+        self.kwarg_value: str = kwarg_value
+        self.processed_rel_key = process_key_str(self.kwarg_name)
+        self.new_key: str = None
+        self.new_value = None
+        self.rel_is_functional = None  # (R22)
+        self.rel_is_functional_fel = None  # ... for each language (R32)
+
+    def handle_kwarg_stage1(self):
+        """
+        Determine new_key
+        """
+        if self.processed_rel_key.etype != EType.RELATION:
+            msg = f"unexpected key: {self.kwarg_name} during creation of item {self.entity_key}."
+            raise ValueError(msg)
+
+        if self.processed_rel_key.prefix:
+            self.new_key = f"{self.processed_rel_key.prefix}__{self.processed_rel_key.short_key}"
+        else:
+            self.new_key = self.processed_rel_key.short_key
+
+    def handle_kwarg_stage2(self):
+
+        rel_obj = ds.get_entity_by_uri(self.processed_rel_key.uri)
+
+        try:
+            self.rel_is_functional = rel_obj.R22__is_functional != None
+        except aux.ShortKeyNotFoundError:
+            # this happens at the beginning if R22/R32 is not yet defined
+            self.rel_is_functional = False
+
+        try:
+            self.rel_is_functional_fel = rel_obj.R32__is_functional_for_each_language != None
+        except aux.ShortKeyNotFoundError:
+            # this happens at the beginning if R22/R32 is not yet defined
+            self.rel_is_functional_fel = False
+
+        # handle those relations which might come with multiple languages
+        if self.new_key in RELKEYS_WITH_LITERAL_RANGE:
+            self.new_value = self.dispatch_value_multiplicity_for_rk_with_lr()
+        else:
+            self.new_value = self.kwarg_value
+
+    def dispatch_value_multiplicity_for_rk_with_lr(self):
+        """
+        Situation for relkeys with literal range:
+        self.kwarg_value might be a 'scalar' value or list of 'scalar' values.
+        This method handles the difference and then calls the actual processing
+        """
+
+        if isinstance(self.kwarg_value, list):
+
+            if self.rel_is_functional:
+                msg = f"List argument for functional relation {self.kwarg_name} is not allowed."
+                raise aux.GeneralPyIRKError(msg)
+            if self.rel_is_functional_fel:
+                msg = f"List argument for lang-functional (R32) relation {self.kwarg_name} is not allowed."
+                raise aux.GeneralPyIRKError(msg)
+
+            self.new_value = []
+            for scalar_kwarg_value in self.kwarg_value:
+                new_scalar_value = self.handle_rk_with_lr(scalar_kwarg_value=scalar_kwarg_value)
+
+                self.new_value.append(new_scalar_value)
+            return self.new_value
+        else:
+            return self.handle_rk_with_lr(scalar_kwarg_value=self.kwarg_value)
+
+    def handle_rk_with_lr(self, scalar_kwarg_value):
+        """
+        'rk' means relkeys
+        'lr' means literal range
+
+        Background:
+        Relation keys like R1, R2 and R77 are used in triples where the object is a Literal.
+        R1__has_label, R2__has_description are functional (R32__is_functional_for_each_language).
+        R77__has_alternative_label is not functional (neither R22__is_functional nor R32).
+
+        This function handles the different cases
+        """
+        if self.rel_is_functional_fel:
+            new_kwarg_value = self._handle_kwarg_for_functional_rel(scalar_kwarg_value)
+        else:
+            # handle the non-functional case here:
+            self._check_for_valid_language(scalar_kwarg_value)
+            new_kwarg_value = self._handle_value(scalar_kwarg_value)
+        return new_kwarg_value
+
+    def _handle_kwarg_for_functional_rel(self, scalar_kwarg_value):
+
+        lang_related_value_list = self.kwam.lang_related_kwargs[self.new_key]
+        # lang_related_value_list is supposed to be a list of 2-tuples: (lang_indicator, Literal-inst.)
+        # this list might be updated here as a side effect. It does not need to be returned
+
+        if len(lang_related_value_list) == 0:
+            # this is the first value for this kwarg. Maybe more will come later for other languages.
+            # They will be handled in the else branch
+            self._check_for_valid_language(scalar_kwarg_value, first_value=True)
+            new_kwarg_value = self._handle_value(scalar_kwarg_value, lang_related_value_list)
+        else:
+            lang_related_value_list.append((self.processed_rel_key.lang_indicator, scalar_kwarg_value))
+            # do not process the current key-value-pair to the Item-constructor
+            # it will be handled later
+            self.new_value = None
+            raise aux.ContinueOuterLoop()
+
+        return new_kwarg_value
+
+    def _check_for_valid_language(self, scalar_kwarg_value, first_value=False):
         valid_languages = (None, settings.DEFAULT_DATA_LANGUAGE)
 
         # note: this is to handle thins like `R1__has_label__de="deutsches label" @ p.de`
-        if processed_key.lang_indicator not in valid_languages:
+        if first_value and self.processed_rel_key.lang_indicator not in valid_languages:
             msg = (
-                f"while creating {entity_key}: the first {new_key}-argument must be with "
-                "lang_indicator `None` or explicitly using the default language. "
-                f"Got {processed_key.lang_indicator} instead."
+                f"while creating {self.kwam.entity_key}: the first {self.new_key}-argument must be "
+                " with lang_indicator `None` or explicitly using the default language. "
+                f"Got {self.processed_rel_key.lang_indicator} instead."
             )
             raise aux.MultilingualityError(msg)
-        value_lang = getattr(value, "language", None)
+        value_lang = getattr(scalar_kwarg_value, "language", None)
         if value_lang not in valid_languages:
             msg = (
-                f"while creating {entity_key}: the first {new_key}-argument must be "
-                f"a flat string or a literal with the default language ({settings.DEFAULT_DATA_LANGUAGE})"
-                f"Got {value_lang} instead."
+                f"while creating {self.kwam.entity_key}: the first {self.new_key}-argument must be "
+                f"a flat string or a literal with the default language "
+                f"({settings.DEFAULT_DATA_LANGUAGE}). Got {value_lang} instead."
             )
             raise aux.MultilingualityError(msg)
 
-        if not isinstance(value, Literal):
-            if not isinstance(value, str):
-                item_uri = aux.make_uri(mod_uri, entity_key)
+    def _handle_value(self, kwarg_value, lang_related_value_list=None) -> Literal:
+        if not isinstance(kwarg_value, Literal):
+            if not isinstance(kwarg_value, str):
+                item_uri = aux.make_uri(self.kwam.mod_uri, self.kwam.entity_key)
                 msg = (
-                    f"While creating {item_uri}: the {new_key}-argument must be a string. "
-                    f"Got {type(value)} instead."
+                    f"While creating {item_uri}: the {self.new_key}-argument must be a string. "
+                    f"Got {type(kwarg_value)} instead."
                 )
                 raise TypeError(msg)
-            value = Literal(value, lang=settings.DEFAULT_DATA_LANGUAGE)
-        value_list.append((processed_key.lang_indicator, value))
-    else:
-        value_list.append((processed_key.lang_indicator, value))
-        # do not pass this key-value-pair to the Item-constructor
-        # it will be handled later
-        continue_flag = True
-    return value, continue_flag
+            lang = self.processed_rel_key.lang_indicator
+            if lang is None:
+                lang = settings.DEFAULT_DATA_LANGUAGE
+            new_kwarg_value = Literal(kwarg_value, lang=lang)
+        else:
+            # we already have a literal object
+            new_kwarg_value = kwarg_value
+        if lang_related_value_list is not None:
+            # this is important for the functional_for_each_language case
+            assert self.rel_is_functional_fel
+            assert isinstance(lang_related_value_list, list)
+            lang_related_value_list.append((self.processed_rel_key.lang_indicator, new_kwarg_value))
+        return new_kwarg_value
 
 
-def process_lang_related_kwargs_for_entity_creation(entity: Entity, short_key: str, lang_related_kwargs: dict) -> None:
+def process_lang_related_kwargs_for_entity_creation(
+    entity: Entity, short_key: str, lang_related_kwargs: dict
+) -> None:
+    """
+    This function processes language related keyword args for relations which have
+    R32__is_functional_for_each_language=True
+    """
     for rel_key, value_list in lang_related_kwargs.items():
         # omit the first argument as it was already passed to the Item-constructor
         for lang_indicator, value in value_list[1:]:
             if isinstance(value, Literal):
                 if value.language != lang_indicator:
                     msg = (
-                         f"while creating {short_key} ({rel_key}-argument) got inconsistent language indicators: "
-                         f"in argument_name: {lang_indicator} but in value (Literal-instance) {value.language}"
+                        f"while creating {short_key} ({rel_key}-argument) got inconsistent language indicators: "
+                        f"in argument_name: {lang_indicator} but in value (Literal-instance) {value.language}"
                     )
                     raise aux.MultilingualityError(msg)
             elif isinstance(value, str):
@@ -1622,7 +1838,7 @@ class KeyManager:
     # TODO: the term "maxval" is misleading because it will be used in range where the upper bound is exclusive
     # however, using range(minval, maxval+1) would results in different shuffling and thus will probably need some
     # refactoring of existing modules
-    def __init__(self, minval=1000, maxval=9999, keyseed=None):
+    def __init__(self, minval=1000, maxval=99999, keyseed=None):
         """
 
         :param minval:  int
@@ -2023,7 +2239,11 @@ def generate_new_key(prefix, prefix2="", mod_uri=None):
 
     if mod_uri is None:
         mod_uri = settings.BUILTINS_URI
-        print(aux.byellow(f"Warning: creating key based on module {mod_uri}, which is probably unintended"))
+        msg = f"Creating key based on module {mod_uri}, which is probably unintended"
+        if settings.STRICT:
+            raise Warning(msg)
+        else:
+            print(aux.byellow(f"Warning: {msg}"))
 
     with uri_context(mod_uri):
         while True:
@@ -2221,7 +2441,9 @@ def unload_mod(mod_uri: str, strict=True) -> None:
     stm_dict = ds.stms_created_in_mod.pop(mod_uri, {})
 
     if strict and (not entity_uris and not stm_dict):
-        msg = f"Seems like neither entities nor statements from {mod_uri} have been loaded. This is unexpected."
+        msg = (
+            f"Seems like neither entities nor statements from {mod_uri} have been loaded. This is unexpected."
+        )
         raise KeyError(msg)
 
     for uri in entity_uris:
@@ -2426,7 +2648,12 @@ def register_mod(uri: str, keymanager: KeyManager = None, check_uri=True, prefix
         ds.mod_path_mapping.add_pair(key_a=uri, key_b=path)
 
     if keymanager is None:
-        keymanager = KeyManager()
+        # there are use cases (e.g. in stafo where the key manager is created before the module is registered)
+        # -> we want to reuse that key manager
+        if uri in ds.uri_keymanager_dict:
+            keymanager = ds.uri_keymanager_dict[uri]
+        else:
+            keymanager = KeyManager()
     # all modules should have their own key manager
     ds.uri_keymanager_dict[uri] = keymanager
 
@@ -2452,6 +2679,7 @@ def start_mod(uri):
 def end_mod():
     _uri_stack.pop()
     assert len(_uri_stack) == 0
+
 
 # TODO: obsolete?
 def get_language_of_str_literal(obj: Union[str, Literal]):
@@ -2545,9 +2773,7 @@ class RuleResult:
             aplt = "? s"
         else:
             aplt = f"{round(self.apply_time, 3)} s"
-        res = (
-            f"{type(self).__name__} ({aplt}): new_stms: {len(self.new_statements)}, parts: {len(self.partial_results)}"
-        )
+        res = f"{type(self).__name__} ({aplt}): new_stms: {len(self.new_statements)}, parts: {len(self.partial_results)}"
         return res
 
     @property
@@ -2560,6 +2786,9 @@ class RuleResult:
                 return self.partial_results[0].rule
 
         return self._rule
+
+    def get_new_triples(self) -> list[tuple[Entity]]:
+        return [stm.relation_tuple for stm in self.new_statements]
 
 
 def is_true(subject: Entity, predicate: Relation, object) -> tuple[bool, None]:
@@ -2595,6 +2824,7 @@ def is_subclass(item: Item, parent_item: Item):
     else:
         return is_subclass(item.R3, parent_item)
 
+
 def is_instance(item: Item, parent_item: Item):
 
     msg = "`core.is_instance` is deprecated in favor of `builtins.is_instance_of`"
@@ -2609,7 +2839,7 @@ def is_instance(item: Item, parent_item: Item):
 
 
 def is_subproperty(item: Item, parent_property: Item):
-    """check if item is subproperty of parent_property. item == parent_p will return True aswell."""
+    """check if item is subproperty of parent_property. item == parent_p will return True as well."""
     if item == parent_property:
         return True
     if not hasattr(item, "R17"):

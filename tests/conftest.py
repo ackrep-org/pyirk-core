@@ -12,8 +12,9 @@ if os.getenv("PYTEST_IPS") == "True":
     import ipydex
 
     def pytest_runtest_setup(item):
-        print("This invocation of pytest is customized")
+        pass
+        # print("This invocation of pytest is customized")
 
 
     def pytest_exception_interact(node, call, report):
-        ipydex.ips_excepthook(call.excinfo.type, call.excinfo.value, call.excinfo.tb, frame_upcount=0)
+        ipydex.ips_excepthook(call.excinfo.type, call.excinfo.value, call.excinfo.tb, leave_ut=True)

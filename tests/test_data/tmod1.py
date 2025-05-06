@@ -12,7 +12,6 @@ p.start_mod(__URI__)
 
 I1000 = p.create_item(
     R1__has_label="test item in tmod1",
-
     # demonstrate usage of prefixed name-labled key
     bar__R2000__some_relation=42,
 )

@@ -7,7 +7,6 @@ It serves to explore the solution of the full puzzle.
 See https://en.wikipedia.org/wiki/Zebra_Puzzle
 """
 
-
 import pyirk as p
 
 
@@ -193,7 +192,9 @@ with I903.scope("assertion") as cm:
 
 I904 = p.create_item(
     R1__has_label="zebra puzzle reasoning rule4",
-    R2__has_description=("principle of exclusion: evaluate R56__is_one_of tuple of length 1 to R47__is_same_as"),
+    R2__has_description=(
+        "principle of exclusion: evaluate R56__is_one_of tuple of length 1 to R47__is_same_as"
+    ),
     R4__is_instance_of=p.I41["semantic rule"],
 )
 

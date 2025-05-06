@@ -14,21 +14,15 @@ I1000 = p.create_item(
 
 
 _newitemkey_ = p.create_item(
-    R1__has_label="some new item",
-    R2__has_description="",
-    R4__is_instance_of=p.I50["stub"]
+    R1__has_label="some new item", R2__has_description="", R4__is_instance_of=p.I50["stub"]
 )
 
 _newitemkey_ = p.create_item(
-    R1__has_label="special new item",
-    R2__has_description="",
-    R3__is_subclass_of=p.I000["some new item"]
+    R1__has_label="special new item", R2__has_description="", R3__is_subclass_of=p.I000["some new item"]
 )
 
 _newitemkey_ = p.create_item(
-    R1__has_label="some other item",
-    R2__has_description="",
-    R4__is_instance_of=p.I000["special new item"]
+    R1__has_label="some other item", R2__has_description="", R4__is_instance_of=p.I000["special new item"]
 )
 
 # this section in the source file is helpful for bulk-insertion of new items
@@ -40,7 +34,7 @@ _newitemkey_ = p.create_item(
 # )
 
 
-#</new_entities>
+# </new_entities>
 
 I1000.R72__is_generally_related_to = p.I000["some other item"]
 

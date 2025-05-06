@@ -4,7 +4,7 @@
 import pyirk as p
 
 
-__URI__ =  "irk:/ocse/0.2/agents"
+__URI__ = "irk:/ocse/0.2/agents"
 
 keymanager = p.KeyManager(keyseed=1239)
 p.register_mod(__URI__, keymanager)
@@ -26,8 +26,12 @@ insert_entities = [
     I1342["academic institution"],
     I9942["Stanford University"],
     I7301["ETH Zürich"],
-    raw__I2746["Rudolf Kalman"].set_relation(R1833["has employer"], I9942["Stanford University"], qualifiers=[start_time("1964"), end_time("1971")]),
-    raw__I2746["Rudolf Kalman"].set_relation(R1833["has employer"], I7301["ETH Zürich"], qualifiers=[start_time("1973"), end_time("1997")]),
+    raw__I2746["Rudolf Kalman"].set_relation(
+        R1833["has employer"], I9942["Stanford University"], qualifiers=[start_time("1964"), end_time("1971")]
+    ),
+    raw__I2746["Rudolf Kalman"].set_relation(
+        R1833["has employer"], I7301["ETH Zürich"], qualifiers=[start_time("1973"), end_time("1997")]
+    ),
     I4853["Sophus Lie"],
     R6876["is named after"],
     I2151["Aleksandr Lyapunov"],

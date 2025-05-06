@@ -19,3 +19,11 @@ In `/docs/build/html` run `python -m http.server 8000`.
 ## Debug Readthedocs Build
 
 In `/docs` run `sphinx-autobuild ./source ./build/`. Then visit <http://127.0.0.1:8000>
+
+
+## Editing the Docs
+
+We use markdown (Sphinx default is ReST). Useful links:
+
+- <https://www.sphinx-doc.org/en/master/usage/markdown.html>
+- <https://coderefinery.github.io/documentation/sphinx/>

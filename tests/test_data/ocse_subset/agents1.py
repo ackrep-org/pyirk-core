@@ -4,7 +4,7 @@
 import pyirk as p
 
 
-__URI__ =  "irk:/ocse/0.2/agents"
+__URI__ = "irk:/ocse/0.2/agents"
 
 keymanager = p.KeyManager(keyseed=1239)
 p.register_mod(__URI__, keymanager)
@@ -21,7 +21,7 @@ def create_person(given_name: str, family_name: str, r2: str, r33=None, r3474=No
     item_key = p.get_key_str_by_inspection()
 
     r1 = f"{given_name} {family_name}"
-    item: p.Item  = p.create_item(
+    item: p.Item = p.create_item(
         item_key,
         R1__has_label=r1,
         R2__has_description=r2,
@@ -41,6 +41,7 @@ def create_person(given_name: str, family_name: str, r2: str, r33=None, r3474=No
         item.set_relation(R3475["has DBLP author ID"], r3475)
 
     return item
+
 
 I7435 = p.create_item(
     R1__has_label="human",
@@ -108,10 +109,14 @@ I7301 = p.create_item(
     R33__has_corresponding_wikidata_entity="https://www.wikidata.org/entity/Q11942",
 )
 
-I2746["Rudolf Kalman"].set_relation(R1833["has employer"], I9942["Stanford University"], qualifiers=[start_time("1964"), end_time("1971")])
+I2746["Rudolf Kalman"].set_relation(
+    R1833["has employer"], I9942["Stanford University"], qualifiers=[start_time("1964"), end_time("1971")]
+)
 
 
-I2746["Rudolf Kalman"].set_relation(R1833["has employer"], I7301["ETH Zürich"], qualifiers=[start_time("1973"), end_time("1997")])
+I2746["Rudolf Kalman"].set_relation(
+    R1833["has employer"], I7301["ETH Zürich"], qualifiers=[start_time("1973"), end_time("1997")]
+)
 
 
 I4853 = create_person("Sophus", "Lie", "mathematician", r33="https://www.wikidata.org/wiki/Q30769")

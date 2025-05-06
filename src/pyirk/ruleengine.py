@@ -55,18 +55,33 @@ def apply_all_semantic_rules(mod_context_uri=None) -> List[core.Statement]:
     return total_res
 
 
-def apply_semantic_rules(*rules: List, mod_context_uri: str = None) -> List[core.Statement]:
+def apply_semantic_rules(*rules: List, mod_context_uri: str = None, exhaust=False) -> "ReportingMultiRuleResult":
+    """
+    Apply multiple rules
+
+    :param exhaust:     boolean flag; if True: repeat rule application until no new statements are created
+    """
     total_res = ReportingMultiRuleResult(rule_list=rules)
-    for rule in rules:
-        res = apply_semantic_rule(rule, mod_context_uri)
-        total_res.add_partial(res)
-        if res.exception:
+
+    existing_statements = len(total_res.new_statements)
+    while True:
+        # the outer loop handles the exhaust-case
+        for rule in rules:
+            res = apply_semantic_rule(rule, mod_context_uri)
+            total_res.add_partial(res)
+            if res.exception:
+                break
+        if not exhaust:
             break
+        new_statements = len(total_res.new_statements) - existing_statements
+        if not new_statements:
+            break
+        existing_statements = len(total_res.new_statements)
 
     return total_res
 
 
-def apply_semantic_rule(rule: core.Item, mod_context_uri: str = None) -> List[core.Statement]:
+def apply_semantic_rule(rule: core.Item, mod_context_uri: str = None) -> "ReportingRuleResult":
     """
     Create a RuleApplicator instance for the rules, execute its apply-method, return the result (list of new statements)
     """
@@ -152,7 +167,9 @@ class RuleApplicator:
             rule.scp__setting.get_inv_relations("R20__has_defining_scope")
         )
 
-        self.external_entities = rule.scp__setting.get_relations("R55__uses_as_external_entity", return_obj=True)
+        self.external_entities = rule.scp__setting.get_relations(
+            "R55__uses_as_external_entity", return_obj=True
+        )
 
         # get all subjects (Entities or Statements of the setting-scope)
         subjects = rule.scp__setting.get_inv_relations("R20__has_defining_scope", return_subj=True)
@@ -207,7 +224,9 @@ class RuleApplicator:
         )
 
         if scope_OR := getattr(self.rule.scp__premise, "scp__OR", None):
-            direct_OR_scope_stms, items = filter_relevant_stms(scope_OR.get_inv_relations("R20__has_defining_scope"))
+            direct_OR_scope_stms, items = filter_relevant_stms(
+                scope_OR.get_inv_relations("R20__has_defining_scope")
+            )
             assert len(items) == 0, "msg creation of new items is now allowed in OR-subscopes"
 
             for stm in direct_OR_scope_stms:
@@ -317,7 +336,10 @@ class RuleApplicator:
                     G.add_edge(*uri_tup, itm1=core.ds.get_entity_by_uri(uri1), itm2=literal_value, **rel_cont)
                 elif uri1 in G.nodes and uri2 in G.nodes:
                     G.add_edge(
-                        *uri_tup, itm1=core.ds.get_entity_by_uri(uri1), itm2=core.ds.get_entity_by_uri(uri2), **rel_cont
+                        *uri_tup,
+                        itm1=core.ds.get_entity_by_uri(uri1),
+                        itm2=core.ds.get_entity_by_uri(uri2),
+                        **rel_cont,
                     )
                 else:
                     pass
@@ -381,7 +403,6 @@ class RuleApplicator:
 
 
 class RuleApplicatorWorker:
-
     """
     Performs the application of one premise branch of a rule
     """
@@ -390,7 +411,9 @@ class RuleApplicatorWorker:
 
     # useful for debugging: IPS(self.parent.rule.short_key=="I763")
 
-    def __init__(self, parent: RuleApplicator, premise_stms: List[core.Statement], premise_items: List[core.Item]):
+    def __init__(
+        self, parent: RuleApplicator, premise_stms: List[core.Statement], premise_items: List[core.Item]
+    ):
         # get all subjects (Entities or Statements of the setting-scope)
 
         self.parent = parent
@@ -401,7 +424,9 @@ class RuleApplicatorWorker:
         self.condition_func_anchor_items = premise_items
 
         self.sparql_src = rule.scp__premise.get_relations("R63__has_SPARQL_source", return_obj=True)
-        self.assertions_stms = filter_relevant_stms(rule.scp__assertion.get_inv_relations("R20"), return_items=False)
+        self.assertions_stms = filter_relevant_stms(
+            rule.scp__assertion.get_inv_relations("R20"), return_items=False
+        )
 
         # for every local node (integer key) store a list of relations like:
         # {<uri1>: S5971(<Item Ia5322["rel1 (I40__general_rel)"]>, <Relation R2850["is functional activity"]>, True)}
@@ -483,7 +508,6 @@ class RuleApplicatorWorker:
         res.apply_time = time.time() - t0
         return res
 
-
     def _resolve_local_node(self, node=None, uri=None):
         """
         return item or literal
@@ -514,7 +538,6 @@ class RuleApplicatorWorker:
             item_or_lit = self._resolve_local_node(uri=k_uri)
             res[str(item_or_lit)] = v
         return res
-
 
     def _get_understandable_result_maps(self, result_maps: List[dict]) -> List[list]:
         """
@@ -710,9 +733,7 @@ class RuleApplicatorWorker:
                 # two edges correspond to the same relation or not
                 raise p.aux.InconsistentEdgeRelations()
             if len(uri_relations_map) == 0:
-                msg = (
-                    f"Unexpectedly found no relation associated to proxy item {pred_proxy_item} in {self.parent.rule}."
-                )
+                msg = f"Unexpectedly found no relation associated to proxy item {pred_proxy_item} in {self.parent.rule}."
                 raise ValueError(msg)
 
             rel_entity = list(uri_relations_map.values())[0]
@@ -737,7 +758,7 @@ class RuleApplicatorWorker:
 
         return relations
 
-    def get_condition_funcs_and_args(self) -> (List[callable], List[Tuple[int]]):
+    def get_condition_funcs_and_args(self) -> Tuple[List[callable], List[Tuple[int]]]:
         """ """
         self._fill_extended_local_nodes()
 
@@ -762,7 +783,7 @@ class RuleApplicatorWorker:
 
         return func_list, args_node_list
 
-    def prepare_consequent_functions(self) -> (List[callable], List[Tuple[int]], List[str]):
+    def prepare_consequent_functions(self) -> Tuple[List[callable], List[Tuple[int]], List[str]]:
         """
         Creates 3 lists:
             - a list of the consequent functions (might create a new item, new statement or have other side effects)
@@ -852,7 +873,10 @@ class RuleApplicatorWorker:
 
             if entity_obj_flag:
                 final_obj = self.extended_local_nodes.a[obj.uri]
-                if final_obj in self.parent.asserted_nodes.b or final_obj in self.parent.literal_variable_nodes.b:
+                if (
+                    final_obj in self.parent.asserted_nodes.b
+                    or final_obj in self.parent.literal_variable_nodes.b
+                ):
                     # `final_obj` is like "fiat0", "vlit0"; it will be handled during `_process_result_map`
                     pass
                 else:
@@ -861,7 +885,9 @@ class RuleApplicatorWorker:
                 final_obj = obj  # the LiteralWrapper instance
 
             c = Container(subject=self.extended_local_nodes.a[sub.uri], predicate=pred, object=final_obj)
-            c.omit_if_existing = stm.get_first_qualifier_obj_with_rel("R59__has_rule_prototype_graph_mode") == 5
+            c.omit_if_existing = (
+                stm.get_first_qualifier_obj_with_rel("R59__has_rule_prototype_graph_mode") == 5
+            )
 
             res.append(c)
 
@@ -885,7 +911,9 @@ class RuleApplicatorWorker:
 
         # restrictions for matching nodes: none
         # ... for matching edges: relation-uri must match
-        GM = nxiso.MultiDiGraphMatcher(self.parent.G, self.P, node_match=self._node_matcher, edge_match=edge_matcher)
+        GM = nxiso.MultiDiGraphMatcher(
+            self.parent.G, self.P, node_match=self._node_matcher, edge_match=edge_matcher
+        )
 
         # for the difference between subgraph monomorphisms and isomorphisms see:
         # https://networkx.org/documentation/stable/reference/algorithms/isomorphism.vf2.html#subgraph-isomorphism
@@ -1170,7 +1198,9 @@ class RuleApplicatorWorker:
 
             raise core.aux.SemanticRuleError("empty prototype graph")
 
-        expected_main_component_number = getattr(self.parent.rule, "R70__has_number_of_prototype_graph_components")
+        expected_main_component_number = getattr(
+            self.parent.rule, "R70__has_number_of_prototype_graph_components"
+        )
         if expected_main_component_number is None:
             expected_main_component_number = 1
 
@@ -1281,7 +1311,9 @@ def edge_matcher(e1d: AtlasView, e2d: AtlasView) -> bool:
         # iterate over all edges of this multiedge
         for inner_dict1 in e1d.values():
             stm_data = Container(subject=inner_dict1["itm1"], object=inner_dict1["itm2"])
-            res: bool = compare_relation_statements(inner_dict1["rel_entity"], e2d["rel_statements"], stm_data=stm_data)
+            res: bool = compare_relation_statements(
+                inner_dict1["rel_entity"], e2d["rel_statements"], stm_data=stm_data
+            )
             if res:
                 break
         return res
@@ -1488,7 +1520,9 @@ jinja_FILTERS["crpr"] = crpr
 
 
 # Note this function will be called very often -> check for speedup possibilities
-def compare_relation_statements(rel1: core.Relation, stm_list: List[core.Statement], stm_data: Container = None):
+def compare_relation_statements(
+    rel1: core.Relation, stm_list: List[core.Statement], stm_data: Container = None
+):
     """
     decide whether a given relation fulfills all given statements
     """
@@ -1615,7 +1649,9 @@ class AlgorithmicRuleApplicationWorker:
         t0 = time.time()
 
         # in the future this logic will be parsed from the graph
-        h_list = p.get_direct_instances_of(zb.I7435["human"], filter=lambda itm: not itm.R20__has_defining_scope)
+        h_list = p.get_direct_instances_of(
+            zb.I7435["human"], filter=lambda itm: not itm.R20__has_defining_scope
+        )
         rel_list = [p.R50["is different from"]]
 
         # filter out R57__is_placeholder items
@@ -1757,7 +1793,10 @@ class AlgorithmicRuleApplicationWorker:
                 pred_report.stable_candidates[pred.uri].append((len(obj_dict), sub_uri))
 
                 # store a list which allows easy access to remaining possibilities
-                tmp_list = [len(obj_dict), Container(pred=pred.uri, subj=sub_uri, objs=tuple(obj_dict.keys()))]
+                tmp_list = [
+                    len(obj_dict),
+                    Container(pred=pred.uri, subj=sub_uri, objs=tuple(obj_dict.keys())),
+                ]
                 pred_report.hypothesis_candidates.append(tmp_list)
 
         pred_report.hypothesis_candidates.sort(key=lambda elt: elt[0])
@@ -1779,7 +1818,9 @@ class HypothesisReasoner:
     def hypothesis_reasoning_step(self, rule_list):
         # generate hypothesis
         araw = AlgorithmicRuleApplicationWorker()
-        func_act_list = p.ds.get_subjects_for_relation(self.zb.R2850["is functional activity"].uri, filter=True)
+        func_act_list = p.ds.get_subjects_for_relation(
+            self.zb.R2850["is functional activity"].uri, filter=True
+        )
         pred_report = araw.get_predicates_report(predicate_list=func_act_list)
 
         for pos_count, hypo_container in pred_report.hypothesis_candidates:

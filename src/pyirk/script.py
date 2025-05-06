@@ -1,6 +1,7 @@
 """
 Command line interface for irk package
 """
+
 import os
 import argparse
 from pathlib import Path
@@ -8,6 +9,7 @@ import re
 from typing import Tuple
 import ast
 import inspect
+from textwrap import dedent
 
 try:
     # this will be part of standard library for python >= 3.11
@@ -15,11 +17,15 @@ try:
 except ModuleNotFoundError:
     import tomli as tomllib
 
+import platformdirs
+
 
 from . import core, irkloader, rdfstack
 from . import visualization
 from . import reportgenerator
 from . import auxiliary as aux
+
+# TODO: remove obsolete import
 from . import settings
 from . import release
 
@@ -30,11 +36,13 @@ activate_ips_on_exception()
 
 def create_parser():
     """
-    Returns the parser object which is then evaluated in  main(). This is neccessary for sphinx to automatically
+    Returns the parser object which is then evaluated in  main(). This is necessary for sphinx to automatically
     generate the cli docs.
     """
 
-    parser = argparse.ArgumentParser(description="command line interface to IRK (imperative representation of knowledge)")
+    parser = argparse.ArgumentParser(
+        description="command line interface to IRK (imperative representation of knowledge)"
+    )
     parser.add_argument(
         "inputfile",
         help="input file",
@@ -63,7 +71,7 @@ def create_parser():
     parser.add_argument(
         "-lp",
         "--load-package",
-        help="load irk package (represented by irkpackage.tomle file)",
+        help="load irk package (represented by irkpackage.toml file)",
         default=None,
         metavar=("PACKAGE_TOML_PATH"),
     )
@@ -137,14 +145,14 @@ def create_parser():
         "-ik",
         "--insert-keys-for-placeholders",
         help="replace `_newitemkey_ = ` with appropriate short keys",
-        metavar="path_to_mod"
+        metavar="path_to_mod",
     )
 
     parser.add_argument(
         "-utd",
         "--update-test-data",
         help="create a subset of the irkpackage (e.g. OCSE) and store it in the `test_data` dir of pyirk-core",
-        metavar="path_to_irk_package"
+        metavar="path_to_irk_package",
     )
 
     parser.add_argument("--dbg", help="start debug routine", default=None, action="store_true")
@@ -152,6 +160,12 @@ def create_parser():
     parser.add_argument(
         "--version",
         help="print the version and exit",
+        action="store_true",
+    )
+
+    parser.add_argument(
+        "--bootstrap-config",
+        help="create an empty config.toml file in the user config directory",
         action="store_true",
     )
 
@@ -235,6 +249,8 @@ def main():
         insert_keys_for_placeholders(args.insert_keys_for_placeholders)
     elif args.update_test_data:
         update_test_data(args.update_test_data)
+    elif args.bootstrap_config:
+        bootstrap_config()
     else:
         print("nothing to do, see option `--help` for more info")
 
@@ -328,6 +344,7 @@ def insert_keys_for_placeholders(modpath):
     fname = os.path.split(modpath)[-1]
     import tempfile
     import shutil
+
     backup_path = os.path.join(tempfile.mkdtemp(), fname)
 
     shutil.copy(modpath, backup_path)
@@ -340,6 +357,8 @@ def insert_keys_for_placeholders(modpath):
     key_count = old_txt.count(f"\n{placeholder}")
 
     pattern = f"{start_tag}.*?{end_tag}"
+
+    # create a module which excludes everything between `start_tag` and `end_tag`
     tmp_txt = re.sub(pattern=pattern, repl="", string=old_txt, flags=re.DOTALL)
     assert start_tag not in tmp_txt
     assert end_tag not in tmp_txt
@@ -352,6 +371,8 @@ def insert_keys_for_placeholders(modpath):
 
     # load this temporary module
     loaded_mod = process_mod(path=tmp_modpath, prefix="mod", relative_to_workdir=True)
+
+    # generate keys for the new items
     item_keys = [core.generate_new_key("I", mod_uri=loaded_mod.__URI__) for i in range(key_count)]
 
     old_lines = old_txt.split("\n")
@@ -379,17 +400,17 @@ def insert_keys_for_placeholders(modpath):
     core.unload_mod(loaded_mod.__URI__)
     os.unlink(tmp_modpath)
 
-    replace_dummy_enties_by_label(modpath)
+    replace_dummy_entities_by_label(modpath)
 
 
-def replace_dummy_enties_by_label(modpath):
+def replace_dummy_entities_by_label(modpath):
     """
     load the module, additionally load its source, replace entities like I000["some label"] with
     real entities like I7654["some label"].
     """
 
     loaded_mod = process_mod(path=modpath, prefix="mod", relative_to_workdir=True)
-    pattern = re.compile("""(p.I000\[['"](.*?)['"]\])""")
+    pattern = re.compile(r"""(p.I000\[['"](.*?)['"]\])""")
 
     with open(modpath) as fp:
         txt = fp.read()
@@ -405,7 +426,6 @@ def replace_dummy_enties_by_label(modpath):
         new_expr = f'{entity.short_key}["{label}"]'
         txt = txt.replace(full_expr, new_expr)
 
-
     with open(modpath, "w") as fp:
         fp.write(txt)
 
@@ -415,6 +435,7 @@ def update_test_data(pkg_path):
     Background: see devdocs
     """
     import glob
+
     mod, prefix = process_package(pkg_path)
     mod_cont = path_to_ast_container(inspect.getfile(mod))
 
@@ -462,16 +483,16 @@ def process_template(template_path):
             continue
         elif line.startswith("raw__"):
             # handle raw lines
-            lines_to_insert.append(line[len("raw__"):])
-            lines_to_insert.append("\n"*3)
+            lines_to_insert.append(line[len("raw__") :])
+            lines_to_insert.append("\n" * 3)
             continue
         elif line.startswith("with__"):
             # handle context managers
             short_key = line
         elif line.startswith("def__"):
-            short_key = line[len("def__"):]
+            short_key = line[len("def__") :]
         elif line.startswith("class__"):
-            short_key = line[len("class__"):]
+            short_key = line[len("class__") :]
         else:
             # assume pyirk entity
             short_key = core.process_key_str(line, check=False).short_key
@@ -482,8 +503,8 @@ def process_template(template_path):
             short_template_path = os.path.split(short_template_path)[-1]
             short_template_path = os.path.join(short_template_path, fname)
             msg = (
-            f"could not find associated data for short_key {short_key} while processing "
-            f"template line `{line}` in template {short_template_path}."
+                f"could not find associated data for short_key {short_key} while processing "
+                f"template line `{line}` in template {short_template_path}."
             )
             raise KeyError(msg)
         lines_to_insert.append(original_content)
@@ -491,7 +512,9 @@ def process_template(template_path):
 
     new_insert_txt = "".join(lines_to_insert)
 
-    rendered_template = templ_ast_cont.txt.replace(templ_ast_cont.line_data["insert_entities"], new_insert_txt)
+    rendered_template = templ_ast_cont.txt.replace(
+        templ_ast_cont.line_data["insert_entities"], new_insert_txt
+    )
     return rendered_template
 
 
@@ -509,7 +532,7 @@ def path_to_ast_container(mod_path: str) -> core.aux.Container:
         elif isinstance(elt, (ast.FunctionDef, ast.ClassDef)):
             name = elt.name
         elif isinstance(elt, ast.With):
-            first_line = lines[elt.lineno-1]
+            first_line = lines[elt.lineno - 1]
             # assume form like `with I9907.scope("setting") as cm:`
             idx = first_line.index(" as ")
             # create name string like `with__I9907.scope("setting")`
@@ -519,22 +542,49 @@ def path_to_ast_container(mod_path: str) -> core.aux.Container:
 
         assert isinstance(name, str)
 
-        # subtract 1 because the line numberse are human-oriented (1-indexed)
-        src_txt = "".join(lines[elt.lineno-1:elt.end_lineno])
+        # subtract 1 because the line numbers are human-oriented (1-indexed)
+        src_txt = "".join(lines[elt.lineno - 1 : elt.end_lineno])
         c.line_data[name] = src_txt
 
     return c
+
+
+def bootstrap_config():
+    """
+    Create an empty config.toml file in the user config directory.
+    """
+    config_dir = platformdirs.user_config_dir("pyirk")
+    os.makedirs(config_dir, exist_ok=True)
+
+    config_path = os.path.join(config_dir, "config.toml")
+
+    if os.path.exists(config_path):
+        print(f"Config file already exists at: {config_path}")
+        return
+
+    initial_content = dedent("""
+    # PyIRK configuration file
+
+    # example:
+    # [package.ocse]
+    # path = "/home/username/irk-data/ocse"
+
+    """)
+
+    with open(config_path, "w") as f:
+        f.write(initial_content)
+
+    print(f"Empty config file created at: {config_path}")
 
 
 def get_lines_for_short_key(short_key: str) -> str:
     pass
 
 
-
 def interactive_session(loaded_mod, prefix):
     """
-    Start an interactive IPython session where the (optinally) loaded mod is available under its prefix name.
-    Also: perepare interactive pyirk-module -- a namespacew for experimentally creating entities.
+    Start an interactive IPython session where the (optionally) loaded mod is available under its prefix name.
+    Also: prepare interactive pyirk-module -- a namespace for experimentally creating entities.
     """
     import pyirk as p  # noqa
 

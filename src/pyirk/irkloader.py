@@ -1,6 +1,7 @@
 import importlib.util
 import sys
 import os
+import glob
 import inspect
 import pyirk
 import pathlib
@@ -27,6 +28,35 @@ def preserve_cwd(function):
     return decorator
 
 
+def delete_bytecode_files(modpath):
+
+    dirpath, fname = os.path.split(modpath)
+    basename, _ = os.path.splitext(fname)
+    bytecode_pattern = f'{os.path.join(dirpath, "__pycache__", basename)}*'
+
+    bytecode_paths = glob.glob(bytecode_pattern)
+    for bc_path in bytecode_paths:
+        os.unlink(bc_path)
+
+@preserve_cwd
+def load_mod_from_uri(uri: str, prefix: str, *args, **kwargs):
+
+    if not pyirk.aux.STATES.available_modules_detected:
+        pyirk.aux.load_module_configs_from_general_config()
+
+    try:
+        mod_path = pyirk.aux.AVAILABLE_MODULES[uri]
+    except KeyError:
+        length = len(pyirk.aux.AVAILABLE_MODULES)
+        msg = f"could not find {uri} among the f{length} available modules."
+        pyirk.logger.error(msg)
+        raise KeyError(msg)
+
+    return load_mod_from_path(mod_path, prefix, *args, **kwargs)
+
+
+
+
 # noinspection PyProtectedMember
 @preserve_cwd
 def load_mod_from_path(
@@ -36,6 +66,7 @@ def load_mod_from_path(
     allow_reload=True,
     smart_relative=None,
     reuse_loaded=None,
+    delete_bytecode=None
 ) -> ModuleType:
     """
 
@@ -47,8 +78,12 @@ def load_mod_from_path(
                             (not w.r.t. current working path)
     :param reuse_loaded:    flag; if True and the module was already loaded before, then just use this
                             if False:: reload; if None use the default action from pyirk.ds
+    :param delete_bytecode: flag; if true delete the matching content of __pycache__
     :return:
     """
+
+    if delete_bytecode:
+        delete_bytecode_files(modpath)
 
     reuse_loaded_original = pyirk.ds.reuse_loaded_module
 
@@ -64,7 +99,9 @@ def load_mod_from_path(
             reuse_loaded__actual = pyirk.ds.reuse_loaded_module
 
     try:
-        mod = _load_mod_from_path(modpath, prefix, modname, allow_reload, smart_relative, reuse_loaded__actual)
+        mod = _load_mod_from_path(
+            modpath, prefix, modname, allow_reload, smart_relative, reuse_loaded__actual
+        )
     except:
         if reuse_loaded is not None:
             # we had changed the default
@@ -94,7 +131,9 @@ def _load_mod_from_path(
     original_loaded_mod_uris = list(pyirk.ds.mod_path_mapping.a.keys())
 
     if smart_relative is not None:
-        msg = "Using 'smart_relative' paths is deprecated since pyirk version 0.6.0. Please use real paths now."
+        msg = (
+            "Using 'smart_relative' paths is deprecated since pyirk version 0.6.0. Please use real paths now."
+        )
         raise DeprecationWarning(msg)
 
     smart_relative = False
@@ -169,12 +208,12 @@ def _load_mod_from_path(
             "the last PyIRK-statement."
         )
 
-        raise pyirk.PyIRKError(msg)
+        raise pyirk.GeneralPyIRKError(msg)
 
     mod_uri = getattr(mod, "__URI__")
     if mod_uri is None:
         msg = f"The module from path {modpath} could not be loaded. No valid `__URI__` attribute found."
-        raise pyirk.PyIRKError(msg)
+        raise pyirk.GeneralPyIRKError(msg)
 
     pyirk.aux.ensure_valid_baseuri(mod_uri)
 

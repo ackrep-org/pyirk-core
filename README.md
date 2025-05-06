@@ -47,6 +47,19 @@ Not that, originally pyirk (imperative representation of knowledge) was called p
 Rudimentary documentation is available at <https://pyirk-core.readthedocs.io> (generated from the [`/docs`](/docs) directory). To get an overview of the most important features you might also want to have a look at the source code, especially at the files [builtin_entities.py](/src/pyirk/builtin_entities.py) and the test cases, e.g., [test_core.py](tests/test_core.py).
 
 
-# Coding style
+# Contributing
 
-We (aim to) use `black -l 110 ./` to ensure coding style consistency.
+We highly welcome external contributions. To reduce friction losses in a growing team we have the following guide lines.
+
+## Code
+
+- We (aim to) use `black -l 110 ./` to ensure coding style consistency, see also: [code style black](https://github.com/psf/black).
+- We strongly encourage writing/updating doc strings
+- We recommend using [typing hints](https://mypy.readthedocs.io/en/stable/cheat_sheet_py3.html)
+- We strongly encourage to adopt a test-first-paradigm: write a (failing) unittest before the actual implementation.
+
+
+## Git
+
+- We loosely follow the [git flow branching model](https://nvie.com/posts/a-successful-git-branching-model/): New features should be developed either in their own branch or a a personal development-branch like `develop_ck`. From there they are merged into `develop` (pull requests should usually target this branch). The `main` branch is then updated as needed (e.g. by downstream dependencies).
+- For commit messages we (mostly) follow the [conventional commits specification](https://www.conventionalcommits.org/en/).

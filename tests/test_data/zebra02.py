@@ -7,7 +7,6 @@ It serves to explore the solution of the full puzzle.
 See https://en.wikipedia.org/wiki/Zebra_Puzzle
 """
 
-
 import pyirk as p
 
 zb = p.irkloader.load_mod_from_path("./zebra_base_data.py", prefix="zb", reuse_loaded=True)

@@ -22,6 +22,8 @@ logger = logging.getLogger("pyirk")
 config_path = platformdirs.user_config_dir("pyirk")
 config_file = os.path.join(config_path, "config.toml")
 
+CONF = {}
+
 if os.path.isfile(config_file):
     try:
         with open(config_file, "rb") as f:
@@ -31,7 +33,6 @@ if os.path.isfile(config_file):
             f"Warning: Could not load existing config file {config_file}. Maybe syntax error?\n"
             f"Original exception ({type(e)}):\n\n{str(e)}"
         )
-        CONF = {}
         logger.warning(msg)
 
 
@@ -55,6 +56,9 @@ ACKREP_DATA_UT_REL_PATH = "../ackrep/ackrep_data_for_unittests"
 # get absolute path of directory of this file
 source_dir = os.path.dirname(os.path.abspath(sys.modules.get(__name__).__file__))
 TEMPLATE_PATH = os.path.join(source_dir, "templates")
+
+# assume package is installed via `pip install -e` then the repo root is two levels up
+PYIRK_REPO_ROOT_PATH = os.path.dirname(os.path.dirname(source_dir))
 
 BUILTINS_URI = "irk:/builtins"
 URI_SEP = "#"

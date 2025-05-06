@@ -48,7 +48,7 @@ def load_mod_from_uri(uri: str, prefix: str, *args, **kwargs):
         mod_path = pyirk.aux.AVAILABLE_MODULES[uri]
     except KeyError:
         length = len(pyirk.aux.AVAILABLE_MODULES)
-        msg = f"could not find {uri} among the f{length} available modules."
+        msg = f"could not find {uri} among the {length} available modules."
         pyirk.logger.error(msg)
         raise KeyError(msg)
 

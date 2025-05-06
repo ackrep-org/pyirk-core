@@ -590,3 +590,20 @@ def _extract_uri_from_python_file(fpath):
 
     assert len(res) == 1, f"Invalid number of regex results: {len(res)} (expected 1)"
     return res[0]
+
+
+def get_initial_config_content_for_ci() -> str:
+    from textwrap import dedent
+
+    txt = dedent(f"""
+    # PyIRK configuration file
+
+    [package.zebra_puzzle]
+    path = "{settings.PYIRK_REPO_ROOT_PATH}/tests/test_data"
+
+    [package.ocse]
+    path = "{settings.PYIRK_REPO_ROOT_PATH}/tests/test_data/ocse_subset"
+
+    """)
+
+    return txt

@@ -2,6 +2,8 @@
 
 main_module = "control_theory1.py"
 main_module_prefix = "ct"
-version = "0.2.2.0"
+version = "0.3.0.0"
+
+further_modules = ["math1.py", "agents1.py"]
 
 [pyirkdjango]

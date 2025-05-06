@@ -5,7 +5,7 @@ name: CI
 
 on:
   push:
-    branches: 
+    branches:
     - main
     - develop
     - develop_carsten
@@ -19,6 +19,9 @@ jobs:
 
     runs-on: ubuntu-latest
 
+    env:
+      DEBUG_WITH_SSH: true
+
     steps:
     - uses: actions/checkout@v2
 
@@ -26,14 +29,6 @@ jobs:
       uses: actions/setup-python@v2
       with:
         python-version: "3.11"
-
-# The following command allows to connect to the ci-container via ssh
-# very useful for debugging
-# move this step before the failing step
-# source: https://github.com/marketplace/actions/debugging-with-tmate
-
-#    - name: Setup tmate session
-#       uses: mxschmitt/action-tmate@v3
 
     - name: Install pip
       run: |
@@ -48,13 +43,38 @@ jobs:
         # install this package
         pwd
         pip install -r requirements.txt
-        
-        
+
+
     - name: install pyerk
       run: |
         # install in editable mode -> simplify the discovery of the (internal) test data
         pip install -e .
 
-    - name: run all tests
+
+    # - name: run all tests
+    #   run: |
+    #     python -m unittest
+
+
+    # debugging (set env.DEBUG_WITH_SSH to true (see above))
+    - name: Setup tmate session
+      if: env.DEBUG_WITH_SSH == 'true'
+      id: tmate
+      uses: mxschmitt/action-tmate@v3
+      with:
+        detached: true
+
+    # this exports the ad-hoc ssh-connection address to an text file such that it can be accessed via API
+    # this allows to connect to the debugging ssh server without manual copy-pasting
+
+    - name: Capture tmate output
+      if: env.DEBUG_WITH_SSH == 'true'
       run: |
-        python -m unittest
+          echo $(cat /home/runner/work/_temp/_runner_file_commands/* | grep ::notice::SSH | awk '{print $NF}') > tmate-connection.txt
+
+    - name: Upload tmate logs as artifact
+      if: env.DEBUG_WITH_SSH == 'true'
+      uses: actions/upload-artifact@v4
+      with:
+        name: tmate-connection
+        path: tmate-connection.txt

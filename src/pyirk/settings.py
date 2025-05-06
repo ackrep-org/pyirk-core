@@ -22,6 +22,8 @@ logger = logging.getLogger("pyirk")
 config_path = platformdirs.user_config_dir("pyirk")
 config_file = os.path.join(config_path, "config.toml")
 
+CONF = {}
+
 if os.path.isfile(config_file):
     try:
         with open(config_file, "rb") as f:
@@ -31,7 +33,6 @@ if os.path.isfile(config_file):
             f"Warning: Could not load existing config file {config_file}. Maybe syntax error?\n"
             f"Original exception ({type(e)}):\n\n{str(e)}"
         )
-        CONF = {}
         logger.warning(msg)
 
 

@@ -66,6 +66,7 @@ jobs:
 
     # this exports the ad-hoc ssh-connection address to an text file such that it can be accessed via API
     # this allows to connect to the debugging ssh server without manual copy-pasting
+    # see https://github.com/cknoll/github-ci-ssh-connect
 
     - name: Capture tmate output
       if: env.DEBUG_WITH_SSH == 'true'

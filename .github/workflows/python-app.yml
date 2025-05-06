@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      DEBUG_WITH_SSH: true
+      DEBUG_WITH_SSH: false
 
     steps:
     - uses: actions/checkout@v2
@@ -54,9 +54,9 @@ jobs:
       run: |
         pyirk --bootstrap-config --ci-mode
 
-    # - name: run all tests
-    #   run: |
-    #     python -m unittest
+    - name: run all tests
+      run: |
+        python -m unittest
 
 
     # debugging (set env.DEBUG_WITH_SSH to true (see above))

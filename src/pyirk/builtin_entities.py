@@ -2193,9 +2193,9 @@ def uq_instance_of(type_entity: Item, r1: str = None, r2: str = None) -> Item:
             # note this fallback naming can be avoided by explicitly passing r1=...  as kwarg
             r1 = f"{type_entity.R1} – instance"
 
-    instance = instance_of(type_entity, r1, r2)
+    instance = instance_of(type_entity, r1, r2, qualifiers=[univ_quant(True)])
     # TODO: This should be used as a qualifier
-    instance.set_relation(R44["is universally quantified"], True)
+    # instance.set_relation(R44["is universally quantified"], True)
     return instance
 
 

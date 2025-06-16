@@ -2268,6 +2268,7 @@ class ImplicationStatement:
         # this is the place to handle exceptions
         pass
 
+    # todo why is this restricted to math. relations?
     def antecedent_relation(self, **kwargs):
         assert "scope" not in kwargs
         kwargs.update(scope=self.antecedent_scope)

@@ -328,7 +328,7 @@ def create_auto_complete_file():
 
     fname = ".ac_candidates.txt"
     fpath = os.path.abspath(os.path.join("./", fname))
-    with open(fname, "w") as fp:
+    with open(fname, "w", encoding="utf-8") as fp:
         fp.writelines(lines)
 
     print(f"File written: {fpath}")

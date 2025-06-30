@@ -2445,7 +2445,6 @@ R54 = create_builtin_relation(
     # R8__has_domain_of_argument_1=I1["general item"],  # unsure here
     R11__has_range_of_result=I41["semantic rule"],
     R18__has_usage_hint="useful for debugging and testing semantic rules",
-    # TODO: model that this is (probably) equivalent to "owl:InverseFunctionalProperty"
 )
 
 R55 = create_builtin_relation(
@@ -2457,7 +2456,6 @@ R55 = create_builtin_relation(
     R8__has_domain_of_argument_1=I16["scope"],
     R11__has_range_of_result=I1["general item"],
     R18__has_usage_hint="useful for inside semantic rules",
-    # TODO: model that this is (probably) equivalent to "owl:InverseFunctionalProperty"
 )
 
 
@@ -3028,7 +3026,28 @@ with I65.scope("assertion") as cm:
     # the qualifier prevents the creation of duplicated
     cm.new_rel(cm.i3, R83["is generalized subclass of"], cm.i1, qualifiers=[qf_prevent_duplicate_stms])
 
-# next keys: I66, R84
+R85 = create_builtin_relation(
+    key_str="R85",
+    R1__has_label="is modeled by",
+    R2__has_description="specifies that subject (some entity) is modeled by a relation (between two other entities)",
+    R8__has_domain_of_argument_1=I1["general item"],
+    R11__has_range_of_result=I40["general relation"],
+    R18__has_usage_hint="this relation is intended to be set when the concept (subject) is meaningful, but inadequate \
+        for modeling. Example: orthogonal vectors 'Orthogonality' 'is modeled by' 'is orthogonal to'",
+)
+
+R86 = create_builtin_relation(
+    key_str="R86",
+    R1__has_label="is used to model",
+    R2__has_description="specifies that subject (some realtion) is used to modeled a concept",
+    R8__has_domain_of_argument_1=I40["general relation"],
+    R11__has_range_of_result=I1["general item"],
+    R18__has_usage_hint="this relation is intended to be set when the concept (subject) is meaningful, but inadequate \
+        for modeling. Example: orthogonal vectors 'Orthogonality' 'is modeled by' 'is orthogonal to'",
+    R68__is_inverse_of=R85["is modeled by"]
+)
+
+# next keys: I66, R87
 
 
 # ######################################################################################################################

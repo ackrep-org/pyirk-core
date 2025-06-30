@@ -1958,6 +1958,28 @@ class Test_03_Multilinguality(HousekeeperMixin, unittest.TestCase):
             expected_result = [p.Literal("test1", lang="en"), p.Literal("test2", lang="en")]
             self.assertEqual(I1001.R77__has_alternative_label, expected_result)
 
+    def test_b03m__multilingual_relations3(self):
+        """test list of multiple alternative labels"""
+        with p.uri_context(uri=TEST_BASE_URI, prefix="ut"):
+            I1000 = p.create_item(
+                R1__has_label="foo",
+                R77__has_alternative_label=["df1", "df2"],
+                R77__has_alternative_label__de="de1",
+            )
+            self.assertEqual(I1000.R77__has_alternative_label, ["df1" @ p.df, "df2" @ p.df, "de1" @ p.de])
+            I1001 = p.create_item(
+                R1__has_label="foo",
+                R77__has_alternative_label="df1",
+                R77__has_alternative_label__de=["de1", "de2"],
+            )
+            self.assertEqual(I1001.R77__has_alternative_label, ["df1" @ p.df, "de1" @ p.de, "de2" @ p.de])
+            I1002 = p.create_item(
+                R1__has_label="foo",
+                R77__has_alternative_label=["df1", "df2"],
+                R77__has_alternative_label__de=["de1", "de2"],
+            )
+            self.assertEqual(I1002.R77__has_alternative_label, ["df1" @ p.df, "df2" @ p.df, "de1" @ p.de, "de2" @ p.de])
+
 
 class Test_04_Core(HousekeeperMixin, unittest.TestCase):
     """

@@ -1539,10 +1539,12 @@ class KWArgManager:
             existing_value = self.new_kwargs.get(skwap.new_key)
             if existing_value is None:
                 self.new_kwargs[skwap.new_key] = skwap.new_value
-            elif isinstance(existing_value, list):
-                existing_value.append(skwap.new_value)
             else:
-                self.new_kwargs[skwap.new_key] = [existing_value, skwap.new_value]
+                if not isinstance(existing_value, list):
+                    existing_value = [existing_value]
+                if not isinstance(skwap.new_value, list):
+                    skwap.new_value = [skwap.new_value]
+                self.new_kwargs[skwap.new_key] = [*existing_value, *skwap.new_value]
 
         return self.new_kwargs, self.lang_related_kwargs
 

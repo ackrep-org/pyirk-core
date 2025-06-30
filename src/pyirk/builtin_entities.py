@@ -994,7 +994,7 @@ class AbstractMathRelatedScopeCM(ScopingCM):
         return eq
 
     # TODO: this makes  self.new_equation obsolete, doesn't it?
-    def new_math_relation(self, lhs: Item, rsgn: str, rhs: Item, force_key: str = None) -> Item:
+    def new_math_relation(self, lhs: Item, rsgn: str, rhs: Item, add_relations: dict={}, force_key: str = None) -> Item:
         """
         convenience method to create a math_relation-related StatementObject (aka "Statement")
 
@@ -1008,7 +1008,7 @@ class AbstractMathRelatedScopeCM(ScopingCM):
         # prevent accidental identity of both sides of the equation
         assert lhs is not rhs
 
-        rel = new_mathematical_relation(lhs, rsgn, rhs, scope=self.scope, force_key=force_key)
+        rel = new_mathematical_relation(lhs, rsgn, rhs, scope=self.scope, add_relations=add_relations, force_key=force_key)
         return rel
 
     def AND(self) -> "ConditionSubScopeCM":
@@ -1808,7 +1808,7 @@ def new_equation(lhs: Item, rhs: Item, doc=None, scope: Optional[Item] = None, f
 
 
 def new_mathematical_relation(
-    lhs: Item, rsgn: str, rhs: Item, doc=None, scope: Optional[Item] = None, force_key: str = None
+    lhs: Item, rsgn: str, rhs: Item, doc=None, scope: Optional[Item] = None, add_relations: dict={}, force_key: str = None
 ) -> Item:
     rsgn_dict = {
         "==": I23["equation"],
@@ -1824,6 +1824,10 @@ def new_mathematical_relation(
 
     if scope is not None:
         mr.set_relation(R20["has defining scope"], scope)
+
+    if add_relations:
+        for key, val in add_relations.items():
+            mr.set_relation(key, val)
 
     # TODO: perform type checking
     # assert check_is_instance_of(lhs, I23("mathematical term"))

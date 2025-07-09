@@ -7,9 +7,8 @@ import pyirk
 import pathlib
 import functools
 import addict
+from types import ModuleType
 
-
-ModuleType = type(sys)
 
 
 def preserve_cwd(function):

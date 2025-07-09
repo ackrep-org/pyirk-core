@@ -19,8 +19,15 @@ from .settings import (
 class Test_01_Script(HousekeeperMixin, unittest.TestCase):
     def test_rt_a01__(self):
 
+        tmp_mod_fpath0 = make_temp_copy_of_file(ocse_subset_agents_path)
         tmp_mod_fpath = make_temp_copy_of_file(ocse_subset_agents_path)
-        rt.change_entity_label("foo", "bar", tmp_mod_fpath)
+
+        # change I9942["Stanford University"] to I9942["Renamed Stanford University"]
+        rt.change_entity_label(key="I9942", new_label="Renamed Stanford University", fpath=tmp_mod_fpath)
+
+        # for manually checking the difference
+        import os
+        os.system(f"kdiff3 {tmp_mod_fpath0} {tmp_mod_fpath}")
 
 
 #

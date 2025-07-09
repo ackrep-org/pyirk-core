@@ -38,7 +38,16 @@ def change_entity_label(key, new_label, fpath):
 
     src_lines[start_idx + i] = new_defining_line
 
-    with open(fpath, "w", encoding="utf-8") as fp:
-        fp.writelines(src_lines)
+    new_src = "".join(src_lines)
 
-    IPS()
+    replacements = [
+        (f'{key}["{original_label}"]', f'{key}["{new_label}"]'),
+        (f"{key}['{original_label}']", f"{key}['{new_label}']"),
+        # TODO: add underscore_version
+    ]
+
+    for rplm in replacements:
+        new_src = new_src.replace(*rplm)
+
+    with open(fpath, "w", encoding="utf-8") as fp:
+        fp.write(new_src)

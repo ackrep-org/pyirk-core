@@ -1,3 +1,4 @@
+import os
 import unittest
 import tempfile
 import shutil
@@ -17,19 +18,31 @@ from .settings import (
 
 # noinspection PyPep8Naming
 class Test_01_Script(HousekeeperMixin, unittest.TestCase):
-    def test_rt_a01__(self):
+    def test_rt_a01__change_entity_label(self):
 
-        tmp_mod_fpath0 = make_temp_copy_of_file(ocse_subset_agents_path)
         tmp_mod_fpath = make_temp_copy_of_file(ocse_subset_agents_path)
 
         # change I9942["Stanford University"] to I9942["Renamed Stanford University"]
         rt.change_entity_label(key="I9942", new_label="Renamed Stanford University", fpath=tmp_mod_fpath)
 
-        # for manually checking the difference
-        import os
-        os.system(f"kdiff3 {tmp_mod_fpath0} {tmp_mod_fpath}")
+        manually_checking_difference = False
+        if manually_checking_difference:
+            tmp_mod_fpath0 = make_temp_copy_of_file(ocse_subset_agents_path)
+            os.system(f"kdiff3 {tmp_mod_fpath0} {tmp_mod_fpath}")
 
 
+    def test_rt_a02__change_entity_label_from_cli(self):
+
+        tmp_mod_fpath = make_temp_copy_of_file(ocse_subset_agents_path)
+
+        cmd = f'pyirk --refactor-entity-label I9942 "Renamed Stanford University" {tmp_mod_fpath}'
+        os.system(cmd)
+
+
+        manually_checking_difference = False
+        if manually_checking_difference:
+            tmp_mod_fpath0 = make_temp_copy_of_file(ocse_subset_agents_path)
+            os.system(f"kdiff3 {tmp_mod_fpath0} {tmp_mod_fpath}")
 #
 # Auxiliary functions:
 #

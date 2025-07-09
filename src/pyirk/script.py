@@ -197,9 +197,8 @@ def main():
     if args.refactor_entity_label:
         from . import refactor_tools as rt
         assert args.inputfile is not None
-        rt.change_entity_label(1, 2, args.inputfile)
-
-        IPS()
+        assert len(args.refactor_entity_label) == 2
+        rt.change_entity_label(*args.refactor_entity_label, args.inputfile)
         exit()
 
     if args.version:

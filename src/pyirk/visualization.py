@@ -6,6 +6,8 @@ from typing import Union, List, Tuple, Optional
 import os
 import urllib
 from rdflib import Literal
+import subprocess
+import shutil
 
 import networkx as nx
 import nxv  # for graphviz visualization of networkx graphs
@@ -687,7 +689,7 @@ def visualize_all_entities(url_template="", write_tmp_files: bool = False) -> st
             "arrowhead": "vee",
             "arrowsize": 0.3,
             "color": clr,
-            # "label": d["edge"].short_key
+            "label": d["edge"].short_key
         }
 
     # styling and rendering
@@ -714,8 +716,11 @@ def visualize_all_entities(url_template="", write_tmp_files: bool = False) -> st
             "fontsize": 8,
             "fontcolor": "#555555" if "Ia" not in u.short_key else "#777777",
             # "label": None,
-            "label": u.short_key,
-            # "label": f"{u.short_key}\n{u.R1__has_label}",
+            # "label": u.short_key,
+            "label": f"{u.short_key}\n{u.label.value}",
+            "URL": f"{u.short_key}.html",   # for interactive map
+            "target": "_self",              # for interactive map
+
         },
         edge=edge_style,
     )
@@ -752,3 +757,128 @@ def render_label(label: str):
         res = res.replace(old, new)
 
     return res.format(**REPLACEMENTS)
+
+def create_interactive_graph(url_template="", output_dir="graph_site"):
+    os.makedirs(output_dir, exist_ok=True)
+
+    G = create_complete_graph(url_template)
+    print(f"Visualizing {len(G.nodes)} nodes and {len(G.edges)} edges.")
+    ecm = build_edge_color_map(G)
+
+    def edge_style(u, v, d):
+        e = d["edge"]
+        clr = ecm.get(e.short_key, "grey")
+        return {
+            "style": "solid",
+            "arrowhead": "vee",
+            "arrowsize": 1,
+            "color": clr,
+            "label": d["edge"].short_key
+        }
+
+    # styling and rendering
+    style = nxv.Style(
+        graph={
+            # layout algorithm
+            "layout": "sfdp",
+            "overlap": "prism",
+            # "overlap_shrink": -10,
+            "overlap_scaling": -2,
+            # global settings
+            "outputorder": "edgesfirst",  # such that nodes are above the edges
+        },
+        node=lambda u, d: {
+            # shape and size of node symbol
+            "shape": "circle",
+            "fixedsize": True,
+            "nodesep": 0.8,
+            "width": 1.5,
+            "height": 1.5,
+            "style": "filled",
+            "color": "black" if "Ia" not in u.short_key else "gray",
+            "fillcolor": "#bbbbbbdd" if "Ia" not in u.short_key else "#dddddddd",
+            # shape size and content of node label
+            "fontsize": 18,
+            "fontcolor": "#555555" if "Ia" not in u.short_key else "#777777",
+            # "label": None,
+            # "label": u.short_key,
+            "label": f"{u.short_key}\n{u.label.value}",
+            "URL": f"{u.short_key}.html",
+            "target": "_self",
+        },
+        edge=edge_style,
+    )
+    for node in G.nodes:
+        node_name = node.short_key
+        print(node_name)
+        # create subgraph
+        neighbors = set(G.predecessors(node)) | set(G.successors(node))
+        sub_nodes = neighbors | {node}
+        SG = G.subgraph(sub_nodes)
+
+        # save raw dot data
+        raw_dot_data: str = nxv.render(SG, style, format="raw")
+        dot_path = os.path.join(output_dir, f"{node_name}.dot")
+        with open(dot_path, "wt", encoding="utf-8") as f:
+            f.write(raw_dot_data)
+
+        # create png and map
+        png_path = os.path.join(output_dir, f"{node_name}.png")
+        cmapx_path = os.path.join(output_dir, f"{node_name}.map")
+        res1 = subprocess.run(["dot", "-Tpng", "-o", png_path, dot_path])
+        assert res1.returncode == 0, f"{res1.stderr}"
+        res2 = subprocess.run(["dot", "-Tcmapx", "-o", cmapx_path, dot_path])
+        assert res2.returncode == 0, f"{res2.stderr}"
+
+        with open(cmapx_path, "r") as f:
+            image_map = f.read()
+
+        with open(os.path.join(output_dir, f"{node_name}.html"), "w") as f:
+            f.write(f"""<!DOCTYPE html>
+<html>
+<head><title>Node {node_name}</title></head>
+<body>
+<h1>Node {node_name}</h1>
+<img src="{node_name}.png" usemap="#G" alt="Subgraph of {node_name}">
+{image_map}
+<p><a href="index.html">Back to index</a></p>
+</body>
+</html>
+""")
+
+    # Index page
+    visualize_all_entities(write_tmp_files=True)
+    tmp = "tmp_dot.txt"
+    shutil.copy(tmp, output_dir)
+    dot_path = os.path.join(output_dir, tmp)
+    # create png and map
+    png_path = os.path.join(output_dir, f"index.png")
+    cmapx_path = os.path.join(output_dir, f"index.map")
+    res1 = subprocess.run(["dot", "-Tpng", "-o", png_path, dot_path])
+    assert res1.returncode == 0, f"{res1.stderr}"
+    res2 = subprocess.run(["dot", "-Tcmapx", "-o", cmapx_path, dot_path])
+    assert res2.returncode == 0, f"{res2.stderr}"
+
+    with open(cmapx_path, "r") as f:
+        image_map = f.read()
+
+    with open(os.path.join(output_dir, f"index.html"), "w") as f:
+        f.write(f"""<!DOCTYPE html>
+<html>
+<head><title>Overview</title></head>
+<body>
+<h1>Overview</h1>
+<img src="index.png" usemap="#G" alt="Overview">
+{image_map}
+</body>
+</html>
+""")
+    # with open(os.path.join(output_dir, "index.html"), "w") as f:
+    #     f.write("<h1>Graph Index</h1><ul>")
+    #     for node in G.nodes:
+    #         f.write(f'<li><a href="{node.short_key}.html">{node.short_key}</a></li>')
+    #     f.write("</ul>")
+
+if __name__ == "__main__":
+    # visualize_all_entities(write_tmp_files=True)
+    create_interactive_graph()

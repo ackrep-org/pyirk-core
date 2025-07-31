@@ -27,7 +27,10 @@ activate_ips_on_exception()
 
 # TODO: make this a  dict to speedup lookup
 #  tuple of Relation keys which are not displayed by default
-REL_BLACKLIST = ("irk:/builtins#R1", "irk:/builtins#R2")
+REL_BLACKLIST = (
+    "irk:/builtins#R1",
+    "irk:/builtins#R2",
+)
 
 from abc import ABC
 
@@ -758,75 +761,25 @@ def render_label(label: str):
 
     return res.format(**REPLACEMENTS)
 
-def create_interactive_graph(url_template="", output_dir="graph_site"):
+def create_interactive_graph(url_template="", output_dir="graph_site", radius=1):
     os.makedirs(output_dir, exist_ok=True)
 
     G = create_complete_graph(url_template)
     print(f"Visualizing {len(G.nodes)} nodes and {len(G.edges)} edges.")
-    ecm = build_edge_color_map(G)
 
-    def edge_style(u, v, d):
-        e = d["edge"]
-        clr = ecm.get(e.short_key, "grey")
-        return {
-            "style": "solid",
-            "arrowhead": "vee",
-            "arrowsize": 1,
-            "color": clr,
-            "label": d["edge"].short_key
-        }
-
-    # styling and rendering
-    style = nxv.Style(
-        graph={
-            # layout algorithm
-            "layout": "sfdp",
-            "overlap": "prism",
-            # "overlap_shrink": -10,
-            "overlap_scaling": -2,
-            # global settings
-            "outputorder": "edgesfirst",  # such that nodes are above the edges
-        },
-        node=lambda u, d: {
-            # shape and size of node symbol
-            "shape": "circle",
-            "fixedsize": True,
-            "nodesep": 0.8,
-            "width": 1.5,
-            "height": 1.5,
-            "style": "filled",
-            "color": "black" if "Ia" not in u.short_key else "gray",
-            "fillcolor": "#bbbbbbdd" if "Ia" not in u.short_key else "#dddddddd",
-            # shape size and content of node label
-            "fontsize": 18,
-            "fontcolor": "#555555" if "Ia" not in u.short_key else "#777777",
-            # "label": None,
-            # "label": u.short_key,
-            "label": f"{u.short_key}\n{u.label.value}",
-            "URL": f"{u.short_key}.html",
-            "target": "_self",
-        },
-        edge=edge_style,
-    )
     for node in G.nodes:
         node_name = node.short_key
         print(node_name)
-        # create subgraph
-        neighbors = set(G.predecessors(node)) | set(G.successors(node))
-        sub_nodes = neighbors | {node}
-        SG = G.subgraph(sub_nodes)
+        visualize_entity(node.uri, write_tmp_files=True, radius=radius)
 
-        # save raw dot data
-        raw_dot_data: str = nxv.render(SG, style, format="raw")
+        tmp = "tmp_dot.txt"
         dot_path = os.path.join(output_dir, f"{node_name}.dot")
-        with open(dot_path, "wt", encoding="utf-8") as f:
-            f.write(raw_dot_data)
+        shutil.move(tmp, dot_path)
+        img_path = os.path.join(output_dir, f"{node_name}.svg")
+        shutil.move("tmp.svg", img_path)
 
         # create png and map
-        png_path = os.path.join(output_dir, f"{node_name}.png")
         cmapx_path = os.path.join(output_dir, f"{node_name}.map")
-        res1 = subprocess.run(["dot", "-Tpng", "-o", png_path, dot_path])
-        assert res1.returncode == 0, f"{res1.stderr}"
         res2 = subprocess.run(["dot", "-Tcmapx", "-o", cmapx_path, dot_path])
         assert res2.returncode == 0, f"{res2.stderr}"
 
@@ -839,7 +792,7 @@ def create_interactive_graph(url_template="", output_dir="graph_site"):
 <head><title>Node {node_name}</title></head>
 <body>
 <h1>Node {node_name}</h1>
-<img src="{node_name}.png" usemap="#G" alt="Subgraph of {node_name}">
+<img src="{node_name}.svg" usemap="#G" alt="Subgraph of {node_name}">
 {image_map}
 <p><a href="index.html">Back to index</a></p>
 </body>
@@ -849,13 +802,13 @@ def create_interactive_graph(url_template="", output_dir="graph_site"):
     # Index page
     visualize_all_entities(write_tmp_files=True)
     tmp = "tmp_dot.txt"
-    shutil.copy(tmp, output_dir)
-    dot_path = os.path.join(output_dir, tmp)
+    dot_path = os.path.join(output_dir, "index.dot")
+    shutil.move(tmp, dot_path)
+    img_path = os.path.join(output_dir, f"index.svg")
+    shutil.move("tmp.svg", img_path)
+
     # create png and map
-    png_path = os.path.join(output_dir, f"index.png")
     cmapx_path = os.path.join(output_dir, f"index.map")
-    res1 = subprocess.run(["dot", "-Tpng", "-o", png_path, dot_path])
-    assert res1.returncode == 0, f"{res1.stderr}"
     res2 = subprocess.run(["dot", "-Tcmapx", "-o", cmapx_path, dot_path])
     assert res2.returncode == 0, f"{res2.stderr}"
 
@@ -868,17 +821,13 @@ def create_interactive_graph(url_template="", output_dir="graph_site"):
 <head><title>Overview</title></head>
 <body>
 <h1>Overview</h1>
-<img src="index.png" usemap="#G" alt="Overview">
+<img src="index.svg" usemap="#G" alt="Overview">
 {image_map}
 </body>
 </html>
 """)
-    # with open(os.path.join(output_dir, "index.html"), "w") as f:
-    #     f.write("<h1>Graph Index</h1><ul>")
-    #     for node in G.nodes:
-    #         f.write(f'<li><a href="{node.short_key}.html">{node.short_key}</a></li>')
-    #     f.write("</ul>")
 
 if __name__ == "__main__":
     # visualize_all_entities(write_tmp_files=True)
     create_interactive_graph()
+    # visualize_entity("irk:/builtins#I31", write_tmp_files=True, radius=2)

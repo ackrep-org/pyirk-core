@@ -6,16 +6,18 @@ import os
 import argparse
 from pathlib import Path
 import re
+import types
 from typing import Tuple
 import ast
 import inspect
 from textwrap import dedent
+from addict import Addict as Container
 
 try:
     # this will be part of standard library for python >= 3.11
     import tomllib
 except ModuleNotFoundError:
-    import tomli as tomllib
+    import tomli as tomllib # type: ignore
 
 import platformdirs
 
@@ -34,8 +36,8 @@ activate_ips_on_exception()
 
 def create_parser():
     """
-    Returns the parser object which is then evaluated in  main(). This is necessary for sphinx to automatically
-    generate the cli docs.
+    Returns the parser object which is then evaluated in  main(). This is necessary for sphinx to
+    automatically generate the cli docs.
     """
 
     parser = argparse.ArgumentParser(
@@ -173,6 +175,15 @@ def create_parser():
         action="store_true",
     )
 
+    parser.add_argument(
+        "--refactor-entity-label",
+        help="change main label of entity in source file of loaded module. "
+        "Recommended: Apply ony to clean git repo.",
+        nargs=2,
+        metavar=("key", "new label")
+    )
+
+
     return parser
 
 
@@ -181,6 +192,13 @@ def main():
 
     if args.dbg:
         debug()
+        exit()
+
+    if args.refactor_entity_label:
+        from . import refactor_tools as rt
+        assert args.inputfile is not None
+        assert len(args.refactor_entity_label) == 2
+        rt.change_entity_label(*args.refactor_entity_label, args.inputfile)
         exit()
 
     if args.version:
@@ -235,7 +253,7 @@ def main():
         visualization.visualize_entity(uri, write_tmp_files=True)
     elif args.start_django:
         try:
-            import pyirkdjango.core
+            import pyirkdjango.core # type: ignore
         except ImportError:
             print(aux.bred("Error:"), "the module pyirkdjango seems not to be installed.")
             # exit(10)
@@ -243,7 +261,7 @@ def main():
         pyirkdjango.core.start_django()
     elif args.start_django_shell:
         try:
-            import pyirkdjango.core
+            import pyirkdjango.core # type: ignore
         except ImportError:
             print(aux.bred("Error:"), "the module pyirkdjango seems not to be installed.")
             # exit(10)
@@ -259,7 +277,7 @@ def main():
         print("nothing to do, see option `--help` for more info")
 
 
-def process_package(pkg_path: str) -> Tuple[irkloader.ModuleType, str]:
+def process_package(pkg_path: str) -> Tuple[types.ModuleType, str]:
     if os.path.isdir(pkg_path):
         pkg_path = os.path.join(pkg_path, "irkpackage.toml")
 
@@ -273,7 +291,7 @@ def process_package(pkg_path: str) -> Tuple[irkloader.ModuleType, str]:
     return mod, main_module_prefix
 
 
-def process_mod(path: str, prefix: str, relative_to_workdir: bool = False) -> irkloader.ModuleType:
+def process_mod(path: str, prefix: str, relative_to_workdir: bool = False) -> types.ModuleType:
     if not relative_to_workdir:
         msg = "using mod paths which are not relative to workdir is deprecated since pyirk version 0.6.0"
         raise DeprecationWarning(msg)
@@ -522,7 +540,7 @@ def process_template(template_path):
     return rendered_template
 
 
-def path_to_ast_container(mod_path: str) -> core.aux.Container:
+def path_to_ast_container(mod_path: str) -> Container:
 
     with open(mod_path) as fp:
         lines = fp.readlines()

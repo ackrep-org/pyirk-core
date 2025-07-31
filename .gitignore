@@ -11,4 +11,4 @@ tmp*
 dist
 build
 .aider*
-.env_dev
+.env*

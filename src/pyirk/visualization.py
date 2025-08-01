@@ -7,7 +7,7 @@ import os
 import urllib
 from rdflib import Literal
 import subprocess
-import shutil
+import re
 
 import networkx as nx
 import nxv  # for graphviz visualization of networkx graphs
@@ -539,6 +539,9 @@ def render_graph_to_dot(G: nx.DiGraph) -> str:
             "label": u.get_dot_label(),
             "fontsize": 20,
             "fontcolor": "grey" if u.short_key.startswith("Ia") else "black",
+            "URL": f"{u.short_key}.html",   # for interactive map
+            "target": "_self",              # for interactive map
+
         },
         # u,v: nodes, d: edge attribute dict
         edge=lambda u, v, d: {
@@ -619,12 +622,12 @@ def svg_replace(raw_svg_data: str, REPLACEMENTS: dict) -> str:
     return svg_data1
 
 
-def visualize_entity(uri: str, url_template="", write_tmp_files: bool = False, radius=1) -> str:
+def visualize_entity(uri: str, url_template="", write_tmp_files: Union[bool, str] = False, radius=1) -> str:
     """
 
     :param uri:             entity uri (like "irk:/my/module#I0123")
     :param url_template:    url template for creation of a-tags (html links) for the labels
-    :param write_tmp_files: boolean flag whether to write debug output
+    :param write_tmp_files: flag whether to write debug output. if true, writes to cwd, if pathlike, writes to that dir or file.
 
     :return:                svg_data as string
     """
@@ -654,19 +657,10 @@ def visualize_entity(uri: str, url_template="", write_tmp_files: bool = False, r
     raw_svg_data = nxv._graphviz.run(dot_data, algorithm="dot", format="svg", graphviz_bin=None)
     raw_svg_data = raw_svg_data.decode("utf8")
     svg_data1 = svg_replace(raw_svg_data, REPLACEMENTS)
-
+    # for interactive graph, we need hyperlinks. these mess up the svg with <> inside attributes -> remove
+    svg_data1 = re.sub(r'(?<=xlink:title=").+?(?=" target=)', "", svg_data1)
     if write_tmp_files:
-        # for debugging
-
-        dot_fpath = "./tmp_dot.txt"
-        with open(dot_fpath, "w") as txtfile:
-            txtfile.write(dot_data)
-        print("File written:", os.path.abspath(dot_fpath))
-
-        svg_fpath = "./tmp.svg"
-        with open(svg_fpath, "w") as txtfile:
-            txtfile.write(svg_data1)
-        print("File written:", os.path.abspath(svg_fpath))
+        save_data_to_file(write_tmp_files, dot_data, svg_data1)
 
     return svg_data1
 
@@ -678,7 +672,17 @@ def get_label(entity):
     return res
 
 
-def visualize_all_entities(url_template="", write_tmp_files: bool = False) -> str:
+def visualize_all_entities(url_template="", write_tmp_files: Union[bool, str] = False) -> str:
+    """visualize all entities loaded in datastore. output svg graph.
+
+    Args:
+        url_template (str, optional): _description_. Defaults to "".
+        write_tmp_files (Union[bool, str], optional): if true, files will be saved to cwd. if pathlike, files will \
+            be saved to that folder or file. Defaults to False.
+
+    Returns:
+        str: svg graph
+    """
     G = create_complete_graph(url_template)
 
     print(f"Visualizing {len(G.nodes)} nodes and {len(G.edges)} edges.")
@@ -737,21 +741,32 @@ def visualize_all_entities(url_template="", write_tmp_files: bool = False) -> st
     svg_data1 = svg_replace(raw_svg_data.decode("utf8"), REPLACEMENTS)
 
     if write_tmp_files:
-        # for debugging
-        dot_fpath = "./tmp_dot.txt"
-        with open(dot_fpath, "w") as txtfile:
-            txtfile.write(dot_data)
-        print("File written:", os.path.abspath(dot_fpath))
-
-        svg_fpath = "./tmp.svg"
-        with open(svg_fpath, "w") as txtfile:
-            txtfile.write(svg_data1)
-        print("File written:", os.path.abspath(svg_fpath))
+        save_data_to_file(write_tmp_files, dot_data, svg_data1)
 
     print(G.number_of_nodes(), "nodes")
     print(G.number_of_edges(), "edges")
 
     return svg_data1
+
+def save_data_to_file(mode, dot_data, svg_data):
+    if isinstance(mode, str):
+        if os.path.isdir(mode):
+            dot_fpath = os.path.join(mode, "tmp_dot.dot")
+            svg_fpath = os.path.join(mode, "tmp_svg.txt")
+        else:
+            dot_fpath = mode.split(".")[0] + ".dot"
+            svg_fpath = mode.split(".")[0] + ".svg"
+    else:
+        svg_fpath = "./tmp.svg"
+        dot_fpath = "./tmp_dot.txt"
+
+    with open(dot_fpath, "w") as txtfile:
+        txtfile.write(dot_data)
+    print("File written:", os.path.abspath(dot_fpath))
+
+    with open(svg_fpath, "w") as txtfile:
+        txtfile.write(svg_data)
+    print("File written:", os.path.abspath(svg_fpath))
 
 
 def render_label(label: str):
@@ -770,13 +785,13 @@ def create_interactive_graph(url_template="", output_dir="graph_site", radius=1)
     for node in G.nodes:
         node_name = node.short_key
         print(node_name)
-        visualize_entity(node.uri, write_tmp_files=True, radius=radius)
-
-        tmp = "tmp_dot.txt"
         dot_path = os.path.join(output_dir, f"{node_name}.dot")
-        shutil.move(tmp, dot_path)
-        img_path = os.path.join(output_dir, f"{node_name}.svg")
-        shutil.move("tmp.svg", img_path)
+        visualize_entity(node.uri, write_tmp_files=dot_path, radius=radius)
+
+        # tmp = "tmp_dot.txt"
+        # shutil.move(tmp, dot_path)
+        # img_path = os.path.join(output_dir, f"{node_name}.svg")
+        # shutil.move("tmp.svg", img_path)
 
         # create png and map
         cmapx_path = os.path.join(output_dir, f"{node_name}.map")
@@ -800,12 +815,12 @@ def create_interactive_graph(url_template="", output_dir="graph_site", radius=1)
 """)
 
     # Index page
-    visualize_all_entities(write_tmp_files=True)
-    tmp = "tmp_dot.txt"
     dot_path = os.path.join(output_dir, "index.dot")
-    shutil.move(tmp, dot_path)
-    img_path = os.path.join(output_dir, f"index.svg")
-    shutil.move("tmp.svg", img_path)
+    visualize_all_entities(write_tmp_files=dot_path)
+    # tmp = "tmp_dot.txt"
+    # shutil.move(tmp, dot_path)
+    # img_path = os.path.join(output_dir, f"index.svg")
+    # shutil.move("tmp.svg", img_path)
 
     # create png and map
     cmapx_path = os.path.join(output_dir, f"index.map")
@@ -830,4 +845,4 @@ def create_interactive_graph(url_template="", output_dir="graph_site", radius=1)
 if __name__ == "__main__":
     # visualize_all_entities(write_tmp_files=True)
     create_interactive_graph()
-    # visualize_entity("irk:/builtins#I31", write_tmp_files=True, radius=2)
+    # visualize_entity("irk:/builtins#I31", write_tmp_files=True, radius=0)

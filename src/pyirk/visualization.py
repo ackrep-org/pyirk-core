@@ -8,6 +8,7 @@ import urllib
 from rdflib import Literal
 import subprocess
 import re
+import time
 
 import networkx as nx
 import nxv  # for graphviz visualization of networkx graphs
@@ -632,7 +633,6 @@ def visualize_entity(uri: str, url_template="", write_tmp_files: Union[bool, str
     :return:                svg_data as string
     """
 
-
     big_G = create_complete_graph(url_template)
     try:
         node_of_interest = big_G._items[uri]
@@ -640,7 +640,7 @@ def visualize_entity(uri: str, url_template="", write_tmp_files: Union[bool, str
         msg = f"URI '{uri}' could not be found in the complete knowledge graph"
         raise p.InvalidURIError(msg)
 
-    small_G = nx.ego_graph(big_G, node_of_interest, radius, undirected=True)
+    small_G = nx.ego_graph(big_G, node_of_interest, radius, undirected=True) #! perfomance of this operation sucks
     raw_dot_data = render_graph_to_dot(small_G)
 
     dot_data0 = raw_dot_data
@@ -760,11 +760,11 @@ def save_data_to_file(mode, dot_data, svg_data):
         svg_fpath = "./tmp.svg"
         dot_fpath = "./tmp_dot.txt"
 
-    with open(dot_fpath, "w") as txtfile:
+    with open(dot_fpath, "wt", encoding="utf-8") as txtfile:
         txtfile.write(dot_data)
     print("File written:", os.path.abspath(dot_fpath))
 
-    with open(svg_fpath, "w") as txtfile:
+    with open(svg_fpath, "wt", encoding="utf-8") as txtfile:
         txtfile.write(svg_data)
     print("File written:", os.path.abspath(svg_fpath))
 
@@ -776,7 +776,7 @@ def render_label(label: str):
 
     return res.format(**REPLACEMENTS)
 
-def create_interactive_graph(url_template="", output_dir="graph_site", radius=1):
+def create_interactive_graph(url_template="", output_dir="graph_site", radius=1, skip_auto_items=True, skip_existing=False):
     os.makedirs(output_dir, exist_ok=True)
 
     G = create_complete_graph(url_template)
@@ -784,24 +784,23 @@ def create_interactive_graph(url_template="", output_dir="graph_site", radius=1)
 
     for node in G.nodes:
         node_name = node.short_key
+        if skip_auto_items and "Ia" in node_name:
+            continue
         print(node_name)
         dot_path = os.path.join(output_dir, f"{node_name}.dot")
+        if skip_existing and os.path.isfile(dot_path):
+            continue
         visualize_entity(node.uri, write_tmp_files=dot_path, radius=radius)
 
-        # tmp = "tmp_dot.txt"
-        # shutil.move(tmp, dot_path)
-        # img_path = os.path.join(output_dir, f"{node_name}.svg")
-        # shutil.move("tmp.svg", img_path)
-
-        # create png and map
+        # create map
         cmapx_path = os.path.join(output_dir, f"{node_name}.map")
         res2 = subprocess.run(["dot", "-Tcmapx", "-o", cmapx_path, dot_path])
         assert res2.returncode == 0, f"{res2.stderr}"
 
-        with open(cmapx_path, "r") as f:
+        with open(cmapx_path, "r", encoding="utf-8") as f:
             image_map = f.read()
 
-        with open(os.path.join(output_dir, f"{node_name}.html"), "w") as f:
+        with open(os.path.join(output_dir, f"{node_name}.html"), "w", encoding="utf-8") as f:
             f.write(f"""<!DOCTYPE html>
 <html>
 <head><title>Node {node_name}</title></head>
@@ -817,20 +816,16 @@ def create_interactive_graph(url_template="", output_dir="graph_site", radius=1)
     # Index page
     dot_path = os.path.join(output_dir, "index.dot")
     visualize_all_entities(write_tmp_files=dot_path)
-    # tmp = "tmp_dot.txt"
-    # shutil.move(tmp, dot_path)
-    # img_path = os.path.join(output_dir, f"index.svg")
-    # shutil.move("tmp.svg", img_path)
 
-    # create png and map
+    # create map
     cmapx_path = os.path.join(output_dir, f"index.map")
     res2 = subprocess.run(["dot", "-Tcmapx", "-o", cmapx_path, dot_path])
     assert res2.returncode == 0, f"{res2.stderr}"
 
-    with open(cmapx_path, "r") as f:
+    with open(cmapx_path, "r", encoding="utf-8") as f:
         image_map = f.read()
 
-    with open(os.path.join(output_dir, f"index.html"), "w") as f:
+    with open(os.path.join(output_dir, f"index.html"), "w", encoding="utf-8") as f:
         f.write(f"""<!DOCTYPE html>
 <html>
 <head><title>Overview</title></head>
@@ -844,5 +839,6 @@ def create_interactive_graph(url_template="", output_dir="graph_site", radius=1)
 
 if __name__ == "__main__":
     # visualize_all_entities(write_tmp_files=True)
-    create_interactive_graph()
-    # visualize_entity("irk:/builtins#I31", write_tmp_files=True, radius=0)
+    # create_interactive_graph()
+    # nl = p.irkloader.load_mod_from_path("output.py", "nl", "nonlinear")
+    visualize_entity("irk:/builtins#I31", write_tmp_files=True, radius=1)

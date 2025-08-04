@@ -13,3 +13,4 @@ pydantic >= 2.4.2
 packaging
 pandas
 platformdirs
+pydot

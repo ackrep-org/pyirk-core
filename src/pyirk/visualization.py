@@ -20,6 +20,7 @@ if hasattr(nx, "OrderedDiGraph"):
 
 # TODO: this should be a relative import of the *package*
 import pyirk as p
+from pyirk.utils import render_template
 from ipydex import IPS, activate_ips_on_exception
 
 __all__ = ["visualize_entity", "visualize_all_entities"]
@@ -437,6 +438,7 @@ def get_color_for_stm(stm: p.Statement) -> str:
 def create_complete_graph(
     url_template="",
     limit: Optional[int] = None,
+    skip_auto_items: bool = False,
 ) -> nx.DiGraph:
     """
     :param url_template:    template to insert links based on uris
@@ -459,6 +461,8 @@ def create_complete_graph(
             assert item_uri in p.ds.statement_uri_map
             continue
         if not isinstance(item, p.Item) or item.short_key in ["I000"]:
+            continue
+        if skip_auto_items and "Ia" in item.short_key:
             continue
         # count only items
         i += 1
@@ -483,6 +487,8 @@ def create_complete_graph(
 
                 subj, pred, obj = stm.relation_tuple
                 if isinstance(obj, p.Item):
+                    if skip_auto_items and "Ia" in obj.short_key:
+                        continue
                     if other_node := added_items_nodes.get(obj.uri):
                         pass
                     else:
@@ -504,7 +510,7 @@ def create_complete_graph(
     return G
 
 
-def render_graph_to_dot(G: nx.DiGraph) -> str:
+def render_graph_to_dot(G: nx.DiGraph, center_node=None) -> str:
     """
 
     :param G:       nx.DiGraph; the graph to render
@@ -512,6 +518,13 @@ def render_graph_to_dot(G: nx.DiGraph) -> str:
     """
 
     ecm = build_edge_color_map(G)
+    def get_node_color(node):
+        if node.short_key.startswith("Ia"):
+            return "grey"
+        elif node == center_node:
+            return "red"
+        else:
+            return "black"
 
     # for styling see https://nxv.readthedocs.io/en/latest/reference.html#styling
     style = nxv.Style(
@@ -534,7 +547,7 @@ def render_graph_to_dot(G: nx.DiGraph) -> str:
             "height": 1.3,
             "shape": d.get("shape", "circle"),  # see also AbstractNode.shape
             "style": "filled",
-            "color": "grey" if u.short_key.startswith("Ia") else "black",
+            "color": get_node_color(u),
             "fillcolor": "#eeeeeedd" if "Ia" not in u.short_key else "#dddddddd",
             # Label
             "label": u.get_dot_label(),
@@ -641,7 +654,7 @@ def visualize_entity(uri: str, url_template="", write_tmp_files: Union[bool, str
         raise p.InvalidURIError(msg)
 
     small_G = nx.ego_graph(big_G, node_of_interest, radius, undirected=True) #! perfomance of this operation sucks
-    raw_dot_data = render_graph_to_dot(small_G)
+    raw_dot_data = render_graph_to_dot(small_G, node_of_interest)
 
     dot_data0 = raw_dot_data
     for old, new in NEWLINE_REPLACEMENTS:
@@ -672,7 +685,7 @@ def get_label(entity):
     return res
 
 
-def visualize_all_entities(url_template="", write_tmp_files: Union[bool, str] = False) -> str:
+def visualize_all_entities(url_template="", write_tmp_files: Union[bool, str] = False, skip_auto_items: bool = False) -> str:
     """visualize all entities loaded in datastore. output svg graph.
 
     Args:
@@ -683,7 +696,7 @@ def visualize_all_entities(url_template="", write_tmp_files: Union[bool, str] = 
     Returns:
         str: svg graph
     """
-    G = create_complete_graph(url_template)
+    G = create_complete_graph(url_template, skip_auto_items=skip_auto_items)
 
     print(f"Visualizing {len(G.nodes)} nodes and {len(G.edges)} edges.")
     ecm = build_edge_color_map(G)
@@ -779,13 +792,13 @@ def render_label(label: str):
 def create_interactive_graph(url_template="", output_dir="graph_site", radius=1, skip_auto_items=True, skip_existing=False):
     os.makedirs(output_dir, exist_ok=True)
 
-    G = create_complete_graph(url_template)
+    G = create_complete_graph(url_template, skip_auto_items=skip_auto_items)
     print(f"Visualizing {len(G.nodes)} nodes and {len(G.edges)} edges.")
 
     for node in G.nodes:
         node_name = node.short_key
-        if skip_auto_items and "Ia" in node_name:
-            continue
+        # if skip_auto_items and "Ia" in node_name:
+        #     continue
         print(node_name)
         dot_path = os.path.join(output_dir, f"{node_name}.dot")
         if skip_existing and os.path.isfile(dot_path):
@@ -800,22 +813,22 @@ def create_interactive_graph(url_template="", output_dir="graph_site", radius=1,
         with open(cmapx_path, "r", encoding="utf-8") as f:
             image_map = f.read()
 
+        # clean image map of replacement strings
+        image_map = re.sub(r'(?<=href=")(.+?)(\.html".+?title=")(.+?)(?=")', lambda mo: mo.group(1)+mo.group(2)+mo.group(1), image_map)
+        desc = p.ds.items[node.uri].R2.value if p.ds.items[node.uri].R2 else ""
+        context = {
+            "title": node_name + " " + p.ds.items[node.uri].R1.value,
+            "img_source": f"{node_name}.svg",
+            "map": image_map,
+            "desc": desc
+        }
+        res = render_template("node_template.html", context)
         with open(os.path.join(output_dir, f"{node_name}.html"), "w", encoding="utf-8") as f:
-            f.write(f"""<!DOCTYPE html>
-<html>
-<head><title>Node {node_name}</title></head>
-<body>
-<h1>Node {node_name}</h1>
-<img src="{node_name}.svg" usemap="#G" alt="Subgraph of {node_name}">
-{image_map}
-<p><a href="index.html">Back to index</a></p>
-</body>
-</html>
-""")
+            f.write(res)
 
     # Index page
     dot_path = os.path.join(output_dir, "index.dot")
-    visualize_all_entities(write_tmp_files=dot_path)
+    visualize_all_entities(write_tmp_files=dot_path, skip_auto_items=skip_auto_items)
 
     # create map
     cmapx_path = os.path.join(output_dir, f"index.map")
@@ -825,20 +838,18 @@ def create_interactive_graph(url_template="", output_dir="graph_site", radius=1,
     with open(cmapx_path, "r", encoding="utf-8") as f:
         image_map = f.read()
 
+    context = {
+        "title": "Overview",
+        "img_source": f"index.svg",
+        "map": image_map,
+        "desc": f"Total number of Nodes: {len(G.nodes)}"
+    }
+    res = render_template("node_template.html", context)
     with open(os.path.join(output_dir, f"index.html"), "w", encoding="utf-8") as f:
-        f.write(f"""<!DOCTYPE html>
-<html>
-<head><title>Overview</title></head>
-<body>
-<h1>Overview</h1>
-<img src="index.svg" usemap="#G" alt="Overview">
-{image_map}
-</body>
-</html>
-""")
+        f.write(res)
 
 if __name__ == "__main__":
-    # visualize_all_entities(write_tmp_files=True)
-    # create_interactive_graph()
+    # visualize_all_entities(write_tmp_files=True, skip_auto_items=True)
+    create_interactive_graph()
     # nl = p.irkloader.load_mod_from_path("output.py", "nl", "nonlinear")
-    visualize_entity("irk:/builtins#I31", write_tmp_files=True, radius=1)
+    # visualize_entity("irk:/builtins#I31", write_tmp_files=True, radius=1)

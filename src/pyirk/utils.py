@@ -1,7 +1,9 @@
 import os
 import pyirk as p
-
+from jinja2 import Environment, FileSystemLoader
 from ipydex import IPS
+
+from pyirk.settings import TEMPLATE_PATH
 
 
 class GeneralHousekeeperMixin:
@@ -66,3 +68,19 @@ class GeneralHousekeeperMixin:
 
         error_list = [b for (a, b) in self._outcome.errors if b is not None]
         return bool(error_list)
+
+
+def render_template(template: str, context: dict):
+    """
+    :param template:    path to template file relative to TEMPLATE_DIR
+    :param context:     dict containing the data which should be inserted into the template
+    """
+    jin_env = Environment(
+        loader=FileSystemLoader(TEMPLATE_PATH),
+    )
+
+    template_doc = jin_env.get_template(template)
+
+    res = template_doc.render(context=context)
+
+    return res

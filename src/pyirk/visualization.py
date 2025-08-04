@@ -636,7 +636,7 @@ def svg_replace(raw_svg_data: str, REPLACEMENTS: dict) -> str:
     return svg_data1
 
 
-def visualize_entity(uri: str, url_template="", write_tmp_files: Union[bool, str] = False, radius=1) -> str:
+def visualize_entity(uri: str, url_template="", write_tmp_files: Union[bool, str] = False, radius=1, graph=None) -> str:
     """
 
     :param uri:             entity uri (like "irk:/my/module#I0123")
@@ -645,8 +645,10 @@ def visualize_entity(uri: str, url_template="", write_tmp_files: Union[bool, str
 
     :return:                svg_data as string
     """
-
-    big_G = create_complete_graph(url_template)
+    if graph is None:
+        big_G = create_complete_graph(url_template)
+    else:
+        big_G = graph
     try:
         node_of_interest = big_G._items[uri]
     except KeyError:
@@ -803,7 +805,7 @@ def create_interactive_graph(url_template="", output_dir="graph_site", radius=1,
         dot_path = os.path.join(output_dir, f"{node_name}.dot")
         if skip_existing and os.path.isfile(dot_path):
             continue
-        visualize_entity(node.uri, write_tmp_files=dot_path, radius=radius)
+        visualize_entity(node.uri, write_tmp_files=dot_path, radius=radius, graph=G)
 
         # create map
         cmapx_path = os.path.join(output_dir, f"{node_name}.map")

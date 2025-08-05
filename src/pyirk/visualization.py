@@ -567,6 +567,7 @@ def render_graph_to_dot(G: nx.DiGraph, center_node=None) -> str:
             "label": d["edge"].short_key,
             "fontsize": 20,
             "color": ecm.get(d["edge"].short_key, "black"),
+            "URL":  d["edge"].R1.value, # this will be replaced later
         },
     )
 
@@ -711,7 +712,8 @@ def visualize_all_entities(url_template="", write_tmp_files: Union[bool, str] = 
             "arrowhead": "vee",
             "arrowsize": 0.3,
             "color": clr,
-            "label": d["edge"].short_key
+            "label": d["edge"].short_key,
+            "URL":  d["edge"].R1.value, # this will be replaced later
         }
 
     # styling and rendering
@@ -817,6 +819,11 @@ def create_interactive_graph(url_template="", output_dir="graph_site", radius=1,
 
         # clean image map of replacement strings
         image_map = re.sub(r'(?<=href=")(.+?)(\.html".+?title=")(.+?)(?=")', lambda mo: mo.group(1)+mo.group(2)+mo.group(1), image_map)
+        # correct tooltip for relations.
+        # Expl.: tooltip attribute in style does not work since map area poly will not be rendered. so we use URL
+        # to trick graphviz to render rect and then replace href and title to create tooltip
+        image_map = re.sub(r'(?<=shape="rect")(.+?)(href=")(.+?)(" title=")(.+?)(?=")', lambda mo: mo.group(1)+mo.group(2)+""+mo.group(4)+mo.group(3), image_map)
+
         desc = p.ds.items[node.uri].R2.value if p.ds.items[node.uri].R2 else ""
         context = {
             "title": node_name + " " + p.ds.items[node.uri].R1.value,
@@ -839,6 +846,12 @@ def create_interactive_graph(url_template="", output_dir="graph_site", radius=1,
 
     with open(cmapx_path, "r", encoding="utf-8") as f:
         image_map = f.read()
+
+    image_map = re.sub(
+        r'(?<=shape="rect")(.+?)(href=")(.+?)(" title=")(.+?)(?=")',
+        lambda mo: mo.group(1)+mo.group(2)+""+mo.group(4)+mo.group(3),
+        image_map
+    )
 
     context = {
         "title": "Overview",

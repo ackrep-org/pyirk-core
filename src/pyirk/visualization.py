@@ -29,10 +29,6 @@ activate_ips_on_exception()
 
 # TODO: make this a  dict to speedup lookup
 #  tuple of Relation keys which are not displayed by default
-REL_BLACKLIST = (
-    "irk:/builtins#R1",
-    "irk:/builtins#R2",
-)
 
 from abc import ABC
 
@@ -182,7 +178,7 @@ class EntityNode(AbstractGraphObject):
 
     def get_dot_label(self, render=False) -> str:
         if render:
-            return render_label(self.dot_label_str)
+            return vm.render_label(self.dot_label_str)
         else:
             return self.dot_label_str
 
@@ -352,519 +348,535 @@ class CustomizedDiGraph(nx.DiGraph):
 
         super().add_node(node, **new_kwargs)
 
+class VisualizationManager():
 
-def create_nx_graph_from_entity(uri, url_template="") -> nx.DiGraph:
-    """
-
-    :param uri:
-    :param url_template:
-    :return:
-    """
-
-    entity = p.ds.get_entity_by_uri(uri)
-    re_dict = entity.get_relations()
-    inv_re_dict = entity.get_inv_relations()
-
-    G = CustomizedDiGraph()
-    base_node = create_node(entity, url_template)
-    G.add_node(base_node, color="#2ca02c")
-
-    for rel_key, re_list in list(re_dict.items()) + list(inv_re_dict.items()):
-        if rel_key in REL_BLACKLIST:
-            continue
-
-        re_list: List[p.Statement]
-        # TODO: Make this hack visible from the outside
-        # we only display a limited amount of automatically created ("Ia") items or literals
-        a_node_cnt = 0
-        for re in re_list:
-            assert len(re.relation_tuple) == 3
-            subj, pred, obj = re.relation_tuple
-
-            edge = Edge(pred, url_template)
-            edge.perform_html_wrapping()
-            if re.role == p.RelationRole.SUBJECT:
-
-                if not isinstance(obj, p.Entity):
-                    # we do not display literals
-                    continue
-
-                if "Ia" in obj.short_key and a_node_cnt > 2:
-                    continue
-                other_node = create_node(obj, url_template)
-                G.add_node(other_node, color=other_node.get_color())
-                G.add_edge(
-                    base_node,
-                    other_node,
-                    edge=edge,
-                    short_key=edge.short_key,
-                    label=edge.get_dot_label(),
-                    color=edge.get_color(),
-                )
-            else:
-                if "Ia" in subj.short_key and a_node_cnt > 2:
-                    continue
-                other_node = create_node(subj, url_template)
-                G.add_node(other_node, color=other_node.get_color())
-                G.add_edge(
-                    other_node,
-                    base_node,
-                    edge=edge,
-                    hort_key=edge.short_key,
-                    label=edge.get_dot_label(),
-                    color=edge.get_color(),
-                )
-
-            if "Ia" in other_node.short_key:
-                a_node_cnt += 1
-
-    return G
+    def __init__(self):
+        self.REL_BLACKLIST = (
+            "irk:/builtins#R1",
+            "irk:/builtins#R2",
+        )
 
 
-def get_color_for_item(item: p.Item) -> str:
-    # TODO: add color by base_uri
-    if "Ia" in item.short_key:
-        return "grey"
-    # if item.short_key == "I14":
-    #     return "red"
-    return "black"
 
+    def create_nx_graph_from_entity(self, uri, url_template="") -> nx.DiGraph:
+        """
 
-def get_color_for_stm(stm: p.Statement) -> str:
-    # TODO: unfuck this
-    return mpl_colors[(int(stm.rsk[1:]) - 1) % len(mpl_colors)]
+        :param uri:
+        :param url_template:
+        :return:
+        """
 
+        entity = p.ds.get_entity_by_uri(uri)
+        re_dict = entity.get_relations()
+        inv_re_dict = entity.get_inv_relations()
 
-def create_complete_graph(
-    url_template="",
-    limit: Optional[int] = None,
-    skip_auto_items: bool = False,
-) -> nx.DiGraph:
-    """
-    :param url_template:    template to insert links based on uris
-    :param limit:
-    :return:
-    """
+        G = CustomizedDiGraph()
+        base_node = create_node(entity, url_template)
+        G.add_node(base_node, color="#2ca02c")
 
-    added_items_nodes = {}
-    added_statements = {}
+        for rel_key, re_list in list(re_dict.items()) + list(inv_re_dict.items()):
+            if rel_key in self.REL_BLACKLIST:
+                continue
 
-    # using this subclass ensures our html-wrapping is called when a node is added
-    G = CustomizedDiGraph()
+            re_list: List[p.Statement]
+            # TODO: Make this hack visible from the outside
+            # we only display a limited amount of automatically created ("Ia") items or literals
+            a_node_cnt = 0
+            for re in re_list:
+                assert len(re.relation_tuple) == 3
+                subj, pred, obj = re.relation_tuple
 
-    i = 0
-    relation_dict: dict
-    for item_uri, relation_dict in list(p.ds.statements.items()):
-        item = p.ds.get_entity_by_uri(item_uri, strict=None)
-        if item is None:
-            # this is the case for some statements which are subject of a qualifier relation
-            assert item_uri in p.ds.statement_uri_map
-            continue
-        if not isinstance(item, p.Item) or item.short_key in ["I000"]:
-            continue
-        if skip_auto_items and "Ia" in item.short_key:
-            continue
-        # count only items
-        i += 1
-        if limit and i == limit:
-            break
+                edge = Edge(pred, url_template)
+                edge.perform_html_wrapping()
+                if re.role == p.RelationRole.SUBJECT:
 
-        if node := added_items_nodes.get(item_uri):
-            pass
-        else:
-            node = create_node(item, url_template)
-        G.add_node(node)
-        added_items_nodes[item_uri] = node
-
-        # iterate over relation edges
-        for relation_uri, stm_list in relation_dict.items():
-            stm: p.Statement
-            for stm in stm_list:
-                if stm.role != p.RelationRole.SUBJECT:
-                    continue
-                if stm.relation_tuple[1].uri in REL_BLACKLIST:
-                    continue
-
-                subj, pred, obj = stm.relation_tuple
-                if isinstance(obj, p.Item):
-                    if skip_auto_items and "Ia" in obj.short_key:
+                    if not isinstance(obj, p.Entity):
+                        # we do not display literals
                         continue
-                    if other_node := added_items_nodes.get(obj.uri):
-                        pass
-                    else:
-                        other_node = create_node(obj, url_template)
-                        G.add_node(other_node)
-                        added_items_nodes[obj.uri] = other_node
+
+                    if "Ia" in obj.short_key and a_node_cnt > 2:
+                        continue
+                    other_node = create_node(obj, url_template)
+                    G.add_node(other_node, color=other_node.get_color())
+                    G.add_edge(
+                        base_node,
+                        other_node,
+                        edge=edge,
+                        short_key=edge.short_key,
+                        label=edge.get_dot_label(),
+                        color=edge.get_color(),
+                    )
                 else:
-                    # obj is a literal, we omit that for now
-                    continue
+                    if "Ia" in subj.short_key and a_node_cnt > 2:
+                        continue
+                    other_node = create_node(subj, url_template)
+                    G.add_node(other_node, color=other_node.get_color())
+                    G.add_edge(
+                        other_node,
+                        base_node,
+                        edge=edge,
+                        hort_key=edge.short_key,
+                        label=edge.get_dot_label(),
+                        color=edge.get_color(),
+                    )
 
-                G.add_edge(node, other_node, edge=pred)
+                if "Ia" in other_node.short_key:
+                    a_node_cnt += 1
 
-                assert stm.uri not in added_statements
-                added_statements[stm.uri] = 1
-
-    # for easier uri-based access to the nodes we store these dicts as attributes to the Graph
-    G._items = added_items_nodes
-    G._statements = added_statements
-    return G
+        return G
 
 
-def render_graph_to_dot(G: nx.DiGraph, center_node=None) -> str:
-    """
-
-    :param G:       nx.DiGraph; the graph to render
-    :return:        dot_data
-    """
-
-    ecm = build_edge_color_map(G)
-    def get_node_color(node):
-        if node.short_key.startswith("Ia"):
+    def get_color_for_item(self, item: p.Item) -> str:
+        # TODO: add color by base_uri
+        if "Ia" in item.short_key:
             return "grey"
-        elif node == center_node:
-            return "red"
-        else:
-            return "black"
+        # if item.short_key == "I14":
+        #     return "red"
+        return "black"
 
-    # for styling see https://nxv.readthedocs.io/en/latest/reference.html#styling
-    style = nxv.Style(
-        graph={
-            "layout": "sfdp",
-            "overlap": "prism",
-            # "overlap_shrink": True,
-            "dim": 2,
-            "dimen": 2,
-            # "beautify": True,
-            # "overlap_scaling": -5.5,
-            # "beautify": False,
-            # "overlap_scaling": -3.0,
-            "outputorder": "edgesfirst",
-        },
-        # u: node, d: its attribute dict
-        node=lambda u, d: {
-            "fixedsize": True,
-            "width": 1.3,
-            "height": 1.3,
-            "shape": d.get("shape", "circle"),  # see also AbstractNode.shape
-            "style": "filled",
-            "color": get_node_color(u),
-            "fillcolor": "#eeeeeedd" if "Ia" not in u.short_key else "#dddddddd",
-            # Label
-            "label": u.get_dot_label(),
-            "fontsize": 20,
-            "fontcolor": "grey" if u.short_key.startswith("Ia") else "black",
-            "URL": f"{u.short_key}.html",   # for interactive map
-            "target": "_self",              # for interactive map
 
-        },
-        # u,v: nodes, d: edge attribute dict
-        edge=lambda u, v, d: {
-            # arrow
-            "style": "solid",
-            "arrowType": "normal",
-            "penwidth": 2,
-            # label
-            "label": d["edge"].short_key,
-            "fontsize": 20,
-            "color": ecm.get(d["edge"].short_key, "black"),
-            "URL":  d["edge"].R1.value, # this will be replaced later
-        },
-    )
+    def get_color_for_stm(self, stm: p.Statement) -> str:
+        # TODO: unfuck this
+        return mpl_colors[(int(stm.rsk[1:]) - 1) % len(mpl_colors)]
 
-    edge_first = True
-    # edge_first = False
 
-    def node_sort_func(args: Tuple[AbstractGraphObject, dict]):
-        u, d = args
-        if edge_first:
-            # get edge that starts or ends at this node
-            for (_u, _v), _d in G.edges.items():
-                if _u == u:
-                    return float(_d["edge"].short_key[1:])
-                elif _v == u:
-                    return float(_d["edge"].short_key[1:]) + 0.5
+    def create_complete_graph(
+        self,
+        url_template="",
+        limit: Optional[int] = None,
+        skip_auto_items: bool = False,
+    ) -> nx.DiGraph:
+        """
+        :param url_template:    template to insert links based on uris
+        :param limit:
+        :return:
+        """
+
+        added_items_nodes = {}
+        added_statements = {}
+
+        # using this subclass ensures our html-wrapping is called when a node is added
+        G = CustomizedDiGraph()
+
+        i = 0
+        relation_dict: dict
+        for item_uri, relation_dict in list(p.ds.statements.items()):
+            item = p.ds.get_entity_by_uri(item_uri, strict=None)
+            if item is None:
+                # this is the case for some statements which are subject of a qualifier relation
+                assert item_uri in p.ds.statement_uri_map
+                continue
+            if not isinstance(item, p.Item) or item.short_key in ["I000"]:
+                continue
+            if skip_auto_items and "Ia" in item.short_key:
+                continue
+            # count only items
+            i += 1
+            if limit and i == limit:
+                break
+
+            if node := added_items_nodes.get(item_uri):
+                pass
             else:
-                print(f"Node {u} has no edge")
-        return u.short_key
+                node = create_node(item, url_template)
+            G.add_node(node)
+            added_items_nodes[item_uri] = node
 
-    def edge_sort_func(args: Tuple[AbstractGraphObject, AbstractGraphObject, dict]):
-        u, v, d = args
-        if edge_first:
-            return int(d["edge"].short_key[1:])
+            # iterate over relation edges
+            for relation_uri, stm_list in relation_dict.items():
+                stm: p.Statement
+                for stm in stm_list:
+                    if stm.role != p.RelationRole.SUBJECT:
+                        continue
+                    if stm.relation_tuple[1].uri in self.REL_BLACKLIST:
+                        continue
+
+                    subj, pred, obj = stm.relation_tuple
+                    if isinstance(obj, p.Item):
+                        if skip_auto_items and "Ia" in obj.short_key:
+                            continue
+                        if other_node := added_items_nodes.get(obj.uri):
+                            pass
+                        else:
+                            other_node = create_node(obj, url_template)
+                            G.add_node(other_node)
+                            added_items_nodes[obj.uri] = other_node
+                    else:
+                        # obj is a literal, we omit that for now
+                        continue
+
+                    G.add_edge(node, other_node, edge=pred)
+
+                    assert stm.uri not in added_statements
+                    added_statements[stm.uri] = 1
+
+        # for easier uri-based access to the nodes we store these dicts as attributes to the Graph
+        G._items = added_items_nodes
+        G._statements = added_statements
+        return G
+
+
+    def render_graph_to_dot(self, G: nx.DiGraph, center_node=None) -> str:
+        """
+
+        :param G:       nx.DiGraph; the graph to render
+        :return:        dot_data
+        """
+
+        ecm = self.build_edge_color_map(G)
+        def get_node_color(node):
+            if node.short_key.startswith("Ia"):
+                return "grey"
+            elif node == center_node:
+                return "red"
+            else:
+                return "black"
+
+        # for styling see https://nxv.readthedocs.io/en/latest/reference.html#styling
+        style = nxv.Style(
+            graph={
+                "layout": "sfdp",
+                "overlap": "prism",
+                # "overlap_shrink": True,
+                "dim": 2,
+                "dimen": 2,
+                # "beautify": True,
+                # "overlap_scaling": -5.5,
+                # "beautify": False,
+                # "overlap_scaling": -3.0,
+                "outputorder": "edgesfirst",
+            },
+            # u: node, d: its attribute dict
+            node=lambda u, d: {
+                "fixedsize": True,
+                "width": 1.3,
+                "height": 1.3,
+                "shape": d.get("shape", "circle"),  # see also AbstractNode.shape
+                "style": "filled",
+                "color": get_node_color(u),
+                "fillcolor": "#eeeeeedd" if "Ia" not in u.short_key else "#dddddddd",
+                # Label
+                "label": u.get_dot_label(),
+                "fontsize": 20,
+                "fontcolor": "grey" if u.short_key.startswith("Ia") else "black",
+                "URL": f"{u.short_key}.html",   # for interactive map
+                "target": "_self",              # for interactive map
+
+            },
+            # u,v: nodes, d: edge attribute dict
+            edge=lambda u, v, d: {
+                # arrow
+                "style": "solid",
+                "arrowType": "normal",
+                "penwidth": 2,
+                # label
+                "label": d["edge"].short_key,
+                "fontsize": 20,
+                "color": ecm.get(d["edge"].short_key, "black"),
+                "URL":  d["edge"].R1.value, # this will be replaced later
+            },
+        )
+
+        edge_first = True
+        # edge_first = False
+
+        def node_sort_func(args: Tuple[AbstractGraphObject, dict]):
+            u, d = args
+            if edge_first:
+                # get edge that starts or ends at this node
+                for (_u, _v), _d in G.edges.items():
+                    if _u == u:
+                        return float(_d["edge"].short_key[1:])
+                    elif _v == u:
+                        return float(_d["edge"].short_key[1:]) + 0.5
+                else:
+                    print(f"Node {u} has no edge")
+            return u.short_key
+
+        def edge_sort_func(args: Tuple[AbstractGraphObject, AbstractGraphObject, dict]):
+            u, v, d = args
+            if edge_first:
+                return int(d["edge"].short_key[1:])
+            else:
+                return 0
+
+        # sort the graph
+        og = nxv.to_ordered_graph(G, node_key=node_sort_func, edge_key=edge_sort_func)
+        # noinspection PyTypeChecker
+        dot_data: str = nxv.render(og, style, format="raw")
+
+        return dot_data
+
+
+    def build_edge_color_map(self, G):
+        # count the appearances of all edges
+        key_counts = {}
+        for u, v, e in G.edges.data("edge"):
+            skey = e.short_key
+            if skey in key_counts:
+                key_counts[skey] += 1
+            else:
+                key_counts[skey] = 1
+        # sort them by number of their appearance
+        ranked_keys = [k for k, cnt in sorted(key_counts.items(), key=lambda x: x[1], reverse=True)]
+        # color them using the mpl colors in descending order
+        edge_color_map = dict(zip(ranked_keys, mpl_colors))
+
+        return edge_color_map
+
+
+    def svg_replace(self, raw_svg_data: str, REPLACEMENTS: dict) -> str:
+        assert isinstance(raw_svg_data, str)
+
+        # prevent some latex stuff to interfere with the handing of the `REPLACEMENTS`
+        # TODO: handle the whole problem more elegantly
+
+        latex_replacements = [(r"\dot{x}", "__LATEX1__")]
+        for orig, subs in latex_replacements:
+            raw_svg_data = raw_svg_data.replace(orig, subs)
+
+        svg_data1: str = raw_svg_data.format(**REPLACEMENTS)
+
+        for orig, subs in latex_replacements:
+            svg_data1 = svg_data1.replace(subs, orig)
+
+        return svg_data1
+
+
+    def visualize_entity(self, uri: str, url_template="", write_tmp_files: Union[bool, str] = False, radius=1, graph=None) -> str:
+        """
+
+        :param uri:             entity uri (like "irk:/my/module#I0123")
+        :param url_template:    url template for creation of a-tags (html links) for the labels
+        :param write_tmp_files: flag whether to write debug output. if true, writes to cwd, if pathlike, writes to that dir or file.
+
+        :return:                svg_data as string
+        """
+        if graph is None:
+            big_G = self.create_complete_graph(url_template)
         else:
-            return 0
+            big_G = graph
+        try:
+            node_of_interest = big_G._items[uri]
+        except KeyError:
+            msg = f"URI '{uri}' could not be found in the complete knowledge graph"
+            raise p.InvalidURIError(msg)
 
-    # sort the graph
-    og = nxv.to_ordered_graph(G, node_key=node_sort_func, edge_key=edge_sort_func)
-    # noinspection PyTypeChecker
-    dot_data: str = nxv.render(og, style, format="raw")
+        small_G = nx.ego_graph(big_G, node_of_interest, radius, undirected=True) #! perfomance of this operation sucks
+        raw_dot_data = self.render_graph_to_dot(small_G, node_of_interest)
 
-    return dot_data
+        dot_data0 = raw_dot_data
+        for old, new in NEWLINE_REPLACEMENTS:
+            dot_data0 = dot_data0.replace(old, new)
+
+        # work around curly braces in first and last line
+        dot_lines = dot_data0.split("\n")
+        inner_dot_code = "\n".join(dot_lines[1:-1])
+
+        dot_data = "\n".join((dot_lines[0], inner_dot_code, dot_lines[-1]))
+
+        # noinspection PyUnresolvedReferences,PyProtectedMember
+        raw_svg_data = nxv._graphviz.run(dot_data, algorithm="dot", format="svg", graphviz_bin=None)
+        raw_svg_data = raw_svg_data.decode("utf8")
+        svg_data1 = self.svg_replace(raw_svg_data, REPLACEMENTS)
+        # for interactive graph, we need hyperlinks. these mess up the svg with <> inside attributes -> remove
+        svg_data1 = re.sub(r'(?<=xlink:title=").+?(?=" target=)', "", svg_data1)
+        if write_tmp_files:
+            self.save_data_to_file(write_tmp_files, dot_data, svg_data1)
+
+        return svg_data1
 
 
-def build_edge_color_map(G):
-    # count the appearances of all edges
-    key_counts = {}
-    for u, v, e in G.edges.data("edge"):
-        skey = e.short_key
-        if skey in key_counts:
-            key_counts[skey] += 1
+    def get_label(self, entity):
+        res = entity.get("label", "undefined label")
+        if isinstance(res, Literal):
+            return res.value
+        return res
+
+
+    def visualize_all_entities(self, url_template="", write_tmp_files: Union[bool, str] = False, skip_auto_items: bool = False) -> str:
+        """visualize all entities loaded in datastore. output svg graph.
+
+        Args:
+            url_template (str, optional): _description_. Defaults to "".
+            write_tmp_files (Union[bool, str], optional): if true, files will be saved to cwd. if pathlike, files will \
+                be saved to that folder or file. Defaults to False.
+
+        Returns:
+            str: svg graph
+        """
+        G = self.create_complete_graph(url_template, skip_auto_items=skip_auto_items)
+
+        print(f"Visualizing {len(G.nodes)} nodes and {len(G.edges)} edges.")
+        ecm = self.build_edge_color_map(G)
+
+        def edge_style(u, v, d):
+            e = d["edge"]
+            clr = ecm.get(e.short_key, "grey")
+            return {
+                "style": "solid",
+                "arrowhead": "vee",
+                "arrowsize": 0.3,
+                "color": clr,
+                "label": d["edge"].short_key,
+                "URL":  d["edge"].R1.value, # this will be replaced later
+            }
+
+        # styling and rendering
+        style = nxv.Style(
+            graph={
+                # layout algorithm
+                "layout": "sfdp",
+                "overlap": "prism",
+                # "overlap_shrink": -10,
+                "overlap_scaling": -10,
+                # global settings
+                "outputorder": "edgesfirst",  # such that nodes are above the edges
+            },
+            node=lambda u, d: {
+                # shape and size of node symbol
+                "shape": "circle",
+                "fixedsize": True,
+                "width": 0.3,
+                "height": 0.3,
+                "style": "filled",
+                "color": "black" if "Ia" not in u.short_key else "gray",
+                "fillcolor": "#bbbbbbdd" if "Ia" not in u.short_key else "#dddddddd",
+                # shape size and content of node label
+                "fontsize": 8,
+                "fontcolor": "#555555" if "Ia" not in u.short_key else "#777777",
+                # "label": None,
+                # "label": u.short_key,
+                "label": f"{u.short_key}\n{u.label.value}",
+                "URL": f"{u.short_key}.html",   # for interactive map
+                "target": "_self",              # for interactive map
+
+            },
+            edge=edge_style,
+        )
+
+        # noinspection PyTypeChecker
+        raw_dot_data: str = nxv.render(G, style, format="raw")
+        # optional: preprocessing
+        dot_data = raw_dot_data
+        # noinspection PyUnresolvedReferences,PyProtectedMember
+        raw_svg_data = nxv._graphviz.run(dot_data, algorithm="sfdp", format="svg", graphviz_bin=None)
+        svg_data1 = self.svg_replace(raw_svg_data.decode("utf8"), REPLACEMENTS)
+
+        if write_tmp_files:
+            self.save_data_to_file(write_tmp_files, dot_data, svg_data1)
+
+        print(G.number_of_nodes(), "nodes")
+        print(G.number_of_edges(), "edges")
+
+        return svg_data1
+
+    def save_data_to_file(self, mode, dot_data, svg_data):
+        if isinstance(mode, str):
+            if os.path.isdir(mode):
+                dot_fpath = os.path.join(mode, "tmp_dot.dot")
+                svg_fpath = os.path.join(mode, "tmp_svg.txt")
+            else:
+                dot_fpath = mode.split(".")[0] + ".dot"
+                svg_fpath = mode.split(".")[0] + ".svg"
         else:
-            key_counts[skey] = 1
-    # sort them by number of their appearance
-    ranked_keys = [k for k, cnt in sorted(key_counts.items(), key=lambda x: x[1], reverse=True)]
-    # color them using the mpl colors in descending order
-    edge_color_map = dict(zip(ranked_keys, mpl_colors))
+            svg_fpath = "./tmp.svg"
+            dot_fpath = "./tmp_dot.txt"
 
-    return edge_color_map
+        with open(dot_fpath, "wt", encoding="utf-8") as txtfile:
+            txtfile.write(dot_data)
+        print("File written:", os.path.abspath(dot_fpath))
 
-
-def svg_replace(raw_svg_data: str, REPLACEMENTS: dict) -> str:
-    assert isinstance(raw_svg_data, str)
-
-    # prevent some latex stuff to interfere with the handing of the `REPLACEMENTS`
-    # TODO: handle the whole problem more elegantly
-
-    latex_replacements = [(r"\dot{x}", "__LATEX1__")]
-    for orig, subs in latex_replacements:
-        raw_svg_data = raw_svg_data.replace(orig, subs)
-
-    svg_data1: str = raw_svg_data.format(**REPLACEMENTS)
-
-    for orig, subs in latex_replacements:
-        svg_data1 = svg_data1.replace(subs, orig)
-
-    return svg_data1
+        with open(svg_fpath, "wt", encoding="utf-8") as txtfile:
+            txtfile.write(svg_data)
+        print("File written:", os.path.abspath(svg_fpath))
 
 
-def visualize_entity(uri: str, url_template="", write_tmp_files: Union[bool, str] = False, radius=1, graph=None) -> str:
-    """
+    def render_label(self, label: str):
+        res = label
+        for old, new in NEWLINE_REPLACEMENTS:
+            res = res.replace(old, new)
 
-    :param uri:             entity uri (like "irk:/my/module#I0123")
-    :param url_template:    url template for creation of a-tags (html links) for the labels
-    :param write_tmp_files: flag whether to write debug output. if true, writes to cwd, if pathlike, writes to that dir or file.
+        return res.format(**REPLACEMENTS)
 
-    :return:                svg_data as string
-    """
-    if graph is None:
-        big_G = create_complete_graph(url_template)
-    else:
-        big_G = graph
-    try:
-        node_of_interest = big_G._items[uri]
-    except KeyError:
-        msg = f"URI '{uri}' could not be found in the complete knowledge graph"
-        raise p.InvalidURIError(msg)
+    def create_interactive_graph(self, url_template="", output_dir="graph_site", radius=1, skip_auto_items=True, skip_existing=False):
+        os.makedirs(output_dir, exist_ok=True)
 
-    small_G = nx.ego_graph(big_G, node_of_interest, radius, undirected=True) #! perfomance of this operation sucks
-    raw_dot_data = render_graph_to_dot(small_G, node_of_interest)
+        G = self.create_complete_graph(url_template, skip_auto_items=skip_auto_items)
+        print(f"Visualizing {len(G.nodes)} nodes and {len(G.edges)} edges.")
 
-    dot_data0 = raw_dot_data
-    for old, new in NEWLINE_REPLACEMENTS:
-        dot_data0 = dot_data0.replace(old, new)
+        for node in G.nodes:
+            node_name = node.short_key
+            # if skip_auto_items and "Ia" in node_name:
+            #     continue
+            print(node_name)
+            dot_path = os.path.join(output_dir, f"{node_name}.dot")
+            if skip_existing and os.path.isfile(dot_path):
+                continue
+            self.visualize_entity(node.uri, write_tmp_files=dot_path, radius=radius, graph=G)
 
-    # work around curly braces in first and last line
-    dot_lines = dot_data0.split("\n")
-    inner_dot_code = "\n".join(dot_lines[1:-1])
+            # create map
+            cmapx_path = os.path.join(output_dir, f"{node_name}.map")
+            res2 = subprocess.run(["dot", "-Tcmapx", "-o", cmapx_path, dot_path])
+            assert res2.returncode == 0, f"{res2.stderr}"
 
-    dot_data = "\n".join((dot_lines[0], inner_dot_code, dot_lines[-1]))
+            with open(cmapx_path, "r", encoding="utf-8") as f:
+                image_map = f.read()
 
-    # noinspection PyUnresolvedReferences,PyProtectedMember
-    raw_svg_data = nxv._graphviz.run(dot_data, algorithm="dot", format="svg", graphviz_bin=None)
-    raw_svg_data = raw_svg_data.decode("utf8")
-    svg_data1 = svg_replace(raw_svg_data, REPLACEMENTS)
-    # for interactive graph, we need hyperlinks. these mess up the svg with <> inside attributes -> remove
-    svg_data1 = re.sub(r'(?<=xlink:title=").+?(?=" target=)', "", svg_data1)
-    if write_tmp_files:
-        save_data_to_file(write_tmp_files, dot_data, svg_data1)
+            # clean image map of replacement strings
+            image_map = re.sub(r'(?<=href=")(.+?)(\.html".+?title=")(.+?)(?=")', lambda mo: mo.group(1)+mo.group(2)+mo.group(1), image_map)
+            # correct tooltip for relations.
+            # Expl.: tooltip attribute in style does not work since map area poly will not be rendered. so we use URL
+            # to trick graphviz to render rect and then replace href and title to create tooltip
+            image_map = re.sub(r'(?<=shape="rect")(.+?)(href=")(.+?)(" title=")(.+?)(?=")', lambda mo: mo.group(1)+mo.group(2)+""+mo.group(4)+mo.group(3), image_map)
 
-    return svg_data1
+            desc = p.ds.items[node.uri].R2.value if p.ds.items[node.uri].R2 else ""
+            context = {
+                "title": node_name + " " + p.ds.items[node.uri].R1.value,
+                "img_source": f"{node_name}.svg",
+                "map": image_map,
+                "desc": desc
+            }
+            res = render_template("node_template.html", context)
+            with open(os.path.join(output_dir, f"{node_name}.html"), "w", encoding="utf-8") as f:
+                f.write(res)
 
-
-def get_label(entity):
-    res = entity.get("label", "undefined label")
-    if isinstance(res, Literal):
-        return res.value
-    return res
-
-
-def visualize_all_entities(url_template="", write_tmp_files: Union[bool, str] = False, skip_auto_items: bool = False) -> str:
-    """visualize all entities loaded in datastore. output svg graph.
-
-    Args:
-        url_template (str, optional): _description_. Defaults to "".
-        write_tmp_files (Union[bool, str], optional): if true, files will be saved to cwd. if pathlike, files will \
-            be saved to that folder or file. Defaults to False.
-
-    Returns:
-        str: svg graph
-    """
-    G = create_complete_graph(url_template, skip_auto_items=skip_auto_items)
-
-    print(f"Visualizing {len(G.nodes)} nodes and {len(G.edges)} edges.")
-    ecm = build_edge_color_map(G)
-
-    def edge_style(u, v, d):
-        e = d["edge"]
-        clr = ecm.get(e.short_key, "grey")
-        return {
-            "style": "solid",
-            "arrowhead": "vee",
-            "arrowsize": 0.3,
-            "color": clr,
-            "label": d["edge"].short_key,
-            "URL":  d["edge"].R1.value, # this will be replaced later
-        }
-
-    # styling and rendering
-    style = nxv.Style(
-        graph={
-            # layout algorithm
-            "layout": "sfdp",
-            "overlap": "prism",
-            # "overlap_shrink": -10,
-            "overlap_scaling": -10,
-            # global settings
-            "outputorder": "edgesfirst",  # such that nodes are above the edges
-        },
-        node=lambda u, d: {
-            # shape and size of node symbol
-            "shape": "circle",
-            "fixedsize": True,
-            "width": 0.3,
-            "height": 0.3,
-            "style": "filled",
-            "color": "black" if "Ia" not in u.short_key else "gray",
-            "fillcolor": "#bbbbbbdd" if "Ia" not in u.short_key else "#dddddddd",
-            # shape size and content of node label
-            "fontsize": 8,
-            "fontcolor": "#555555" if "Ia" not in u.short_key else "#777777",
-            # "label": None,
-            # "label": u.short_key,
-            "label": f"{u.short_key}\n{u.label.value}",
-            "URL": f"{u.short_key}.html",   # for interactive map
-            "target": "_self",              # for interactive map
-
-        },
-        edge=edge_style,
-    )
-
-    # noinspection PyTypeChecker
-    raw_dot_data: str = nxv.render(G, style, format="raw")
-    # optional: preprocessing
-    dot_data = raw_dot_data
-    # noinspection PyUnresolvedReferences,PyProtectedMember
-    raw_svg_data = nxv._graphviz.run(dot_data, algorithm="sfdp", format="svg", graphviz_bin=None)
-    svg_data1 = svg_replace(raw_svg_data.decode("utf8"), REPLACEMENTS)
-
-    if write_tmp_files:
-        save_data_to_file(write_tmp_files, dot_data, svg_data1)
-
-    print(G.number_of_nodes(), "nodes")
-    print(G.number_of_edges(), "edges")
-
-    return svg_data1
-
-def save_data_to_file(mode, dot_data, svg_data):
-    if isinstance(mode, str):
-        if os.path.isdir(mode):
-            dot_fpath = os.path.join(mode, "tmp_dot.dot")
-            svg_fpath = os.path.join(mode, "tmp_svg.txt")
-        else:
-            dot_fpath = mode.split(".")[0] + ".dot"
-            svg_fpath = mode.split(".")[0] + ".svg"
-    else:
-        svg_fpath = "./tmp.svg"
-        dot_fpath = "./tmp_dot.txt"
-
-    with open(dot_fpath, "wt", encoding="utf-8") as txtfile:
-        txtfile.write(dot_data)
-    print("File written:", os.path.abspath(dot_fpath))
-
-    with open(svg_fpath, "wt", encoding="utf-8") as txtfile:
-        txtfile.write(svg_data)
-    print("File written:", os.path.abspath(svg_fpath))
-
-
-def render_label(label: str):
-    res = label
-    for old, new in NEWLINE_REPLACEMENTS:
-        res = res.replace(old, new)
-
-    return res.format(**REPLACEMENTS)
-
-def create_interactive_graph(url_template="", output_dir="graph_site", radius=1, skip_auto_items=True, skip_existing=False):
-    os.makedirs(output_dir, exist_ok=True)
-
-    G = create_complete_graph(url_template, skip_auto_items=skip_auto_items)
-    print(f"Visualizing {len(G.nodes)} nodes and {len(G.edges)} edges.")
-
-    for node in G.nodes:
-        node_name = node.short_key
-        # if skip_auto_items and "Ia" in node_name:
-        #     continue
-        print(node_name)
-        dot_path = os.path.join(output_dir, f"{node_name}.dot")
-        if skip_existing and os.path.isfile(dot_path):
-            continue
-        visualize_entity(node.uri, write_tmp_files=dot_path, radius=radius, graph=G)
+        # Index page
+        dot_path = os.path.join(output_dir, "index.dot")
+        self.visualize_all_entities(write_tmp_files=dot_path, skip_auto_items=skip_auto_items)
 
         # create map
-        cmapx_path = os.path.join(output_dir, f"{node_name}.map")
+        cmapx_path = os.path.join(output_dir, f"index.map")
         res2 = subprocess.run(["dot", "-Tcmapx", "-o", cmapx_path, dot_path])
         assert res2.returncode == 0, f"{res2.stderr}"
 
         with open(cmapx_path, "r", encoding="utf-8") as f:
             image_map = f.read()
 
-        # clean image map of replacement strings
-        image_map = re.sub(r'(?<=href=")(.+?)(\.html".+?title=")(.+?)(?=")', lambda mo: mo.group(1)+mo.group(2)+mo.group(1), image_map)
-        # correct tooltip for relations.
-        # Expl.: tooltip attribute in style does not work since map area poly will not be rendered. so we use URL
-        # to trick graphviz to render rect and then replace href and title to create tooltip
-        image_map = re.sub(r'(?<=shape="rect")(.+?)(href=")(.+?)(" title=")(.+?)(?=")', lambda mo: mo.group(1)+mo.group(2)+""+mo.group(4)+mo.group(3), image_map)
+        image_map = re.sub(
+            r'(?<=shape="rect")(.+?)(href=")(.+?)(" title=")(.+?)(?=")',
+            lambda mo: mo.group(1)+mo.group(2)+""+mo.group(4)+mo.group(3),
+            image_map
+        )
 
-        desc = p.ds.items[node.uri].R2.value if p.ds.items[node.uri].R2 else ""
         context = {
-            "title": node_name + " " + p.ds.items[node.uri].R1.value,
-            "img_source": f"{node_name}.svg",
+            "title": "Overview",
+            "img_source": f"index.svg",
             "map": image_map,
-            "desc": desc
+            "desc": f"Total number of Nodes: {len(G.nodes)}"
         }
         res = render_template("node_template.html", context)
-        with open(os.path.join(output_dir, f"{node_name}.html"), "w", encoding="utf-8") as f:
+        with open(os.path.join(output_dir, f"index.html"), "w", encoding="utf-8") as f:
             f.write(res)
 
-    # Index page
-    dot_path = os.path.join(output_dir, "index.dot")
-    visualize_all_entities(write_tmp_files=dot_path, skip_auto_items=skip_auto_items)
-
-    # create map
-    cmapx_path = os.path.join(output_dir, f"index.map")
-    res2 = subprocess.run(["dot", "-Tcmapx", "-o", cmapx_path, dot_path])
-    assert res2.returncode == 0, f"{res2.stderr}"
-
-    with open(cmapx_path, "r", encoding="utf-8") as f:
-        image_map = f.read()
-
-    image_map = re.sub(
-        r'(?<=shape="rect")(.+?)(href=")(.+?)(" title=")(.+?)(?=")',
-        lambda mo: mo.group(1)+mo.group(2)+""+mo.group(4)+mo.group(3),
-        image_map
-    )
-
-    context = {
-        "title": "Overview",
-        "img_source": f"index.svg",
-        "map": image_map,
-        "desc": f"Total number of Nodes: {len(G.nodes)}"
-    }
-    res = render_template("node_template.html", context)
-    with open(os.path.join(output_dir, f"index.html"), "w", encoding="utf-8") as f:
-        f.write(res)
+vm = VisualizationManager()
+# todo refactor this
+visualize_entity = vm.visualize_entity
+visualize_all_entities = vm.visualize_all_entities
+create_nx_graph_from_entity = vm.create_nx_graph_from_entity
 
 if __name__ == "__main__":
     # visualize_all_entities(write_tmp_files=True, skip_auto_items=True)
-    create_interactive_graph()
+    vm.create_interactive_graph()
     # nl = p.irkloader.load_mod_from_path("output.py", "nl", "nonlinear")
     # visualize_entity("irk:/builtins#I31", write_tmp_files=True, radius=1)

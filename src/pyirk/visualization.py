@@ -351,10 +351,10 @@ class CustomizedDiGraph(nx.DiGraph):
 class VisualizationManager():
 
     def __init__(self):
-        self.REL_BLACKLIST = (
+        self.REL_BLACKLIST = [
             "irk:/builtins#R1",
             "irk:/builtins#R2",
-        )
+        ]
 
 
 

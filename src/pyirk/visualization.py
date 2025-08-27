@@ -707,7 +707,9 @@ class VisualizationManager():
 
     def add_legend(self, svg_data, relation_color_map, list_of_relations):
         # Parse SVG to get dimensions
-        import re
+
+        # TODO-AIDER: currently the legend is placed in the upper right corner of the given SVG. I want the resulting SVG to have a greater width,
+        # so that the legend is placed in the upper right corner of the new SVG without overlaying the area of the previous SVG.
 
         # Extract SVG viewBox or width/height to determine positioning
         viewbox_match = re.search(r'viewBox="([^"]*)"', svg_data)

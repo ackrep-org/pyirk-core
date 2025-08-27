@@ -707,29 +707,38 @@ class VisualizationManager():
 
     def add_legend(self, svg_data, relation_color_map, list_of_relations):
         # Parse SVG to get dimensions
-
-        # TODO-AIDER: currently the legend is placed in the upper right corner of the given SVG. I want the resulting SVG to have a greater width,
-        # so that the legend is placed in the upper right corner of the new SVG without overlaying the area of the previous SVG.
-
         # Extract SVG viewBox or width/height to determine positioning
         viewbox_match = re.search(r'viewBox="([^"]*)"', svg_data)
         if viewbox_match:
             viewbox = viewbox_match.group(1).split()
-            svg_width = float(viewbox[2])
+            original_svg_width = float(viewbox[2])
             svg_height = float(viewbox[3])
         else:
             # Fallback to width/height attributes
             width_match = re.search(r'width="([^"]*)"', svg_data)
             height_match = re.search(r'height="([^"]*)"', svg_data)
             if width_match and height_match:
-                svg_width = float(width_match.group(1).replace('pt', ''))
+                original_svg_width = float(width_match.group(1).replace('pt', ''))
                 svg_height = float(height_match.group(1).replace('pt', ''))
             else:
                 # Default fallback
-                svg_width, svg_height = 800, 600
+                original_svg_width, svg_height = 800, 600
 
-        # Legend positioning (upper right corner)
-        legend_x = svg_width - 200
+        # Calculate new SVG width to accommodate legend
+        legend_width = 220  # Space needed for legend
+        new_svg_width = original_svg_width + legend_width
+
+        # Update SVG dimensions
+        if viewbox_match:
+            # Update viewBox
+            new_viewbox = f"0 0 {new_svg_width} {svg_height}"
+            svg_data = re.sub(r'viewBox="[^"]*"', f'viewBox="{new_viewbox}"', svg_data)
+        else:
+            # Update width attribute
+            svg_data = re.sub(r'width="[^"]*"', f'width="{new_svg_width}pt"', svg_data)
+
+        # Legend positioning (upper right corner of expanded SVG)
+        legend_x = original_svg_width + 20  # Start legend after original content with some padding
         legend_y = 20
         line_height = 45
         line_width = 180

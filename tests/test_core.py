@@ -1089,6 +1089,7 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
     @unittest.skipIf(os.environ.get("CI"), "Skipping visualization test on CI to prevent graphviz-dependency")
     def test_c16__visualize_entity_with_radius(self):
         WRITE_TMP_FILES = True
+        # see `tmp.svg` to manually inspect the result
 
         # res1 = visualization.visualize_entity(p.u("I21__mathematical_relation"), write_tmp_files=WRITE_TMP_FILES)
         # res2 = visualization.visualize_entity(p.u("I21__mathematical_relation"), write_tmp_files=WRITE_TMP_FILES, radius=2)

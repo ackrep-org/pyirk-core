@@ -679,13 +679,21 @@ class VisualizationManager():
         raw_svg_data = nxv._graphviz.run(dot_data, algorithm="dot", format="svg", graphviz_bin=None)
         raw_svg_data = raw_svg_data.decode("utf8")
         svg_data1 = self.svg_replace(raw_svg_data, REPLACEMENTS)
-        # todo @carsten legend for relations
+        # todo legend for relations
+
+        # TODO-AIDER: fill the following two variables with appropriate values:
+        list_of_relations = []  # list of all relation object which are used in the rendered graph
+        relation_color_map = {}  # mapping from relation key (like R3) to color
+
         # for interactive graph, we need hyperlinks. these mess up the svg with <> inside attributes -> remove
         svg_data1 = re.sub(r'(?<=xlink:title=").+?(?=" target=)', "", svg_data1)
         if write_tmp_files:
             self.save_data_to_file(write_tmp_files, dot_data, svg_data1)
 
         return svg_data1
+
+    def add_legend(self, svg_data):
+        return svg_data
 
 
     def get_label(self, entity):

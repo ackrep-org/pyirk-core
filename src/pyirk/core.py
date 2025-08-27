@@ -129,6 +129,10 @@ class Entity(abc.ABC):
 
             return res
 
+    @property
+    def name_labled_key(self):
+        return f"{self.short_key}__{self.R1.replace(' ', '_')}"
+
     def idoc(self, adhoc_label: str):
         """
         idoc means "inline doc". This function allows to attach a label to entities when using them in code

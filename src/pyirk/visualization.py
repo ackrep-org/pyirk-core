@@ -682,30 +682,32 @@ class VisualizationManager():
         # todo legend for relations
 
         # Extract relations from the rendered graph and build color mapping
-        list_of_relations = []
-        relation_color_map = {}
-        
+
         # Get unique relations from the graph edges
         unique_relations = {}
         for u, v, edge_data in small_G.edges(data=True):
             if 'edge' in edge_data:
                 relation = edge_data['edge']
                 unique_relations[relation.short_key] = relation
-        
+
         list_of_relations = list(unique_relations.values())
-        
-        # Build color map using the same logic as build_edge_color_map
-        ecm = self.build_edge_color_map(small_G)
-        relation_color_map = ecm
+        relation_color_map = self.build_edge_color_map(small_G)
 
         # for interactive graph, we need hyperlinks. these mess up the svg with <> inside attributes -> remove
         svg_data1 = re.sub(r'(?<=xlink:title=").+?(?=" target=)', "", svg_data1)
+
+        if 1:
+            # add legend
+            svg_data1 = self.add_legend(svg_data1, relation_color_map, list_of_relations)
+
         if write_tmp_files:
             self.save_data_to_file(write_tmp_files, dot_data, svg_data1)
 
         return svg_data1
 
-    def add_legend(self, svg_data):
+    def add_legend(self, svg_data, relation_color_map, list_of_relations):
+        # TODO-AIDER: create a legend in the upper right corner of the svg: for every relation, add a horizontal line in the respective color.
+        # above this line write `relation_object.name_labeled_key`
         return svg_data
 
 

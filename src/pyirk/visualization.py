@@ -708,7 +708,7 @@ class VisualizationManager():
     def add_legend(self, svg_data, relation_color_map, list_of_relations):
         # Parse SVG to get dimensions
         import re
-        
+
         # Extract SVG viewBox or width/height to determine positioning
         viewbox_match = re.search(r'viewBox="([^"]*)"', svg_data)
         if viewbox_match:
@@ -725,38 +725,38 @@ class VisualizationManager():
             else:
                 # Default fallback
                 svg_width, svg_height = 800, 600
-        
+
         # Legend positioning (upper right corner)
         legend_x = svg_width - 200
         legend_y = 20
-        line_height = 25
-        line_width = 30
-        
+        line_height = 45
+        line_width = 180
+
         # Build legend SVG elements
         legend_elements = []
-        
+
         for i, relation in enumerate(list_of_relations):
             y_pos = legend_y + i * line_height
             color = relation_color_map.get(relation.short_key, "black")
-            
+
             # Get the name_labeled_key (assuming it's the R1 label)
             label = getattr(relation, 'name_labeled_key', relation.short_key)
-            if hasattr(relation, 'R1') and relation.R1:
-                if hasattr(relation.R1, 'value'):
-                    label = relation.R1.value
-                else:
-                    label = str(relation.R1)
-            
+            # if hasattr(relation, 'R1') and relation.R1:
+            #     if hasattr(relation.R1, 'value'):
+            #         label = relation.R1.value
+            #     else:
+            #         label = str(relation.R1)
+
             # Add text label above the line
-            legend_elements.append(f'<text x="{legend_x}" y="{y_pos}" font-family="Arial" font-size="12" fill="black">{label}</text>')
-            
+            legend_elements.append(f'<text x="{legend_x}" y="{y_pos}" font-family="Arial" font-size="20" fill="black">{label}</text>')
+
             # Add colored horizontal line
             legend_elements.append(f'<line x1="{legend_x}" y1="{y_pos + 5}" x2="{legend_x + line_width}" y2="{y_pos + 5}" stroke="{color}" stroke-width="2"/>')
-        
+
         # Insert legend into SVG before closing </svg> tag
         legend_svg = '\n'.join(legend_elements)
         svg_data = svg_data.replace('</svg>', f'{legend_svg}\n</svg>')
-        
+
         return svg_data
 
 

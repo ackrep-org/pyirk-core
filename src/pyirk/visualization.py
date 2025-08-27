@@ -681,9 +681,22 @@ class VisualizationManager():
         svg_data1 = self.svg_replace(raw_svg_data, REPLACEMENTS)
         # todo legend for relations
 
-        # TODO-AIDER: fill the following two variables with appropriate values:
-        list_of_relations = []  # list of all relation object which are used in the rendered graph
-        relation_color_map = {}  # mapping from relation key (like R3) to color
+        # Extract relations from the rendered graph and build color mapping
+        list_of_relations = []
+        relation_color_map = {}
+        
+        # Get unique relations from the graph edges
+        unique_relations = {}
+        for u, v, edge_data in small_G.edges(data=True):
+            if 'edge' in edge_data:
+                relation = edge_data['edge']
+                unique_relations[relation.short_key] = relation
+        
+        list_of_relations = list(unique_relations.values())
+        
+        # Build color map using the same logic as build_edge_color_map
+        ecm = self.build_edge_color_map(small_G)
+        relation_color_map = ecm
 
         # for interactive graph, we need hyperlinks. these mess up the svg with <> inside attributes -> remove
         svg_data1 = re.sub(r'(?<=xlink:title=").+?(?=" target=)', "", svg_data1)

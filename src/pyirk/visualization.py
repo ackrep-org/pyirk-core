@@ -535,8 +535,10 @@ class VisualizationManager():
             else:
                 return "black"
 
-        if len(G.edges) < 4:
+        if len(G.edges) <= 2:
             layout = "dot"
+        elif len(G.edges) <= 8:
+            layout = "fdp"
         else:
             layout = "sfdp"
 
@@ -579,6 +581,7 @@ class VisualizationManager():
                 "arrowType": "normal",
                 "penwidth": 2,
                 "minlen": 1,  # note: this only applies to dot layout
+                "len": 1,  # note: this only applies to dot fdp layout
                 # label
                 "label": d["edge"].short_key,
                 "fontsize": FONTSIZE,

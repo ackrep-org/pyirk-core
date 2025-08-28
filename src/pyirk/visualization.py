@@ -578,7 +578,7 @@ class VisualizationManager():
                 "style": "solid",
                 "arrowType": "normal",
                 "penwidth": 2,
-                "minlen": 1,
+                "minlen": 1,  # note: this only applies to dot layout
                 # label
                 "label": d["edge"].short_key,
                 "fontsize": FONTSIZE,
@@ -924,6 +924,7 @@ class VisualizationManager():
             context = {
                 "title": node_name + " " + item.R1.value,
                 "img_source": f"{node_name}.svg",
+                "img_legend_source": f"{node_name}_legend.svg",
                 "map": image_map,
                 "desc": desc
             }

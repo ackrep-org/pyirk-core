@@ -89,11 +89,11 @@ class AbstractGraphObject(ABC):
 
         # TODO: replace this by prefixed short_key
         if self.short_key.startswith("Ia"):
-            unformatted_repr_str = f"{self.short_key}"
+            unformatted_label = ""
         else:
-            unformatted_repr_str = f"{self.short_key}[{self.label}]"
+            unformatted_label = self.label
         self.label_segment_keys, self.label_segments = create_label_segments(
-            unformatted_repr_str, maxlen=self.maxlen
+            self.short_key, unformatted_label, maxlen=self.maxlen
         )
         self.label_segment_items = zip(self.label_segment_keys, self.label_segments)
 
@@ -262,7 +262,7 @@ def create_key_with_length(basic_key_gen: callable, length: int) -> str:
     return key_str
 
 
-def create_label_segments(label: str, maxlen: int) -> Tuple[List[str], List[str]]:
+def create_label_segments(short_key: str, label: str, maxlen: int) -> Tuple[List[str], List[str]]:
     """
     Split label string into segments and assign a key to each. Return items.
 
@@ -279,10 +279,17 @@ def create_label_segments(label: str, maxlen: int) -> Tuple[List[str], List[str]
 
     # TODO: this should be ensured during data loading
     assert "\n" not in label
-    assert label == label.strip()
+
+    # label could be a `Literal` instance
+    assert str(label) == label.strip()
 
     res_keys = []
     res_segments = []
+
+    # always handle short_key:
+    key = create_key_with_length(label_segment_key_gen, len(short_key))
+    res_segments.append(short_key)
+    res_keys.append(key)
 
     if len(label) < maxlen:
         # short labels stay unchanged
@@ -292,14 +299,7 @@ def create_label_segments(label: str, maxlen: int) -> Tuple[List[str], List[str]
         return res_keys, res_segments
 
     # for now only create the segments, and create the keys later at once
-    idx1 = label.find("[")
-    if idx1 >= 0:
-        res_segments.append(label[:idx1])
-        rest = label[idx1:]
-    else:
-        # nothing was found
-        rest = label
-
+    rest = label
     split_chars = (" ", "-", "_", ":")
 
     while len(rest) > maxlen:
@@ -328,7 +328,8 @@ def create_label_segments(label: str, maxlen: int) -> Tuple[List[str], List[str]
 
     res_segments.append(rest)
 
-    for segment in res_segments:
+    # remember: the first segment is the short_key
+    for segment in res_segments[1:]:
         key = create_key_with_length(label_segment_key_gen, len(segment))
         res_keys.append(key)
 

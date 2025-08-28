@@ -715,11 +715,16 @@ class VisualizationManager():
         return svg_data1
 
     def add_legend(self, svg_data, relation_color_map, list_of_relations):
-        # Parse SVG to get dimensions
-        # Extract SVG viewBox or width/height to determine positioning
-        # currently the legend is added into the `svg-data`-graphics (and its width is changed).
+        # TODO-AIDER: currently the legend is added into the `svg-data`-graphics (and its width is changed).
         # I want a different behavior: The legend should be returned as a separate svg file.
         # The original svg_data should not be changed.
+
+
+
+
+
+        # Parse SVG to get dimensions
+        # Extract SVG viewBox or width/height to determine positioning
 
         viewbox_match = re.search(r'viewBox="([^"]*)"', svg_data)
         if viewbox_match:

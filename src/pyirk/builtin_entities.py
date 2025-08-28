@@ -304,11 +304,24 @@ R32.set_relation(
     R2,
     "specifies that for each subject there is at most one 'R30-Statement' for a given language tag (e.g. en)",
 )
+R18 = create_builtin_relation(
+    "R18", R1="has usage hint", R2="specifies a hint (str) on how this relation should be used"
+)
 
 R22 = create_builtin_relation(
     key_str="R22",
     R1="is functional",
     R2="specifies that the subject entity is a relation which has at most one value per item",
+)
+
+I40 = create_builtin_item(
+    key_str="I40",
+    R1__has_label="general relation",
+    R2__has_description="proxy item for a relation",
+    R18__has_usage_hint=(
+        "This item (which is in no direct relation to I1__general_item) can be used as a placeholder for any relation. "
+        "In other words: this can be interpreted as the common superclass for all relations"
+    ),
 )
 
 R22["is functional"].set_relation(R22["is functional"], True)
@@ -318,6 +331,16 @@ R32["is functional for each language"].set_relation(R22["is functional"], True)
 
 R3 = create_builtin_relation("R3", R1="is subclass of", R22__is_functional=True)
 R4 = create_builtin_relation("R4", R1="is instance of", R22__is_functional=True)
+
+# update type of relations before automatic was possible (in create_relation())
+R32.set_relation(R4["is instance of"], I40["general relation"])
+R1.set_relation(R4["is instance of"], I40["general relation"])
+R2.set_relation(R4["is instance of"], I40["general relation"])
+R18.set_relation(R4["is instance of"], I40["general relation"])
+R22.set_relation(R4["is instance of"], I40["general relation"])
+R3.set_relation(R4["is instance of"], I40["general relation"])
+R4.set_relation(R4["is instance of"], I40["general relation"])
+
 R5 = create_builtin_relation("R5", R1="is part of")
 R6 = create_builtin_relation("R6", R1="has defining mathematical relation", R22__is_functional=True)
 R7 = create_builtin_relation("R7", R1="has arity", R22__is_functional=True)
@@ -351,9 +374,7 @@ R61 = create_builtin_relation(
 R17 = create_builtin_relation(
     key_str="R17", R1="is subproperty of", R2="specifies that arg1 (subj) is a subproperty of arg2 (obj)"
 )
-R18 = create_builtin_relation(
-    "R18", R1="has usage hint", R2="specifies a hint (str) on how this relation should be used"
-)
+
 
 R16.set_relation(
     R18["has usage hint"], "this relation should be used on concrete instances, not on generic types"
@@ -370,15 +391,6 @@ R19 = create_builtin_relation(
 )
 
 
-I40 = create_builtin_item(
-    key_str="I40",
-    R1__has_label="general relation",
-    R2__has_description="proxy item for a relation",
-    R18__has_usage_hint=(
-        "This item (which is in no direct relation to I1__general_item) can be used as a placeholder for any relation. "
-        "In other words: this can be interpreted as the common superclass for all relations"
-    ),
-)
 
 
 R68 = create_builtin_relation(

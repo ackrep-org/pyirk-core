@@ -445,6 +445,7 @@ class VisualizationManager():
         url_template="",
         limit: Optional[int] = None,
         skip_auto_items: bool = False,
+        vis_relations: bool = False,
     ) -> nx.DiGraph:
         """
         :param url_template:    template to insert links based on uris
@@ -466,8 +467,14 @@ class VisualizationManager():
                 # this is the case for some statements which are subject of a qualifier relation
                 assert item_uri in p.ds.statement_uri_map
                 continue
-            if not isinstance(item, p.Item) or item.short_key in ["I000"]:
+            if item.short_key in ["I000"]:
                 continue
+            if vis_relations:
+                if (not isinstance(item, p.Item) and not isinstance(item, p.Relation)):
+                    continue # what possible type could item have to get here?
+            else:
+                if not isinstance(item, p.Item):
+                    continue
             if skip_auto_items and "Ia" in item.short_key:
                 continue
             # count only items
@@ -643,7 +650,7 @@ class VisualizationManager():
         return svg_data1
 
 
-    def visualize_entity(self, uri: str, url_template="", write_tmp_files: Union[bool, str] = False, radius=1, graph=None) -> str:
+    def visualize_entity(self, uri: str, url_template="", write_tmp_files: Union[bool, str] = False, radius=1, graph=None, vis_relations=False) -> str:
         """
 
         :param uri:             entity uri (like "irk:/my/module#I0123")
@@ -653,7 +660,7 @@ class VisualizationManager():
         :return:                svg_data as string
         """
         if graph is None:
-            big_G = self.create_complete_graph(url_template)
+            big_G = self.create_complete_graph(url_template, vis_relations=vis_relations)
         else:
             big_G = graph
         try:
@@ -696,7 +703,7 @@ class VisualizationManager():
         # for interactive graph, we need hyperlinks. these mess up the svg with <> inside attributes -> remove
         svg_data1 = re.sub(r'(?<=xlink:title=").+?(?=" target=)', "", svg_data1)
 
-        if 1:
+        if 0:
             # add legend
             svg_data1 = self.add_legend(svg_data1, relation_color_map, list_of_relations)
 
@@ -778,7 +785,7 @@ class VisualizationManager():
         return res
 
 
-    def visualize_all_entities(self, url_template="", write_tmp_files: Union[bool, str] = False, skip_auto_items: bool = False) -> str:
+    def visualize_all_entities(self, url_template="", write_tmp_files: Union[bool, str] = False, skip_auto_items: bool = False, vis_relations=False) -> str:
         """visualize all entities loaded in datastore. output svg graph.
 
         Args:
@@ -789,7 +796,7 @@ class VisualizationManager():
         Returns:
             str: svg graph
         """
-        G = self.create_complete_graph(url_template, skip_auto_items=skip_auto_items)
+        G = self.create_complete_graph(url_template, skip_auto_items=skip_auto_items, vis_relations=vis_relations)
 
         print(f"Visualizing {len(G.nodes)} nodes and {len(G.edges)} edges.")
         ecm = self.build_edge_color_map(G)
@@ -883,10 +890,10 @@ class VisualizationManager():
 
         return res.format(**REPLACEMENTS)
 
-    def create_interactive_graph(self, url_template="", output_dir="graph_site", radius=1, skip_auto_items=True, skip_existing=False):
+    def create_interactive_graph(self, url_template="", output_dir="graph_site", radius=1, skip_auto_items=True, skip_existing=False, vis_relations=False):
         os.makedirs(output_dir, exist_ok=True)
 
-        G = self.create_complete_graph(url_template, skip_auto_items=skip_auto_items)
+        G = self.create_complete_graph(url_template, skip_auto_items=skip_auto_items, vis_relations=vis_relations)
         print(f"Visualizing {len(G.nodes)} nodes and {len(G.edges)} edges.")
 
         for node in G.nodes:
@@ -914,9 +921,17 @@ class VisualizationManager():
             # to trick graphviz to render rect and then replace href and title to create tooltip
             image_map = re.sub(r'(?<=shape="rect")(.+?)(href=")(.+?)(" title=")(.+?)(?=")', lambda mo: mo.group(1)+mo.group(2)+""+mo.group(4)+mo.group(3), image_map)
 
-            desc = p.ds.items[node.uri].R2.value if p.ds.items[node.uri].R2 else ""
+            if node_name.startswith("I"):
+                item = p.ds.items[node.uri]
+            else:
+                item = p.ds.relations[node.uri]
+
+            desc = item.R2.value if item.R2 else ""
+            # add usage hint, sometimes more expressive than R2
+            desc += "<br>" + " ".join(item.R18) if item.R18 else ""
+
             context = {
-                "title": node_name + " " + p.ds.items[node.uri].R1.value,
+                "title": node_name + " " + item.R1.value,
                 "img_source": f"{node_name}.svg",
                 "map": image_map,
                 "desc": desc
@@ -927,7 +942,7 @@ class VisualizationManager():
 
         # Index page
         dot_path = os.path.join(output_dir, "index.dot")
-        self.visualize_all_entities(write_tmp_files=dot_path, skip_auto_items=skip_auto_items)
+        self.visualize_all_entities(write_tmp_files=dot_path, skip_auto_items=skip_auto_items, vis_relations=vis_relations)
 
         # create map
         cmapx_path = os.path.join(output_dir, f"index.map")
@@ -961,6 +976,6 @@ create_nx_graph_from_entity = vm.create_nx_graph_from_entity
 
 if __name__ == "__main__":
     # visualize_all_entities(write_tmp_files=True, skip_auto_items=True)
-    vm.create_interactive_graph()
+    vm.create_interactive_graph(vis_relations=True)
     # nl = p.irkloader.load_mod_from_path("output.py", "nl", "nonlinear")
     # visualize_entity("irk:/builtins#I31", write_tmp_files=True, radius=1)

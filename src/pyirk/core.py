@@ -2209,6 +2209,12 @@ def create_relation(key_str: str = "", **kwargs) -> Relation:
     }
 
     new_kwargs, lang_related_kwargs = process_kwargs_for_entity_creation(rel_key, kwargs)
+    if "R4" not in new_kwargs.keys() and "irk:/builtins#R4" in ds.relations.keys():
+        try:
+            new_kwargs["R4"] = ds.items["irk:/builtins#I40"]
+        except KeyError:
+            pass
+
 
     rel = Relation(mod_uri, rel_key, **new_kwargs)
     if rel.uri in ds.relations:

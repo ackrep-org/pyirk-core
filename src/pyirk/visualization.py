@@ -727,10 +727,17 @@ class VisualizationManager():
             label = getattr(relation, 'name_labeled_key', relation.short_key)
 
             # Add text label above the line
-            legend_elements.append(f'<text x="{legend_x}" y="{y_pos}" font-family="Arial" font-size="20" fill="black">{label}</text>')
+            legend_elements.append(
+                f'<text x="{legend_x}" y="{y_pos}" font-family="Times,serif" font-size="20" '
+                f'fill="black">{label}</text>'
+            )
 
+            dy = 10
             # Add colored horizontal line
-            legend_elements.append(f'<line x1="{legend_x}" y1="{y_pos + 5}" x2="{legend_x + line_width}" y2="{y_pos + 5}" stroke="{color}" stroke-width="2"/>')
+            legend_elements.append(
+                f'<line x1="{legend_x}" y1="{y_pos + dy}" x2="{legend_x + line_width}" '
+                f'y2="{y_pos + dy}" stroke="{color}" stroke-width="2"/>'
+            )
 
         # Create complete legend SVG
         legend_svg_content = '\n'.join(legend_elements)

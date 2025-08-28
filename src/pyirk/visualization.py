@@ -33,6 +33,7 @@ activate_ips_on_exception()
 from abc import ABC
 
 REPLACEMENTS = {}
+FONTSIZE = 16
 
 NEWLINE_REPLACEMENTS = [("__newline-center__", r"\n"), ("__newline-left__", r"\l")]
 
@@ -559,7 +560,7 @@ class VisualizationManager():
                 "fillcolor": "#eeeeeedd" if "Ia" not in u.short_key else "#dddddddd",
                 # Label
                 "label": u.get_dot_label(),
-                "fontsize": 20,
+                "fontsize": FONTSIZE,
                 "fontcolor": "grey" if u.short_key.startswith("Ia") else "black",
                 "URL": f"{u.short_key}.html",   # for interactive map
                 "target": "_self",              # for interactive map
@@ -573,7 +574,7 @@ class VisualizationManager():
                 "penwidth": 2,
                 # label
                 "label": d["edge"].short_key,
-                "fontsize": 20,
+                "fontsize": FONTSIZE,
                 "color": ecm.get(d["edge"].short_key, "black"),
                 "URL":  d["edge"].R1.value, # this will be replaced later
             },
@@ -729,7 +730,7 @@ class VisualizationManager():
 
             # Add text label above the line
             legend_elements.append(
-                f'<text x="{legend_x}" y="{y_pos}" font-family="Times,serif" font-size="20" '
+                f'<text x="{legend_x}" y="{y_pos}" font-family="Times,serif" font-size="{FONTSIZE}" '
                 f'fill="black">{label}</text>'
             )
 

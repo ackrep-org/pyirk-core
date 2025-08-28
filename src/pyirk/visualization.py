@@ -703,18 +703,24 @@ class VisualizationManager():
         # for interactive graph, we need hyperlinks. these mess up the svg with <> inside attributes -> remove
         svg_data1 = re.sub(r'(?<=xlink:title=").+?(?=" target=)', "", svg_data1)
 
-        if 0:
+        if 1:
             # add legend
-            svg_data1 = self.add_legend(svg_data1, relation_color_map, list_of_relations)
+            svg_data_legend = self.add_legend(svg_data1, relation_color_map, list_of_relations)
+        else:
+            svg_data_legend = None
 
         if write_tmp_files:
-            self.save_data_to_file(write_tmp_files, dot_data, svg_data1)
+            self.save_data_to_file(write_tmp_files, dot_data, svg_data1, svg_data_legend)
 
         return svg_data1
 
     def add_legend(self, svg_data, relation_color_map, list_of_relations):
         # Parse SVG to get dimensions
         # Extract SVG viewBox or width/height to determine positioning
+        # currently the legend is added into the `svg-data`-graphics (and its width is changed).
+        # I want a different behavior: The legend should be returned as a separate svg file.
+        # The original svg_data should not be changed.
+
         viewbox_match = re.search(r'viewBox="([^"]*)"', svg_data)
         if viewbox_match:
             viewbox = viewbox_match.group(1).split()
@@ -862,7 +868,7 @@ class VisualizationManager():
 
         return svg_data1
 
-    def save_data_to_file(self, mode, dot_data, svg_data):
+    def save_data_to_file(self, mode, dot_data, svg_data, svg_data_legend=None):
         if isinstance(mode, str):
             if os.path.isdir(mode):
                 dot_fpath = os.path.join(mode, "tmp_dot.dot")
@@ -881,6 +887,12 @@ class VisualizationManager():
         with open(svg_fpath, "wt", encoding="utf-8") as txtfile:
             txtfile.write(svg_data)
         print("File written:", os.path.abspath(svg_fpath))
+
+        if svg_data_legend:
+            svg_legend_fpath = svg_fpath.replace(".svg", "_legend.svg")
+            with open(svg_legend_fpath, "wt", encoding="utf-8") as txtfile:
+                txtfile.write(svg_data_legend)
+            print("File written:", os.path.abspath(svg_legend_fpath))
 
 
     def render_label(self, label: str):

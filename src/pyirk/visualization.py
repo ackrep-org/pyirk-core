@@ -356,8 +356,6 @@ class VisualizationManager():
             "irk:/builtins#R2",
         ]
 
-
-
     def create_nx_graph_from_entity(self, uri, url_template="") -> nx.DiGraph:
         """
 
@@ -425,7 +423,6 @@ class VisualizationManager():
 
         return G
 
-
     def get_color_for_item(self, item: p.Item) -> str:
         # TODO: add color by base_uri
         if "Ia" in item.short_key:
@@ -434,11 +431,9 @@ class VisualizationManager():
         #     return "red"
         return "black"
 
-
     def get_color_for_stm(self, stm: p.Statement) -> str:
         # TODO: unfuck this
         return mpl_colors[(int(stm.rsk[1:]) - 1) % len(mpl_colors)]
-
 
     def create_complete_graph(
         self,
@@ -521,7 +516,6 @@ class VisualizationManager():
         G._items = added_items_nodes
         G._statements = added_statements
         return G
-
 
     def render_graph_to_dot(self, G: nx.DiGraph, center_node=None) -> str:
         """
@@ -614,7 +608,6 @@ class VisualizationManager():
 
         return dot_data
 
-
     def build_edge_color_map(self, G):
         # count the appearances of all edges
         key_counts = {}
@@ -630,7 +623,6 @@ class VisualizationManager():
         edge_color_map = dict(zip(ranked_keys, mpl_colors))
 
         return edge_color_map
-
 
     def svg_replace(self, raw_svg_data: str, REPLACEMENTS: dict) -> str:
         assert isinstance(raw_svg_data, str)
@@ -648,7 +640,6 @@ class VisualizationManager():
             svg_data1 = svg_data1.replace(subs, orig)
 
         return svg_data1
-
 
     def visualize_entity(self, uri: str, url_template="", write_tmp_files: Union[bool, str] = False, radius=1, graph=None, vis_relations=False) -> str:
         """
@@ -715,51 +706,15 @@ class VisualizationManager():
         return svg_data1
 
     def add_legend(self, svg_data, relation_color_map, list_of_relations):
-        # TODO-AIDER: currently the legend is added into the `svg-data`-graphics (and its width is changed).
-        # I want a different behavior: The legend should be returned as a separate svg file.
-        # The original svg_data should not be changed.
-
-
-
-
-
-        # Parse SVG to get dimensions
-        # Extract SVG viewBox or width/height to determine positioning
-
-        viewbox_match = re.search(r'viewBox="([^"]*)"', svg_data)
-        if viewbox_match:
-            viewbox = viewbox_match.group(1).split()
-            original_svg_width = float(viewbox[2])
-            svg_height = float(viewbox[3])
-        else:
-            # Fallback to width/height attributes
-            width_match = re.search(r'width="([^"]*)"', svg_data)
-            height_match = re.search(r'height="([^"]*)"', svg_data)
-            if width_match and height_match:
-                original_svg_width = float(width_match.group(1).replace('pt', ''))
-                svg_height = float(height_match.group(1).replace('pt', ''))
-            else:
-                # Default fallback
-                original_svg_width, svg_height = 800, 600
-
-        # Calculate new SVG width to accommodate legend
-        legend_width = 220  # Space needed for legend
-        new_svg_width = original_svg_width + legend_width
-
-        # Update SVG dimensions
-        if viewbox_match:
-            # Update viewBox
-            new_viewbox = f"0 0 {new_svg_width} {svg_height}"
-            svg_data = re.sub(r'viewBox="[^"]*"', f'viewBox="{new_viewbox}"', svg_data)
-        else:
-            # Update width attribute
-            svg_data = re.sub(r'width="[^"]*"', f'width="{new_svg_width}pt"', svg_data)
-
-        # Legend positioning (upper right corner of expanded SVG)
-        legend_x = original_svg_width + 20  # Start legend after original content with some padding
-        legend_y = 20
+        # Create a separate SVG for the legend
+        legend_width = 220
         line_height = 45
         line_width = 180
+        legend_x = 20
+        legend_y = 20
+
+        # Calculate legend height based on number of relations
+        legend_height = max(100, len(list_of_relations) * line_height + 40)
 
         # Build legend SVG elements
         legend_elements = []
@@ -770,11 +725,6 @@ class VisualizationManager():
 
             # Get the name_labeled_key (assuming it's the R1 label)
             label = getattr(relation, 'name_labeled_key', relation.short_key)
-            # if hasattr(relation, 'R1') and relation.R1:
-            #     if hasattr(relation.R1, 'value'):
-            #         label = relation.R1.value
-            #     else:
-            #         label = str(relation.R1)
 
             # Add text label above the line
             legend_elements.append(f'<text x="{legend_x}" y="{y_pos}" font-family="Arial" font-size="20" fill="black">{label}</text>')
@@ -782,19 +732,20 @@ class VisualizationManager():
             # Add colored horizontal line
             legend_elements.append(f'<line x1="{legend_x}" y1="{y_pos + 5}" x2="{legend_x + line_width}" y2="{y_pos + 5}" stroke="{color}" stroke-width="2"/>')
 
-        # Insert legend into SVG before closing </svg> tag
-        legend_svg = '\n'.join(legend_elements)
-        svg_data = svg_data.replace('</svg>', f'{legend_svg}\n</svg>')
+        # Create complete legend SVG
+        legend_svg_content = '\n'.join(legend_elements)
+        legend_svg = f"""<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg width="{legend_width}pt" height="{legend_height}pt" viewBox="0 0 {legend_width} {legend_height}" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+{legend_svg_content}
+</svg>"""
 
-        return svg_data
-
+        return legend_svg
 
     def get_label(self, entity):
         res = entity.get("label", "undefined label")
         if isinstance(res, Literal):
             return res.value
         return res
-
 
     def visualize_all_entities(self, url_template="", write_tmp_files: Union[bool, str] = False, skip_auto_items: bool = False, vis_relations=False) -> str:
         """visualize all entities loaded in datastore. output svg graph.
@@ -898,7 +849,6 @@ class VisualizationManager():
             with open(svg_legend_fpath, "wt", encoding="utf-8") as txtfile:
                 txtfile.write(svg_data_legend)
             print("File written:", os.path.abspath(svg_legend_fpath))
-
 
     def render_label(self, label: str):
         res = label

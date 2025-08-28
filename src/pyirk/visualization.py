@@ -535,10 +535,16 @@ class VisualizationManager():
             else:
                 return "black"
 
+        if len(G.edges) < 4:
+            layout = "dot"
+        else:
+            layout = "sfdp"
+
+
         # for styling see https://nxv.readthedocs.io/en/latest/reference.html#styling
         style = nxv.Style(
             graph={
-                "layout": "sfdp",
+                "layout": layout,
                 "overlap": "prism",
                 # "overlap_shrink": True,
                 "dim": 2,
@@ -572,6 +578,7 @@ class VisualizationManager():
                 "style": "solid",
                 "arrowType": "normal",
                 "penwidth": 2,
+                "minlen": 1,
                 # label
                 "label": d["edge"].short_key,
                 "fontsize": FONTSIZE,
@@ -772,6 +779,13 @@ class VisualizationManager():
         print(f"Visualizing {len(G.nodes)} nodes and {len(G.edges)} edges.")
         ecm = self.build_edge_color_map(G)
 
+        if len(G.edges) < 4:
+            # for small graphs we use dot layout (for sfdp it is not possible to specify minlen)
+            layout = "dot"
+        else:
+            layout = "sfdp"
+
+
         def edge_style(u, v, d):
             e = d["edge"]
             clr = ecm.get(e.short_key, "grey")
@@ -779,6 +793,7 @@ class VisualizationManager():
                 "style": "solid",
                 "arrowhead": "vee",
                 "arrowsize": 0.3,
+                "minlen": 1,
                 "color": clr,
                 "label": d["edge"].short_key,
                 "URL":  d["edge"].R1.value, # this will be replaced later
@@ -788,7 +803,7 @@ class VisualizationManager():
         style = nxv.Style(
             graph={
                 # layout algorithm
-                "layout": "sfdp",
+                "layout": layout,
                 "overlap": "prism",
                 # "overlap_shrink": -10,
                 "overlap_scaling": -10,

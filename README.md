@@ -3,6 +3,9 @@
 [![Documentation Status](https://readthedocs.org/projects/pyirk-core/badge/?version=latest)](https://pyirk-core.readthedocs.io/en/latest)
 ![ci](https://github.com/ackrep-org/pyirk-core/actions/workflows/python-app.yml/badge.svg)
 
+# Installation
+- ``pip install pyrik``
+- for some visualization features, install [graphviz](https://graphviz.org/download/)
 
 # Overview: pyirk
 

@@ -724,9 +724,16 @@ class VisualizationManager():
         line_width = 180
         legend_x = 20
         legend_y = 20
-
+        margin = 10
         # Calculate legend height based on number of relations
         legend_height = max(100, len(list_of_relations) * line_height + 40)
+
+        # some legends are too long, add dynamic svg width
+        # heuristic: "R8__has_domain_of_argument" =^= 200px (first version cutoff)  --> len=26 =^= 200px
+        # todo maybe there is a more accurate formula?
+        num_char_to_width = 200 / 26
+        max_len_text = max([len(getattr(r, 'name_labeled_key', r.short_key)) for r in list_of_relations])
+        legend_width = max(220, max_len_text * num_char_to_width + legend_x + margin)
 
         # Build legend SVG elements
         legend_elements = []

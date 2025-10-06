@@ -4,6 +4,7 @@ import os
 from os.path import join as pjoin
 from typing import Dict, List, Union
 from packaging import version
+import re
 
 import rdflib
 
@@ -1020,28 +1021,28 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
         label = node.get_dot_label(render=True)
 
         # note: for the sake of brevity we skip quotes inside of [...] for the node-labels in visualization
-        self.assertEqual(label, "I0123\\n[1234567890]")
+        self.assertEqual(label, "I0123\\n1234567890")
 
         with p.uri_context(uri=TEST_BASE_URI):
             e1 = p.create_item(key_str="I0124", R1="1234567890abcdefgh")
         node = visualization.create_node(e1, url_template="")
         node.perform_html_wrapping(use_html=False)
         label = node.get_dot_label(render=True)
-        self.assertEqual(label, "I0124\\n[1234567890a\\nbcdefgh]")
+        self.assertEqual(label, "I0124\\n1234567890ab\\ncdefgh")
 
         with p.uri_context(uri=TEST_BASE_URI):
             e1 = p.create_item(key_str="I0125", R1="12 34567 890abcdefgh")
         node = visualization.create_node(e1, url_template="")
         node.perform_html_wrapping(use_html=False)
         label = node.get_dot_label(render=True)
-        self.assertEqual(label, "I0125\\n[12 34567\\n890abcdefgh]")
+        self.assertEqual(label, "I0125\\n12 34567\\n890abcdefgh")
 
         with p.uri_context(uri=TEST_BASE_URI):
             e1 = p.create_item(key_str="I0126", R1="12 34567-890abcdefgh")
         node = visualization.create_node(e1, url_template="")
         node.perform_html_wrapping(use_html=False)
         label = node.get_dot_label(render=True)
-        self.assertEqual(label, "I0126\\n[12 34567-\\n890abcdefgh]")
+        self.assertEqual(label, "I0126\\n12 34567-\\n890abcdefgh")
 
     @unittest.skipIf(os.environ.get("CI"), "Skipping visualization test on CI to prevent graphviz-dependency")
     def test_c14__visualization1(self):
@@ -1084,7 +1085,7 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
             self.assertIn(s3, res)
         else:
             # now relation labels are just ordinary text
-            self.assertIn('font-size="20.00">R35</text>', res)
+            self.assertEqual(len(re.findall(r'font-size="\d\d\.00">R35</text>', res)), 1)
 
     @unittest.skipIf(os.environ.get("CI"), "Skipping visualization test on CI to prevent graphviz-dependency")
     def test_c16__visualize_entity_with_radius(self):
@@ -1683,6 +1684,25 @@ class Test_02_ruleengine(HousekeeperMixin, unittest.TestCase):
 
         with p.uri_context(uri=TEST_BASE_URI):
             _ = p.ruleengine.apply_all_semantic_rules()
+
+    def test_c07__ruleengine06(self):
+        # general transitivity rule
+        mod1 = p.irkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct", modname=TEST_MOD_NAME)
+        self.assertEqual(
+            len(mod1.I9642["local exponential stability"].get_relations("R17__is_subproperty_of")), 1
+        )
+        import time
+        t1 = time.time()
+        ra = p.ruleengine.RuleApplicator(p.I66, mod_context_uri=TEST_BASE_URI)
+        print("took", round(time.time()-t1, 1), "seconds")
+        t1 = time.time()
+        res = ra.apply()
+        print("took", round(time.time()-t1, 1), "seconds")
+
+        # ensure that after rule application there new relations
+        self.assertEqual(
+            len(mod1.I9642["local exponential stability"].get_relations("R17__is_subproperty_of")), 3
+        )
 
 
 class Test_03_Multilinguality(HousekeeperMixin, unittest.TestCase):

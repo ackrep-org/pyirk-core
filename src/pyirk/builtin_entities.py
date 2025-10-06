@@ -2531,6 +2531,8 @@ R60 = create_builtin_relation(
     R22__is_functional=True,
 )
 
+R17["is subproperty of"].set_relation(R60["is transitive"], True)
+
 # R61["does not have property"] already defined above
 
 R62 = create_builtin_relation(
@@ -3062,6 +3064,30 @@ R86 = create_builtin_relation(
         for modeling. Example: orthogonal vectors 'Orthogonality' 'is modeled by' 'is orthogonal to'",
     R68__is_inverse_of=R85["is modeled by"]
 )
+
+I66 = create_builtin_item(
+    key_str="I66",
+    R1__has_label="propagation transitive relations",
+    R2__has_description=(
+        "create new relations resulting from transtitive relations"
+    ),
+    R4__is_instance_of=I41["semantic rule"],
+)
+
+with I66.scope("setting") as cm:
+    cm.new_var(i1=instance_of(I1["general item"]))
+    cm.new_var(i2=instance_of(I1["general item"]))
+    cm.new_var(i3=instance_of(I1["general item"]))
+    cm.new_rel_var("r1")
+
+with I66.scope("premise") as cm:
+    cm.new_rel(cm.r1, R60["is transitive"], True)
+    cm.new_rel(cm.i1, cm.r1, cm.i2)
+    cm.new_rel(cm.i2, cm.r1, cm.i3)
+
+with I66.scope("assertion") as cm:
+    # the qualifier prevents the creation of duplicated
+    cm.new_rel(cm.i1, cm.r1, cm.i3, qualifiers=[qf_prevent_duplicate_stms])
 
 # next keys: I66, R87
 

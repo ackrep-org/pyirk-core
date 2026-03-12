@@ -337,7 +337,7 @@ def create_label_segments(short_key: str, label: str, maxlen: int) -> Tuple[List
     return res_keys, res_segments
 
 
-class CustomizedDiGraph(nx.DiGraph):
+class CustomizedDiGraph(nx.MultiDiGraph):
     def add_node(self, node: AbstractGraphObject, **kwargs):
         # set defaults
         # note: adding an id keyword here does not influence the id in the svg
@@ -575,7 +575,7 @@ class VisualizationManager():
 
             },
             # u,v: nodes, d: edge attribute dict
-            edge=lambda u, v, d: {
+            edge=lambda u, v, i, d: {
                 # arrow
                 "style": "solid",
                 "arrowType": "normal",
@@ -597,7 +597,7 @@ class VisualizationManager():
             u, d = args
             if edge_first:
                 # get edge that starts or ends at this node
-                for (_u, _v), _d in G.edges.items():
+                for (_u, _v, _i), _d in G.edges.items():
                     if _u == u:
                         return float(_d["edge"].short_key[1:])
                     elif _v == u:
@@ -607,7 +607,7 @@ class VisualizationManager():
             return u.short_key
 
         def edge_sort_func(args: Tuple[AbstractGraphObject, AbstractGraphObject, dict]):
-            u, v, d = args
+            u, v, i, d = args
             if edge_first:
                 return int(d["edge"].short_key[1:])
             else:
@@ -796,7 +796,7 @@ class VisualizationManager():
             layout = "sfdp"
 
 
-        def edge_style(u, v, d):
+        def edge_style(u, v, i, d):
             e = d["edge"]
             clr = ecm.get(e.short_key, "grey")
             return {

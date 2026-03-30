@@ -452,6 +452,7 @@ class VisualizationManager():
         limit: Optional[int] = None,
         skip_auto_items: bool = False,
         vis_relations: bool = False,
+        item_blacklist: list = [],
     ) -> nx.DiGraph:
         """
         :param url_template:    template to insert links based on uris
@@ -483,6 +484,10 @@ class VisualizationManager():
                     continue
             if skip_auto_items and "Ia" in item.short_key:
                 continue
+            if item_blacklist and item.R1.value in item_blacklist or item.short_key in item_blacklist:
+                continue
+            # if item.R1.value.startswith("snippet"):
+            #     continue
             # count only items
             i += 1
             if limit and i == limit:
@@ -662,7 +667,15 @@ class VisualizationManager():
 
         return svg_data1
 
-    def visualize_entity(self, uri: str, url_template="", write_tmp_files: Union[bool, str] = False, radius=1, graph=None, vis_relations=False) -> str:
+    def visualize_entity(
+            self,
+            uri: str,
+            url_template="",
+            write_tmp_files: Union[bool, str] = False,
+            radius=1, graph=None, vis_relations=False,
+            skip_auto_items=True,
+            item_blacklist=[]
+        ) -> str:
         """
 
         :param uri:             entity uri (like "irk:/my/module#I0123")
@@ -672,7 +685,7 @@ class VisualizationManager():
         :return:                svg_data as string
         """
         if graph is None:
-            big_G = self.create_complete_graph(url_template, vis_relations=vis_relations)
+            big_G = self.create_complete_graph(url_template, skip_auto_items=skip_auto_items, vis_relations=vis_relations, item_blacklist=item_blacklist)
         else:
             big_G = graph
         try:
@@ -698,7 +711,6 @@ class VisualizationManager():
         raw_svg_data = nxv._graphviz.run(dot_data, algorithm="dot", format="svg", graphviz_bin=None)
         raw_svg_data = raw_svg_data.decode("utf8")
         svg_data1 = self.svg_replace(raw_svg_data, REPLACEMENTS)
-        # todo legend for relations
 
         # Extract relations from the rendered graph and build color mapping
 
@@ -987,6 +999,8 @@ create_nx_graph_from_entity = vm.create_nx_graph_from_entity
 
 if __name__ == "__main__":
     # visualize_all_entities(write_tmp_files=True, skip_auto_items=True)
-    vm.create_interactive_graph(vis_relations=True)
-    # nl = p.irkloader.load_mod_from_path("output.py", "nl", "nonlinear")
-    # visualize_entity("irk:/builtins#I31", write_tmp_files=True, radius=1)
+    # vm.create_interactive_graph(vis_relations=True)
+    nl = p.irkloader.load_mod_from_path("output.py", "nl", "nonlinear")
+    # ma = p.irkloader.load_mod_from_uri(r"irk:/ocse/0.2/math", prefix="ma")
+
+    visualize_entity("irk:/auto_import_formalized_statements_nl#I44506", write_tmp_files=True, radius=1, skip_auto_items=True, item_blacklist=["snippet"])

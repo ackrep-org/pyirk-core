@@ -1071,7 +1071,7 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
 
         # get the characteristic polynomial of A
         auto_item: p.Item = mod1.ma.I3749["Cayley-Hamilton theorem"].P
-        res = visualization.visualize_entity(auto_item.uri, write_tmp_files=WRITE_TMP_FILES)
+        res = visualization.visualize_entity(auto_item.uri, write_tmp_files=WRITE_TMP_FILES, skip_auto_items=False)
 
         old_behavior = False
         if old_behavior:

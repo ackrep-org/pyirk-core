@@ -2276,3 +2276,12 @@ class Test_07_import_export(HousekeeperMixin, unittest.TestCase):
         self.assertFalse(rdflib.URIRef(zp.person11.uri) in g.objects())
 
         os.unlink(fpath)
+
+    def test_b05__embedding_export(self):
+        res = p.export_entities(to_file=False)
+        self.assertIn(
+            "'irk:/builtins#I23 equation' 'irk:/builtins#R3 is subclass of' 'irk:/builtins#I21 mathematical relation'",
+            res["irk:/builtins#I23"],
+        )
+        res = p.export_entities(to_file=False, uris=False)
+        self.assertIn("'equation' 'is subclass of' 'mathematical relation'", res["irk:/builtins#I23"])

@@ -2860,7 +2860,7 @@ def is_subproperty(item: Item, parent_property: Item):
         return is_subproperty(item.R17, parent_property)
 
 
-def export_entities(path: str, to_file=True, uris=True):
+def export_entities(path: str = None, to_file=True, uris=True):
     d = {}
     entities = [ds.items, ds.relations]
     for entity in entities:
@@ -2896,6 +2896,7 @@ def export_entities(path: str, to_file=True, uris=True):
             d[k] = out
     # todo do we want uris in these statements?
     if to_file:
+        assert os.path.isfile(path), "invalid filepath"
         with open(path, "w") as f:
             yaml.dump(d, f)
     return d

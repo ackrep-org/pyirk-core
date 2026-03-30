@@ -19,6 +19,7 @@ from typing import Any, Dict, Union, List, Iterable, Optional
 from rdflib import Literal
 import pydantic
 import re
+import json, yaml
 
 from pyirk import auxiliary as aux
 from pyirk import settings
@@ -2867,3 +2868,43 @@ def is_subproperty(item: Item, parent_property: Item):
         return True
     else:
         return is_subproperty(item.R17, parent_property)
+
+def export_entities(path: str, to_file=True, uris=True):
+    d = {}
+    entities = [ds.items, ds.relations]
+    for entity in entities:
+        for k, v in entity.items():
+            if "a" in k.split("#")[-1]:
+                continue
+            out = v.R1.value + "\n"
+            for items in [v.get_relations().items(), v.get_inv_relations().items()]:
+                for rk, stmts in items:
+                    if rk.endswith("#R1"):
+                        continue
+                    for stm in stmts:
+                        for e in stm.relation_tuple:
+                            # add uri
+                            if uris and hasattr(e, "uri"):
+                                out += f"'{e.uri} "
+                            else:
+                                out += "'"
+                            # normal items
+                            if hasattr(e, "R1"):
+                                out += f"{e.R1.value}'"
+                            # Literals
+                            elif hasattr(e, "value"):
+                                out += f"{e.value}'"
+                            # other literals
+                            elif isinstance(e, str):
+                                out += f"{e}'"
+                            # numbers and others
+                            else:
+                                out += f"{str(e)}'"
+                            out += " "
+                        out += "\n"
+            d[k] = out
+    # todo do we want uris in these statements?
+    if to_file:
+        with open(path, "w") as f:
+            yaml.dump(d, f)
+    return d

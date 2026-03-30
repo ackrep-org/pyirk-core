@@ -107,6 +107,13 @@ def create_parser():
     )
 
     parser.add_argument(
+        "-ee",
+        "--export-entities",
+        help="generate text file with all entities for embedding",
+        metavar="reportconf-path",
+    )
+
+    parser.add_argument(
         "-vis",
         "--visualize",
         help="create a visualization for the entity",
@@ -239,6 +246,8 @@ def main():
         core.script_main(args.inputfile)
     elif reportconf_path := args.generate_report:
         reportgenerator.generate_report(reportconf_path)
+    elif export_path := args.export_entities:
+        core.export_entities(export_path)
     elif key := args.visualize:
         if key == "__all__":
             visualization.visualize_all_entities(write_tmp_files=True)

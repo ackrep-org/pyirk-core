@@ -1,6 +1,5 @@
 import pyirk as p
 
-
 # using "foo" and "bar" here to indicate that these strings are abitrary
 foo_mod = p.irkloader.load_mod_from_path("./tmod3.py", prefix="bar")
 

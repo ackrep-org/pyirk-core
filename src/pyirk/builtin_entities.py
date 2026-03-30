@@ -23,7 +23,6 @@ from .settings import BUILTINS_URI
 # it is OK to access ds here in the builtin module, but this import should not be copied to other knowledge modules
 from . import core
 
-
 __URI__ = BUILTINS_URI
 keymanager = core.KeyManager()
 core.register_mod(__URI__, keymanager)
@@ -347,9 +346,7 @@ R7 = create_builtin_relation("R7", R1="has arity", R22__is_functional=True)
 R8 = create_builtin_relation("R8", R1="has domain of argument 1")
 R9 = create_builtin_relation("R9", R1="has domain of argument 2")
 R10 = create_builtin_relation("R10", R1="has domain of argument 3")
-R11 = create_builtin_relation(
-    "R11", R1="has range of result", R2="specifies the range of the result (last arg)"
-)
+R11 = create_builtin_relation("R11", R1="has range of result", R2="specifies the range of the result (last arg)")
 R12 = create_builtin_relation("R12", R1="is defined by means of")
 R13 = create_builtin_relation("R13", R1="has canonical symbol", R22__is_functional=True)
 R14 = create_builtin_relation("R14", R1="is subset of")
@@ -376,12 +373,8 @@ R17 = create_builtin_relation(
 )
 
 
-R16.set_relation(
-    R18["has usage hint"], "this relation should be used on concrete instances, not on generic types"
-)
-R61.set_relation(
-    R18["has usage hint"], "this relation should be used on concrete instances, not on generic types"
-)
+R16.set_relation(R18["has usage hint"], "this relation should be used on concrete instances, not on generic types")
+R61.set_relation(R18["has usage hint"], "this relation should be used on concrete instances, not on generic types")
 
 R19 = create_builtin_relation(
     key_str="R19",
@@ -389,8 +382,6 @@ R19 = create_builtin_relation(
     R2="specifies that an entity has a special method (defined by executable code)",
     # R10__has_range_of_result=callable !!
 )
-
-
 
 
 R68 = create_builtin_relation(
@@ -460,8 +451,7 @@ I2 = create_builtin_item(
     "I2",
     R1="Metaclass",
     R2__has_description=(
-        "Parent class for other classes; subclasses of this are also metaclasses "
-        "instances are ordinary classes"
+        "Parent class for other classes; subclasses of this are also metaclasses " "instances are ordinary classes"
     ),
     R3__is_subclass_of=I1,
 )
@@ -762,9 +752,7 @@ class ScopingCM:
         return variable_object
 
     # TODO: this should be renamed to new_statement
-    def new_rel(
-        self, sub: Entity, pred: Relation, obj: Entity, qualifiers=None, overwrite=False
-    ) -> Statement:
+    def new_rel(self, sub: Entity, pred: Relation, obj: Entity, qualifiers=None, overwrite=False) -> Statement:
         """
         Create a new statement ("relation edge") in the current scope
 
@@ -876,9 +864,7 @@ class ScopingCM:
             if var_item.R35__is_applied_mapping_of:
                 new_var_item = self._copy_mapping(var_item)
             else:
-                new_var_item = self._new_var(
-                    variable_name=name, variable_object=instance_of(class_item, r1=name)
-                )
+                new_var_item = self._new_var(variable_name=name, variable_object=instance_of(class_item, r1=name))
 
             # to keep track of which old variables correspond to which new ones
             ds.scope_var_mappings[(self.scope.uri, var_item.uri)] = new_var_item
@@ -974,9 +960,7 @@ class ScopingCM:
         setting_scope = setting_scopes[0]
         defined_items = setting_scope.get_inv_relations("R20__has_defining_scope")
 
-        settings_vars_mapping = dict(
-            (stm.subject.R23__has_name_in_scope, stm.subject) for stm in defined_items
-        )
+        settings_vars_mapping = dict((stm.subject.R23__has_name_in_scope, stm.subject) for stm in defined_items)
         return settings_vars_mapping
 
 
@@ -1006,7 +990,9 @@ class AbstractMathRelatedScopeCM(ScopingCM):
         return eq
 
     # TODO: this makes  self.new_equation obsolete, doesn't it?
-    def new_math_relation(self, lhs: Item, rsgn: str, rhs: Item, add_relations: dict={}, force_key: str = None) -> Item:
+    def new_math_relation(
+        self, lhs: Item, rsgn: str, rhs: Item, add_relations: dict = {}, force_key: str = None
+    ) -> Item:
         """
         convenience method to create a math_relation-related StatementObject (aka "Statement")
 
@@ -1020,7 +1006,9 @@ class AbstractMathRelatedScopeCM(ScopingCM):
         # prevent accidental identity of both sides of the equation
         assert lhs is not rhs
 
-        rel = new_mathematical_relation(lhs, rsgn, rhs, scope=self.scope, add_relations=add_relations, force_key=force_key)
+        rel = new_mathematical_relation(
+            lhs, rsgn, rhs, scope=self.scope, add_relations=add_relations, force_key=force_key
+        )
         return rel
 
     def AND(self) -> "ConditionSubScopeCM":
@@ -1820,7 +1808,13 @@ def new_equation(lhs: Item, rhs: Item, doc=None, scope: Optional[Item] = None, f
 
 
 def new_mathematical_relation(
-    lhs: Item, rsgn: str, rhs: Item, doc=None, scope: Optional[Item] = None, add_relations: dict={}, force_key: str = None
+    lhs: Item,
+    rsgn: str,
+    rhs: Item,
+    doc=None,
+    scope: Optional[Item] = None,
+    add_relations: dict = {},
+    force_key: str = None,
 ) -> Item:
     rsgn_dict = {
         "==": I23["equation"],
@@ -1847,9 +1841,7 @@ def new_mathematical_relation(
     mr.set_relation(R26["has lhs"], lhs)
     mr.set_relation(R27["has rhs"], rhs)
 
-    re = lhs.set_relation(
-        R31["is in mathematical relation with"], rhs, scope=scope, qualifiers=[proxy_item(mr)]
-    )
+    re = lhs.set_relation(R31["is in mathematical relation with"], rhs, scope=scope, qualifiers=[proxy_item(mr)])
 
     return mr
 
@@ -1891,9 +1883,7 @@ def get_proxy_item(stm: Statement, strict=True) -> Item:
 
     if not relevant_qualifiers:
         if strict:
-            msg = (
-                f"No R34__has_proxy_item-qualifier found while searching for proxy-item-qualifier for {stm}."
-            )
+            msg = f"No R34__has_proxy_item-qualifier found while searching for proxy-item-qualifier for {stm}."
             raise core.aux.MissingQualifierError(msg)
         else:
             return None
@@ -2341,9 +2331,7 @@ R50 = create_builtin_relation(
 R51 = create_builtin_relation(
     key_str="R51",
     R1__has_label="instances are from",
-    R2__has_description=(
-        "specifies that every instance of the subject (class) is one of the elements of the object"
-    ),
+    R2__has_description=("specifies that every instance of the subject (class) is one of the elements of the object"),
     R8__has_domain_of_argument_1=I2["Metaclass"],
     R11__has_range_of_result=I33["tuple"],
     # TODO: model that this is (probably) equivalent to "owl:oneOf"
@@ -2588,9 +2576,7 @@ def get_relation_properties(rel_entity: Entity) -> List[str]:
 R63 = create_builtin_relation(
     key_str="R63",
     R1__has_label="has SPARQL source",
-    R2__has_description=(
-        "specifies that the subject (a scope) is featured by some unique SPARQL source code"
-    ),
+    R2__has_description=("specifies that the subject (a scope) is featured by some unique SPARQL source code"),
     R8__has_domain_of_argument_1=I16["scope"],
     R11__has_range_of_result=I52["string"],
     R22__is_functional=True,
@@ -2747,8 +2733,7 @@ R75 = create_builtin_relation(
     R8__has_domain_of_argument_1=I45["general entity"],
     R11__has_range_of_result=I48["constraint violation"],
     R18__has_usage_hint=(
-        "example usage: specify the argument order for I33__tuple instances with R39__has_element "
-        "and R40__has_index"
+        "example usage: specify the argument order for I33__tuple instances with R39__has_element " "and R40__has_index"
     ),
 )
 
@@ -2765,9 +2750,7 @@ I50 = create_builtin_item(
     key_str="I50",
     R1__has_label="stub",
     R2__has_description="instances of this class represent incompletely modelled items (like wikipedia stub-articles)",
-    R3__is_subclass_of=I2[
-        "Metaclass"
-    ],  # could be also R4 here but does not matter because stubs are very unspecific
+    R3__is_subclass_of=I2["Metaclass"],  # could be also R4 here but does not matter because stubs are very unspecific
     R18__has_usage_hint="This class can be used to preliminarily introduce items and refine them later",
 )
 
@@ -2777,9 +2760,7 @@ R77 = create_builtin_relation(
     R1__has_label="has alternative label",
     R2__has_description="specifies alternative labels for entities in the sense of 'also called ...'",
     R8__has_domain_of_argument_1=I45["general entity"],
-    R11__has_range_of_result=I19[
-        "language-specified string literal"
-    ],  # the labels should have a language specified
+    R11__has_range_of_result=I19["language-specified string literal"],  # the labels should have a language specified
     R18__has_usage_hint="allows multiple values per language (in contrast to R1__has_label)",
 )
 
@@ -3005,8 +2986,7 @@ I64 = create_builtin_item(
     key_str="I64",
     R1__has_label="introduction of generalized subclass statements",
     R2__has_description=(
-        "this rule creates R83__is_generalized_subclass_of statements parallel to "
-        "R3__is_subclass of statements"
+        "this rule creates R83__is_generalized_subclass_of statements parallel to " "R3__is_subclass of statements"
     ),
     R4__is_instance_of=I41["semantic rule"],
 )
@@ -3025,9 +3005,7 @@ with I64.scope("assertion") as cm:
 I65 = create_builtin_item(
     key_str="I65",
     R1__has_label="propagation of generalized subclass",
-    R2__has_description=(
-        "this rule creates R83__is_generalized_subclass_of statements for inheritance structures"
-    ),
+    R2__has_description=("this rule creates R83__is_generalized_subclass_of statements for inheritance structures"),
     R4__is_instance_of=I41["semantic rule"],
 )
 
@@ -3062,15 +3040,13 @@ R86 = create_builtin_relation(
     R11__has_range_of_result=I1["general item"],
     R18__has_usage_hint="this relation is intended to be set when the concept (subject) is meaningful, but inadequate \
         for modeling. Example: orthogonal vectors 'Orthogonality' 'is modeled by' 'is orthogonal to'",
-    R68__is_inverse_of=R85["is modeled by"]
+    R68__is_inverse_of=R85["is modeled by"],
 )
 
 I66 = create_builtin_item(
     key_str="I66",
     R1__has_label="propagation transitive relations",
-    R2__has_description=(
-        "create new relations resulting from transtitive relations"
-    ),
+    R2__has_description=("create new relations resulting from transtitive relations"),
     R4__is_instance_of=I41["semantic rule"],
 )
 

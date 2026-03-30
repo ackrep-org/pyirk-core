@@ -338,7 +338,6 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
             res = I1234(0)
         self.assertEqual(res.get_relations("R4", return_obj=True)[0], p.I32["evaluated mapping"])
 
-
     # TODO: trigger loading of unittest version of ocse via envvar
     def test_a02__load_settings(self):
         """
@@ -1063,9 +1062,7 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
     def test_c15__visualization2(self):
         # test rendering of dot
 
-        res = visualization.visualize_entity(
-            p.u("I21__mathematical_relation"), write_tmp_files=WRITE_TMP_FILES
-        )
+        res = visualization.visualize_entity(p.u("I21__mathematical_relation"), write_tmp_files=WRITE_TMP_FILES)
 
         mod1 = p.irkloader.load_mod_from_path(TEST_DATA_PATH2, TEST_MOD_NAME)
 
@@ -1094,7 +1091,9 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
 
         # res1 = visualization.visualize_entity(p.u("I21__mathematical_relation"), write_tmp_files=WRITE_TMP_FILES)
         # res2 = visualization.visualize_entity(p.u("I21__mathematical_relation"), write_tmp_files=WRITE_TMP_FILES, radius=2)
-        res3 = visualization.visualize_entity(p.u("I21__mathematical_relation"), write_tmp_files=WRITE_TMP_FILES, radius=3)
+        res3 = visualization.visualize_entity(
+            p.u("I21__mathematical_relation"), write_tmp_files=WRITE_TMP_FILES, radius=3
+        )
 
         # simple check that radius argument has an influence:
         # self.assertEqual(res1.count("<ellipse "), 5)
@@ -1313,9 +1312,7 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
             self.assertEqual(itm2.R57__is_placeholder, True)
 
             tup = p.new_tuple(itm1, itm2, itm3)
-            stms = p.set_multiple_statements(
-                tup.R39__has_element, p.R31["is in mathematical relation with"], x
-            )
+            stms = p.set_multiple_statements(tup.R39__has_element, p.R31["is in mathematical relation with"], x)
 
             self.assertEqual(len(stms), 3)
 
@@ -1383,9 +1380,7 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
         "irk:/ocse/0.2/zebra_base_data#R8592": [[5, "irk:/ocse/0.2/zebra_base_data#I4037"], [5,
         "irk:/ocse/0.2/zebra_base_data#I9848"], [5, "irk:/ocse/0.2/zebra_base_data#I3132"], [5,
         "irk:/ocse/0.2/zebra_base_data#I2552"], [5, "irk:/ocse/0.2/zebra_base_data#I5931"]]}
-        """.replace(
-            "\n", ""
-        )
+        """.replace("\n", "")
         data = json.loads(raw_data)
 
         self.assertFalse(p.check_type(data, Dict[str, int], strict=False))
@@ -1499,9 +1494,7 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
     def test_e02__is_true(self):
         ma = p.irkloader.load_mod_from_path(TEST_DATA_PATH_MA, prefix="ma")
         self.assertTrue(p.is_true(ma.I5359, p.R4, ma.I4895))
-        self.assertTrue(
-            p.is_true(ma.I5359["determinant"], p.R4["is instance of"], ma.I4895["mathematical operator"])
-        )
+        self.assertTrue(p.is_true(ma.I5359["determinant"], p.R4["is instance of"], ma.I4895["mathematical operator"]))
 
     def test_e03__update_relations(self):
         with p.uri_context(uri=TEST_BASE_URI, prefix="ut"):
@@ -1660,17 +1653,13 @@ class Test_02_ruleengine(HousekeeperMixin, unittest.TestCase):
         self.setup_data1()
 
         mod1 = p.irkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct", modname=TEST_MOD_NAME)
-        self.assertEqual(
-            len(mod1.I9642["local exponential stability"].get_relations("R17__is_subproperty_of")), 1
-        )
+        self.assertEqual(len(mod1.I9642["local exponential stability"].get_relations("R17__is_subproperty_of")), 1)
 
         ra = p.ruleengine.RuleApplicator(self.rule1, mod_context_uri=TEST_BASE_URI)
         res = ra.apply()
 
         # ensure that after rule application there new relations
-        self.assertEqual(
-            len(mod1.I9642["local exponential stability"].get_relations("R17__is_subproperty_of")), 3
-        )
+        self.assertEqual(len(mod1.I9642["local exponential stability"].get_relations("R17__is_subproperty_of")), 3)
 
     def test_c06__ruleengine05(self):
         self.setup_data1()
@@ -1688,21 +1677,18 @@ class Test_02_ruleengine(HousekeeperMixin, unittest.TestCase):
     def test_c07__ruleengine06(self):
         # general transitivity rule
         mod1 = p.irkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct", modname=TEST_MOD_NAME)
-        self.assertEqual(
-            len(mod1.I9642["local exponential stability"].get_relations("R17__is_subproperty_of")), 1
-        )
+        self.assertEqual(len(mod1.I9642["local exponential stability"].get_relations("R17__is_subproperty_of")), 1)
         import time
+
         t1 = time.time()
         ra = p.ruleengine.RuleApplicator(p.I66, mod_context_uri=TEST_BASE_URI)
-        print("took", round(time.time()-t1, 1), "seconds")
+        print("took", round(time.time() - t1, 1), "seconds")
         t1 = time.time()
         res = ra.apply()
-        print("took", round(time.time()-t1, 1), "seconds")
+        print("took", round(time.time() - t1, 1), "seconds")
 
         # ensure that after rule application there new relations
-        self.assertEqual(
-            len(mod1.I9642["local exponential stability"].get_relations("R17__is_subproperty_of")), 3
-        )
+        self.assertEqual(len(mod1.I9642["local exponential stability"].get_relations("R17__is_subproperty_of")), 3)
 
 
 class Test_03_Multilinguality(HousekeeperMixin, unittest.TestCase):
@@ -1960,9 +1946,7 @@ class Test_03_Multilinguality(HousekeeperMixin, unittest.TestCase):
             # I1000.R77__has_alternative_label = "more foo"
 
             I1000.R77__has_alternative_label = "more foo" @ p.en
-            self.assertEqual(
-                I1000.R77__has_alternative_label, ["bar" @ p.df, "baz" @ p.de, "more foo" @ p.df]
-            )
+            self.assertEqual(I1000.R77__has_alternative_label, ["bar" @ p.df, "baz" @ p.de, "more foo" @ p.df])
 
             I1000.set_multiple_relations("R77__has_alternative_label", ["foo-it" @ p.it, "bar-es" @ p.es])
             self.assertEqual(

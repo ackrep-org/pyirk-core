@@ -3,7 +3,6 @@
 
 import pyirk as p
 
-
 __URI__ = "irk:/ocse/0.2/agents"
 
 keymanager = p.KeyManager(keyseed=1239)

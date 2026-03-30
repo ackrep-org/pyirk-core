@@ -15,7 +15,6 @@ except ModuleNotFoundError:
 logger = logging.getLogger("pyirk")
 
 
-
 # load config.toml via platformdirs
 # this file can be created by pyirk --bootstrap-config
 

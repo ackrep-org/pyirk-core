@@ -187,9 +187,7 @@ class Entity(abc.ABC):
 
         try:
             # TODO: introduce prefixes here, which are mapped to uris
-            etyrel = self._get_relation_contents(
-                rel_uri=processed_key.uri, lang_indicator=processed_key.lang_indicator
-            )
+            etyrel = self._get_relation_contents(rel_uri=processed_key.uri, lang_indicator=processed_key.lang_indicator)
         except KeyError:
             msg = f"'{type(self)}' object has no attribute '{processed_key.short_key}'"
             raise AttributeError(msg)
@@ -201,9 +199,7 @@ class Entity(abc.ABC):
             super().__setattr__(attr_name, attr_value)
             return
         try:
-            processed_key = self.__process_attribute_name(
-                attr_name, exception_type=aux.UndefinedRelationError
-            )
+            processed_key = self.__process_attribute_name(attr_name, exception_type=aux.UndefinedRelationError)
         except aux.UndefinedRelationError:
             # attr_name could not be resolved to an defined relation
             super().__setattr__(attr_name, attr_value)
@@ -264,8 +260,8 @@ class Entity(abc.ABC):
                 for child in item.get_inv_relations("R3", return_subj=True):
                     child._method_prototypes.extend(parent_class._method_prototypes)
                     set_method_prototypes_recursively(child)
-            set_method_prototypes_recursively(self)
 
+            set_method_prototypes_recursively(self)
 
     def _perform_instantiation(self):
         """
@@ -480,9 +476,7 @@ class Entity(abc.ABC):
             obj = Literal(obj, lang=settings.DEFAULT_DATA_LANGUAGE)
 
         if isinstance(obj, (Entity, *allowed_literal_types)) or obj in allowed_literal_types:
-            return self._set_relation(
-                relation.uri, obj, scope=scope, qualifiers=qualifiers, proxyitem=proxyitem
-            )
+            return self._set_relation(relation.uri, obj, scope=scope, qualifiers=qualifiers, proxyitem=proxyitem)
         else:
             msg = f"Unsupported type ({type(obj)}) of {obj}, while setting relation {relation.short_key} of {self}"
             raise TypeError(msg)
@@ -686,9 +680,7 @@ class Entity(abc.ABC):
         assert isinstance(stm, Statement)
 
         if stm.qualifiers:
-            raise NotImplementedError(
-                "Processing old qualifiers is not yet implemented while overwriting statements"
-            )
+            raise NotImplementedError("Processing old qualifiers is not yet implemented while overwriting statements")
 
         stm.unlink()
         return self.set_relation(rel, new_obj, qualifiers=qualifiers)
@@ -711,9 +703,7 @@ class Entity(abc.ABC):
         return hash(self.uri)
 
     def update_relations(self, **kwargs):
-        assert (
-            self.updated == False
-        ), "This function can be called only once for each object, this is the second time."
+        assert self.updated == False, "This function can be called only once for each object, this is the second time."
 
         item_key = self.short_key
 
@@ -1084,6 +1074,7 @@ ds = DataStore()
 
 YAML_VALUE = Union[str, list, dict]
 
+
 def get_label_to_item_dict(known_duplicates: list = None):
     """
     Returns a map from labels to items.
@@ -1110,6 +1101,7 @@ def get_label_to_item_dict(known_duplicates: list = None):
         d[label] = item
     return d
 
+
 def get_label_to_relation_dict(known_duplicates: list = None):
     """
     Returns a map from labels to relations.
@@ -1135,6 +1127,7 @@ def get_label_to_relation_dict(known_duplicates: list = None):
                 print(aux.byellow(f"Warning: {msg}"))
         d[label] = rel
     return d
+
 
 @unique
 class EType(Enum):
@@ -1713,9 +1706,7 @@ class SingleKWArgProcessor:
         return new_kwarg_value
 
 
-def process_lang_related_kwargs_for_entity_creation(
-    entity: Entity, short_key: str, lang_related_kwargs: dict
-) -> None:
+def process_lang_related_kwargs_for_entity_creation(entity: Entity, short_key: str, lang_related_kwargs: dict) -> None:
     """
     This function processes language related keyword args for relations which have
     R32__is_functional_for_each_language=True
@@ -2216,7 +2207,6 @@ def create_relation(key_str: str = "", **kwargs) -> Relation:
         except KeyError:
             pass
 
-
     rel = Relation(mod_uri, rel_key, **new_kwargs)
     if rel.uri in ds.relations:
         msg = f"URI '{rel.uri}' has already been used."
@@ -2459,9 +2449,7 @@ def unload_mod(mod_uri: str, strict=True) -> None:
     stm_dict = ds.stms_created_in_mod.pop(mod_uri, {})
 
     if strict and (not entity_uris and not stm_dict):
-        msg = (
-            f"Seems like neither entities nor statements from {mod_uri} have been loaded. This is unexpected."
-        )
+        msg = f"Seems like neither entities nor statements from {mod_uri} have been loaded. This is unexpected."
         raise KeyError(msg)
 
     for uri in entity_uris:
@@ -2791,7 +2779,9 @@ class RuleResult:
             aplt = "? s"
         else:
             aplt = f"{round(self.apply_time, 3)} s"
-        res = f"{type(self).__name__} ({aplt}): new_stms: {len(self.new_statements)}, parts: {len(self.partial_results)}"
+        res = (
+            f"{type(self).__name__} ({aplt}): new_stms: {len(self.new_statements)}, parts: {len(self.partial_results)}"
+        )
         return res
 
     @property
@@ -2868,6 +2858,7 @@ def is_subproperty(item: Item, parent_property: Item):
         return True
     else:
         return is_subproperty(item.R17, parent_property)
+
 
 def export_entities(path: str, to_file=True, uris=True):
     d = {}

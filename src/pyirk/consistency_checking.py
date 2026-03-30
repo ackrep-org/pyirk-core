@@ -66,10 +66,7 @@ def check_applied_operator(itm: Item):
     # IPS()
 
     if len(arg_type_items) != len(expected_arg_types):
-        msg = (
-            f"While checking {itm}: got {len(arg_type_items)} arg(s) but "
-            f"{len(expected_arg_types)} where expected"
-        )
+        msg = f"While checking {itm}: got {len(arg_type_items)} arg(s) but " f"{len(expected_arg_types)} where expected"
         raise WrongArgNumber(msg)
 
     # the lengths match, now check the types

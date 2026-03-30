@@ -310,9 +310,7 @@ R8736 = p.create_relation(
     R2__has_description="subject has a polynomial dependency object",
     R8__has_domain_of_argument_1=p.I12["mathematical object"],
     R11__has_range_of_result=I5030["variable"],
-    R18__has_usage_hint=(
-        "This relation is intentionally not functional to model multivariate polynomial dependency"
-    ),
+    R18__has_usage_hint=("This relation is intentionally not functional to model multivariate polynomial dependency"),
 )
 
 I1935 = p.create_item(

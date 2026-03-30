@@ -3,13 +3,11 @@ import os
 from os.path import join as pjoin
 import random
 
-
 # noinspection PyUnresolvedReferences
 from ipydex import IPS, activate_ips_on_exception, set_trace  # noqa
 import pyirk as p
 import pyirk.io
 from pyirk.utils import GeneralHousekeeperMixin
-
 
 # ensure reproducible results
 # (the result order of graph algorithms imported in ruleengine seems to depend on random numbers)

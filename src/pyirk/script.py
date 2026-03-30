@@ -17,7 +17,7 @@ try:
     # this will be part of standard library for python >= 3.11
     import tomllib
 except ModuleNotFoundError:
-    import tomli as tomllib # type: ignore
+    import tomli as tomllib  # type: ignore
 
 import platformdirs
 
@@ -187,9 +187,8 @@ def create_parser():
         help="change main label of entity in source file of loaded module. "
         "Recommended: Apply ony to clean git repo.",
         nargs=2,
-        metavar=("key", "new label")
+        metavar=("key", "new label"),
     )
-
 
     return parser
 
@@ -203,6 +202,7 @@ def main():
 
     if args.refactor_entity_label:
         from . import refactor_tools as rt
+
         assert args.inputfile is not None
         assert len(args.refactor_entity_label) == 2
         rt.change_entity_label(*args.refactor_entity_label, args.inputfile)
@@ -262,7 +262,7 @@ def main():
         visualization.visualize_entity(uri, write_tmp_files=True)
     elif args.start_django:
         try:
-            import pyirkdjango.core # type: ignore
+            import pyirkdjango.core  # type: ignore
         except ImportError:
             print(aux.bred("Error:"), "the module pyirkdjango seems not to be installed.")
             # exit(10)
@@ -270,7 +270,7 @@ def main():
         pyirkdjango.core.start_django()
     elif args.start_django_shell:
         try:
-            import pyirkdjango.core # type: ignore
+            import pyirkdjango.core  # type: ignore
         except ImportError:
             print(aux.bred("Error:"), "the module pyirkdjango seems not to be installed.")
             # exit(10)
@@ -543,9 +543,7 @@ def process_template(template_path):
 
     new_insert_txt = "".join(lines_to_insert)
 
-    rendered_template = templ_ast_cont.txt.replace(
-        templ_ast_cont.line_data["insert_entities"], new_insert_txt
-    )
+    rendered_template = templ_ast_cont.txt.replace(templ_ast_cont.line_data["insert_entities"], new_insert_txt)
     return rendered_template
 
 

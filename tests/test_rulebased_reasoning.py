@@ -39,16 +39,18 @@ class Test_01_rulebased_reasoning(HousekeeperMixin, unittest.TestCase):
 
     def _check_R83_conditions(self):
 
-        expected_R83_res = set([
-            p.I38["non-negative integer"],
-            p.I37["integer number"],
-            p.I35["real number"],
-            p.I36["rational number"],
-            p.I12["mathematical object"],
-            p.I18["mathematical expression"],
-            p.I34["complex number"],
-            p.I42["scalar mathematical expression"],
-        ])
+        expected_R83_res = set(
+            [
+                p.I38["non-negative integer"],
+                p.I37["integer number"],
+                p.I35["real number"],
+                p.I36["rational number"],
+                p.I12["mathematical object"],
+                p.I18["mathematical expression"],
+                p.I34["complex number"],
+                p.I42["scalar mathematical expression"],
+            ]
+        )
 
         self.assertEqual(set(p.I39["positive integer"].R83__is_generalized_subclass_of), expected_R83_res)
 
@@ -58,21 +60,36 @@ class Test_01_rulebased_reasoning(HousekeeperMixin, unittest.TestCase):
             - R83__is_generalized_subclass_of
             - p.qf_prevent_duplicate_stms
         """
-        res1 = p.ruleengine.apply_semantic_rule(p.I64, mod_context_uri=TEST_BASE_URI,)
-        res2 = p.ruleengine.apply_semantic_rule(p.I65, mod_context_uri=TEST_BASE_URI,)
+        res1 = p.ruleengine.apply_semantic_rule(
+            p.I64,
+            mod_context_uri=TEST_BASE_URI,
+        )
+        res2 = p.ruleengine.apply_semantic_rule(
+            p.I65,
+            mod_context_uri=TEST_BASE_URI,
+        )
         new_triples2 = res2.get_new_triples()
         self.assertIn(p.I37["integer number"], p.I39["positive integer"].R83__is_generalized_subclass_of)
 
-        res3 = p.ruleengine.apply_semantic_rule(p.I65, mod_context_uri=TEST_BASE_URI,)
+        res3 = p.ruleengine.apply_semantic_rule(
+            p.I65,
+            mod_context_uri=TEST_BASE_URI,
+        )
         new_triples3 = res3.get_new_triples()
 
         # intersection should be empty
         self.assertEqual(set(new_triples2).intersection(new_triples3), set())
 
-        res4 = p.ruleengine.apply_semantic_rule(p.I65, mod_context_uri=TEST_BASE_URI,)
+        res4 = p.ruleengine.apply_semantic_rule(
+            p.I65,
+            mod_context_uri=TEST_BASE_URI,
+        )
         self.assertTrue(res4.new_statements)
 
-        res5 = p.ruleengine.apply_semantic_rule(p.I65, mod_context_uri=TEST_BASE_URI,)
+        res5 = p.ruleengine.apply_semantic_rule(
+            p.I65,
+            mod_context_uri=TEST_BASE_URI,
+        )
         self.assertFalse(res5.new_statements)
         self._check_R83_conditions()
 
@@ -272,9 +289,7 @@ class Test_01_rulebased_reasoning(HousekeeperMixin, unittest.TestCase):
 
         with p.uri_context(uri=TEST_BASE_URI):
 
-            itm1.set_relation(
-                p.R31["is in mathematical relation with"], itm3
-            )  # itm3 will be replaced by the rule
+            itm1.set_relation(p.R31["is in mathematical relation with"], itm3)  # itm3 will be replaced by the rule
 
             self.assertEqual(itm1.R31__is_in_mathematical_relation_with, [itm3])
 
@@ -984,9 +999,7 @@ class Test_01_rulebased_reasoning(HousekeeperMixin, unittest.TestCase):
 
             # this does nothing because we only have 'meaningless' R50-statements
             res = p.ruleengine.apply_semantic_rules(
-                zr.I830[
-                    "rule: ensure absence of contradictions (5 different-from statements) (hardcoded cheat)"
-                ]
+                zr.I830["rule: ensure absence of contradictions (5 different-from statements) (hardcoded cheat)"]
             )
             self.assertEqual(len(res.new_statements), 0)
 
@@ -994,9 +1007,7 @@ class Test_01_rulebased_reasoning(HousekeeperMixin, unittest.TestCase):
 
             with self.assertRaises(p.aux.LogicalContradiction) as err:
                 res = p.ruleengine.apply_semantic_rules(
-                    zr.I830[
-                        "rule: ensure absence of contradictions (5 different-from statements) (hardcoded cheat)"
-                    ]
+                    zr.I830["rule: ensure absence of contradictions (5 different-from statements) (hardcoded cheat)"]
                 )
                 if res.exception:
                     raise res.exception
@@ -1517,9 +1528,7 @@ class Test_01_rulebased_reasoning(HousekeeperMixin, unittest.TestCase):
             IPS()
             return
             # res = p.ruleengine.apply_semantic_rules(*all_relevant_rules[1:])
-            func_act_list = p.ds.get_subjects_for_relation(
-                zb.R2850["is functional activity"].uri, filter=True
-            )
+            func_act_list = p.ds.get_subjects_for_relation(zb.R2850["is functional activity"].uri, filter=True)
             pred_report = araw.get_predicates_report(predicate_list=func_act_list)
 
         hyre = p.ruleengine.HypothesisReasoner(zb, base_uri=TEST_BASE_URI)

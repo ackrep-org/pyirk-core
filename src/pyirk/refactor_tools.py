@@ -1,6 +1,7 @@
 from ipydex import IPS
 import re
 
+
 def change_entity_label(key, new_label, fpath):
     with open(fpath, "r", encoding="utf-8") as fp:
         src_lines = fp.readlines()

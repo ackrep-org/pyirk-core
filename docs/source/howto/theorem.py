@@ -31,4 +31,4 @@ with I5000["simplified Pythagorean theorem"].scope("assertion") as st:
     # convert a pyirk items into  sympy.Symbol instances to conveniently
     # denote formulas (see documentation below)
     La, Lb, Lc = p.items_to_symbols(la, lb, lc)
-    st.new_equation(La ** 2 + Lb ** 2, "==", Lc ** 2)
+    st.new_equation(La**2 + Lb**2, "==", Lc**2)

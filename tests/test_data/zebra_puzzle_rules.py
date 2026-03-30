@@ -23,9 +23,7 @@ p.start_mod(__URI__)
 
 I701 = p.create_item(
     R1__has_label="rule: imply parent relation of a subrelation",
-    R2__has_description=(
-        "items which are related by a subrelation should also be related by the parent relation"
-    ),
+    R2__has_description=("items which are related by a subrelation should also be related by the parent relation"),
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
@@ -44,9 +42,7 @@ with I701.scope("assertion") as cm:
 
 I702 = p.create_item(
     R1__has_label="rule: add reverse statement for symmetrical relations",
-    R2__has_description=(
-        "given statement (s, p, o) where p.R42__is_symmetrical==True implies statement (o, p, s)"
-    ),
+    R2__has_description=("given statement (s, p, o) where p.R42__is_symmetrical==True implies statement (o, p, s)"),
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
@@ -105,8 +101,7 @@ with I710.scope("setting") as cm:
     cm.new_rel_var("rel1")  # -> p.instance_of(p.I40["general relation"]))
 
 with I710.scope("premise") as cm:
-    cm.set_sparql(
-        """
+    cm.set_sparql("""
         WHERE {
         ?p1 ?rel1 ?some_itm.
         ?p2 ?rel1 ?some_itm.
@@ -114,8 +109,7 @@ with I710.scope("premise") as cm:
         ?rel1 zb:R2850 true.      # R2850__is_functional_activity
         FILTER (?p1 != ?p2)
         }
-        """
-    )
+        """)
     # ?rel1 :zb__R2850__is_functional_activity True.
     # cm.new_rel(cm.ph1, p.R57["is placeholder"], True)
     # cm.new_rel(cm.ph2, p.R57["is placeholder"], True)
@@ -167,9 +161,7 @@ with I720.scope("premise") as cm:
             cm_AND.new_condition_func(p.does_not_have_relation, cm.itm1, p.R57["is placeholder"])
 
         # case 3:  itm1 is not a placeholder (explicit statement with object `False`)
-        cm_OR.new_rel(
-            cm.itm1, p.R57["is placeholder"], False, qualifiers=[p.qff_allows_alt_functional_value(True)]
-        )
+        cm_OR.new_rel(cm.itm1, p.R57["is placeholder"], False, qualifiers=[p.qff_allows_alt_functional_value(True)])
 
     # TODO: this blocks the second application because only one itm is placeholder -> introduce logical OR
     # cm.new_condition_func(p.label_compare_method, cm.itm1, cm.itm2)
@@ -182,9 +174,7 @@ with I720.scope("assertion") as cm:
 
 I725 = p.create_item(
     R1__has_label="rule: deduce facts from inverse relations",
-    R2__has_description=(
-        "deduce facts from inverse relations e.g. if p1 lives right of p2 then p2 lives left of p1"
-    ),
+    R2__has_description=("deduce facts from inverse relations e.g. if p1 lives right of p2 then p2 lives left of p1"),
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
@@ -196,16 +186,14 @@ with I725.scope("setting") as cm:
     cm.new_rel_var("rel2")
 
 with I725.scope("premise") as cm:
-    cm.set_sparql(
-        """
+    cm.set_sparql("""
         WHERE {
             ?itm1 ?rel1 ?itm2.        # R3606["lives next to"]
 
             # ?rel1 zb:R2850 true.     # R2850__is_functional_activity
             ?rel1 :R68 ?rel2.        # R68__is_inverse_of
         }
-        """
-    )
+        """)
 
 with I725.scope("assertion") as cm:
     cm.new_rel(cm.itm2, cm.rel2, cm.itm1, qualifiers=[p.qff_has_rule_ptg_mode(5)])
@@ -231,8 +219,7 @@ with I730.scope("setting") as cm:
     cm.new_rel_var("rel2")
 
 with I730.scope("premise") as cm:
-    cm.set_sparql(
-        """
+    cm.set_sparql("""
         WHERE {
             ?h1 zb:R3606 ?h2.        # R3606["lives next to"]
 
@@ -241,8 +228,7 @@ with I730.scope("premise") as cm:
 
             ?h1 ?rel1 ?itm1.
         }
-        """
-    )
+        """)
 
 with I730.scope("assertion") as cm:
     cm.new_rel(cm.h2, cm.rel2, cm.itm1, qualifiers=[p.qff_has_rule_ptg_mode(5)])
@@ -251,9 +237,7 @@ with I730.scope("assertion") as cm:
 
 I740 = p.create_item(
     R1__has_label="rule: deduce more negative facts from negative facts",
-    R2__has_description=(
-        "deduce e.g. if h1 owns dog and h1 drinks milk and h2 owns zebra then h2 drinks not milk"
-    ),
+    R2__has_description=("deduce e.g. if h1 owns dog and h1 drinks milk and h2 owns zebra then h2 drinks not milk"),
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
@@ -270,8 +254,7 @@ with I740.scope("setting") as cm:
     cm.new_rel_var("rel2_not")
 
 with I740.scope("premise") as cm:
-    cm.set_sparql(
-        """
+    cm.set_sparql("""
         WHERE {
             ?h1 ?rel1 ?itm1.          # e.g. h1 owns dog
             ?h1 ?rel2 ?itm2.          # e.g. h1 drinks milk
@@ -294,8 +277,7 @@ with I740.scope("premise") as cm:
             # prevent the addition of already known relations
             # MINUS { ?h2 ?rel1_not ?itm1.}
         }
-        """
-    )
+        """)
 
 with I740.scope("assertion") as cm:
     cm.new_rel(cm.h2, cm.rel2_not, cm.itm2, qualifiers=[p.qff_has_rule_ptg_mode(5)])
@@ -311,9 +293,7 @@ I750 = p.create_item(
 
 with I750.scope("setting") as cm:
     cm.new_var(p1=p.instance_of(zb.I7435["human"]))
-    cm.uses_external_entities(
-        zb.I7435["human"], zb.R9040["lives in numbered house"], zb.I8809["house number"]
-    )
+    cm.uses_external_entities(zb.I7435["human"], zb.R9040["lives in numbered house"], zb.I8809["house number"])
 
 with I750.scope("premise") as cm:
     cm.new_rel(cm.p1, p.R4["is instance of"], zb.I7435["human"], overwrite=True)
@@ -548,9 +528,7 @@ with I790.scope("assertion") as cm:
 
 I741 = p.create_item(
     R1__has_label="rule: deduce more negative facts from negative facts",
-    R2__has_description=(
-        "deduce e.g. if h1 owns dog and h1 drinks milk and h2 owns zebra then h2 drinks not milk"
-    ),
+    R2__has_description=("deduce e.g. if h1 owns dog and h1 drinks milk and h2 owns zebra then h2 drinks not milk"),
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
@@ -567,8 +545,7 @@ with I741.scope("setting") as cm:
     cm.new_rel_var("rel2_not")
 
 with I741.scope("premise") as cm:
-    cm.set_sparql(
-        """
+    cm.set_sparql("""
         WHERE {
             ?h1 ?rel1 ?itm1a.          # e.g. h1 owns dog
             ?h1 ?rel2 ?itm1b.          # e.g. h1 drinks milk
@@ -595,8 +572,7 @@ with I741.scope("premise") as cm:
             # MINUS { ?h1 :R57 true.}
             MINUS { ?itm2 :R57 true.}
         }
-        """
-    )
+        """)
 
 with I741.scope("assertion") as cm:
     # qualifier means: 5 -> create_asserted_statement_only_if_new
@@ -610,9 +586,7 @@ I741.set_relation(p.R69["has explanation text template"], txt)
 
 I792 = p.create_item(
     R1__has_label="rule: deduce different-from-facts from negative facts",
-    R2__has_description=(
-        "deduce e.g. if h1 not owns dog and h2 owns dog then h2 different from h1 and vice versa."
-    ),
+    R2__has_description=("deduce e.g. if h1 not owns dog and h2 owns dog then h2 different from h1 and vice versa."),
     R4__is_instance_of=p.I41["semantic rule"],
 )
 
@@ -626,8 +600,7 @@ with I792.scope("setting") as cm:
     cm.new_rel_var("rel1_not")
 
 with I792.scope("premise") as cm:
-    cm.set_sparql(
-        """
+    cm.set_sparql("""
         WHERE {
             ?h1 ?rel1 ?itm1a.          # e.g. h1 owns dog
             ?h2 ?rel1_not ?itm1a.      # e.g. h2 not_owns dog
@@ -640,8 +613,7 @@ with I792.scope("premise") as cm:
             ?rel1 :R43 ?rel1_not.        # R43__is_opposite_of
 
         }
-        """
-    )
+        """)
 
 with I792.scope("assertion") as cm:
     # qualifier means: 5 -> create_asserted_statement_only_if_new
@@ -748,8 +720,7 @@ with I798.scope("setting") as cm:
     cm.new_rel_var("rel2")
 
 with I798.scope("premise") as cm:
-    cm.set_sparql(
-        """
+    cm.set_sparql("""
         WHERE {
             ?p1 :R50 ?p2.        # R50["is different from"]
 
@@ -758,8 +729,7 @@ with I798.scope("premise") as cm:
 
             ?p1 ?rel1 ?itm1.
         }
-        """
-    )
+        """)
 
 with I798.scope("assertion") as cm:
     cm.new_rel(cm.p2, cm.rel2, cm.itm1, qualifiers=[p.qff_has_rule_ptg_mode(5)])
@@ -792,9 +762,7 @@ with I800.scope("assertion") as cm:
         True,
         qualifiers=[p.qff_has_rule_ptg_mode(5)],
     )
-    cm.new_rel(
-        cm.rel1_not, p.R71["enforce matching result type"], True, qualifiers=[p.qff_has_rule_ptg_mode(5)]
-    )
+    cm.new_rel(cm.rel1_not, p.R71["enforce matching result type"], True, qualifiers=[p.qff_has_rule_ptg_mode(5)])
 
 
 # ###############################################################################
@@ -816,8 +784,7 @@ with I803.scope("setting") as cm:
     cm.new_rel_var("rel1_not")
 
 with I803.scope("premise") as cm:
-    cm.set_sparql(
-        """
+    cm.set_sparql("""
         WHERE {
             ?rel1 zb:R2850 true.     # R2850__is_functional_activity
             ?rel1_not :R43 ?rel1.        # R43__is_opposite_of
@@ -831,8 +798,7 @@ with I803.scope("premise") as cm:
             FILTER (?itm1 != ?itm2)
 
         }
-        """
-    )
+        """)
 
 with I803.scope("assertion") as cm:
     cm.new_rel(cm.p1, cm.rel1_not, cm.itm2, qualifiers=[p.qff_has_rule_ptg_mode(5)])
@@ -1002,9 +968,7 @@ with I830.scope("premise") as cm:
     cm.new_rel(cm.p5, p.R57["is placeholder"], False)
 
 with I830.scope("assertion") as cm:
-    cm.new_consequent_func(
-        p.raise_contradiction, "{} has too many `R50__is_different_from` statements", cm.p0
-    )
+    cm.new_consequent_func(p.raise_contradiction, "{} has too many `R50__is_different_from` statements", cm.p0)
 
 # ###############################################################################
 

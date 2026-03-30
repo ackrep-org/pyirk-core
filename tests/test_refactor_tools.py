@@ -6,7 +6,6 @@ import shutil
 import pyirk.refactor_tools as rt
 
 
-
 from .settings import (
     TEST_BASE_URI,
     TEST_DATA_DIR1,
@@ -30,7 +29,6 @@ class Test_01_Script(HousekeeperMixin, unittest.TestCase):
             tmp_mod_fpath0 = make_temp_copy_of_file(ocse_subset_agents_path)
             os.system(f"kdiff3 {tmp_mod_fpath0} {tmp_mod_fpath}")
 
-
     def test_rt_a02__change_entity_label_from_cli(self):
 
         tmp_mod_fpath = make_temp_copy_of_file(ocse_subset_agents_path)
@@ -38,14 +36,16 @@ class Test_01_Script(HousekeeperMixin, unittest.TestCase):
         cmd = f'pyirk --refactor-entity-label I9942 "Renamed Stanford University" {tmp_mod_fpath}'
         os.system(cmd)
 
-
         manually_checking_difference = False
         if manually_checking_difference:
             tmp_mod_fpath0 = make_temp_copy_of_file(ocse_subset_agents_path)
             os.system(f"kdiff3 {tmp_mod_fpath0} {tmp_mod_fpath}")
+
+
 #
 # Auxiliary functions:
 #
+
 
 def make_temp_copy_of_file(fpath):
     """
@@ -56,6 +56,7 @@ def make_temp_copy_of_file(fpath):
     try:
         # Close the file descriptor since shutil.copy2 will handle the file operations
         import os
+
         os.close(temp_fd)
         # Copy the file content and metadata
         shutil.copy2(fpath, temp_path)

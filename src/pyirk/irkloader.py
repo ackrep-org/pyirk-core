@@ -10,7 +10,6 @@ import addict
 from types import ModuleType
 
 
-
 def preserve_cwd(function):
     """
     This is a decorator that ensures that the current working directory is unchanged during the function call.
@@ -37,6 +36,7 @@ def delete_bytecode_files(modpath):
     for bc_path in bytecode_paths:
         os.unlink(bc_path)
 
+
 @preserve_cwd
 def load_mod_from_uri(uri: str, prefix: str, *args, **kwargs):
 
@@ -54,8 +54,6 @@ def load_mod_from_uri(uri: str, prefix: str, *args, **kwargs):
     return load_mod_from_path(mod_path, prefix, *args, **kwargs)
 
 
-
-
 # noinspection PyProtectedMember
 @preserve_cwd
 def load_mod_from_path(
@@ -65,7 +63,7 @@ def load_mod_from_path(
     allow_reload=True,
     smart_relative=None,
     reuse_loaded=None,
-    delete_bytecode=None
+    delete_bytecode=None,
 ) -> ModuleType:
     """
 
@@ -98,9 +96,7 @@ def load_mod_from_path(
             reuse_loaded__actual = pyirk.ds.reuse_loaded_module
 
     try:
-        mod = _load_mod_from_path(
-            modpath, prefix, modname, allow_reload, smart_relative, reuse_loaded__actual
-        )
+        mod = _load_mod_from_path(modpath, prefix, modname, allow_reload, smart_relative, reuse_loaded__actual)
     except:
         if reuse_loaded is not None:
             # we had changed the default
@@ -130,9 +126,7 @@ def _load_mod_from_path(
     original_loaded_mod_uris = list(pyirk.ds.mod_path_mapping.a.keys())
 
     if smart_relative is not None:
-        msg = (
-            "Using 'smart_relative' paths is deprecated since pyirk version 0.6.0. Please use real paths now."
-        )
+        msg = "Using 'smart_relative' paths is deprecated since pyirk version 0.6.0. Please use real paths now."
         raise DeprecationWarning(msg)
 
     smart_relative = False

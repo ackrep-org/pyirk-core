@@ -15,11 +15,9 @@ from rdflib import Literal, URIRef
 from rdflib.plugins.sparql.processor import SPARQLResult
 from rdflib.query import Result
 
-
 # noinspection PyUnresolvedReferences
 # (imported here to be used in gui-view)
 from pyparsing import ParseException  # noqa
-
 
 IRK_URI = f"{pyirk.settings.BUILTINS_URI}{pyirk.settings.URI_SEP}"
 IRK_QF_URI = f"{pyirk.settings.BUILTINS_URI}/QUALIFIERS{pyirk.settings.URI_SEP}"
@@ -187,18 +185,22 @@ def perform_sparql_query(qsrc: str, return_raw=False, preprocessing=True) -> Spa
         res2.vars = res.vars
         return res2
 
+
 def query_result_to_table(res, labels_only=False):
     df = pd.DataFrame(columns=[str(head) for head in res.vars])
     for i in range(len(res)):
         df.loc[i] = res[i]
     if labels_only:
+
         def get_label(something):
             if hasattr(something, "R1"):
                 return something.R1
             else:
                 return something
+
         df = df.map(get_label)
     return df
+
 
 def convert_from_rdf_to_pyirk(rdfnode) -> object:
     if isinstance(rdfnode, URIRef):

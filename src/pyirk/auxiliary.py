@@ -14,7 +14,6 @@ except ModuleNotFoundError:
     import tomli as tomllib
 
 
-
 from . import settings
 
 """
@@ -43,8 +42,6 @@ AVAILABLE_PACKAGES: dict[str, str] = {}
 AVAILABLE_MODULES: dict[str, str] = {}
 
 STATES = Container({"available_modules_detected": False})
-
-
 
 
 class NotYetFinishedError(NotImplementedError):
@@ -519,10 +516,7 @@ def get_irk_path(dirname=None):
 
 
 def _handle_exception(e: Exception, msg):
-    final_msg = (
-        f"{msg}\n"
-        f"Original exception ({type(e)}):\n\n{str(e)}"
-    )
+    final_msg = f"{msg}\n" f"Original exception ({type(e)}):\n\n{str(e)}"
     logger.error(final_msg)
     if settings.DEBUG:
         raise
@@ -567,7 +561,6 @@ def load_module_configs_from_general_config():
         # not yet used but might be useful in the future
         AVAILABLE_PACKAGES[uri] = package_data
         AVAILABLE_MODULES[uri] = main_mod_path
-
 
         for mod_fname in package_data.get("further_modules", []):
             mod_path = os.path.join(package_path, mod_fname)

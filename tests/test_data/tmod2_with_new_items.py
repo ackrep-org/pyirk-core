@@ -13,9 +13,7 @@ I1000 = p.create_item(
 # <new_entities>
 
 
-_newitemkey_ = p.create_item(
-    R1__has_label="some new item", R2__has_description="", R4__is_instance_of=p.I50["stub"]
-)
+_newitemkey_ = p.create_item(R1__has_label="some new item", R2__has_description="", R4__is_instance_of=p.I50["stub"])
 
 _newitemkey_ = p.create_item(
     R1__has_label="special new item", R2__has_description="", R3__is_subclass_of=p.I000["some new item"]

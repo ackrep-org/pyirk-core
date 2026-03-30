@@ -359,7 +359,8 @@ class CustomizedDiGraph(nx.MultiDiGraph):
 
         super().add_node(node, **new_kwargs)
 
-class VisualizationManager():
+
+class VisualizationManager:
 
     def __init__(self):
         self.REL_BLACKLIST = [
@@ -477,8 +478,8 @@ class VisualizationManager():
             if item.short_key in ["I000"]:
                 continue
             if vis_relations:
-                if (not isinstance(item, p.Item) and not isinstance(item, p.Relation)):
-                    continue # what possible type could item have to get here?
+                if not isinstance(item, p.Item) and not isinstance(item, p.Relation):
+                    continue  # what possible type could item have to get here?
             else:
                 if not isinstance(item, p.Item):
                     continue
@@ -541,6 +542,7 @@ class VisualizationManager():
         """
 
         ecm = self.build_edge_color_map(G)
+
         def get_node_color(node):
             if node.short_key.startswith("Ia"):
                 return "grey"
@@ -555,7 +557,6 @@ class VisualizationManager():
             layout = "fdp"
         else:
             layout = "sfdp"
-
 
         # for styling see https://nxv.readthedocs.io/en/latest/reference.html#styling
         style = nxv.Style(
@@ -584,9 +585,8 @@ class VisualizationManager():
                 "label": u.get_dot_label(),
                 "fontsize": FONTSIZE,
                 "fontcolor": "grey" if u.short_key.startswith("Ia") else "black",
-                "URL": f"{u.short_key}.html",   # for interactive map
-                "target": "_self",              # for interactive map
-
+                "URL": f"{u.short_key}.html",  # for interactive map
+                "target": "_self",  # for interactive map
             },
             # u,v: nodes, d: edge attribute dict
             edge=lambda u, v, i, d: {
@@ -600,7 +600,7 @@ class VisualizationManager():
                 "label": d["edge"].short_key,
                 "fontsize": FONTSIZE,
                 "color": ecm.get(d["edge"].short_key, "black"),
-                "URL":  d["edge"].R1.value, # this will be replaced later
+                "URL": d["edge"].R1.value,  # this will be replaced later
             },
         )
 
@@ -668,14 +668,16 @@ class VisualizationManager():
         return svg_data1
 
     def visualize_entity(
-            self,
-            uri: str,
-            url_template="",
-            write_tmp_files: Union[bool, str] = False,
-            radius=1, graph=None, vis_relations=False,
-            skip_auto_items=True,
-            item_blacklist=[]
-        ) -> str:
+        self,
+        uri: str,
+        url_template="",
+        write_tmp_files: Union[bool, str] = False,
+        radius=1,
+        graph=None,
+        vis_relations=False,
+        skip_auto_items=True,
+        item_blacklist=[],
+    ) -> str:
         """
 
         :param uri:             entity uri (like "irk:/my/module#I0123")
@@ -685,7 +687,12 @@ class VisualizationManager():
         :return:                svg_data as string
         """
         if graph is None:
-            big_G = self.create_complete_graph(url_template, skip_auto_items=skip_auto_items, vis_relations=vis_relations, item_blacklist=item_blacklist)
+            big_G = self.create_complete_graph(
+                url_template,
+                skip_auto_items=skip_auto_items,
+                vis_relations=vis_relations,
+                item_blacklist=item_blacklist,
+            )
         else:
             big_G = graph
         try:
@@ -694,7 +701,7 @@ class VisualizationManager():
             msg = f"URI '{uri}' could not be found in the complete knowledge graph"
             raise p.InvalidURIError(msg)
 
-        small_G = nx.ego_graph(big_G, node_of_interest, radius, undirected=True) #! perfomance of this operation sucks
+        small_G = nx.ego_graph(big_G, node_of_interest, radius, undirected=True)  #! perfomance of this operation sucks
         raw_dot_data = self.render_graph_to_dot(small_G, node_of_interest)
 
         dot_data0 = raw_dot_data
@@ -717,8 +724,8 @@ class VisualizationManager():
         # Get unique relations from the graph edges
         unique_relations = {}
         for u, v, edge_data in small_G.edges(data=True):
-            if 'edge' in edge_data:
-                relation = edge_data['edge']
+            if "edge" in edge_data:
+                relation = edge_data["edge"]
                 unique_relations[relation.short_key] = relation
 
         list_of_relations = list(unique_relations.values())
@@ -753,7 +760,7 @@ class VisualizationManager():
         # heuristic: "R8__has_domain_of_argument" =^= 200px (first version cutoff)  --> len=26 =^= 200px
         # todo maybe there is a more accurate formula?
         num_char_to_width = 200 / 26
-        max_len_text = max([len(getattr(r, 'name_labeled_key', r.short_key)) for r in list_of_relations])
+        max_len_text = max([len(getattr(r, "name_labeled_key", r.short_key)) for r in list_of_relations])
         legend_width = max(220, max_len_text * num_char_to_width + legend_x + margin)
 
         # Build legend SVG elements
@@ -764,7 +771,7 @@ class VisualizationManager():
             color = relation_color_map.get(relation.short_key, "black")
 
             # Get the name_labeled_key (assuming it's the R1 label)
-            label = getattr(relation, 'name_labeled_key', relation.short_key)
+            label = getattr(relation, "name_labeled_key", relation.short_key)
 
             # Add text label above the line
             legend_elements.append(
@@ -780,7 +787,7 @@ class VisualizationManager():
             )
 
         # Create complete legend SVG
-        legend_svg_content = '\n'.join(legend_elements)
+        legend_svg_content = "\n".join(legend_elements)
         legend_svg = f"""<?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <svg width="{legend_width}pt" height="{legend_height}pt" viewBox="0 0 {legend_width} {legend_height}" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
 {legend_svg_content}
@@ -794,7 +801,13 @@ class VisualizationManager():
             return res.value
         return res
 
-    def visualize_all_entities(self, url_template="", write_tmp_files: Union[bool, str] = False, skip_auto_items: bool = False, vis_relations=False) -> str:
+    def visualize_all_entities(
+        self,
+        url_template="",
+        write_tmp_files: Union[bool, str] = False,
+        skip_auto_items: bool = False,
+        vis_relations=False,
+    ) -> str:
         """visualize all entities loaded in datastore. output svg graph.
 
         Args:
@@ -816,7 +829,6 @@ class VisualizationManager():
         else:
             layout = "sfdp"
 
-
         def edge_style(u, v, i, d):
             e = d["edge"]
             clr = ecm.get(e.short_key, "grey")
@@ -827,7 +839,7 @@ class VisualizationManager():
                 "minlen": 1,
                 "color": clr,
                 "label": d["edge"].short_key,
-                "URL":  d["edge"].R1.value, # this will be replaced later
+                "URL": d["edge"].R1.value,  # this will be replaced later
             }
 
         # styling and rendering
@@ -856,9 +868,8 @@ class VisualizationManager():
                 # "label": None,
                 # "label": u.short_key,
                 "label": f"{u.short_key}\n{u.label.value}",
-                "URL": f"{u.short_key}.html",   # for interactive map
-                "target": "_self",              # for interactive map
-
+                "URL": f"{u.short_key}.html",  # for interactive map
+                "target": "_self",  # for interactive map
             },
             edge=edge_style,
         )
@@ -912,7 +923,15 @@ class VisualizationManager():
 
         return res.format(**REPLACEMENTS)
 
-    def create_interactive_graph(self, url_template="", output_dir="graph_site", radius=1, skip_auto_items=True, skip_existing=False, vis_relations=False):
+    def create_interactive_graph(
+        self,
+        url_template="",
+        output_dir="graph_site",
+        radius=1,
+        skip_auto_items=True,
+        skip_existing=False,
+        vis_relations=False,
+    ):
         os.makedirs(output_dir, exist_ok=True)
 
         G = self.create_complete_graph(url_template, skip_auto_items=skip_auto_items, vis_relations=vis_relations)
@@ -937,11 +956,19 @@ class VisualizationManager():
                 image_map = f.read()
 
             # clean image map of replacement strings
-            image_map = re.sub(r'(?<=href=")(.+?)(\.html".+?title=")(.+?)(?=")', lambda mo: mo.group(1)+mo.group(2)+mo.group(1), image_map)
+            image_map = re.sub(
+                r'(?<=href=")(.+?)(\.html".+?title=")(.+?)(?=")',
+                lambda mo: mo.group(1) + mo.group(2) + mo.group(1),
+                image_map,
+            )
             # correct tooltip for relations.
             # Expl.: tooltip attribute in style does not work since map area poly will not be rendered. so we use URL
             # to trick graphviz to render rect and then replace href and title to create tooltip
-            image_map = re.sub(r'(?<=shape="rect")(.+?)(href=")(.+?)(" title=")(.+?)(?=")', lambda mo: mo.group(1)+mo.group(2)+""+mo.group(4)+mo.group(3), image_map)
+            image_map = re.sub(
+                r'(?<=shape="rect")(.+?)(href=")(.+?)(" title=")(.+?)(?=")',
+                lambda mo: mo.group(1) + mo.group(2) + "" + mo.group(4) + mo.group(3),
+                image_map,
+            )
 
             if node_name.startswith("I"):
                 item = p.ds.items[node.uri]
@@ -957,7 +984,7 @@ class VisualizationManager():
                 "img_source": f"{node_name}.svg",
                 "img_legend_source": f"{node_name}_legend.svg",
                 "map": image_map,
-                "desc": desc
+                "desc": desc,
             }
             res = render_template("node_template.html", context)
             with open(os.path.join(output_dir, f"{node_name}.html"), "w", encoding="utf-8") as f:
@@ -965,7 +992,9 @@ class VisualizationManager():
 
         # Index page
         dot_path = os.path.join(output_dir, "index.dot")
-        self.visualize_all_entities(write_tmp_files=dot_path, skip_auto_items=skip_auto_items, vis_relations=vis_relations)
+        self.visualize_all_entities(
+            write_tmp_files=dot_path, skip_auto_items=skip_auto_items, vis_relations=vis_relations
+        )
 
         # create map
         cmapx_path = os.path.join(output_dir, f"index.map")
@@ -977,19 +1006,20 @@ class VisualizationManager():
 
         image_map = re.sub(
             r'(?<=shape="rect")(.+?)(href=")(.+?)(" title=")(.+?)(?=")',
-            lambda mo: mo.group(1)+mo.group(2)+""+mo.group(4)+mo.group(3),
-            image_map
+            lambda mo: mo.group(1) + mo.group(2) + "" + mo.group(4) + mo.group(3),
+            image_map,
         )
 
         context = {
             "title": "Overview",
             "img_source": f"index.svg",
             "map": image_map,
-            "desc": f"Total number of Nodes: {len(G.nodes)}"
+            "desc": f"Total number of Nodes: {len(G.nodes)}",
         }
         res = render_template("node_template.html", context)
         with open(os.path.join(output_dir, f"index.html"), "w", encoding="utf-8") as f:
             f.write(res)
+
 
 vm = VisualizationManager()
 # todo refactor this
@@ -1003,4 +1033,10 @@ if __name__ == "__main__":
     nl = p.irkloader.load_mod_from_path("output.py", "nl", "nonlinear")
     # ma = p.irkloader.load_mod_from_uri(r"irk:/ocse/0.2/math", prefix="ma")
 
-    visualize_entity("irk:/auto_import_formalized_statements_nl#I44506", write_tmp_files=True, radius=1, skip_auto_items=True, item_blacklist=["snippet"])
+    visualize_entity(
+        "irk:/auto_import_formalized_statements_nl#I44506",
+        write_tmp_files=True,
+        radius=1,
+        skip_auto_items=True,
+        item_blacklist=["snippet"],
+    )

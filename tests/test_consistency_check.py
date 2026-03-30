@@ -275,9 +275,7 @@ class Test_01_CC(HousekeeperMixin, unittest.TestCase):
         #
         # test the rule which raises an exception
         with self.assertRaises(p.cc.IrkConsistencyError):
-            p.ruleengine.apply_semantic_rule(
-                I502["raise exception on invalid mat mul dimensions"], TEST_BASE_URI
-            )
+            p.ruleengine.apply_semantic_rule(I502["raise exception on invalid mat mul dimensions"], TEST_BASE_URI)
 
         #
         # test the rule which produces a I48["constraint violation"] instance

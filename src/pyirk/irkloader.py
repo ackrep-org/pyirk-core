@@ -139,6 +139,13 @@ def _load_mod_from_path(
             msg = "`modpath` is unexpected. In such situations an explicit modname is mandatory."
             raise NotImplementedError(msg)
 
+    if modname in sys.modules:
+        # the module is already loaded
+        loaded_mod = sys.modules[modname]
+        assert os.path.abspath(loaded_mod.__file__) == os.path.abspath(modpath)
+        return loaded_mod
+
+
     if smart_relative and not os.path.isabs(modpath):
         # the path is relative and should be interpreted w.r.t. the calling module
         caller_dir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe().f_back)))
@@ -174,7 +181,6 @@ def _load_mod_from_path(
     spec = importlib.util.spec_from_file_location(modname, modpath)
     mod = importlib.util.module_from_spec(spec)
 
-    assert modname not in sys.modules
     sys.modules[modname] = mod
 
     old_len = len(pyirk.core._uri_stack)

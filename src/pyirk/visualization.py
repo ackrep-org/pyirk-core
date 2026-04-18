@@ -14,11 +14,7 @@ import networkx as nx
 
 # monkey-patch workaround because nxv currently is broken for new networkx releases
 
-if not hasattr(nx, "OrderedGraph"):
-    nx.OrderedGraph = nx.Graph
-    nx.OrderedDiGraph = nx.DiGraph
-    nx.OrderedMultiGraph = nx.MultiGraph
-    nx.OrderedMultiDiGraph = nx.MultiDiGraph
+from . import _nxv_monkeypatch
 
 import nxv  # for graphviz visualization of networkx graphs
 
@@ -444,7 +440,7 @@ class VisualizationManager:
         return "black"
 
     def get_color_for_stm(self, stm: p.Statement) -> str:
-        # TODO: unfuck this
+        # TODO: improve this
         return mpl_colors[(int(stm.rsk[1:]) - 1) % len(mpl_colors)]
 
     def create_complete_graph(
@@ -682,7 +678,8 @@ class VisualizationManager:
 
         :param uri:             entity uri (like "irk:/my/module#I0123")
         :param url_template:    url template for creation of a-tags (html links) for the labels
-        :param write_tmp_files: flag whether to write debug output. if true, writes to cwd, if pathlike, writes to that dir or file.
+        :param write_tmp_files: flag whether to write debug output. if true, writes to cwd, if path-like,
+                                writes to that dir or file.
 
         :return:                svg_data as string
         """
@@ -701,7 +698,8 @@ class VisualizationManager:
             msg = f"URI '{uri}' could not be found in the complete knowledge graph"
             raise p.InvalidURIError(msg)
 
-        small_G = nx.ego_graph(big_G, node_of_interest, radius, undirected=True)  #! perfomance of this operation sucks
+        #!! performance of this operation is bad:
+        small_G = nx.ego_graph(big_G, node_of_interest, radius, undirected=True)
         raw_dot_data = self.render_graph_to_dot(small_G, node_of_interest)
 
         dot_data0 = raw_dot_data
@@ -812,8 +810,8 @@ class VisualizationManager:
 
         Args:
             url_template (str, optional): _description_. Defaults to "".
-            write_tmp_files (Union[bool, str], optional): if true, files will be saved to cwd. if pathlike, files will \
-                be saved to that folder or file. Defaults to False.
+            write_tmp_files (Union[bool, str], optional): if true, files will be saved to cwd. if path-like,
+                files will be saved to that folder or file. Defaults to False.
 
         Returns:
             str: svg graph
@@ -962,8 +960,8 @@ class VisualizationManager:
                 image_map,
             )
             # correct tooltip for relations.
-            # Expl.: tooltip attribute in style does not work since map area poly will not be rendered. so we use URL
-            # to trick graphviz to render rect and then replace href and title to create tooltip
+            # Expl.: tooltip attribute in style does not work since map area poly will not be rendered. So we
+            # use URL to trick graphviz to render rect and then replace href and title to create tooltip
             image_map = re.sub(
                 r'(?<=shape="rect")(.+?)(href=")(.+?)(" title=")(.+?)(?=")',
                 lambda mo: mo.group(1) + mo.group(2) + "" + mo.group(4) + mo.group(3),

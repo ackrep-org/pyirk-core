@@ -262,6 +262,11 @@ class Entity(abc.ABC):
                     set_method_prototypes_recursively(child)
 
             set_method_prototypes_recursively(self)
+            try:
+                for prop in parent_class.R87__has_instance_property:
+                    self.set_relation("R87", prop)
+            except:
+                pass
 
     def _perform_instantiation(self):
         """
@@ -279,6 +284,10 @@ class Entity(abc.ABC):
         if parent_class not in (None, []):
             for func in parent_class._method_prototypes:
                 self.add_method(func)
+            try:
+                for prop in parent_class.R87__has_instance_property:
+                    self.set_relation("R16", prop)
+            except: pass
 
     def _get_relation_contents(self, rel_uri: str, lang_indicator=None):
         aux.ensure_valid_uri(rel_uri)

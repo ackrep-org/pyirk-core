@@ -3039,13 +3039,21 @@ R86 = create_builtin_relation(
     R8__has_domain_of_argument_1=I40["general relation"],
     R11__has_range_of_result=I1["general item"],
     R18__has_usage_hint="this relation is intended to be set when the concept (subject) is meaningful, but inadequate \
-        for modeling. Example: orthogonal vectors 'Orthogonality' 'is modeled by' 'is orthogonal to'",
+        for modeling. Example: orthogonal vectors: 'Orthogonality' 'is modeled by' 'is orthogonal to'",
     R68__is_inverse_of=R85["is modeled by"],
+)
+
+R87 = create_builtin_relation(
+    key_str="R87",
+    R1__has_label="has instance property",
+    R2__has_description="specifies that all instances of the subject class have the given property",
+    R8__has_domain_of_argument_1=I1["general item"],
+    R11__has_range_of_result=I11["general property"],
 )
 
 I66 = create_builtin_item(
     key_str="I66",
-    R1__has_label="propagation transitive relations",
+    R1__has_label="propagation of transitive relations rule",
     R2__has_description=("create new relations resulting from transtitive relations"),
     R4__is_instance_of=I41["semantic rule"],
 )
@@ -3065,7 +3073,7 @@ with I66.scope("assertion") as cm:
     # the qualifier prevents the creation of duplicated
     cm.new_rel(cm.i1, cm.r1, cm.i3, qualifiers=[qf_prevent_duplicate_stms])
 
-# next keys: I66, R87
+# next keys: I67, R88
 
 
 # ######################################################################################################################

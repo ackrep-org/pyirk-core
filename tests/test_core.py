@@ -1545,6 +1545,35 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
             res = 1 / b
             self.assertEqual(res, p.I56["mul"](1, p.I57["pow"](b, -1)))
 
+    def test_f01__property_propagation(self):
+        with p.uri_context(uri=TEST_BASE_URI):
+            I1233 = p.create_item(
+                R1__has_label="some property",
+                R4__is_instance_of=p.I11["general property"]
+            )
+            I1234 = p.create_item(
+                R1__has_label="some class",
+                R4__is_instance_of=p.I2["Metaclass"],
+                R87__has_instance_property=I1233["some property"]
+            )
+            I1235 = p.create_item(
+                R1__has_label="some subclass",
+                R3__is_subclass_of=I1234["some class"]
+            )
+            I1236 = p.create_item(
+                R1__has_label="some statement",
+                R4__is_instance_of=p.I15["implication proposition"]
+            )
+            with I1236["some statement"].scope("setting") as cm:
+                cm.new_var(f1=p.instance_of(I1235["some subclass"]))
+
+            with I1236["some statement"].scope("premise") as cm:
+                pass
+            with I1236["some statement"].scope("assertion") as cm:
+                pass
+        self.assertIn(I1233["some property"], cm.f1.R16)
+
+
 
 class Test_02_ruleengine(HousekeeperMixin, unittest.TestCase):
     def setUp(self):

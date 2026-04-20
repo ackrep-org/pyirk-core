@@ -88,7 +88,7 @@ I9841 = p.create_item(
 I1060 = p.create_item(
     R1__has_label="general function",
     R2__has_description="function that maps from some set (domain) into another (range);",
-    R3__is_subclass_of=p.I18["mathematical expression"],
+    R3__is_subclass_of=p.I18["mathematical expression"], # todo should this be I6 mathematical operation
     R18__has_usage_hint="this is the base class for more specific types of functions",
 )
 
@@ -106,6 +106,13 @@ I4237 = p.create_item(
 
 I4237["monovariate rational function"].add_method(p.create_evaluated_mapping, "_custom_call")
 
+I9999 = p.create_item(
+    R1__has_label="rational",
+    R2__has_description="can be displayed as a fraction of integers",
+    R4__is_instance_of=p.I11["general property"]
+)
+
+I4237["monovariate rational function"].set_relation(p.R16["has property"], I9999["rational"])
 
 I4239 = p.create_item(
     R1__has_label="abstract monovariate polynomial",

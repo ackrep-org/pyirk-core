@@ -24,9 +24,9 @@ TEST_DATA_DIR1 = pjoin(IRK_ROOT_DIR, "pyirk-core", "tests", "test_data")
 TEST_DATA_DIR_OCSE = pjoin(TEST_DATA_DIR1, "ocse_subset")
 
 
-TEST_DATA_PATH2 = pjoin(TEST_DATA_DIR1, "ocse_subset", "control_theory1.py")
+TEST_DATA_PATH_OCSE = pjoin(TEST_DATA_DIR1, "ocse_subset", "control_theory1.py")
 TEST_DATA_PATH_MA = pjoin(TEST_DATA_DIR1, "ocse_subset", "math1.py")
-TEST_DATA_PATH3 = pjoin(TEST_DATA_DIR1, "ocse_subset", "agents1.py")
+TEST_DATA_PATH_AG = pjoin(TEST_DATA_DIR1, "ocse_subset", "agents1.py")
 TEST_DATA_PATH_ZEBRA01 = pjoin(TEST_DATA_DIR1, "zebra01.py")
 TEST_DATA_PATH_ZEBRA02 = pjoin(TEST_DATA_DIR1, "zebra02.py")
 TEST_DATA_PATH_ZEBRA_BASE_DATA = pjoin(TEST_DATA_DIR1, "zebra_base_data.py")

@@ -14,7 +14,7 @@ import pyirk as p
 from .settings import (
     TEST_BASE_URI,
     HousekeeperMixin,
-    TEST_DATA_PATH2,
+    TEST_DATA_PATH_OCSE,
 )
 
 
@@ -223,7 +223,7 @@ class Test_01_CC(HousekeeperMixin, unittest.TestCase):
     @unittest.expectedFailure
     def test_b01__cc_constraint_violation_rules(self):
 
-        ct = p.irkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
+        ct = p.irkloader.load_mod_from_path(TEST_DATA_PATH_OCSE, prefix="ct")
         I501 = self._define_tst_rules(ct)
         with p.uri_context(uri=TEST_BASE_URI):
 
@@ -239,7 +239,7 @@ class Test_01_CC(HousekeeperMixin, unittest.TestCase):
 
     def test_c01__cc_matrix_dimensions(self):
 
-        ct = p.irkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
+        ct = p.irkloader.load_mod_from_path(TEST_DATA_PATH_OCSE, prefix="ct")
         c = self._define_tst_rules(ct)
         I501, I502, I503 = c.I501, c.I502, c.I503
         with p.uri_context(uri=TEST_BASE_URI):
@@ -290,7 +290,7 @@ class Test_01_CC(HousekeeperMixin, unittest.TestCase):
         self.assertEqual(A2B.R74__has_constraint_violation, [])
 
     def test_c02__cc_multi_valued_domain(self):
-        ma = p.irkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct").ma
+        ma = p.irkloader.load_mod_from_path(TEST_DATA_PATH_OCSE, prefix="ct").ma
         with p.uri_context(uri=TEST_BASE_URI):
             I1000 = p.create_item(
                 R1__has_label="negation",

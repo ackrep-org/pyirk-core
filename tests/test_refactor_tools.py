@@ -11,7 +11,7 @@ from .settings import (
     TEST_DATA_DIR1,
     HousekeeperMixin,
     TEST_DATA_DIR_OCSE,
-    TEST_DATA_PATH3 as ocse_subset_agents_path,
+    TEST_DATA_PATH_AG as ocse_subset_agents_path,
 )
 
 

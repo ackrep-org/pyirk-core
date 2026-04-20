@@ -14,8 +14,8 @@ import pyirk.reportgenerator as rgen
 
 from .settings import (
     TEST_DATA_DIR1,
-    TEST_DATA_PATH2,
-    TEST_DATA_PATH3,
+    TEST_DATA_PATH_OCSE,
+    TEST_DATA_PATH_AG,
     TEST_DATA_PATH_ZEBRA_BASE_DATA,
     TEST_DATA_PATH_ZEBRA01,
     TEST_DATA_PATH_ZEBRA02,

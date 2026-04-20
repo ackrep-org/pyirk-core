@@ -21,9 +21,9 @@ import pyirk.reportgenerator as rgen
 from .settings import (
     IRK_ROOT_DIR,
     TEST_DATA_DIR1,
-    TEST_DATA_PATH2,
+    TEST_DATA_PATH_OCSE,
     TEST_DATA_PATH_MA,
-    TEST_DATA_PATH3,
+    TEST_DATA_PATH_AG,
     TEST_DATA_PATH_ZEBRA_BASE_DATA,
     TEST_DATA_PATH_ZEBRA02,
     TEST_MOD_NAME,
@@ -199,7 +199,7 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
         The first test ensures, that TestCases do not influence each other
         """
 
-        _ = p.irkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
+        _ = p.irkloader.load_mod_from_path(TEST_DATA_PATH_OCSE, prefix="ct")
 
         self.tearDown()
 
@@ -248,7 +248,7 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
     # noinspection PyUnresolvedReferences
     # (above noinspection is necessary because of the @-operator which is undeclared for strings)
     def test_b00__core1_basics(self):
-        mod1 = p.irkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
+        mod1 = p.irkloader.load_mod_from_path(TEST_DATA_PATH_OCSE, prefix="ct")
         self.assertEqual(mod1.ma.I3749.R1.value, "Cayley-Hamilton theorem")
 
         def_eq_item = mod1.I6886.R6__has_defining_mathematical_relation
@@ -429,7 +429,7 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
 
         :return:
         """
-        mod1 = p.irkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
+        mod1 = p.irkloader.load_mod_from_path(TEST_DATA_PATH_OCSE, prefix="ct")
         self.assertIn("ma", p.ds.uri_prefix_mapping.b)
         itm1 = p.ds.get_entity_by_key_str("ma__I5000__scalar_zero")
         self.assertEqual(itm1, mod1.ma.I5000["scalar zero"])
@@ -445,7 +445,7 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
         res = p.ds.statements.get("S6229")
         self.assertIsNone(res)
 
-        ct = p.irkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
+        ct = p.irkloader.load_mod_from_path(TEST_DATA_PATH_OCSE, prefix="ct")
         with p.uri_context(uri=TEST_BASE_URI):
             poly1 = p.instance_of(ct.ma.I4239["abstract monovariate polynomial"])
 
@@ -467,7 +467,7 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
             self.assertTrue(s1 is s2)
 
     def test_c05__evaluated_mapping2(self):
-        mod1 = p.irkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
+        mod1 = p.irkloader.load_mod_from_path(TEST_DATA_PATH_OCSE, prefix="ct")
 
         with p.uri_context(uri=TEST_BASE_URI):
             h = p.instance_of(mod1.ma.I9923["scalar field"])
@@ -505,7 +505,7 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
     def test_c07__scope_vars(self):
 
         # this tests for a bug with labels of scope vars
-        _ = p.irkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
+        _ = p.irkloader.load_mod_from_path(TEST_DATA_PATH_OCSE, prefix="ct")
         def_itm = p.ds.get_entity_by_key_str("ma__I9907__definition_of_square_matrix")
         matrix_instance = def_itm.M
         self.assertEqual(matrix_instance.R1.value, "M")
@@ -686,7 +686,7 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
                 cm.new_rel(cm.i1, p.R30["is secondary instance of"], p.I38["non-negative integer"])
 
     def test_c07d__nested_boolean_scopes(self):
-        ct = p.irkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
+        ct = p.irkloader.load_mod_from_path(TEST_DATA_PATH_OCSE, prefix="ct")
         with p.uri_context(uri=TEST_BASE_URI):
 
             I0100 = p.create_item(
@@ -731,7 +731,7 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
         """
         test to copy statements from one scope to another
         """
-        ct = p.irkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
+        ct = p.irkloader.load_mod_from_path(TEST_DATA_PATH_OCSE, prefix="ct")
         with p.uri_context(uri=TEST_BASE_URI):
             I0111 = p.create_item(
                 R1__has_label="definition of something",
@@ -805,7 +805,7 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
         rel_objs = Ia001.get_relations("R5", return_obj=True)
         self.assertEqual(rel_objs, [p.I4, p.I5])
 
-        _ = p.irkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
+        _ = p.irkloader.load_mod_from_path(TEST_DATA_PATH_OCSE, prefix="ct")
         itm = p.ds.get_entity_by_key_str("ct__I4466__Systems_Theory")
         # construction: R5__is_part_of=[p.I4["Mathematics"], p.I5["Engineering"]]
         res = itm.R5
@@ -814,7 +814,7 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
         self.assertIn(p.I5["Engineering"], res)
 
     def test_c09__is_instance_of_generalized_metaclass(self):
-        _ = p.irkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
+        _ = p.irkloader.load_mod_from_path(TEST_DATA_PATH_OCSE, prefix="ct")
 
         itm1 = p.ds.get_entity_by_key_str("I2__Metaclass")
         itm2 = p.ds.get_entity_by_key_str("I12__mathematical_object")
@@ -865,8 +865,8 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
                 p.is_instance_of(p.I39["positive integer"], p.I39["positive integer"])
 
     def test_c10__qualifiers(self):
-        _ = p.irkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
-        _ = p.irkloader.load_mod_from_path(TEST_DATA_PATH3, prefix="ag")
+        _ = p.irkloader.load_mod_from_path(TEST_DATA_PATH_OCSE, prefix="ct")
+        _ = p.irkloader.load_mod_from_path(TEST_DATA_PATH_AG, prefix="ag")
 
         itm1: p.Item = p.ds.get_entity_by_key_str("ag__I2746__Rudolf_Kalman")
         stm1, stm2 = itm1.get_relations("ag__R1833__has_employer")[:2]
@@ -882,7 +882,7 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
         self.assertEqual(len(stm2.dual_statement.qualifiers), 1)
 
     def test_c11__equation(self):
-        mod1 = p.irkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
+        mod1 = p.irkloader.load_mod_from_path(TEST_DATA_PATH_OCSE, prefix="ct")
 
         # get item via prefix and key
         itm1: p.Item = p.ds.get_entity_by_key_str("ma__I3749__Cayley_Hamilton_theorem")
@@ -945,11 +945,11 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
         self.assertRaises(ValueError, p.process_key_str, "R2__has_description_XYZ")
 
         # now, check label consistency in the test data
-        _ = p.irkloader.load_mod_from_path(TEST_DATA_PATH2, TEST_MOD_NAME)
+        _ = p.irkloader.load_mod_from_path(TEST_DATA_PATH_OCSE, TEST_MOD_NAME)
 
     def test_c12a__process_key_str2(self):
 
-        ct = p.irkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
+        ct = p.irkloader.load_mod_from_path(TEST_DATA_PATH_OCSE, prefix="ct")
 
         p.ds.get_entity_by_key_str("ct__R7641__has_approximation") == ct.R7641["has approximation"]
 
@@ -1051,7 +1051,7 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
         )
         self.assertGreater(res_graph.number_of_nodes(), 6)
 
-        mod1 = p.irkloader.load_mod_from_path(TEST_DATA_PATH2, TEST_MOD_NAME)
+        mod1 = p.irkloader.load_mod_from_path(TEST_DATA_PATH_OCSE, TEST_MOD_NAME)
 
         # do not use something like "Ia3699" here directly because this might change when mod1 changes
         auto_item: p.Item = mod1.ma.I3749["Cayley-Hamilton theorem"].A
@@ -1064,7 +1064,7 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
 
         res = visualization.visualize_entity(p.u("I21__mathematical_relation"), write_tmp_files=WRITE_TMP_FILES)
 
-        mod1 = p.irkloader.load_mod_from_path(TEST_DATA_PATH2, TEST_MOD_NAME)
+        mod1 = p.irkloader.load_mod_from_path(TEST_DATA_PATH_OCSE, TEST_MOD_NAME)
 
         # get the characteristic polynomial of A
         auto_item: p.Item = mod1.ma.I3749["Cayley-Hamilton theorem"].P
@@ -1145,7 +1145,7 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
         self.assertTrue(d.ma__R8736__depends_polynomially_on, s)
 
     def test_d02b__signature_inheritance(self):
-        ct = p.irkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct")
+        ct = p.irkloader.load_mod_from_path(TEST_DATA_PATH_OCSE, prefix="ct")
         with p.uri_context(uri=TEST_BASE_URI):
             P = p.instance_of(ct.ma.I4240["matrix polynomial"])
             self.assertEqual(P.R8__has_domain_of_argument_1, [ct.ma.I9906["square matrix"]])
@@ -1641,7 +1641,7 @@ class Test_02_ruleengine(HousekeeperMixin, unittest.TestCase):
         self.assertEqual(len(res_graph), 0)
 
         # in this irk module some properties have subproperties
-        _ = p.irkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct", modname=TEST_MOD_NAME)
+        _ = p.irkloader.load_mod_from_path(TEST_DATA_PATH_OCSE, prefix="ct", modname=TEST_MOD_NAME)
 
         # create a new RuleApplicator because the overall graph changed
         ra = p.ruleengine.RuleApplicator(self.rule1)
@@ -1652,7 +1652,7 @@ class Test_02_ruleengine(HousekeeperMixin, unittest.TestCase):
     def test_c05__ruleengine04(self):
         self.setup_data1()
 
-        mod1 = p.irkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct", modname=TEST_MOD_NAME)
+        mod1 = p.irkloader.load_mod_from_path(TEST_DATA_PATH_OCSE, prefix="ct", modname=TEST_MOD_NAME)
         self.assertEqual(len(mod1.I9642["local exponential stability"].get_relations("R17__is_subproperty_of")), 1)
 
         ra = p.ruleengine.RuleApplicator(self.rule1, mod_context_uri=TEST_BASE_URI)
@@ -1676,7 +1676,7 @@ class Test_02_ruleengine(HousekeeperMixin, unittest.TestCase):
 
     def test_c07__ruleengine06(self):
         # general transitivity rule
-        mod1 = p.irkloader.load_mod_from_path(TEST_DATA_PATH2, prefix="ct", modname=TEST_MOD_NAME)
+        mod1 = p.irkloader.load_mod_from_path(TEST_DATA_PATH_OCSE, prefix="ct", modname=TEST_MOD_NAME)
         self.assertEqual(len(mod1.I9642["local exponential stability"].get_relations("R17__is_subproperty_of")), 1)
         import time
 
@@ -1995,7 +1995,7 @@ class Test_04_Core(HousekeeperMixin, unittest.TestCase):
 
     def test_c010_sparql_query(self):
         # This test seems somehow to influence later tests
-        mod1 = p.irkloader.load_mod_from_path(TEST_DATA_PATH2, TEST_MOD_NAME)
+        mod1 = p.irkloader.load_mod_from_path(TEST_DATA_PATH_OCSE, TEST_MOD_NAME)
         p.ds.rdfgraph = p.rdfstack.create_rdf_triples()
         qsrc = p.rdfstack.get_sparql_example_query()
         res = p.ds.rdfgraph.query(qsrc)
@@ -2010,7 +2010,7 @@ class Test_04_Core(HousekeeperMixin, unittest.TestCase):
 
     def test_c020__sparql_query2(self):
         # TODO: replace by Model entity once it exists
-        mod1 = p.irkloader.load_mod_from_path(TEST_DATA_PATH2, TEST_MOD_NAME)
+        mod1 = p.irkloader.load_mod_from_path(TEST_DATA_PATH_OCSE, TEST_MOD_NAME)
 
         with p.uri_context(uri=TEST_BASE_URI):
             m1 = p.instance_of(mod1.I7641["general system model"], r1="test_model 1", r2="a test model")
@@ -2039,7 +2039,7 @@ class Test_04_Core(HousekeeperMixin, unittest.TestCase):
         self.assertEqual(res2, expected_result)
 
     def test_c030__sparql_zz_preprocessing(self):
-        mod1 = p.irkloader.load_mod_from_path(TEST_DATA_PATH2, TEST_MOD_NAME)
+        mod1 = p.irkloader.load_mod_from_path(TEST_DATA_PATH_OCSE, TEST_MOD_NAME)
 
         with p.uri_context(uri=TEST_BASE_URI):
             m1 = p.instance_of(mod1.I7641["general system model"], r1="test_model 1", r2="a test model")
@@ -2097,7 +2097,7 @@ class Test_04_Core(HousekeeperMixin, unittest.TestCase):
     def test_c040__sparql_queries_with_qualifiers(self):
         # R20["has defining scope"]
 
-        ag = p.irkloader.load_mod_from_path(TEST_DATA_PATH3, prefix="ag")
+        ag = p.irkloader.load_mod_from_path(TEST_DATA_PATH_AG, prefix="ag")
 
         itm1: p.Item = p.ds.get_entity_by_key_str("ag__I2746__Rudolf_Kalman")
         stm1, stm2 = itm1.get_relations("ag__R1833__has_employer")[:2]
@@ -2161,7 +2161,7 @@ class Test_06_reportgenerator(HousekeeperMixin, unittest.TestCase):
         data1exp = {"key1": some_list, "key2": p.I1}
         self.assertEqual(reind(data1), data1exp)
 
-        mod2 = p.irkloader.load_mod_from_path(TEST_DATA_PATH3, prefix="ag")
+        mod2 = p.irkloader.load_mod_from_path(TEST_DATA_PATH_AG, prefix="ag")
 
         data1 = {"key1": ':ag__I2746["Rudolf Kalman"]', "key2": {"nested_key": ':ag__R1833["has employer"]'}}
         data1exp = {"key1": mod2.I2746, "key2": {"nested_key": mod2.R1833}}

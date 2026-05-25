@@ -94,6 +94,10 @@ def unload_mod(mod_uri: str, strict=True) -> None:
     if modname := _core.ds.modnames.get(mod_uri):
         sys.modules.pop(modname)
 
+    # Relations from the unloaded module are gone; cached attribute-name resolutions
+    # that pointed to them would now return stale URIs.
+    _core._attr_name_cache.clear()
+
 
 def _unlink_entity(uri: str, remove_from_mod=False) -> None:
     """

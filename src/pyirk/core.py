@@ -309,7 +309,7 @@ class Entity(abc.ABC):
                 self.add_method(func)
 
     def _get_relation_contents(self, rel_uri: str, lang_indicator=None):
-        aux.ensure_valid_uri(rel_uri)
+        assert aux.ensure_valid_uri(rel_uri)
 
         statements: List[Statement] = ds.get_statements(self.uri, rel_uri)
 

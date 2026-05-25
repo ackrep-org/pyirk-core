@@ -43,6 +43,8 @@ AVAILABLE_MODULES: dict[str, str] = {}
 
 STATES = Container({"available_modules_detected": False})
 
+_RE_SHORT_KEY = regex.compile(r"^((Ia?)|(Ra?)|(S))(\d+)$")
+
 
 class NotYetFinishedError(NotImplementedError):
     pass
@@ -279,11 +281,11 @@ class ContinueOuterLoop(PyIRKException):
 def ensure_valid_short_key(txt: str, strict: bool = True) -> bool:
     conds = [isinstance(txt, str)]
 
-    re_short_key = regex.compile(r"^((Ia?)|(Ra?)|(S))(\d+)$")
+    # _RE_SHORT_KEY compiled once at module level
     # produces 5 groups: [{outer-parenthesis}, {inner-p1}, {inner-p2}, {inner-p3}, {last-p}]
     # first (index: 1) and last are the only relevant groups
 
-    match = re_short_key.match(txt)
+    match = _RE_SHORT_KEY.match(txt)
 
     if match is None:
         conds += [False]
@@ -397,7 +399,7 @@ def ensure_valid_baseuri(txt: str, strict: bool = True) -> bool:
 
 
 def make_uri(base_uri: str, short_key):
-    ensure_valid_baseuri(base_uri)
+    assert ensure_valid_baseuri(base_uri)
     assert "_" not in short_key  # TODO: replace by regex match
     assert isinstance(short_key, str) and len(short_key) >= 2
     return f"{base_uri}{settings.URI_SEP}{short_key}"

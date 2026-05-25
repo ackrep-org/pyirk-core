@@ -236,6 +236,12 @@ class Entity(abc.ABC):
 
     def __process_attribute_name(self, attr_name: str, exception_type=AttributeError) -> "ProcessedStmtKey":
         pass
+        active_mod_uri = get_active_mod_uri(strict=False)
+        search_uri = _search_uri_stack[-1] if _search_uri_stack else None
+        cache_key = (attr_name, active_mod_uri, search_uri)
+        cached = _attr_name_cache.get(cache_key)
+        if cached is not None:
+            return cached
         try:
             processed_key = process_key_str(attr_name)
         except aux.ShortKeyNotFoundError as err:
@@ -252,6 +258,7 @@ class Entity(abc.ABC):
                 f"Type hint: self.R4__is_instance_of: {r4}\n",
             )
             raise exception_type(msg)
+        _attr_name_cache[cache_key] = processed_key
         return processed_key
 
     def __eq__(self, other):
@@ -1875,6 +1882,7 @@ def create_relation(key_str: str = "", **kwargs) -> Relation:
 
     run_hooks(rel, phase="post-create")
 
+    _attr_name_cache.clear()
     return rel
 
 
@@ -1905,6 +1913,11 @@ def create_builtin_relation(*args, **kwargs) -> Relation:
 
 _uri_stack = []
 _search_uri_stack = []
+
+# Cache for __process_attribute_name. Key: (attr_name, active_mod_uri, search_uri).
+# Only successful RELATION resolutions are stored. Cleared in create_relation to stay
+# correct when a new relation is registered that could shadow a previously resolved URI.
+_attr_name_cache: dict = {}
 
 
 # NOTE: abstract_uri_context moved to _core/context.py

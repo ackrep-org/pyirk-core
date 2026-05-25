@@ -13,7 +13,7 @@ name = "pyirk"
 description = "Python based 'Imperative Representation of Knowledge' (PyIRK)"
 authors=[{name = "Carsten Knoll", email = "firstname.lastname@posteo.de"}]
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.10"
 license = { text = "GNU General Public License v3 (GPLv3)" }
 
 dynamic = ["dependencies", "version"]

@@ -1856,7 +1856,8 @@ def create_relation(key_str: str = "", **kwargs) -> Relation:
     else:
         rel_key = key_str
 
-    assert rel_key.startswith("R")
+    if not rel_key.startswith("R"):
+        raise AssertionError
 
     mod_uri = get_active_mod_uri()
 

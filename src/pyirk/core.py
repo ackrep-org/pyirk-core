@@ -738,7 +738,8 @@ class Entity(abc.ABC):
         return hash(self.uri)
 
     def update_relations(self, **kwargs):
-        assert self.updated == False, "This function can be called only once for each object, this is the second time."
+        if not (self.updated == False):
+            raise AssertionError("This function can be called only once for each object, this is the second time.")
 
         item_key = self.short_key
 

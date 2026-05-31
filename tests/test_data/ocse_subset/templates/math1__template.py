@@ -15,12 +15,11 @@ p.register_mod(__URI__, keymanager)
 p.start_mod(__URI__)
 
 insert_entities = [
-    I4895["mathematical operator"],
-    raw__I4895["mathematical operator"].add_method(p.create_evaluated_mapping, "_custom_call"),
     R3326["has dimension"],
     I5166["vector space"],
     I5167["state space"],
     R5405["has associated state space"],
+    I1169["point in vector space"],
     I1168["point in state space"],
     I9923["scalar field"],
     I7151["vector"],
@@ -36,7 +35,6 @@ insert_entities = [
     R5938["has row number"],
     I5177["matmul"],
     I5000["scalar zero"],
-    R3033["has type of elements"],
     I8133["field of numbers"],
     I2738["field of complex numbers"],
     I5807["sign"],
@@ -58,7 +56,6 @@ insert_entities = [
     I5030["variable"],
     R8736["depends polyonomially on"],
     I1935["polynomial matrix"],
-    I7765["scalar mathematical object"],
     I5359["determinant"],
     def__I5359_cc_pp,
     raw__I5359["determinant"].add_method(I5359_cc_pp, "_custom_call_post_process"),
@@ -74,6 +71,18 @@ insert_entities = [
     I6012["integer range element"],
     class__IntegerRangeElement,
     I3240["matrix element"],
+    # planar geometry building blocks (used by the theorem how-to example)
+    I1913["geometric object"],
+    I7280["planar polygon"],
+    I2917["planar triangle"],
+    I8172["polygon side"],
+    R2495["has length"],
+    I9148["get polygon sides ordered by length"],
+    raw__I9148["get polygon sides ordered by length"].add_method(p.create_evaluated_mapping, "_custom_call"),
+    def__I9148_cc_pp,
+    raw__I9148["get polygon sides ordered by length"].add_method(
+        I9148_cc_pp, "_custom_call_post_process"
+    ),
 ]
 
 p.end_mod()

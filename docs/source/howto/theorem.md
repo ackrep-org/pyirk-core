@@ -22,6 +22,21 @@ called *scopes*. In particular we have the three following scopes:
 
 In the following, we will see how this structure can be exploited to encode the theorem.
 
+
+## Dependencies and bootstrap
+
+The example reuses geometry items from the [OCSE](https://github.com/ackrep-org/ocse) (planar triangle,
+polygon sides ordered by length, has length, ...). We load the OCSE math module via its URI; pyirk
+resolves the URI through the ``[package.ocse]`` entry in the user configuration file.
+
+```{eval-rst}
+.. literalinclude:: theorem.py
+    :language: python
+    :linenos:
+    :lines: 10-18
+```
+
+
 ## The theorem item
 
 As usual, we start by creating a "blank" item to encode the theorem.
@@ -31,7 +46,21 @@ which is one of several mathematical propositions are already included in pyirk.
 .. literalinclude:: theorem.py
     :language: python
     :linenos:
-    :lines: 9-13
+    :lines: 47-50
+```
+
+
+## Local additions for missing concepts
+
+OCSE does not yet provide items for angle quantities or right angles, so we add them locally inside
+this example. Using a shared value type ``angle (quantity)`` (a subclass of ``real number``) makes
+the operator ``angle`` and the named constant ``right angle`` explicitly typed as the same kind of
+quantity, rather than only sharing ``real number`` by coincidence.
+```{eval-rst}
+.. literalinclude:: theorem.py
+    :language: python
+    :linenos:
+    :lines: 26-43
 ```
 
 
@@ -43,23 +72,19 @@ that returns a context manager that we can use in a `with` statement to define t
 .. literalinclude:: theorem.py
     :language: python
     :linenos:
-    :lines: 15-23
-```
-```{note}
-To keep this howto simple, the objects `I2917["planar triangle"]` as well as `I1002["angle"]`
-and `I1002["right_angle"]` are taken from the [OCSE](https://github.com/ackrep-org/ocse).
+    :lines: 52-64
 ```
 Next, we encode the premise:
 ```{eval-rst}
 .. literalinclude:: theorem.py
     :language: python
     :linenos:
-    :lines: 25-27
+    :lines: 66-68
 ```
 At last, we  are able to state the assertion:
 ```{eval-rst}
 .. literalinclude:: theorem.py
     :language: python
     :linenos:
-    :lines: 29-34
+    :lines: 70-74
 ```

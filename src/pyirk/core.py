@@ -456,7 +456,8 @@ class Entity(abc.ABC):
         """
         res_list = []
 
-        assert isinstance(obj_seq, (tuple, list))
+        if not isinstance(obj_seq, (tuple, list)):
+            raise TypeError(f"obj_seq must be tuple or list, got {type(obj_seq).__name__}")
         for obj in obj_seq:
             res_list.append(self.set_relation(relation, obj, *args, **kwargs))
 
@@ -689,7 +690,8 @@ class Entity(abc.ABC):
     def overwrite_statement(self, rel_key_str_or_uri: str, new_obj: "Entity", qualifiers=None) -> "Statement":
         # the caller wants only results for this key (e.g. "R4")
 
-        assert isinstance(rel_key_str_or_uri, str)
+        if not isinstance(rel_key_str_or_uri, str):
+            raise TypeError(f"rel_key_str_or_uri must be str, got {type(rel_key_str_or_uri).__name__}")
 
         if aux.ensure_valid_uri(rel_key_str_or_uri, strict=False):
             rel_uri = rel_key_str_or_uri
@@ -1739,7 +1741,8 @@ class Statement:
         return isinstance(self.subject, Statement)
 
     def get_first_qualifier_obj_with_rel(self, key=None, uri=None, tolerate_key_error=False):
-        assert [key, uri].count(None) == 1, "exactly one of the arguments must be provided, not 0 not 2"
+        if [key, uri].count(None) != 1:
+            raise ValueError("exactly one of the arguments must be provided, not 0 not 2")
 
         if key:
             try:

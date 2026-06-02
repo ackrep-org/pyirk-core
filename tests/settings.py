@@ -20,7 +20,8 @@ current_dir = os.path.dirname(os.path.abspath(sys.modules.get(__name__).__file__
 IRK_ROOT_DIR = p.aux.get_irk_root_dir()
 
 # path for basic (staged) test data
-TEST_DATA_DIR1 = pjoin(IRK_ROOT_DIR, "pyirk-core", "tests", "test_data")
+# derived from this file's location so worktrees / clones may use any directory name
+TEST_DATA_DIR1 = pjoin(current_dir, "test_data")
 TEST_DATA_DIR_OCSE = pjoin(TEST_DATA_DIR1, "ocse_subset")
 
 

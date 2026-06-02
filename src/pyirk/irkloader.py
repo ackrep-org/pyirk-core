@@ -142,7 +142,8 @@ def _load_mod_from_path(
     if modname in sys.modules:
         # the module is already loaded
         loaded_mod = sys.modules[modname]
-        assert os.path.abspath(loaded_mod.__file__) == os.path.abspath(modpath)
+        # samefile follows symlinks and compares inodes — tolerates worktrees accessed via symlinks
+        assert os.path.samefile(loaded_mod.__file__, modpath)
         return loaded_mod
 
 

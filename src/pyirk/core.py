@@ -236,6 +236,12 @@ class Entity(abc.ABC):
 
     def __process_attribute_name(self, attr_name: str, exception_type=AttributeError) -> "ProcessedStmtKey":
         pass
+        active_mod_uri = get_active_mod_uri(strict=False)
+        search_uri = _search_uri_stack[-1] if _search_uri_stack else None
+        cache_key = (attr_name, active_mod_uri, search_uri)
+        cached = _attr_name_cache.get(cache_key)
+        if cached is not None:
+            return cached
         try:
             processed_key = process_key_str(attr_name)
         except aux.ShortKeyNotFoundError as err:
@@ -252,6 +258,7 @@ class Entity(abc.ABC):
                 f"Type hint: self.R4__is_instance_of: {r4}\n",
             )
             raise exception_type(msg)
+        _attr_name_cache[cache_key] = processed_key
         return processed_key
 
     def __eq__(self, other):
@@ -309,7 +316,7 @@ class Entity(abc.ABC):
                 self.add_method(func)
 
     def _get_relation_contents(self, rel_uri: str, lang_indicator=None):
-        aux.ensure_valid_uri(rel_uri)
+        assert aux.ensure_valid_uri(rel_uri)
 
         statements: List[Statement] = ds.get_statements(self.uri, rel_uri)
 
@@ -449,7 +456,8 @@ class Entity(abc.ABC):
         """
         res_list = []
 
-        assert isinstance(obj_seq, (tuple, list))
+        if not isinstance(obj_seq, (tuple, list)):
+            raise TypeError(f"obj_seq must be tuple or list, got {type(obj_seq).__name__}")
         for obj in obj_seq:
             res_list.append(self.set_relation(relation, obj, *args, **kwargs))
 
@@ -682,7 +690,8 @@ class Entity(abc.ABC):
     def overwrite_statement(self, rel_key_str_or_uri: str, new_obj: "Entity", qualifiers=None) -> "Statement":
         # the caller wants only results for this key (e.g. "R4")
 
-        assert isinstance(rel_key_str_or_uri, str)
+        if not isinstance(rel_key_str_or_uri, str):
+            raise TypeError(f"rel_key_str_or_uri must be str, got {type(rel_key_str_or_uri).__name__}")
 
         if aux.ensure_valid_uri(rel_key_str_or_uri, strict=False):
             rel_uri = rel_key_str_or_uri
@@ -731,7 +740,8 @@ class Entity(abc.ABC):
         return hash(self.uri)
 
     def update_relations(self, **kwargs):
-        assert self.updated == False, "This function can be called only once for each object, this is the second time."
+        if not (self.updated == False):
+            raise AssertionError("This function can be called only once for each object, this is the second time.")
 
         item_key = self.short_key
 
@@ -1731,7 +1741,8 @@ class Statement:
         return isinstance(self.subject, Statement)
 
     def get_first_qualifier_obj_with_rel(self, key=None, uri=None, tolerate_key_error=False):
-        assert [key, uri].count(None) == 1, "exactly one of the arguments must be provided, not 0 not 2"
+        if [key, uri].count(None) != 1:
+            raise ValueError("exactly one of the arguments must be provided, not 0 not 2")
 
         if key:
             try:
@@ -1848,7 +1859,8 @@ def create_relation(key_str: str = "", **kwargs) -> Relation:
     else:
         rel_key = key_str
 
-    assert rel_key.startswith("R")
+    if not rel_key.startswith("R"):
+        raise AssertionError
 
     mod_uri = get_active_mod_uri()
 
@@ -1875,6 +1887,7 @@ def create_relation(key_str: str = "", **kwargs) -> Relation:
 
     run_hooks(rel, phase="post-create")
 
+    _attr_name_cache.clear()
     return rel
 
 
@@ -1905,6 +1918,11 @@ def create_builtin_relation(*args, **kwargs) -> Relation:
 
 _uri_stack = []
 _search_uri_stack = []
+
+# Cache for __process_attribute_name. Key: (attr_name, active_mod_uri, search_uri).
+# Only successful RELATION resolutions are stored. Cleared in create_relation to stay
+# correct when a new relation is registered that could shadow a previously resolved URI.
+_attr_name_cache: dict = {}
 
 
 # NOTE: abstract_uri_context moved to _core/context.py

@@ -295,10 +295,25 @@ I1935 = p.create_item(
     R50__is_different_from=I4240["matrix polynomial"],
 )
 
+# I4895 is intentionally defined here in the staged subset (unlike the real OCSE
+# math1, which uses p.I7 directly for operators). The staged subset uses a less
+# specific classification so that tests can assert is_true(I5359, R4, I4895)
+# without depending on cross-test datastore contamination. See
+# test_fragility_plan__gitignore__.md Phase 3 for rationale.
+I4895 = p.create_item(
+    R1__has_label="mathematical operator",
+    R2__has_description="general (unspecified) mathematical operator",
+    R3__is_subclass_of=p.I12["mathematical object"],
+)
+
+# make instances callable (analogous to what p.I7 has in builtins; see
+# test_consistency_check.create_operators which does the same)
+I4895["mathematical operator"].add_method(p.create_evaluated_mapping, "_custom_call")
+
 I5359 = p.create_item(
     R1__has_label="determinant",
     R2__has_description="returns the determinant of a square matrix",
-    R4__is_instance_of=p.I7["mathematical operation with arity 1"],
+    R4__is_instance_of=I4895["mathematical operator"],
     R8__has_domain_of_argument_1=I9906["square matrix"],
     R11__has_range_of_result=p.I42["scalar mathematical expression"],
 )

@@ -3,6 +3,7 @@ Command line interface for irk package
 """
 
 import os
+import sys
 import argparse
 from pathlib import Path
 import re
@@ -498,22 +499,38 @@ def process_template(template_path):
 
     mod_ast_cont = path_to_ast_container(original_mod_path)
 
-    insert_key_lines = templ_ast_cont.line_data["insert_entities"].strip().split("\n")
-    assert insert_key_lines[0].strip() == "insert_entities = ["
-    assert insert_key_lines[-1].strip() == "]"
+    # Walk the ``insert_entities = [...]`` list via AST so that multi-line
+    # entries (e.g. a long ``raw__I...set_relation(...)`` call) are kept as
+    # one entry instead of being split by newlines.
+    insert_assign = None
+    for elt in templ_ast_cont.ast.body:
+        if (
+            isinstance(elt, ast.Assign)
+            and elt.targets
+            and isinstance(elt.targets[0], ast.Name)
+            and elt.targets[0].id == "insert_entities"
+        ):
+            insert_assign = elt
+            break
+    assert insert_assign is not None, "template must contain `insert_entities = [...]`"
 
-    insert_key_lines = insert_key_lines[1:-1]
+    entry_texts = []
+    for item in insert_assign.value.elts:
+        src = "".join(templ_ast_cont.lines[item.lineno - 1 : item.end_lineno])
+        # trim a trailing comma (if present) and surrounding whitespace
+        entry_texts.append(src.rstrip().rstrip(",").strip())
+
+    short_template_path, fname = os.path.split(template_path)
+    short_template_path = os.path.split(short_template_path)[-1]
+    short_template_path = os.path.join(short_template_path, fname)
 
     lines_to_insert = []
 
-    for line in insert_key_lines:
-        line = line.strip().strip(",")
+    for line in entry_texts:
         if not line:
             continue
-        elif line.startswith("#"):
-            continue
-        elif line.startswith("raw__"):
-            # handle raw lines
+        if line.startswith("raw__"):
+            # handle raw lines (verbatim insertion; may span multiple lines)
             lines_to_insert.append(line[len("raw__") :])
             lines_to_insert.append("\n" * 3)
             continue
@@ -528,16 +545,18 @@ def process_template(template_path):
             # assume pyirk entity
             short_key = core.process_key_str(line, check=False).short_key
 
-        original_content = mod_ast_cont.line_data[short_key]
+        original_content = mod_ast_cont.line_data.get(short_key, "")
         if not isinstance(original_content, str) or original_content == "":
-            short_template_path, fname = os.path.split(template_path)
-            short_template_path = os.path.split(short_template_path)[-1]
-            short_template_path = os.path.join(short_template_path, fname)
-            msg = (
-                f"could not find associated data for short_key {short_key} while processing "
-                f"template line `{line}` in template {short_template_path}."
+            # Skip stale references (entity removed/renamed upstream) with a
+            # warning instead of aborting the whole regeneration. This keeps
+            # the subset usable while the template catches up.
+            print(
+                f"WARNING [{short_template_path}]: could not find associated "
+                f"data for short_key {short_key} (template line `{line}`); "
+                f"skipping this entry.",
+                file=sys.stderr,
             )
-            raise KeyError(msg)
+            continue
         lines_to_insert.append(original_content)
         lines_to_insert.append("\n")
 

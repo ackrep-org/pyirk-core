@@ -572,5 +572,24 @@ I9148["get polygon sides ordered by length"].add_method(
     )
 
 
+# real / imaginary part operators (added to remove staged-vs-real OCSE math1 fragility
+# that test_c07d__nested_boolean_scopes relied on via the sys.modules cache; see
+# test_fragility_plan__gitignore__.md Phase 1)
+I5005 = p.create_item(
+    R1__has_label="real part",
+    R2__has_description="returns the real part of a complex number",
+    R4__is_instance_of=p.I7["mathematical operation with arity 1"],
+    R8__has_domain_of_argument_1=p.I34["complex number"],
+    R11__has_range_of_result=p.I35["real number"],
+)
+
+I5006 = p.create_item(
+    R1__has_label="imaginary part",
+    R2__has_description="returns the imaginary part of a complex number",
+    R4__is_instance_of=p.I7["mathematical operation with arity 1"],
+    R8__has_domain_of_argument_1=p.I34["complex number"],
+    R11__has_range_of_result=p.I35["real number"],
+)
+
 
 p.end_mod()

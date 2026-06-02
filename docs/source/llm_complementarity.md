@@ -106,9 +106,8 @@ engineering domains. This is where LLMs return to the picture, not as an
 alternative to pyirk but as the tool that makes formal representation
 practical to construct in the first place.
 
-pyirk ships a subpackage, `pyirk.authoring` (see `src/pyirk/authoring/` in the
-source tree, and `docs/design/mcp_authoring.md` for the architectural
-background), that pairs LLM-based ingestion with formal round-trip validation.
+pyirk ships a subpackage, [`pyirk.authoring`](authoring), that pairs LLM-based
+ingestion with formal round-trip validation.
 The LLM performs the fuzzy step: reading informal or semi-formal source
 material — a Lean theorem statement, a textbook passage, a standards document —
 and proposing a pyirk encoding that reuses existing entities wherever possible.

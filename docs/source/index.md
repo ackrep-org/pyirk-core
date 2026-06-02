@@ -9,6 +9,7 @@ howto/index
 background/index
 reference/index
 llm_complementarity
+authoring
 ```
 
 Pyirk is an experimental framework for *imperative* knowledge representation. It is

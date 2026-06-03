@@ -44,6 +44,14 @@ Homepage = "https://github.com/ackrep-org/pyirk-core/"
 [project.scripts]
 pyirk = "pyirk.script:main"
 
+[project.optional-dependencies]
+# Test/dev tooling — intentionally NOT in requirements.txt (that file is the runtime
+# install_requires via [tool.setuptools.dynamic]). pytest-randomly randomizes the test
+# order to surface ordering-dependent tests. It is deliberately NOT wired into CI
+# (randomized gating decouples failure from cause); use it as an on-demand diagnostic,
+# e.g. `pytest -p randomly` over several runs after changing test fixtures/infrastructure.
+test = ["pytest", "pytest-randomly"]
+
 [tool.setuptools.packages.find]
 # note: `include-package-data = true` by default in pyproject.toml
 where = ["src"]

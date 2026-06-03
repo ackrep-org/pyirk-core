@@ -910,12 +910,14 @@ class Item(Entity):
 
         res = process_key_str(key_str, check=False, resolve_prefix=False)
         msg = f"invalid entity type deduced from key string: {key_str}: expected {EType.ITEM} but got {res.etype}."
-        assert res.etype == EType.ITEM, msg
+        if res.etype != EType.ITEM:
+            raise AssertionError(msg)
 
         self.short_key = res.short_key
         self.uri = aux.make_uri(self.base_uri, self.short_key)
 
-        assert self.uri not in ds.items, f"{self.uri} is already occupied. Cannot create new item."
+        if self.uri in ds.items:
+            raise AssertionError(f"{self.uri} is already occupied. Cannot create new item.")
 
         self._set_relations_from_init_kwargs(**kwargs)
 

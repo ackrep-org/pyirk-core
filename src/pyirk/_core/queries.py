@@ -108,8 +108,10 @@ class RuleResult:
 
 
 def is_true(subject: _core.Entity, predicate: _core.Relation, object) -> tuple[bool, None]:
-    assert isinstance(subject, _core.Entity)
-    assert isinstance(predicate, _core.Relation)
+    if not isinstance(subject, _core.Entity):
+        raise AssertionError()
+    if not isinstance(predicate, _core.Relation):
+        raise AssertionError()
 
     res = subject.get_relations(predicate.uri, return_obj=True)
     if isinstance(res, list):

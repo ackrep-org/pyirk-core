@@ -139,8 +139,12 @@ def _load_mod_from_path(
             msg = "`modpath` is unexpected. In such situations an explicit modname is mandatory."
             raise NotImplementedError(msg)
 
-    if modname in sys.modules:
-        # the module is already loaded
+    if modname in sys.modules and reuse_loaded:
+        # the module is already loaded and the caller accepts the cached
+        # version. When ``reuse_loaded`` is False we deliberately fall
+        # through to the reload path below; ``pyirk.unload_mod`` (invoked
+        # via the ``old_mod_uri`` branch further down) will then drop the
+        # entry from ``sys.modules`` itself, so we do not pop here.
         loaded_mod = sys.modules[modname]
         # samefile follows symlinks and compares inodes — tolerates worktrees accessed via symlinks
         assert os.path.samefile(loaded_mod.__file__, modpath)

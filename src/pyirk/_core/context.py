@@ -213,7 +213,8 @@ def register_mod(uri: str, keymanager: KeyManager = None, check_uri=True, prefix
     frame = get_caller_frame(upcount=1)
     path = os.path.abspath(frame.f_globals["__file__"])
     if check_uri:
-        assert frame.f_globals.get("__URI__", None) == uri
+        if not frame.f_globals.get("__URI__", None) == uri:
+            raise AssertionError()
     if uri != settings.BUILTINS_URI:
         # the builtin module is an exception because it should not be unloaded
 

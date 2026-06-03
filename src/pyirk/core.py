@@ -1324,12 +1324,14 @@ class QualifierFactory:
         :param relation:
         :param registry_name:   optional str; if not None this is the key under which this QF is stored in ds.qff_dict.
         """
-        assert isinstance(relation, Relation)
+        if not isinstance(relation, Relation):
+            raise AssertionError()
         self.relation = relation
 
         # TODO: maybe this 'registry name should be uri-based?'
         if registry_name is not None:
-            assert isinstance(registry_name, str) and registry_name not in ds.qff_dict
+            if not (isinstance(registry_name, str) and registry_name not in ds.qff_dict):
+                raise AssertionError()
             ds.qff_dict[registry_name] = self
 
     def __call__(self, obj):

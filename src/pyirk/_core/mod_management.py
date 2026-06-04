@@ -10,10 +10,7 @@ object, whose attributes are only read once the functions are actually called.
 This keeps the import monodirectional: ``core`` imports this module (early),
 this module only binds the (partially loaded) ``core`` module object.
 
-Note: ``replace_and_unlink_entity`` intentionally stays in :mod:`pyirk.core`
-because its parameter annotations reference the core class ``Entity`` (which is
-evaluated at import time and is not yet defined when this module is imported).
-It calls ``_unlink_entity`` via the facade re-export.
+``replace_and_unlink_entity`` has been moved to :mod:`pyirk._core.entity_ops`.
 """
 
 import sys

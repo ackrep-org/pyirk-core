@@ -73,6 +73,12 @@ from ._core.serialization import *  # noqa: E402,F401,F403
 # does not cause a circular failure.
 from ._core.queries import *  # noqa: E402,F401,F403
 
+# Facade re-export of entity-operation helpers migrated to the `_core`
+# subpackage. The submodule only binds the (here still partially loaded) `core`
+# module object and reads its globals lazily at call time, so importing it here
+# does not cause a circular failure.
+from ._core.entity_ops import *  # noqa: E402,F401,F403
+
 
 allowed_literal_types = (str, bool, float, int, complex, Literal)
 
@@ -1940,87 +1946,7 @@ _attr_name_cache: dict = {}
 # NOTE: _unlink_entity moved to _core/mod_management.py
 
 
-def replace_and_unlink_entity(old_entity: Entity, new_entity: Entity):
-    """
-    Replace all statements where `old_entity` is subject or object with new relations where `new_entity` is sub or obj.
-    For the "subject-case" only process those statements for which `new_entity` does not yet have any relations.
-    Thus do not replace e.g. the R4__is_instance_of statement of `new_entity`.
-
-    Then unlink `old_entity`.
-    """
-
-    res = RuleResult()
-
-    from pyirk import builtin_entities as bi
-
-    # these predicates should not be replaced
-    omit_uris = aux.uri_set(
-        bi.R1["has label"], bi.R2["has description"], bi.R4["is instance of"], bi.R57["is placeholder"]
-    )
-
-    # ensure both entities exist (raise UnknownURIError otherwise):
-    ds.get_entity_by_uri(old_entity.uri)
-    ds.get_entity_by_uri(new_entity.uri)
-
-    stm_dict1 = old_entity.get_inv_relations()  # where it is obj
-    stm_dict2 = old_entity.get_relations()  # where it is subj
-
-    _unlink_entity(old_entity.uri, remove_from_mod=True)
-    res.unlinked_entities.append(old_entity)
-    res.replacements.append((old_entity, new_entity))
-
-    for relation_uri, stm_list in list(stm_dict1.items()) + list(stm_dict2.items()):
-        for stm in stm_list:
-            new_stm = None
-            stm: Statement
-            subject, predicate, obj = stm.relation_tuple
-            if predicate.uri in omit_uris:
-                continue
-            subject: Item
-            qlf = stm.qualifiers
-            if obj == old_entity:
-                # case1: old_entity was object, subject stays the same
-                new_stm = subject.set_relation(predicate, new_entity, qualifiers=qlf, prevent_duplicate=True)
-                res.add_statement(new_stm)
-                continue
-            else:
-                # case2: old_entity was subject, subject must be new_entity
-                assert subject == old_entity
-
-                # prevent the creation of a duplicated statement
-                existing_objs = new_entity.get_relations(predicate.uri, return_obj=True)
-                if not obj in existing_objs:
-                    # it is possible that predicate is functional and new_entity.predicate has a value
-                    # different from obj. this is OK if one of them is a placeholder
-                    if len(existing_objs) == 1 and predicate.R22__is_functional:
-                        existing_obj = existing_objs[0]
-                        if obj.R57__is_placeholder:
-                            # ignore it -> continue with next statement
-                            continue
-                        elif not existing_obj.R57__is_placeholder and not obj.R57__is_placeholder:
-                            msg = (
-                                f"conflicting statement for functional predicate {predicate} and non-placeholder "
-                                f"objects: {obj} (of old_entity)  and {existing_obj} of new_entity, while replacing"
-                                f"{old_entity} (old) with {new_entity} (new)."
-                            )
-                            raise aux.FunctionalRelationError(msg)
-                        else:
-                            assert existing_obj.R57__is_placeholder and not obj.R57__is_placeholder
-                            # replace the placeholder with the non-placeholder information
-                            chgd_stm = new_entity.overwrite_statement(predicate.uri, obj, qualifiers=qlf)
-                            res.changed_statements.append(chgd_stm)
-                            continue
-                    else:
-                        # no replacement has to be made
-                        new_stm = new_entity.set_relation(predicate, obj, qualifiers=qlf)
-                        res.add_statement(new_stm)
-                        continue
-                else:
-                    assert obj in existing_objs
-                    # no new information available -> continue with next statement
-                    continue
-
-    return res
+# NOTE: replace_and_unlink_entity moved to _core/entity_ops.py
 
 
 # NOTE: register_mod moved to _core/context.py

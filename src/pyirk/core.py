@@ -79,6 +79,10 @@ from ._core.queries import *  # noqa: E402,F401,F403
 # does not cause a circular failure.
 from ._core.entity_ops import *  # noqa: E402,F401,F403
 
+# Facade re-export of HTML-formatting helpers migrated to the `_core`
+# subpackage.
+from ._core.html_format import *  # noqa: E402,F401,F403
+
 
 allowed_literal_types = (str, bool, float, int, complex, Literal)
 
@@ -1970,11 +1974,7 @@ es = LanguageCode("es")
 # NOTE: is_true moved to _core/queries.py
 
 
-def format_entity_html(e: Entity):
-    short_txt = f'<span class="entity">{e.R1}</span>'
-    detailed_txt = f'<span class="entity">{e.short_key}["{e.R1}"]</span>'
-
-    return f'<span class="js-toggle" data-short-txt="{quote(short_txt)}" data-detailed-txt="{quote(detailed_txt)}">{short_txt}</span>'
+# NOTE: format_entity_html moved to _core/html_format.py
 
 
 # NOTE: format_literal_html moved to _core/serialization.py

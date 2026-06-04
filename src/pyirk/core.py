@@ -67,6 +67,29 @@ from ._core.mod_management import *  # noqa: E402,F401,F403
 # does not cause a circular failure.
 from ._core.serialization import *  # noqa: E402,F401,F403
 
+# Facade re-export of query / rule-result helpers migrated to the `_core`
+# subpackage. The submodule only binds the (here still partially loaded) `core`
+# module object and reads its globals lazily at call time, so importing it here
+# does not cause a circular failure.
+from ._core.queries import *  # noqa: E402,F401,F403
+
+# Facade re-export of entity-operation helpers migrated to the `_core`
+# subpackage. The submodule only binds the (here still partially loaded) `core`
+# module object and reads its globals lazily at call time, so importing it here
+# does not cause a circular failure.
+from ._core.entity_ops import *  # noqa: E402,F401,F403
+
+# Facade re-export of HTML-formatting helpers migrated to the `_core`
+# subpackage.
+from ._core.html_format import *  # noqa: E402,F401,F403
+
+# Facade re-export of PrefixShortCut migrated to the `_core` subpackage.
+from ._core.prefix_shortcut import *  # noqa: E402,F401,F403
+
+# Facade re-export of DataStore migrated to the `_core` subpackage.
+# The singleton ``ds = DataStore()`` stays in this module (see below).
+from ._core.datastore import DataStore  # noqa: E402,F401
+
 
 allowed_literal_types = (str, bool, float, int, complex, Literal)
 
@@ -781,332 +804,12 @@ def wrap_function_with_search_uri_context(func, uri=None):
     return wrapped_func
 
 
-class PrefixShortCut:
-    def __getattribute__(self, prefix_name: str) -> Any:
-        if not prefix_name in ds.uri_prefix_mapping.b:
-            raise UnknownPrefixError(prefix_name)
-
-        uri = ds.uri_prefix_mapping.b[prefix_name]
-        mod = ds.uri_mod_dict[uri]
-        return mod
-
+# NOTE: PrefixShortCut moved to _core/prefix_shortcut.py
 
 pf = PrefixShortCut()
 
 
-class DataStore:
-    """
-    Provides objects to store all data that would be global otherwise
-    """
-
-    def __init__(self):
-        self.items = {}
-        self.relations = {}
-
-        # dict of lists store keys of the entities (not the entities itself, to simplify deletion)
-        self.entities_created_in_mod = defaultdict(list)
-
-        self.stms_created_in_mod = defaultdict(dict)
-
-        # mappings like .a = {"my/mod/uri": "/path/to/mod.py"} and .b = {"/path/to/mod.py": "my/mod/uri"}
-        self.mod_path_mapping = aux.OneToOneMapping()
-
-        # for every entity uri store a dict that maps relation uris to lists of corresponding relation-edges
-        self.statements = defaultdict(dict)
-
-        # also do this for the inverse relations (for easy querying)
-        self.inv_statements = defaultdict(lambda: defaultdict(list))
-
-        # for every scope-item key store the relevant relation-edges
-        self.scope_statements = defaultdict(list)
-
-        # for every relation key store the relevant relation-edges
-        self.relation_statements = defaultdict(list)
-
-        # store a map {uri: Statement-instance} of all relation edges
-        self.statement_uri_map = {}
-
-        # this will be set on demand
-        self.rdfgraph = None
-
-        # dict to store important QualifierFactory instances which are created in builtin_entities but needed in core
-        self.qff_dict = {}
-
-        # mapping like {uri_1: keymanager_1, ...}
-        self.uri_keymanager_dict = {}
-
-        # mapping like .a = {uri_1: prefix_1, ...} and .b = {prefix_1: uri_1}
-        self.uri_prefix_mapping = aux.OneToOneMapping()
-
-        # initialize:
-        self.uri_prefix_mapping.add_pair(settings.BUILTINS_URI, "bi")
-
-        # mapping like {uri1: modname1, ...}
-        self.modnames = {}
-
-        # dict like {uri1: <mod1>, ...}
-        self.uri_mod_dict = {}
-
-        # this flag (default False) might be changed during irkloader calls
-        self.reuse_loaded_module = False
-
-        # this list serves to keep track of nested scopes
-        self.scope_stack = []
-
-        # store unlinked entities
-        self.unlinked_entities = {}
-
-        # store hook functions
-        self.hooks = self.initialize_hooks()
-
-        # data structure to facilitate scope-copying
-        # keys: 2-tuples: (new_scope_uri, old_var_uri)
-        # values: new_var_item
-        self.scope_var_mappings = {}
-
-    def initialize_hooks(self) -> dict:
-        self.hooks = {
-            "post-create-entity": [],
-            "post-create-item": [],
-            "post-create-relation": [],
-            "post-finalize-entity": [],
-            "post-finalize-item": [],
-            "post-finalize-relation": [],
-        }
-        return self.hooks
-
-    def get_item_by_label(self, label) -> Entity:
-        """
-        Search over all item and return the first item which has the provided label.
-        Useful during interactive debugging. Not useful for production!
-        """
-        for uri, itm in self.items.items():
-            if itm.R1.value == label:
-                return itm
-
-    def get_entity_by_key_str(self, key_str, mod_uri=None) -> Entity:
-        """
-        :param key_str:     str like I1234 or I1234__some_label
-        :param mod_uri:     optional uri of the module; if None the active module is assumed
-
-        :return:            corresponding entity
-        """
-
-        processed_key = process_key_str(key_str, mod_uri=mod_uri)
-        assert processed_key.etype in (EType.ITEM, EType.RELATION)
-
-        if mod_uri is None:
-            uri = processed_key.uri
-        else:
-            uri = aux.make_uri(mod_uri, processed_key.short_key)
-
-        res = self.get_entity_by_uri(uri, processed_key.etype, strict=False)
-        if res is None:
-            mod_uri = get_active_mod_uri(strict=False)
-            msg = (
-                f"Could not find entity with key '{processed_key.short_key}'; Entity type: '{processed_key.etype}'; "
-                f"Active mod: '{mod_uri}'"
-            )
-            raise KeyError(msg)
-
-        return res
-
-    def get_entity_by_uri(self, uri: str, etype=None, strict=True) -> Union[Entity, None]:
-        if etype is not None:
-            # only one lookup is needed
-            if etype == EType.ITEM:
-                res = self.items.get(uri)
-            else:
-                res = self.relations.get(uri)
-        else:
-            # two lookups might be necessary
-            res = self.items.get(uri)
-            if res is None:
-                # try relation (might also be None)
-                res = self.relations.get(uri)
-
-        if strict and res is None:
-            msg = f"No entity found for URI {uri}."
-            raise aux.UnknownURIError(msg)
-
-        return res
-
-    @staticmethod
-    def _default_subject_filter(entity):
-        """
-        used to prevent items from scopes showing up inside the results of `get_subjects_for_relation`.
-        """
-        # R20["has defining scope"]>
-        return getattr(entity, "R20") is None
-
-    def get_subjects_for_relation(self, rel_uri: str, filter=None):
-        stm_list: List[Statement] = self.relation_statements[rel_uri]
-
-        res = []
-        if isinstance(filter, allowed_literal_types) or isinstance(filter, Entity):
-            cond_func = lambda obj: obj == filter
-        else:
-            cond_func = lambda obj: True
-        for stm in stm_list:
-            if cond_func(stm.object) and self._default_subject_filter(stm.subject):
-                res.append(stm.subject)
-
-        return res
-
-    def get_statements(self, entity_uri: str, rel_uri: str) -> List["Statement"]:
-        """
-        self.statements maps an entity_key to an inner_dict.
-        The inner_dict maps an relation_key to a Statement or List[Statement].
-
-        :param entity_uri:
-        :param rel_uri:
-        :return:
-        """
-        aux.ensure_valid_uri(rel_uri)
-        aux.ensure_valid_uri(entity_uri)
-
-        # We return an empty list if the entity has no such relation.
-        # TODO: model this as defaultdict?
-        return self.statements[entity_uri].get(rel_uri, list())
-
-    def set_statement(self, stm: "Statement") -> None:
-        """
-        Insert a Statement into the relevant data structures of the DataStorage (self)
-
-        This method does not handle the dual relation. It must be created and stored separately.
-
-        :param stm:   Statement instance
-        :return:
-        """
-
-        subj_uri = stm.relation_tuple[0].uri
-        try:
-            subj_label = str(stm.relation_tuple[0].R1)
-        except:
-            subj_label = "<unknown label>"
-
-        rel_uri = stm.relation_tuple[1].uri
-        aux.ensure_valid_uri(subj_uri)
-        aux.ensure_valid_uri(rel_uri)
-
-        self.relation_statements[rel_uri].append(stm)
-        self.statement_uri_map[stm.uri] = stm
-
-        relation = self.relations[rel_uri]
-
-        # stm_list will be either a list of statements or None
-        # for some R22-related reason (see below) we cannot use a default dict here,
-        # thus we need to do the case distinction manually
-        stm_list = self.statements[subj_uri].get(rel_uri, None)
-
-        if stm_list is None or len(stm_list) == 0:
-            self.statements[subj_uri][rel_uri] = [stm]
-
-        elif isinstance(stm_list, list):
-            exception_flag = stm.get_first_qualifier_obj_with_rel(
-                "R65__allows_alternative_functional_value", tolerate_key_error=True
-            )
-            if relation.R22 and not exception_flag:
-                # R22__is_functional, this means there can only be one value for this relation and this item
-                msg = (
-                    f"for subject {subj_uri} there already exists a statement for relation {stm.predicate}. "
-                    f"This relation is functional (R22), thus another statement is not allowed."
-                )
-                raise aux.FunctionalRelationError(msg)
-            elif relation.R32 and not exception_flag:
-                if not isinstance(stm.object, Literal):
-                    stm.object = Literal(stm.object, settings.DEFAULT_DATA_LANGUAGE)
-                lang_list = [get_language_of_str_literal(s.object) for s in stm_list]
-                if stm.object.language in lang_list:
-                    msg = (
-                        f"for subject {subj_uri} ({subj_label}) there already exists statements for relation "
-                        f"{stm.predicate} with the object languages {lang_list}. This relation is functional for "
-                        f"each language (R32). Thus another statement with language `{stm.object.language}` is not allowed."
-                    )
-                    raise aux.FunctionalRelationError(msg)
-            stm_list.append(stm)
-
-        else:
-            msg = (
-                f"unexpected type ({type(stm_list)}) of dict content for entity {subj_uri} and "
-                f"relation {rel_uri}. Expected list or None"
-            )
-            raise TypeError(msg)
-
-    def get_uri_for_prefix(self, prefix: str) -> str:
-        res = self.uri_prefix_mapping.b.get(prefix)
-
-        if res is None:
-            msg = f"Unknown prefix: '{prefix}'. No matching URI found."
-            raise UnknownPrefixError(msg)
-        return res
-
-    def preprocess_query(self, query, sanity_check=True):
-        if "__" in query:
-            if sanity_check:
-                prefixes = re.findall(r"[\w]*:[ ]*<.*?>", query)
-                prefix_dict = {}
-                for prefix in prefixes:
-                    parts = prefix.split(" ")
-                    key = parts[0]
-                    value = parts[-1].replace("<", "").replace(">", "")
-                    if value.split("/")[-1].upper() == value.split("/")[-1]:
-                        # this removes special qualifier prefixes that lead to uri not found error
-                        value = "/".join(value.split("/")[:-1]) + "#"
-                    prefix_dict[key] = value
-                # print(prefix_dict)
-
-                entities = re.findall(r"[\w]*:[\w]+__[\w]+(?:–_instance)?", query)
-                for e in entities:
-                    # check sanity
-                    prefix, rest = e.split(":")
-                    prefix = prefix + ":"
-                    irk_key, description = rest.split("__")
-
-                    entity_uri = prefix_dict.get(prefix) + irk_key
-                    entity = self.get_entity_by_uri(entity_uri)
-
-                    label = description.replace("_", " ")
-
-                    assert isinstance(entity.R1, Literal)
-                    r1 = entity.R1.value
-
-                    if r1 != label:
-                        msg = f"Entity label '{r1}' for entity '{e}' and given label '{label}' do not match!"
-                        raise aux.InconsistentLabelError(msg)
-                    # todo: do not raise if wrong entity is in comment
-
-            new_query = re.sub(r"__[\w]+(?:–_instance)?", "", query)
-        else:
-            new_query = query
-
-        return new_query
-
-    def append_scope(self, scope):
-        """
-        Called when __enter__-ing a scoping context manager
-        """
-        self.scope_stack.append(scope)
-
-    def remove_scope(self, scope):
-        """
-        Called when __exit__-ing a scoping context manager
-        """
-
-        current_scope = self.get_current_scope()
-        if current_scope != scope:
-            msg = "Refuse to remove scope which is not the topmost on the stack (i.e. the last in the list)"
-            raise aux.GeneralPyIRKError(msg)
-
-        self.scope_stack.pop()
-
-    def get_current_scope(self):
-        try:
-            return self.scope_stack[-1]
-        except IndexError:
-            msg = "unexpectedly found the scope stack empty"
-            raise aux.GeneralPyIRKError(msg)
-
+# NOTE: DataStore moved to _core/datastore.py
 
 ds = DataStore()
 
@@ -1934,87 +1637,7 @@ _attr_name_cache: dict = {}
 # NOTE: _unlink_entity moved to _core/mod_management.py
 
 
-def replace_and_unlink_entity(old_entity: Entity, new_entity: Entity):
-    """
-    Replace all statements where `old_entity` is subject or object with new relations where `new_entity` is sub or obj.
-    For the "subject-case" only process those statements for which `new_entity` does not yet have any relations.
-    Thus do not replace e.g. the R4__is_instance_of statement of `new_entity`.
-
-    Then unlink `old_entity`.
-    """
-
-    res = RuleResult()
-
-    from pyirk import builtin_entities as bi
-
-    # these predicates should not be replaced
-    omit_uris = aux.uri_set(
-        bi.R1["has label"], bi.R2["has description"], bi.R4["is instance of"], bi.R57["is placeholder"]
-    )
-
-    # ensure both entities exist (raise UnknownURIError otherwise):
-    ds.get_entity_by_uri(old_entity.uri)
-    ds.get_entity_by_uri(new_entity.uri)
-
-    stm_dict1 = old_entity.get_inv_relations()  # where it is obj
-    stm_dict2 = old_entity.get_relations()  # where it is subj
-
-    _unlink_entity(old_entity.uri, remove_from_mod=True)
-    res.unlinked_entities.append(old_entity)
-    res.replacements.append((old_entity, new_entity))
-
-    for relation_uri, stm_list in list(stm_dict1.items()) + list(stm_dict2.items()):
-        for stm in stm_list:
-            new_stm = None
-            stm: Statement
-            subject, predicate, obj = stm.relation_tuple
-            if predicate.uri in omit_uris:
-                continue
-            subject: Item
-            qlf = stm.qualifiers
-            if obj == old_entity:
-                # case1: old_entity was object, subject stays the same
-                new_stm = subject.set_relation(predicate, new_entity, qualifiers=qlf, prevent_duplicate=True)
-                res.add_statement(new_stm)
-                continue
-            else:
-                # case2: old_entity was subject, subject must be new_entity
-                assert subject == old_entity
-
-                # prevent the creation of a duplicated statement
-                existing_objs = new_entity.get_relations(predicate.uri, return_obj=True)
-                if not obj in existing_objs:
-                    # it is possible that predicate is functional and new_entity.predicate has a value
-                    # different from obj. this is OK if one of them is a placeholder
-                    if len(existing_objs) == 1 and predicate.R22__is_functional:
-                        existing_obj = existing_objs[0]
-                        if obj.R57__is_placeholder:
-                            # ignore it -> continue with next statement
-                            continue
-                        elif not existing_obj.R57__is_placeholder and not obj.R57__is_placeholder:
-                            msg = (
-                                f"conflicting statement for functional predicate {predicate} and non-placeholder "
-                                f"objects: {obj} (of old_entity)  and {existing_obj} of new_entity, while replacing"
-                                f"{old_entity} (old) with {new_entity} (new)."
-                            )
-                            raise aux.FunctionalRelationError(msg)
-                        else:
-                            assert existing_obj.R57__is_placeholder and not obj.R57__is_placeholder
-                            # replace the placeholder with the non-placeholder information
-                            chgd_stm = new_entity.overwrite_statement(predicate.uri, obj, qualifiers=qlf)
-                            res.changed_statements.append(chgd_stm)
-                            continue
-                    else:
-                        # no replacement has to be made
-                        new_stm = new_entity.set_relation(predicate, obj, qualifiers=qlf)
-                        res.add_statement(new_stm)
-                        continue
-                else:
-                    assert obj in existing_objs
-                    # no new information available -> continue with next statement
-                    continue
-
-    return res
+# NOTE: replace_and_unlink_entity moved to _core/entity_ops.py
 
 
 # NOTE: register_mod moved to _core/context.py
@@ -2034,94 +1657,11 @@ it = LanguageCode("it")
 es = LanguageCode("es")
 
 
-class RuleResult:
-    def __init__(self):
-        self.new_statements = []
-        self.changed_statements = []
-        self.new_entities = []
-        self.unlinked_entities = []
-        self.partial_results = []
-        self.replacements = []
-        self._rule = None
-        self.apply_time = None
-        self.exception = None
-        self.creator_object = None
-
-        # dict like {rel_uri1: [stm1, stm2, ...]}
-        # maps a relation uri to a list of statements which have this relation as predicate
-        self.rel_map = defaultdict(list)
-
-    def add_statement(self, stm: Statement):
-        if stm is None:
-            return
-        assert stm not in self.new_statements
-        self.new_statements.append(stm)
-        self.rel_map[stm.predicate.uri].append(stm)
-
-    def add_statements(self, stms: List[Statement]):
-        for stm in stms:
-            self.add_statement(stm)
-
-    def add_entity(self, entity: Entity):
-        self.new_entities.append(entity)
-
-    def extend(self, part: "RuleResult"):
-        assert isinstance(part, RuleResult)
-        self.add_statements(part.new_statements)
-        self.new_entities.extend(part.new_entities)
-        self.unlinked_entities.extend(part.unlinked_entities)
-        self.replacements.extend(part.replacements)
-        if part.exception:
-            self.exception = part.exception
-
-    def add_partial(self, part: "RuleResult"):
-        if self.apply_time is None:
-            self.apply_time = 0
-
-        self.apply_time += part.apply_time
-        self.extend(part)
-        self.partial_results.append(part)
-
-    def __repr__(self):
-        if self.apply_time is None:
-            aplt = "? s"
-        else:
-            aplt = f"{round(self.apply_time, 3)} s"
-        res = (
-            f"{type(self).__name__} ({aplt}): new_stms: {len(self.new_statements)}, parts: {len(self.partial_results)}"
-        )
-        return res
-
-    @property
-    def rule(self):
-        """
-        Convenience property for easy access to the corresponding rule
-        """
-        if self._rule is None:
-            if self.partial_results:
-                return self.partial_results[0].rule
-
-        return self._rule
-
-    def get_new_triples(self) -> list[tuple[Entity]]:
-        return [stm.relation_tuple for stm in self.new_statements]
+# NOTE: RuleResult moved to _core/queries.py
+# NOTE: is_true moved to _core/queries.py
 
 
-def is_true(subject: Entity, predicate: Relation, object) -> tuple[bool, None]:
-    assert isinstance(subject, Entity)
-    assert isinstance(predicate, Relation)
-
-    res = subject.get_relations(predicate.uri, return_obj=True)
-    if isinstance(res, list):
-        res = res[0]
-    return res == object
-
-
-def format_entity_html(e: Entity):
-    short_txt = f'<span class="entity">{e.R1}</span>'
-    detailed_txt = f'<span class="entity">{e.short_key}["{e.R1}"]</span>'
-
-    return f'<span class="js-toggle" data-short-txt="{quote(short_txt)}" data-detailed-txt="{quote(detailed_txt)}">{short_txt}</span>'
+# NOTE: format_entity_html moved to _core/html_format.py
 
 
 # NOTE: format_literal_html moved to _core/serialization.py
@@ -2130,40 +1670,9 @@ def format_entity_html(e: Entity):
 # NOTE: script_main moved to _core/serialization.py
 
 
-def is_subclass(item: Item, parent_item: Item):
-    if item.R3 is None:
-        return False
-    elif item.R3 == parent_item:
-        return True
-    else:
-        return is_subclass(item.R3, parent_item)
-
-
-def is_instance(item: Item, parent_item: Item):
-
-    msg = "`core.is_instance` is deprecated in favor of `builtins.is_instance_of`"
-    raise DeprecationWarning(msg)
-    parent = item.R4
-    if parent is None:
-        return False
-    elif parent == parent_item:
-        return True
-    else:
-        return is_subclass(parent, parent_item)
-
-
-def is_subproperty(item: Item, parent_property: Item):
-    """check if item is subproperty of parent_property. item == parent_p will return True as well."""
-    if item == parent_property:
-        return True
-    if not hasattr(item, "R17"):
-        return False
-    elif item.R17 is None:
-        return False
-    elif parent_property in item.R17:
-        return True
-    else:
-        return is_subproperty(item.R17, parent_property)
+# NOTE: is_subclass moved to _core/queries.py
+# NOTE: is_instance moved to _core/queries.py
+# NOTE: is_subproperty moved to _core/queries.py
 
 
 # NOTE: export_entities moved to _core/serialization.py

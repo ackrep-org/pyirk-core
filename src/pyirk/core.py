@@ -67,6 +67,12 @@ from ._core.mod_management import *  # noqa: E402,F401,F403
 # does not cause a circular failure.
 from ._core.serialization import *  # noqa: E402,F401,F403
 
+# Facade re-export of query / rule-result helpers migrated to the `_core`
+# subpackage. The submodule only binds the (here still partially loaded) `core`
+# module object and reads its globals lazily at call time, so importing it here
+# does not cause a circular failure.
+from ._core.queries import *  # noqa: E402,F401,F403
+
 
 allowed_literal_types = (str, bool, float, int, complex, Literal)
 
@@ -2034,87 +2040,8 @@ it = LanguageCode("it")
 es = LanguageCode("es")
 
 
-class RuleResult:
-    def __init__(self):
-        self.new_statements = []
-        self.changed_statements = []
-        self.new_entities = []
-        self.unlinked_entities = []
-        self.partial_results = []
-        self.replacements = []
-        self._rule = None
-        self.apply_time = None
-        self.exception = None
-        self.creator_object = None
-
-        # dict like {rel_uri1: [stm1, stm2, ...]}
-        # maps a relation uri to a list of statements which have this relation as predicate
-        self.rel_map = defaultdict(list)
-
-    def add_statement(self, stm: Statement):
-        if stm is None:
-            return
-        assert stm not in self.new_statements
-        self.new_statements.append(stm)
-        self.rel_map[stm.predicate.uri].append(stm)
-
-    def add_statements(self, stms: List[Statement]):
-        for stm in stms:
-            self.add_statement(stm)
-
-    def add_entity(self, entity: Entity):
-        self.new_entities.append(entity)
-
-    def extend(self, part: "RuleResult"):
-        assert isinstance(part, RuleResult)
-        self.add_statements(part.new_statements)
-        self.new_entities.extend(part.new_entities)
-        self.unlinked_entities.extend(part.unlinked_entities)
-        self.replacements.extend(part.replacements)
-        if part.exception:
-            self.exception = part.exception
-
-    def add_partial(self, part: "RuleResult"):
-        if self.apply_time is None:
-            self.apply_time = 0
-
-        self.apply_time += part.apply_time
-        self.extend(part)
-        self.partial_results.append(part)
-
-    def __repr__(self):
-        if self.apply_time is None:
-            aplt = "? s"
-        else:
-            aplt = f"{round(self.apply_time, 3)} s"
-        res = (
-            f"{type(self).__name__} ({aplt}): new_stms: {len(self.new_statements)}, parts: {len(self.partial_results)}"
-        )
-        return res
-
-    @property
-    def rule(self):
-        """
-        Convenience property for easy access to the corresponding rule
-        """
-        if self._rule is None:
-            if self.partial_results:
-                return self.partial_results[0].rule
-
-        return self._rule
-
-    def get_new_triples(self) -> list[tuple[Entity]]:
-        return [stm.relation_tuple for stm in self.new_statements]
-
-
-def is_true(subject: Entity, predicate: Relation, object) -> tuple[bool, None]:
-    assert isinstance(subject, Entity)
-    assert isinstance(predicate, Relation)
-
-    res = subject.get_relations(predicate.uri, return_obj=True)
-    if isinstance(res, list):
-        res = res[0]
-    return res == object
+# NOTE: RuleResult moved to _core/queries.py
+# NOTE: is_true moved to _core/queries.py
 
 
 def format_entity_html(e: Entity):
@@ -2130,40 +2057,9 @@ def format_entity_html(e: Entity):
 # NOTE: script_main moved to _core/serialization.py
 
 
-def is_subclass(item: Item, parent_item: Item):
-    if item.R3 is None:
-        return False
-    elif item.R3 == parent_item:
-        return True
-    else:
-        return is_subclass(item.R3, parent_item)
-
-
-def is_instance(item: Item, parent_item: Item):
-
-    msg = "`core.is_instance` is deprecated in favor of `builtins.is_instance_of`"
-    raise DeprecationWarning(msg)
-    parent = item.R4
-    if parent is None:
-        return False
-    elif parent == parent_item:
-        return True
-    else:
-        return is_subclass(parent, parent_item)
-
-
-def is_subproperty(item: Item, parent_property: Item):
-    """check if item is subproperty of parent_property. item == parent_p will return True as well."""
-    if item == parent_property:
-        return True
-    if not hasattr(item, "R17"):
-        return False
-    elif item.R17 is None:
-        return False
-    elif parent_property in item.R17:
-        return True
-    else:
-        return is_subproperty(item.R17, parent_property)
+# NOTE: is_subclass moved to _core/queries.py
+# NOTE: is_instance moved to _core/queries.py
+# NOTE: is_subproperty moved to _core/queries.py
 
 
 # NOTE: export_entities moved to _core/serialization.py

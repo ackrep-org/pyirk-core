@@ -103,6 +103,29 @@ Erst nachdem H1–H4 das Substrat entlastet haben:
 - **Phase 3 — H4 (Indizes), nur wenn Profiling es nach Phase 2 noch zeigt.**
 - **Phase 4 — H5 (Reasoning), separate Entscheidung** (rein-Python inkrementell vs. Hybrid).
 
+## 4b. Messergebnis: `python -O` / `PYTHONOPTIMIZE=1` (2026-06-04)
+
+Nach dem assert-Audit (alle tragenden asserts → explizite raises, Suite unter `-O` grün) wurde
+der `-O`-Effekt sauber gemessen: VPS exklusiv (load ≈ 0), `tools/perf_benchmark.py --reps 3
+--skip-profile` (best-of-3), einmal normal, einmal mit `PYTHONOPTIMIZE=1`. Wichtig:
+`PYTHONOPTIMIZE=1` statt `python -O`, weil das Harness Subprozesse startet und `-O` nicht an
+Kindprozesse vererbt wird.
+
+| Messung                          | normal  | optimiert | Δ      |
+|----------------------------------|---------|-----------|--------|
+| OCSE-Load (CC on)                | 3.20 s  | 2.50 s    | −22 %  |
+| OCSE-Load (CC off)               | 3.01 s  | 2.25 s    | −25 %  |
+| OCSE test_package.py (Suite)     | 13.3 s  | 11.3 s    | −15 %  |
+| test_e01 (rule-engine-dominiert) | 35.9 s  | 35.1 s    | −2 %   |
+| test_c07 (Theorem-Anwendung)     | 6.9 s   | 6.4 s     | −7 %   |
+| 10 000 Items create              | 4.31 s  | 2.97 s    | −31 %  |
+| 10 000 Items query               | 0.53 s  | 0.32 s    | −39 %  |
+
+**Fazit:** H1(b) zahlt sich wie erhofft aus — `-O` strippt die hinter `assert`/`__debug__`
+gelegte Lesepfad-Validierung und bringt 30–40 % in den heißen Pfaden sowie ~25 % beim
+Modul-Load. Für große Loads ist `PYTHONOPTIMIZE=1` damit empfehlenswert. Die Rule Engine
+(test_e01) profitiert kaum; weiteres Potenzial dort liegt bei H5.
+
 ## 5. Risiken & offene Punkte
 
 - **Cache-Invalidierung** ist die Hauptgefahr (H2/H3): pyirk mutiert den DataStore (Entities

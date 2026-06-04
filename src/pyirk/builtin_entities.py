@@ -39,6 +39,16 @@ from ._builtin.math_expressions import *  # noqa: E402,F401,F403
 from ._builtin.operators import *  # noqa: E402,F401,F403
 from ._builtin.statement_utils import *  # noqa: E402,F401,F403
 
+# Refactoring status (2026-06): this module was deliberately only *partially* split into
+# `_builtin/` submodules. What remains here is (a) the declarative bootstrapping block of
+# ~150 builtin entity definitions, which is order-sensitive (entities reference previously
+# defined ones) and reads best as one sequential file — moving it would add indirection
+# without benefit — and (b) the proposition/rule scope-CM machinery (_proposition__CM,
+# _rule__CM, ...), which is entangled with the entity definitions via `add_method` calls
+# and call-time references to entities defined further down. Extracting (b) would be
+# possible with the established facade pattern but was judged not worth the risk/benefit
+# ratio. This is the intended final state, not an unfinished migration.
+
 
 ########################################################################################################################
 #

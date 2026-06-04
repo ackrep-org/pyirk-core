@@ -1267,7 +1267,7 @@ def run_hooks(entity: Entity, phase: str) -> None:
 
 
 def register_hook(type_str: str, func: callable) -> None:
-    if not type_str in VALID_HOOK_TYPES:
+    if type_str not in VALID_HOOK_TYPES:
         raise AssertionError()
     if not callable(func):
         raise AssertionError()

@@ -1,0 +1,27 @@
+% rules_r2.rls - Nemo-Regel fuer I66 (vollstaendige transitive Huelle, rekursiv)
+%
+% R2 = I66: Wenn Relation r transitiv ist und i1 r i2 und i2 r i3, dann i1 r i3
+%           (vollstaendige transitive Huelle inkl. Ketten > 2 Hops, rekursiv bis Saettigung)
+%
+% HINWEIS zu Nemo v0.10.0: CSV-Werte werden als IRIs (nicht String-Literale) importiert.
+% Deshalb muessen is_transitive-Fakten auch als IRIs angegeben werden (ohne Anfuehrungszeichen).
+
+% Fakten laden: 3-spaltige CSV (subj_key, pred_key, obj_key)
+@import base_triple :- csv{resource="facts_for_r2.csv"} .
+
+% Statische Auflistung transitiver Relationen (aus pyirk builtin_entities abgeleitet):
+% R1001 ist die im Testmodul definierte transitive Relation
+is_transitive(R1001) .
+
+% Vollstaendige transitive Huelle (rekursiv bis Saettigung):
+% Basisfall: alle gegebenen Basisfakten
+trans(?s, ?p, ?o) :- base_triple(?s, ?p, ?o) .
+% Rekursionsschritt: transitiver Abschluss fuer als transitiv markierte Relationen
+trans(?i1, ?r, ?i3) :- is_transitive(?r), trans(?i1, ?r, ?i2), trans(?i2, ?r, ?i3) .
+
+% Ergebnis exportieren (vollstaendige Huelle inkl. Basisfakten)
+@export trans :- csv{resource="output_r2_new.csv"} .
+
+% Alle Tripel (identisch mit trans in dieser Version)
+all_triple(?s, ?p, ?o) :- trans(?s, ?p, ?o) .
+@export all_triple :- csv{resource="output_r2_all.csv"} .

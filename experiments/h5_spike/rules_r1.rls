@@ -1,0 +1,12 @@
+% rules_r1.rls - Nemo-Regel fuer I64 (introduction of generalized subclass statements)
+%
+% R1 = I64: ?i2 R3__is_subclass_of ?i1 --> ?i2 R83__is_generalized_subclass_of ?i1
+%
+% Fakten laden: 2-spaltige CSV (subj_key, obj_key) fuer R3-Beziehungen
+@import is_subclass_of :- csv{resource="facts_for_r1.csv"} .
+
+% I64: Direkte Uebersetzung von R3 -> R83
+is_generalized_subclass(?i2, ?i1) :- is_subclass_of(?i2, ?i1) .
+
+% Ergebnis exportieren
+@export is_generalized_subclass :- csv{resource="output_r1.csv"} .

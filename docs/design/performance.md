@@ -90,6 +90,47 @@ Erst nachdem H1–H4 das Substrat entlastet haben:
 - **Hybrid** mit `rdfstack.py` / der `sparql_reasoning`-Branch: den entscheidbaren Anteil
   (OWL-RL/SPARQL) an einen reifen Reasoner delegieren, den ausdrucksstärkeren Rest in Python.
 
+#### H5-Entscheidungsgrundlage (2026-06-05) und Phase-1-Plan
+
+Zwei autonome Läufe haben die Datenbasis geliefert:
+
+1. **Profiling** (`docs/design/ruleengine_profiling.md`): 86,5 % der `test_e01`-Zeit
+   stecken im networkx-VF2-Subgraph-Matching (482 736 Rekursionen für EINE Regel auf
+   einem 2 667-Knoten-Graphen). Übrige Engine-Logik 0,2 %, Substrat 0,8 % — der
+   Matching-Algorithmus ist der gesamte Engpass.
+2. **Spike** (`docs/design/h5_spike_report.md`, `experiments/h5_spike/`): Delegation an
+   **Nemo** (Rust-Datalog-Engine, TU Dresden, CLI-Subprozess + CSV) ist korrekt
+   (R1-Typ 49/49, R2-Typ 6/6 Statements identisch) und schnell (16× bzw. ~1276× inkl.
+   Export/Import-Overhead). **73 % der 34 Bestandsregeln sind delegierbar** (41 % direkt,
+   32 % mit `is_transitive`-Codegenerator); 27 % (Python-Callbacks) bleiben in pyirk.
+   `SPIKE-VERDICT: hybrid_empfohlen=ja`.
+
+**Entscheidung: Hybrid-Pfad mit Nemo, Batch-Materialisierung.** Die RETE-Variante
+(inkrementell in Python) wird verworfen: Bei diesen Re-Materialisierungskosten
+(Millisekunden) ist „schnell genug neu rechnen" der fehleranfälligen
+Invalidierungslogik klar überlegen.
+
+**Phase-1-Plan (goal.md-tauglich):**
+
+1. **Exporter generalisieren** (`experiments/h5_spike/exporter.py` → ernsthaft):
+   vollständiger DataStore→EDB-Export inkl. definierter Qualifier-Abbildung (n-äre
+   Nemo-Prädikate) und präzisiertem Scope-Item-Filter (Spike-Risiko 1).
+2. **Regel-Übersetzer/Codegenerator**: R1-Typ-Regeln automatisch aus den
+   pyirk-Regeldefinitionen nach `.rls`; `is_transitive`-Fakten aus `R60`-Scan
+   generieren (Spike-Risiko 2 — stille Fehler bei manueller Pflege).
+3. **OCSE-Skalentest** (die offene Lücke des Spikes): gemeinsamer Fixpunkt-Lauf aller
+   ~25 delegierbaren Regeln auf der echten OCSE-KB; Akzeptanz = identische
+   Statement-Menge wie die pyirk-Engine + Timing-Vergleich.
+4. **Integrationsskizze** (noch nicht produktiv): Delegations-Pfad in `ruleengine.py`
+   hinter Feature-Flag; definierte Ausführungsreihenfolge/Rückkopplung mit den
+   verbleibenden Callback-Regeln (ggf. mehrere Nemo-Läufe).
+5. **Akzeptanzkriterien**: OCSE-Ergebnisse identisch, `test_e01` von ~35 s auf < 5 s,
+   Gesamtsuite grün, Fallback auf reine Python-Engine wenn Nemo-Binary fehlt.
+
+**Vorab zu klärende Entscheidungen (User):** Nemo als optionale Abhängigkeit
+(Binary-Verteilung? Verhalten ohne Nemo = Fallback auf Python-Engine?), Subprozess- vs.
+Daemon-Anbindung (Spike-Risiko 3, erst bei vielen kleinen Läufen relevant).
+
 ## 4. Vorgehen (Phasen — Phase 1 ist der `goal.md`-Kandidat für einen autonomen Lauf)
 
 - **Phase 0 — Benchmark-Harness.** Reproduzierbares Skript: (i) `test_quick`/`test_package`-

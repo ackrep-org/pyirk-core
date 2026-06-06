@@ -89,9 +89,9 @@ def apply_semantic_rules(*rules: List, mod_context_uri: str = None, exhaust=Fals
                     rules = tuple(remaining)
             except Exception as ex:
                 logger.warning("Nemo delegation failed, falling back to Python: %s", ex)
-                # rules bleibt unveränderst — Python-Engine übernimmt alles
+                # rules bleibt unverändert — Python-Engine übernimmt alles
 
-    # ── Python-Engine (bisherige Logik, unveränderst) ─────────────────────────
+    # ── Python-Engine (bisherige Logik, unverändert) ─────────────────────────
     total_res = ReportingMultiRuleResult(rule_list=rules)
 
     existing_statements = len(total_res.new_statements)

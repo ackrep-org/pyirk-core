@@ -2,7 +2,7 @@
 cProfile wrapper for the pyirk rule engine.
 
 Usage:
-    /tmp/pyirk-core-venv/bin/python tools/profile_ruleengine.py
+    ~/venvs/pyirk-core-venv/bin/python tools/profile_ruleengine.py
 
 Profiles test_e01__element_type_rule (the longest OCSE test) and prints the
 top-15 functions by cumulative time, with relative percentages.

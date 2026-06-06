@@ -3,7 +3,7 @@
 tools/perf_benchmark.py — Phase-0 performance benchmark harness for pyirk-core.
 
 One command produces a compact metric table on stdout:
-    /tmp/pyirk-core-venv/bin/python tools/perf_benchmark.py [--reps N] [--skip-ocse] [--skip-profile]
+    ~/venvs/pyirk-core-venv/bin/python tools/perf_benchmark.py [--reps N] [--skip-ocse] [--skip-profile]
 
 cProfile note: absolute times from cProfile are distorted (typically 3–5× slower than
 wall-clock). Only relative function rankings are meaningful; wall-clock numbers in
@@ -22,8 +22,11 @@ import time
 from pathlib import Path
 
 # ── constants ────────────────────────────────────────────────────────────────
-PYIRK_PYTHON = "/tmp/pyirk-core-venv/bin/python"
-PYIRK_PYTEST = "/tmp/pyirk-core-venv/bin/pytest"
+# Default venv lives under ~/venvs (NOT /tmp — systemd-tmpfiles silently removes
+# aged files there); override via PYIRK_BENCH_VENV.
+_VENV = os.environ.get("PYIRK_BENCH_VENV", str(Path.home() / "venvs/pyirk-core-venv"))
+PYIRK_PYTHON = f"{_VENV}/bin/python"
+PYIRK_PYTEST = f"{_VENV}/bin/pytest"
 OCSE_DIR = Path.home() / "projekte/irk-data/ocse"
 OCSE_TESTS = OCSE_DIR / "tests"
 
@@ -58,7 +61,7 @@ def _run_file(script_text, env=None, timeout=600):
 def _base_env(extra=None):
     """Return environment suitable for pyirk subprocesses."""
     e = os.environ.copy()
-    e["PATH"] = f"/tmp/pyirk-core-venv/bin:{e.get('PATH', '')}"
+    e["PATH"] = f"{_VENV}/bin:{e.get('PATH', '')}"
     if extra:
         e.update(extra)
     return e

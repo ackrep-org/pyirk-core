@@ -7,6 +7,7 @@ This module contains code to enable semantic inferences based on special items (
 """
 
 from typing import Dict, List, Tuple, Optional, Union
+import logging
 import os
 from collections import defaultdict
 from enum import Enum
@@ -38,6 +39,8 @@ LITERAL_BASE_URI = "irk:/tmp/literals"
 
 VERBOSITY = False
 
+logger = logging.getLogger(__name__)
+
 
 def apply_all_semantic_rules(mod_context_uri=None) -> List[core.Statement]:
     """
@@ -56,10 +59,39 @@ def apply_all_semantic_rules(mod_context_uri=None) -> List[core.Statement]:
 
 def apply_semantic_rules(*rules: List, mod_context_uri: str = None, exhaust=False) -> "ReportingMultiRuleResult":
     """
-    Apply multiple rules
+    Apply multiple rules.
 
     :param exhaust:     boolean flag; if True: repeat rule application until no new statements are created
+
+    Reihenfolge bei aktivem PYIRK_NEMO_DELEGATION:
+      1) Delegierbare Regeln (direct+transitive) EINMAL via Nemo bis Fixpunkt dieser Teilmenge.
+      2) Restliche Regeln (python_only/SPARQL/OR-Subscope) via Python-Engine wie bisher.
+      Rückkopplung (python_only-Ergebnisse, die delegierbare Regeln erneut triggern würden)
+      ist in Phase 1 NICHT umgesetzt -> Phase-2-Thema.
+
+    Bei gesetztem PYIRK_NEMO_DELEGATION und verfügbarem Nemo-Binary wird versucht,
+    delegierbare Regeln an Nemo zu übergeben. Schlägt dies fehl (fehlende Binary,
+    Exception im Delegationspfad), greift stiller Fallback auf die Python-Engine.
+    Default (Flag nicht gesetzt) = unverändertes Python-Verhalten.
     """
+    # ── Nemo-Delegationspfad (nur wenn Flag gesetzt) ──────────────────────────
+    if os.environ.get("PYIRK_NEMO_DELEGATION"):
+        from pyirk.nemobridge.delegation import (
+            _nemo_available,
+            _split_rules_by_nemo_delegation,
+            _apply_via_nemo,
+        )
+        if _nemo_available():
+            try:
+                delegated, remaining = _split_rules_by_nemo_delegation(rules)
+                if delegated:
+                    _apply_via_nemo(delegated, mod_context_uri)
+                    rules = tuple(remaining)
+            except Exception as ex:
+                logger.warning("Nemo delegation failed, falling back to Python: %s", ex)
+                # rules bleibt unverändert — Python-Engine übernimmt alles
+
+    # ── Python-Engine (bisherige Logik, unverändert) ─────────────────────────
     total_res = ReportingMultiRuleResult(rule_list=rules)
 
     existing_statements = len(total_res.new_statements)

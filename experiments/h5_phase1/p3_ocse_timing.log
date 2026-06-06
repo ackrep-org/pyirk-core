@@ -1,0 +1,125 @@
+======================================================================
+H5 Phase 1 — P3: OCSE Skalentest (Korrektheit + Timing)
+======================================================================
+
+=== Pre-flight ===
+uptime load (1-min): 0.88
+Top-CPU-Prozess: /usr/bin/node /home/user/.npm-global/lib/node_modules/openclaw/dist/index.js gat (1.2%)
+  WARNUNG: load=0.88>=0.5
+Nemo: nemo-cli 0.10.0
+
+=== OCSE laden ===
+lark parser not found!
+OCSE geladen in 4.22s
+
+Roh-EDB-Verzeichnis: /tmp/h5p3_raw_edb_lql54qvj
+Nemo-Arbeitsverzeichnis: /tmp/h5p3_nemo_work_7s7b962n
+Roh-EDB: 1919 Tripel (unqualifiziert)
+         59 qualifizierte Statements
+Prädikaten-Zähler (Top-10 nach Häufigkeit):
+  R4: 799
+  R20: 191
+  R8: 148
+  R11: 139
+  R3: 126
+  R21: 89
+  R75: 89
+  R39: 72
+  R36: 54
+  R35: 46
+
+=== Schritt 1a: Regel-Klassifikation ===
+Key      Label                                              Kategorie      Grund (gekürzt)
+--------------------------------------------------------------------------------------------------------------
+I64      introduction of generalized subclass statements    direct         Pure triple-pattern premise and assertion — tran
+I65      propagation of generalized subclass                direct         Pure triple-pattern premise and assertion — tran
+I66      propagation transitive relations                   transitive     R2-type: R60__is_transitive marker + wildcard re
+I4731    element type rule                                  direct         Pure triple-pattern premise and assertion — tran
+
+Zähler je Kategorie: {'direct': 3, 'transitive': 1}
+Gesamt: 4 Regeln
+JSON gespeichert: /home/user/projekte/pyirk-core/experiments/h5_phase1/p3_rule_classification.json
+
+=== Schritt 1b: pyirk-Baseline ===
+Delegierbare Regeln (4): ['I4731', 'I64', 'I65', 'I66']
+Direkte Regelkopf-Prädikate: ['R30', 'R83']
+Transitive Prädikate (R60__is_transitive): ['R17']
+Neue Statements erzeugt: 339
+Neu abgeleitet (new_statements, inkl. R83): 339
+Trans-Basis + -Abgeleitet (ds.statements für ['R17']): 74
+Kanonische Tupel gesamt: 373
+Übersprungen (Literal/kein Entity in new_statements): 0
+Hinweis: Qualifier ignoriert (Translator produziert keine Qualifier-Fakten).
+Hinweis: Vorher existierende direkte Fakten (z.B. OCSE-basis-R30) werden nicht mitgezählt.
+Nach Prädikat: {'R17': 74, 'R83': 299}
+
+=== Schritt 1c: Nemo-Pfad ===
+EDB-Dir (Roh, vor pyirk-Regeln): /tmp/h5p3_raw_edb_lql54qvj
+RLS geschrieben: /tmp/h5p3_nemo_work_7s7b962n/rules.rls
+--- RLS-Inhalt ---
+  % nemobridge auto-generated rules — do not edit manually
+  
+  @import triples :- csv{resource="triples.csv"} .
+  
+  % ── Direct rules ─────────────────────────────────────────
+  
+  % I64: introduction of generalized subclass statements
+  R83(?i2, ?i1) :- triples(?i2, R3, ?i1) .
+  
+  % I65: propagation of generalized subclass
+  R83(?i3, ?i1) :- R83(?i2, ?i1), R83(?i3, ?i2) .
+  
+  % I4731: element type rule
+  R30(?el, ?t) :- triples(?el, R15, ?s), triples(?s, R7280, ?t) .
+  
+  % ── Transitivity ─────────────────────────────────────────
+  
+  % is_transitive facts — auto-generated from R60__is_transitive=True
+  is_transitive(R17) .
+  
+  % Transitive closure — standard Datalog pattern for R2-type rules
+  % Base: include all triples whose predicate is marked as transitive
+  trans(?s, ?p, ?o) :- triples(?s, ?p, ?o), is_transitive(?p) .
+  % Recursive step: apply transitivity until fixpoint
+  trans(?i1, ?r, ?i3) :- is_transitive(?r), trans(?i1, ?r, ?i2), trans(?i2, ?r, ?i3) .
+  
+  % ── Exports ──────────────────────────────────────────────
+  @export R30 :- csv{resource="output_R30.csv"} .
+  @export R83 :- csv{resource="output_R83.csv"} .
+  @export trans :- csv{resource="output_trans.csv"} .
+--- Ende RLS ---
+Output-Dateien: ['output_R30.csv', 'output_R83.csv', 'output_trans.csv']
+Kanonische Tupel: 373
+Nach Prädikat: {'R17': 74, 'R83': 299}
+
+=== Schritt 1d: Vergleich ===
+pyirk: 373 Tupel  |  nemo: 373 Tupel
+IDENTISCH: 373 Tupel stimmen exakt überein
+
+=== Schritt 1e: Timing (best-of-2) ===
+pyirk misst: apply_semantic_rules(*delegatable, exhaust=True)
+Nemo misst:  export_datastore + generate_rls + nmo-Run + Output-Parse
+
+--- pyirk: 2 Runs (jeweils frischer Subprozess) ---
+  Run 1: LAST-WARNUNG [load=1.01>=0.5, proc=/home/user/venvs/pyirk-core-venv/bin/pyt@99.9%] — messe trotzdem
+  Run 1: 348.1167s
+  Run 2: LAST-WARNUNG [load=1.27>=0.5, proc=/home/user/venvs/pyirk-core-venv/bin/pyt@50.7%] — messe trotzdem
+  Run 2: 348.1978s
+
+--- Nemo: 2 Runs (jeweils frischer Subprozess) ---
+  Run 1: LAST-WARNUNG [load=1.09>=0.5] — messe trotzdem
+  Run 1: 0.4685s
+  Run 2: LAST-WARNUNG [load=1.08>=0.5] — messe trotzdem
+  Run 2: 0.4470s
+
+--- Timing-Ergebnis ---
+pyirk Runs: ['348.1167s', '348.1978s']  Best: 348.1167s
+Nemo  Runs: ['0.4685s', '0.4470s']  Best: 0.4470s
+Speedup (t_pyirk_best / t_nemo_best): 778.78x
+
+=== Post-flight ===
+Load (1-min): 1.08, Top-Prozess: /home/user/venvs/pyirk-core-venv/bin/python experiments/h5_phase1/p3_ocse_s (33.6%)
+
+======================================================================
+P3-VERDICT: ocse_korrekt=ja speedup_test_e01=779x (load-belastet, pyirk-run1: load=1.01>=0.5, pr)
+======================================================================

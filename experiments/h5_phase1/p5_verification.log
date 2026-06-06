@@ -1,0 +1,158 @@
+============================= test session starts ==============================
+platform linux -- Python 3.13.5, pytest-9.0.3, pluggy-1.6.0
+rootdir: /home/user/projekte/pyirk-core
+configfile: pyproject.toml
+plugins: anyio-4.13.0
+collected 166 items
+
+tests/test_consistency_check.py ..x..                                    [  3%]
+tests/test_core.py .........................x........................... [ 34%]
+.................................                                        [ 54%]
+tests/test_nemobridge_exporter.py ........                               [ 59%]
+tests/test_nemobridge_integration.py ..                                  [ 60%]
+tests/test_nemobridge_translator.py ...............................      [ 79%]
+tests/test_nemobridge_verify.py .                                        [ 80%]
+tests/test_refactor_tools.py ..                                          [ 81%]
+tests/test_rulebased_reasoning.py ........................ssss           [ 98%]
+tests/test_script.py FFFE                                                [100%]
+
+==================================== ERRORS ====================================
+_____ ERROR at teardown of Test_01_Script.test_c02__visualization_commands _____
+
+self = <tests.test_script.Test_01_Script testMethod=test_c02__visualization_commands>
+
+    def tearDown(self) -> None:
+        # possibility to keep the mods loaded on error for easier interactive debugging
+        # UNLOAD_MODS is True by default
+        if self.UNLOAD_MODS:
+            self.unload_all_mods()
+        self.print_methodnames()
+        os.environ.pop("UNITTEST_METHOD_NAME", None)
+        for path in self.files_to_delete:
+>           os.unlink(path)
+E           FileNotFoundError: [Errno 2] No such file or directory: 'tmp_dot.txt'
+
+/home/user/projekte/pyirk-core/src/pyirk/utils.py:38: FileNotFoundError
+----------------------------- Captured stdout call -----------------------------
+tests.test_script:Test_01_Script.test_c02__visualization_commands                     [32m[1mpassed[0m
+----------------------------- Captured stderr call -----------------------------
+sh: 1: pyirk: not found
+=================================== FAILURES ===================================
+_____________________ Test_01_Script.test_a01__insert_keys _____________________
+
+self = <tests.test_script.Test_01_Script testMethod=test_a01__insert_keys>
+
+    def test_a01__insert_keys(self):
+    
+        srcpath = pjoin(TEST_DATA_DIR1, "tmod2_with_new_items.py")
+    
+        # make a working copy (this file will be changed)
+        modpath = srcpath.replace(".py", "_workcopy.py")
+        self.files_to_delete.append(modpath)
+        shutil.copy(srcpath, modpath)
+    
+        N = len(os.listdir(TEST_DATA_DIR1))
+    
+        cmd = f'pyirk --insert-keys-for-placeholders "{modpath}"'
+        os.system(cmd)
+    
+        # ensure that temporary file is deleted correctly
+        self.assertEqual(N, len(os.listdir(TEST_DATA_DIR1)))
+    
+        with open(modpath) as fp:
+            txt = fp.read()
+    
+>       self.assertNotIn("\n_newitemkey_", txt)
+E       AssertionError: '\n_newitemkey_' unexpectedly found in 'import pyirk as p\n\n__URI__ = "irk:/pyirk/testmodule2"\nkeymanager = p.KeyManager()\np.register_mod(__URI__, keymanager)\np.start_mod(__URI__)\n\n\nI1000 = p.create_item(\n    R1__has_label="test item in tmod2",\n)\n\n# <new_entities>\n\n\n_newitemkey_ = p.create_item(R1__has_label="some new item", R2__has_description="", R4__is_instance_of=p.I50["stub"])\n\n_newitemkey_ = p.create_item(\n    R1__has_label="special new item", R2__has_description="", R3__is_subclass_of=p.I000["some new item"]\n)\n\n_newitemkey_ = p.create_item(\n    R1__has_label="some other item", R2__has_description="", R4__is_instance_of=p.I000["special new item"]\n)\n\n# this section in the source file is helpful for bulk-insertion of new items\n\n# _newitemkey_ = p.create_item(\n#     R1__has_label="",\n#     R2__has_description="",\n#     R4__is_instance_of=p.I50["stub"]\n# )\n\n\n# </new_entities>\n\nI1000.R72__is_generally_related_to = p.I000["some other item"]\n\n\np.end_mod()\n'
+
+tests/test_script.py:44: AssertionError
+----------------------------- Captured stdout call -----------------------------
+tests.test_script:Test_01_Script.test_a01__insert_keys                                [32m[1mpassed[0m
+----------------------------- Captured stderr call -----------------------------
+sh: 1: pyirk: not found
+____________________ Test_01_Script.test_c01__visualization ____________________
+
+self = <tests.test_script.Test_01_Script testMethod=test_c01__visualization>
+
+    @unittest.skipIf(os.environ.get("CI"), "Skipping visualization test on CI to prevent graphviz-dependency")
+    def test_c01__visualization(self):
+        cmd = "pyirk -vis I12"
+        res = os.system(cmd)
+>       self.assertEqual(res, 0)
+E       AssertionError: 32512 != 0
+
+tests/test_script.py:61: AssertionError
+----------------------------- Captured stdout call -----------------------------
+tests.test_script:Test_01_Script.test_c01__visualization                              [32m[1mpassed[0m
+----------------------------- Captured stderr call -----------------------------
+sh: 1: pyirk: not found
+_______________ Test_01_Script.test_c02__visualization_commands ________________
+
+self = <tests.test_script.Test_01_Script testMethod=test_c02__visualization_commands>
+
+    @unittest.skipIf(os.environ.get("CI"), "Skipping visualization test on CI to prevent graphviz-dependency")
+    def test_c02__visualization_commands(self):
+        os.chdir(TEST_DATA_DIR_OCSE)
+    
+        self.files_to_delete.append("tmp_dot.txt")
+        self.files_to_delete.append("tmp.svg")
+        cmd = "pyirk --load-mod control_theory1.py demo -vis __all__"
+        res = os.system(cmd)
+>       self.assertEqual(res, 0)
+E       AssertionError: 32512 != 0
+
+/home/user/projekte/pyirk-core/tests/test_script.py:71: AssertionError
+----------------------------- Captured stdout call -----------------------------
+tests.test_script:Test_01_Script.test_c02__visualization_commands                     [32m[1mpassed[0m
+----------------------------- Captured stderr call -----------------------------
+sh: 1: pyirk: not found
+=============================== warnings summary ===============================
+tests/test_core.py::Test_01_Core::test_c15__visualization2
+tests/test_core.py::Test_01_Core::test_c15__visualization2
+tests/test_core.py::Test_01_Core::test_c16__visualize_entity_with_radius
+  /home/user/venvs/pyirk-core-venv/lib/python3.13/site-packages/nxv/_util.py:184: DeprecationWarning: OrderedMultiDiGraph is deprecated and will be removed in version 3.0.
+  Use `MultiDiGraph` instead, which guarantees order is preserved for
+  Python >= 3.7
+  
+    return GRAPH_TYPES[directed, multi, ordered]()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+FAILED tests/test_script.py::Test_01_Script::test_a01__insert_keys - Assertio...
+FAILED tests/test_script.py::Test_01_Script::test_c01__visualization - Assert...
+FAILED tests/test_script.py::Test_01_Script::test_c02__visualization_commands
+ERROR tests/test_script.py::Test_01_Script::test_c02__visualization_commands
+== 3 failed, 157 passed, 4 skipped, 2 xfailed, 3 warnings, 1 error in 48.45s ===
+============================= test session starts ==============================
+platform linux -- Python 3.13.5, pytest-9.0.3, pluggy-1.6.0
+rootdir: /home/user/projekte/irk-data/ocse
+plugins: anyio-4.13.0
+collected 0 items / 1 error
+
+==================================== ERRORS ====================================
+____________________ ERROR collecting tests/test_package.py ____________________
+ImportError while importing test module '/home/user/projekte/irk-data/ocse/tests/test_package.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+/usr/lib/python3.13/importlib/__init__.py:88: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/test_package.py:19: in <module>
+    ma = p.irkloader.load_mod_from_path(pjoin(PACKAGE_ROOT_PATH, "math1.py"), prefix="ma", reuse_loaded=True)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../pyirk-core/src/pyirk/irkloader.py:22: in decorator
+    return function(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+../../pyirk-core/src/pyirk/irkloader.py:99: in load_mod_from_path
+    mod = _load_mod_from_path(modpath, prefix, modname, allow_reload, smart_relative, reuse_loaded__actual)
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+../../pyirk-core/src/pyirk/irkloader.py:194: in _load_mod_from_path
+    spec.loader.exec_module(mod)
+math1.py:3: in <module>
+    import sympy as sp
+E   ModuleNotFoundError: No module named 'sympy'
+=========================== short test summary info ============================
+ERROR tests/test_package.py
+!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!
+=============================== 1 error in 2.09s ===============================
+OK

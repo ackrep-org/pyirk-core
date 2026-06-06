@@ -1,0 +1,39 @@
+============================================================
+H5 Phase 1 — Spike-KB Full Verification (R1 + R2)
+============================================================
+Nemo binary: /home/user/bin/nmo
+Version:     nemo-cli 0.10.0
+
+=== Step 1: Build test KB ===
+Test KB loaded (module: irk:/h5_spike/test_kb)
+
+=== Step 2: Export EDB to CSV ===
+Working directory: /tmp/h5p1_verify_tw5pjft3
+  triples.csv: 292 rows -> /tmp/h5p1_verify_tw5pjft3/triples.csv
+  Predicate counts: {'R1001': 3, 'R11': 44, 'R20': 9, 'R21': 9, 'R3': 49, 'R4': 117, 'R68': 4, 'R8': 48, 'R9': 9}
+  R3 facts: 49  (R1 baseline expects 49)
+
+=== Step 3: Generate .rls files ===
+  Rule classifications:
+    I64: direct — Pure triple-pattern premise and assertion — translatable to 
+    I65: direct — Pure triple-pattern premise and assertion — translatable to 
+    I66: transitive — R2-type: R60__is_transitive marker + wildcard relation (R58)
+  RLS written: /tmp/h5p1_verify_tw5pjft3/rules_r1.rls
+  RLS written: /tmp/h5p1_verify_tw5pjft3/rules_r2.rls
+  RLS written: /tmp/h5p1_verify_tw5pjft3/rules_combined.rls
+
+=== Step 4: Run Nemo — R1 (I64, R3 -> R83) ===
+  Nemo R83 output: 49 rows
+  R1: OK — 49/49 R83 facts match baseline
+
+=== Step 5: Run Nemo — R2 (I66, transitive closure) ===
+  Nemo trans output: 6 rows (includes all transitive relations)
+  R2: OK — 6/6 R1001 trans facts match baseline
+
+=== VERIFICATION SUMMARY ===
+  R1 (I64, R3→R83): OK (49/49)
+  R2 (I66, trans):  OK (6/6)
+  Temp dir: /tmp/h5p1_verify_tw5pjft3
+  RLS files: /tmp/h5p1_verify_tw5pjft3/rules_r1.rls, /tmp/h5p1_verify_tw5pjft3/rules_r2.rls
+
+VERIFICATION: PASS

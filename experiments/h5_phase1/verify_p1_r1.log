@@ -1,0 +1,5 @@
+Baseline geladen: /home/user/projekte/pyirk-core/experiments/h5_phase1/../../experiments/h5_spike/baseline_r1.json
+Erwartete R83-Eintraege (= erwartete R3-Fakten): 49
+Test-KB aufgebaut.
+R3-Fakten exportiert: 49 Zeilen -> /tmp/p1r1_verify_purvqito/r3_facts.csv
+OK: exportierte R3-Fakten (49) == Baseline (49)

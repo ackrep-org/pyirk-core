@@ -127,9 +127,17 @@ Invalidierungslogik klar überlegen.
 5. **Akzeptanzkriterien**: OCSE-Ergebnisse identisch, `test_e01` von ~35 s auf < 5 s,
    Gesamtsuite grün, Fallback auf reine Python-Engine wenn Nemo-Binary fehlt.
 
-**Vorab zu klärende Entscheidungen (User):** Nemo als optionale Abhängigkeit
-(Binary-Verteilung? Verhalten ohne Nemo = Fallback auf Python-Engine?), Subprozess- vs.
-Daemon-Anbindung (Spike-Risiko 3, erst bei vielen kleinen Läufen relevant).
+**Entschieden (2026-06-06):** Nemo ist optional (ohne Binary: Fallback auf Python-Engine);
+Anbindung Subprozess/Batch. Daemon-Modus erst, falls viele kleine Läufe es erfordern.
+
+**Phase-1-Status (2026-06-07, umgesetzt und gemergt):** `src/pyirk/nemobridge/`
+(Exporter mit Qualifier-Reifikation, Regel-Klassifikator, .rls-Codegen),
+OCSE-Skalentest grün (`ocse_korrekt=ja`: 373 = 373 Tupel; Speedup 779× unter Last
+gemessen — saubere Wiederholung auf ruhigem VPS steht aus), Feature-Flag-Skelett
+`PYIRK_NEMO_DELEGATION` in `ruleengine.py` (Default aus, stiller Fallback).
+Vollständiger Bericht: `docs/design/h5_phase1_report.md`. **Kern von Phase 2:**
+CSV→`core.Statement`-Mapping (in Phase 1 bewusst `NotImplementedError`),
+Rückkopplung Nemo↔Python-Regeln, Timing-Wiederholung, ggf. weitere Regelkategorien.
 
 ## 4. Vorgehen (Phasen — Phase 1 ist der `goal.md`-Kandidat für einen autonomen Lauf)
 

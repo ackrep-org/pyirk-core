@@ -132,8 +132,8 @@ Anbindung Subprozess/Batch. Daemon-Modus erst, falls viele kleine Läufe es erfo
 
 **Phase-1-Status (2026-06-07, umgesetzt und gemergt):** `src/pyirk/nemobridge/`
 (Exporter mit Qualifier-Reifikation, Regel-Klassifikator, .rls-Codegen),
-OCSE-Skalentest grün (`ocse_korrekt=ja`: 373 = 373 Tupel; Speedup 779× unter Last
-gemessen — saubere Wiederholung auf ruhigem VPS steht aus), Feature-Flag-Skelett
+OCSE-Skalentest grün (`ocse_korrekt=ja`: 373 = 373 Tupel; Speedup **~790×** —
+sauber auf ruhigem VPS bestätigt 2026-06-07, best-of-5: 362.8 s → 0.457 s), Feature-Flag-Skelett
 `PYIRK_NEMO_DELEGATION` in `ruleengine.py` (Default aus, stiller Fallback).
 Vollständiger Bericht: `docs/design/h5_phase1_report.md`. **Kern von Phase 2:**
 CSV→`core.Statement`-Mapping (in Phase 1 bewusst `NotImplementedError`),

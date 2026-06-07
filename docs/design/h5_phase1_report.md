@@ -149,6 +149,15 @@ Hinweis: Nemo-Zeiten sind durch Systemlast kaum beeinflussbar (CPU-satt-gebunden
 Der Speedup ist bei 779× robust. Eine Wiederholung auf unbelastetem VPS (Phase 2) könnte
 die pyirk-Seite etwas günstiger zeigen.
 
+#### Nachtrag (2026-06-07): saubere Wiederholung auf ruhigem VPS
+
+best-of-5, VPS bei Start nachweislich ruhig (loadavg 0.01, einziger Fremdprozess node/openclaw
+@1.2 %). pyirk best **362.84 s**, Nemo best **0.4569 s** → **Speedup 794×** — bestätigt den
+779×-Wert (kein Last-Artefakt). Die Per-Run-Lastwarnung des Skripts (`load=1.27`, Prozess @99.9 %)
+ist ein **Fehlalarm**: es ist pyirks *eigener* Mess-Subprozess, nicht Fremdlast. Das automatische
+`(load-belastet)`-Label in der Verdict-Zeile ist daher in beiden Läufen self-induced und kann
+ignoriert werden; die Messumgebung war sauber. Belastbarer Kennwert: **~790× (362.8 s → 0.457 s)**.
+
 ---
 
 ## 4. Regel-Klassifikation OCSE

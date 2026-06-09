@@ -48,6 +48,45 @@ from collections import defaultdict
 from typing import Any, Dict, Optional
 
 
+def load_uri_index(out_dir) -> Dict[str, str]:
+    """Read ``uri_index.csv`` from *out_dir* and return ``{short_key: uri}``.
+
+    Counterpart to :func:`export_datastore`'s V2 sidecar. The file has two
+    columns (``short_key, uri``) and is written without a header row; an
+    optional header (``short_key,uri``) is recognised and skipped so future
+    format tweaks remain backward-compatible.
+
+    Parameters
+    ----------
+    out_dir:
+        Directory that contains ``uri_index.csv`` (typically the directory
+        passed to :func:`export_datastore`). Accepts ``str`` or ``pathlib.Path``.
+
+    Returns
+    -------
+    dict[str, str]
+        Mapping ``short_key -> uri``. Empty file → empty dict.
+
+    Raises
+    ------
+    FileNotFoundError
+        Bubbled up by design — :func:`pyirk.nemobridge.delegation._apply_via_nemo`
+        wraps the call in the silent-fallback ``try/except``.
+    """
+    path = os.path.join(str(out_dir), "uri_index.csv")
+    result: Dict[str, str] = {}
+    with open(path, newline="", encoding="utf-8") as fh:
+        for row in csv.reader(fh):
+            if len(row) < 2:
+                continue
+            short_key, uri = row[0], row[1]
+            # exporter writes no header, but tolerate one if a future variant adds it
+            if short_key == "short_key" and uri == "uri":
+                continue
+            result[short_key] = uri
+    return result
+
+
 def is_scope_internal(entity) -> bool:
     """Return True if *entity* is a scope-internal (prototype/template) item.
 

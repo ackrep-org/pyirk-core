@@ -4,18 +4,27 @@ pyirk.nemobridge.delegation — Hilfsfunktionen für den PYIRK_NEMO_DELEGATION-P
 Wird von ruleengine.apply_semantic_rules() aufgerufen, wenn das Feature-Flag
 PYIRK_NEMO_DELEGATION gesetzt ist.
 
-Aktueller Stand (Phase 1):
+Aktueller Stand (Phase-2 P2):
   - _nemo_available(), _split_rules_by_nemo_delegation() sind vollständig.
-  - _apply_via_nemo() führt Export → RLS-Codegen → nmo-Run aus, aber das
-    Mapping CSV → core.Statement ist NICHT implementiert (Phase-2-TODO).
-    Es wird NotImplementedError geworfen, der im aufrufenden try/except
-    den stillen Python-Fallback auslöst.
+  - _apply_via_nemo() führt Export → RLS-Codegen → nmo-Run → CSV→Statement-
+    Mapping aus. Rückgabewert: Anzahl neu eingefügter Statements (für den
+    Fixpunkt-Loop in Phase-2 P3).
+  - Auflösung der Entitäten erfolgt strikt per URI über das vom Exporter
+    geschriebene ``uri_index.csv`` (V2), nicht per nacktem short_key gegen das
+    aktive Modul.
+  - Einfügung idempotent via ``omit_if_existing``-Spiegelung (V3); nur echt
+    neue Tupel werden Statements.
+  - mod_context_uri wird wie im nativen Pfad über ``core.uri_context(...)``
+    aktiv gehalten (V5).
+  - Qualifier-Delegation ist Phase-2 vertagt (V1) — Hook ``_apply_qualifiers``
+    ist als no-op-Stub vorhanden, damit eine künftige Phase die Qualifier-
+    Reifikation lokal ergänzen kann, ohne den Mapping-Schritt umzubauen.
 
 Bekannte Limitation:
   Rückkopplung zwischen Nemo-Block und Python-Block ist nicht umgesetzt.
   Nemo läuft einmal bis Fixpunkt seiner Teilmenge; python_only-Ergebnisse,
   die delegierbare Regeln erneut triggern würden, werden ignoriert.
-  → offen für Phase 2.
+  → offen für Phase-2 P3 (Fixpunkt-Loop in apply_semantic_rules).
 """
 
 import csv
@@ -65,22 +74,45 @@ def _split_rules_by_nemo_delegation(rules):
     return delegated, remaining
 
 
-def _apply_via_nemo(delegated_rules, mod_context_uri):
+def _apply_via_nemo(delegated_rules, mod_context_uri, *, out_stms=None):
     """Führt den Nemo-Delegationspfad aus.
 
-    Pipeline: export_datastore → generate_rls → nmo → parse CSVs
-    → create_statement für jeden neuen Tupel.
+    Pipeline: ``export_datastore`` → ``generate_rls`` → ``nmo`` → parse CSVs
+    → für jedes Tupel ``subj.set_relation(rel, obj)`` (V2+V3+V5).
 
-    Phase-1-Status: Export, RLS-Codegen und nmo-Aufruf sind implementiert.
-    Das Mapping CSV-Tupel → core.Statement ist als Phase-2-TODO markiert
-    (raise NotImplementedError), der den stillen Fallback im Aufrufer auslöst.
+    Designvorgaben (verbindlich aus goal.md):
+      * V2 — Jede Entity wird über ihre URI aufgelöst (``ds.get_entity_by_uri``);
+        Quelle: ``uri_index.csv`` aus dem Export. Konklusionsrelationen, die
+        zur Exportzeit noch keine Statements im DataStore hatten (z. B. R83
+        gegen eine frische Test-KB), werden zusätzlich aus ``ds.relations``
+        nachgeschlagen — strikt per URI, kollisionssichere Erweiterung lokal
+        in dieser Funktion, keine short_key-Resolution gegen das aktive Modul.
+      * V3 — Idempotente Einfügung: spiegelt das ``omit_if_existing``-Muster
+        des nativen Konklusions-Pfads (ruleengine.py ~Z. 712-715). Nur Tupel,
+        die noch nicht als Statement existieren, werden eingefügt.
+      * V5 — Abgeleitete Statements bekommen denselben mod_context_uri wie der
+        native Pfad. Mechanismus identisch zu ``RuleApplicator.apply``
+        (ruleengine.py ~Z. 295-301): ``with core.uri_context(mod_context_uri):
+        ... set_relation(...)``.
 
     :param delegated_rules:   Liste delegierbarer Regelobjekte (nur für Log)
-    :param mod_context_uri:   Kontext-URI für neue Statements
-    :raises NotImplementedError: immer (Phase-2-TODO für CSV→Statement-Mapping)
+    :param mod_context_uri:   Kontext-URI für neue Statements; None ⇒ es muss
+                              bereits ein aktiver Modul-Kontext gesetzt sein
+                              (Aufrufer-Verantwortung, wie im nativen Pfad).
+    :param out_stms:          Optionale Liste, die — wenn übergeben — pro neu
+                              erzeugtem Statement um genau jenes Statement-Objekt
+                              ergänzt wird. Plumbing-Hook für
+                              ``ruleengine.apply_semantic_rules``, damit die
+                              Nemo-materialisierten Statements im
+                              ``ReportingMultiRuleResult`` sichtbar bleiben.
+                              Funktionaler Rückgabewert (int n_new) ist
+                              unverändert.
+    :return int:              Anzahl tatsächlich eingefügter neuer Statements
+                              (für den Fixpunkt-Loop in P3).
     """
     from pyirk import core
     from pyirk.nemobridge import export_datastore, generate_rls
+    from pyirk.nemobridge.exporter import load_uri_index
 
     nmo_bin = os.environ.get("PYIRK_NEMO_BIN", "/home/user/bin/nmo")
 
@@ -121,16 +153,130 @@ def _apply_via_nemo(delegated_rules, mod_context_uri):
             len(nemo_tuples), len(delegated_rules),
         )
 
-        # 5) CSV → core.Statement mapping
-        # TODO Phase 2: Für jeden Tupel (s_key, p_key, o_key) aus nemo_tuples:
-        #   - Entitäten per core.ds.get_entity_by_key_str() auflösen
-        #   - Duplikat-Check per p.qf_prevent_duplicate_stms()
-        #   - Statement per subj.set_relation(rel, obj, ...) erzeugen
-        # Qualifier-Reifikation, Prädikat-Auflösung und Kontext-URI-Handling
-        # erfordern tiefergehende Kenntnis der Statement-Erzeugungslogik.
-        raise NotImplementedError(
-            "P4 mapping deferred to Phase 2: CSV→core.Statement conversion not yet implemented"
+        # 5) CSV → core.Statement mapping (V2 + V3 + V5)
+        uri_index = load_uri_index(tmp_dir)
+        return _materialize_tuples(
+            core.ds, nemo_tuples, uri_index, mod_context_uri, out_stms=out_stms,
         )
+
+
+def _extend_uri_index_for_conclusion_relations(ds, uri_index):
+    """Ergänzt *uri_index* um Relationen, die in den Statements nicht vorkamen.
+
+    Hintergrund: ``export_datastore`` registriert eine URI nur, wenn die zugehörige
+    Entity in einem exportierten Statement auftaucht. Konklusions-Relationen einer
+    Regel (z. B. R83 in einer KB ohne vorbestehende R83-Statements) sind dadurch
+    im URI-Index nicht enthalten — Nemo erzeugt aber Tupel mit eben diesen
+    Relations-short_keys. Diese Funktion füllt solche Lücken aus ``ds.relations``
+    auf, wobei bestehende Index-Einträge Vorrang haben (V2-konform: weiterhin
+    URI-basierte Auflösung, kein short_key gegen das aktive Modul).
+
+    Sicherheit gegen short_key-Kollisionen: ds.relations ist URI-keyed. Sollten
+    zwei Relationen mit verschiedenem URI denselben short_key haben (in
+    normalem pyirk-Betrieb unüblich, aber technisch denkbar bei Mehrfach-Modul-
+    Loads), wird der short_key als ambig markiert und NICHT in den Index
+    aufgenommen — der Mapping-Schritt skipt diese Tupel mit DEBUG-Log.
+    """
+    rel_by_sk = {}
+    ambiguous = set()
+    for uri, rel in ds.relations.items():
+        sk = getattr(rel, "short_key", None)
+        if sk is None:
+            continue
+        if sk in rel_by_sk and rel_by_sk[sk] != uri:
+            ambiguous.add(sk)
+            continue
+        rel_by_sk[sk] = uri
+    for sk, uri in rel_by_sk.items():
+        if sk in ambiguous:
+            continue
+        uri_index.setdefault(sk, uri)
+
+
+def _materialize_tuples(ds, nemo_tuples, uri_index, mod_context_uri, *, out_stms=None):
+    """Schreibt Nemo-Output-Tupel als neue Statements zurück in *ds*.
+
+    V2: Auflösung strikt per URI; fehlt der short_key im Index, wird das Tupel
+    geräuschlos übersprungen (DEBUG-Log) — der äußere try/except im Aufrufer
+    in ``ruleengine.apply_semantic_rules`` greift erst bei harten Exceptions.
+
+    V3: Vor ``set_relation`` exakt der gleiche Check wie im nativen Pfad
+    (ruleengine.py ~Z. 714): ``if obj not in subj.get_relations(rel.uri,
+    return_obj=True): subj.set_relation(rel, obj)``.
+
+    V5: ``uri_context(mod_context_uri)``-Wrapper spiegelt
+    ``RuleApplicator.apply`` (ruleengine.py ~Z. 295-301) 1:1.
+
+    :return int: Anzahl tatsächlich neu eingefügter Statements.
+    """
+    from pyirk import core
+
+    # V2-Ergänzung: Konklusions-Relationen müssen NICHT zur Exportzeit als Statement
+    # vorgekommen sein — fülle Lücken im URI-Index aus ds.relations auf.
+    # (Lokal mutiert, da uri_index sowieso eine pro-Aufruf-Datei-Kopie ist.)
+    _extend_uri_index_for_conclusion_relations(ds, uri_index)
+
+    def _do() -> int:
+        n_new = 0
+        for triple in nemo_tuples:
+            if len(triple) != 3:
+                continue
+            subj_key, pred_key, obj_key = triple
+
+            subj_uri = uri_index.get(subj_key)
+            pred_uri = uri_index.get(pred_key)
+            obj_uri = uri_index.get(obj_key)
+            if subj_uri is None or pred_uri is None or obj_uri is None:
+                logger.debug(
+                    "skip nemo tuple (%s,%s,%s): missing uri in index "
+                    "(subj=%s pred=%s obj=%s)",
+                    subj_key, pred_key, obj_key,
+                    subj_uri is not None, pred_uri is not None, obj_uri is not None,
+                )
+                continue
+            try:
+                subj = ds.get_entity_by_uri(subj_uri)
+                rel = ds.get_entity_by_uri(pred_uri)
+                obj = ds.get_entity_by_uri(obj_uri)
+            except Exception as ex:
+                logger.debug(
+                    "skip nemo tuple (%s,%s,%s): URI resolution failed: %s",
+                    subj_key, pred_key, obj_key, ex,
+                )
+                continue
+
+            # V3 — omit_if_existing-Spiegel des nativen Pfads (ruleengine.py ~Z. 714)
+            if obj in subj.get_relations(rel.uri, return_obj=True):
+                continue
+
+            new_stm = subj.set_relation(rel, obj)
+            # V1 (Phase-2 vertagt): Qualifier-Reifikation kommt später hier rein.
+            _apply_qualifiers(new_stm)
+            if out_stms is not None:
+                out_stms.append(new_stm)
+            n_new += 1
+        return n_new
+
+    # V5 — gleiche Kontext-Setzung wie RuleApplicator.apply (ruleengine.py ~Z. 295-301):
+    # mod_context_uri=None ⇒ bestehender aktiver Modul-Kontext wird verwendet.
+    if mod_context_uri is None:
+        return _do()
+    core.aux.ensure_valid_baseuri(mod_context_uri)
+    with core.uri_context(mod_context_uri):
+        return _do()
+
+
+def _apply_qualifiers(new_stm):
+    """V1-Hook (Phase-2 vertagt): Qualifier an *new_stm* hängen.
+
+    Aktuell no-op — spiegelt das native ``# TODO: add qualifiers`` in
+    ``ruleengine.py`` (~Z. 716) wider. Eine spätere Phase ergänzt hier die
+    Qualifier-Reifikation gegen ``stmts.csv`` / ``quals_<R>.csv``. Bis dahin
+    bleibt die Funktion bewusst leer; das Vorhalten als eigene Funktion sorgt
+    dafür, dass die spätere Aktivierung eine isolierte Ergänzung ist (kein
+    Umbau des Mapping-Schritts).
+    """
+    return None
 
 
 def _parse_nemo_outputs(export_dir):

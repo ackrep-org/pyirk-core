@@ -39,6 +39,13 @@ LITERAL_BASE_URI = "irk:/tmp/literals"
 
 VERBOSITY = False
 
+# Maximum number of nemo↔python fixpoint iterations (V4 — Phase 2 P3).
+# A Python rule can produce an edge that re-triggers a delegable rule and vice
+# versa; the loop runs until both blocks report zero new statements. The cap is
+# a safety net against pathological / programmer-introduced divergence — the
+# loop normally converges in 1-2 iterations.
+_NEMO_FIXPOINT_CAP = 50
+
 logger = logging.getLogger(__name__)
 
 
@@ -63,18 +70,24 @@ def apply_semantic_rules(*rules: List, mod_context_uri: str = None, exhaust=Fals
 
     :param exhaust:     boolean flag; if True: repeat rule application until no new statements are created
 
-    Reihenfolge bei aktivem PYIRK_NEMO_DELEGATION:
-      1) Delegierbare Regeln (direct+transitive) EINMAL via Nemo bis Fixpunkt dieser Teilmenge.
-      2) Restliche Regeln (python_only/SPARQL/OR-Subscope) via Python-Engine wie bisher.
-      Rückkopplung (python_only-Ergebnisse, die delegierbare Regeln erneut triggern würden)
-      ist in Phase 1 NICHT umgesetzt -> Phase-2-Thema.
+    Bei aktivem PYIRK_NEMO_DELEGATION, verfügbarem Nemo-Binary und nicht-leerer
+    delegable-Teilmenge wird der V4-Pfad gewählt: ein beschränkter Fixpunkt-Loop
+    nemo↔python, der pro Iteration zuerst die delegierbaren Regeln via Nemo bis
+    zu deren Fixpunkt materialisiert und danach die remaining-Regeln genau
+    einmal anwendet. Mit ``exhaust=True`` läuft die Loop bis beide Blöcke 0 neue
+    Statements liefern (CAP ``_NEMO_FIXPOINT_CAP``); mit ``exhaust=False`` läuft
+    sie genau einmal — analog zum nativen ``exhaust=False``-Pfad. Bei einer
+    Exception aus ``_apply_via_nemo`` greift der stille Fallback: ab dieser
+    Iteration werden ALLE Regeln rein-pythonisch behandelt, kein erneuter
+    Nemo-Versuch innerhalb des Aufrufs.
 
-    Bei gesetztem PYIRK_NEMO_DELEGATION und verfügbarem Nemo-Binary wird versucht,
-    delegierbare Regeln an Nemo zu übergeben. Schlägt dies fehl (fehlende Binary,
-    Exception im Delegationspfad), greift stiller Fallback auf die Python-Engine.
-    Default (Flag nicht gesetzt) = unverändertes Python-Verhalten.
+    Default (Flag nicht gesetzt) ODER Nemo-Binary fehlt ODER keine delegierbare
+    Regel: bestehender reiner Python-Codepfad, 1:1 unverändert.
     """
-    # ── Nemo-Delegationspfad (nur wenn Flag gesetzt) ──────────────────────────
+    use_nemo_path = False
+    delegated: list = []
+    remaining: list = list(rules)
+
     if os.environ.get("PYIRK_NEMO_DELEGATION"):
         from pyirk.nemobridge.delegation import (
             _nemo_available,
@@ -84,30 +97,77 @@ def apply_semantic_rules(*rules: List, mod_context_uri: str = None, exhaust=Fals
         if _nemo_available():
             try:
                 delegated, remaining = _split_rules_by_nemo_delegation(rules)
-                if delegated:
-                    _apply_via_nemo(delegated, mod_context_uri)
-                    rules = tuple(remaining)
             except Exception as ex:
-                logger.warning("Nemo delegation failed, falling back to Python: %s", ex)
-                # rules bleibt unverändert — Python-Engine übernimmt alles
+                logger.warning("Nemo classification failed, falling back to Python: %s", ex)
+                delegated, remaining = [], list(rules)
+            if delegated:
+                use_nemo_path = True
 
-    # ── Python-Engine (bisherige Logik, unverändert) ─────────────────────────
     total_res = ReportingMultiRuleResult(rule_list=rules)
 
-    existing_statements = len(total_res.new_statements)
-    while True:
-        # the outer loop handles the exhaust-case
-        for rule in rules:
-            res = apply_semantic_rule(rule, mod_context_uri)
-            total_res.add_partial(res)
-            if res.exception:
+    if use_nemo_path:
+        # ── V4: bounded fixpoint loop nemo↔python ────────────────────────────
+        # The native ``exhaust=True`` outer loop is *subsumed* by this loop —
+        # each iteration runs one Nemo materialisation (which itself reaches
+        # fixpoint over the delegable subset) followed by exactly one pass over
+        # the remaining python rules. The loop terminates when both blocks
+        # report 0 new statements; for ``exhaust=False`` it runs exactly once.
+        nemo_failed = False
+        iters = 0
+        while True:
+            n_new = 0
+            if not nemo_failed:
+                nemo_buf: list = []
+                try:
+                    n_new = _apply_via_nemo(delegated, mod_context_uri, out_stms=nemo_buf)
+                except Exception as ex:
+                    logger.warning("Nemo delegation failed, falling back to Python: %s", ex)
+                    nemo_failed = True
+                    # From here on every rule is handled by the python block.
+                    remaining = list(rules)
+                    n_new = 0
+                else:
+                    if nemo_buf:
+                        nemo_part = core.RuleResult()
+                        nemo_part.apply_time = 0
+                        nemo_part.add_statements(nemo_buf)
+                        total_res.add_partial(nemo_part)
+
+            before_python = len(total_res.new_statements)
+            stopped_on_exception = False
+            for rule in remaining:
+                res = apply_semantic_rule(rule, mod_context_uri)
+                total_res.add_partial(res)
+                if res.exception:
+                    stopped_on_exception = True
+                    break
+            p_new = len(total_res.new_statements) - before_python
+
+            iters += 1
+            if stopped_on_exception:
                 break
-        if not exhaust:
-            break
-        new_statements = len(total_res.new_statements) - existing_statements
-        if not new_statements:
-            break
+            if n_new + p_new == 0:
+                break
+            if not exhaust:
+                break
+            if iters > _NEMO_FIXPOINT_CAP:
+                raise RuntimeError("nemo/python fixpoint did not converge")
+    else:
+        # ── Native python path (unchanged — flag OFF / no nemo / no delegable) ─
         existing_statements = len(total_res.new_statements)
+        while True:
+            # the outer loop handles the exhaust-case
+            for rule in rules:
+                res = apply_semantic_rule(rule, mod_context_uri)
+                total_res.add_partial(res)
+                if res.exception:
+                    break
+            if not exhaust:
+                break
+            new_statements = len(total_res.new_statements) - existing_statements
+            if not new_statements:
+                break
+            existing_statements = len(total_res.new_statements)
 
     return total_res
 

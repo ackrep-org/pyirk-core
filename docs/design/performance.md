@@ -139,6 +139,22 @@ Vollständiger Bericht: `docs/design/h5_phase1_report.md`. **Kern von Phase 2:**
 CSV→`core.Statement`-Mapping (in Phase 1 bewusst `NotImplementedError`),
 Rückkopplung Nemo↔Python-Regeln, Timing-Wiederholung, ggf. weitere Regelkategorien.
 
+**Phase-2-Status (2026-06-10, umgesetzt; gate_ok=nein).** V2–V5 implementiert
+(Sidecar `uri_index.csv`, `omit_if_existing`-Spiegel in `_materialize_tuples`,
+`_NEMO_FIXPOINT_CAP=50`-Fixpunkt-Loop, `mod_context_uri`-Passthrough);
+Akzeptanz-Gate auf der OCSE-KB liefert `overall_gate_ok=false` mit zwei
+verbleibenden Befunden: (i) **V2 — `short_key`-Kollision über Module hinweg**
+(`uri_index.csv`-Sidecar deckt nur unique `short_key`s ab, OCSE enthält
+Kollisionen wie `agents#I4122`/`math#I4122` → 5 Subjekt-Divergenzen in Gate 1);
+(ii) **V3 — within-call Dedup** (`omit_if_existing` greift nur gegen den
+DataStore-Stand zu Aufrufbeginn, nicht gegen innerhalb desselben
+`_apply_via_nemo`-Aufrufs neu erzeugte Tripel → 5 duplizierte R30/R31-Tripel
+in Gate 3). Gate 2 (Idempotenz zwischen Aufrufen) OK. Speedup
+**~315×** bestätigt (`load-belastet` markiert, real wahrscheinlich höher —
+passt zur Phase-1-Notiz `docs(h5): confirm ~790x speedup on quiet VPS`).
+Flag-Default bleibt AUS. Vollständiger Bericht inkl. Diagnose und konkreter
+Lösungspfade: `docs/design/h5_phase2_report.md`.
+
 ## 4. Vorgehen (Phasen — Phase 1 ist der `goal.md`-Kandidat für einen autonomen Lauf)
 
 - **Phase 0 — Benchmark-Harness.** Reproduzierbares Skript: (i) `test_quick`/`test_package`-

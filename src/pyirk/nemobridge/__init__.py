@@ -13,6 +13,7 @@ from .exporter import (  # noqa: F401
     export_datastore,
     export_relation_facts,
     is_scope_internal,
+    load_uri_index,
 )
 
 from .translator import (  # noqa: F401

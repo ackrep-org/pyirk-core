@@ -96,6 +96,71 @@ class TestSmokeExport(unittest.TestCase):
         expected = result["total_triples"] + result["total_qualified"]
         self.assertEqual(total_from_preds, expected)
 
+    def test_export_datastore_uri_index(self):
+        """uri_index.csv carries full URIs for every short_key in the export (V2).
+
+        Verifies:
+          - uri_index.csv exists in out_dir and is reachable via paths["uri_index"].
+          - No duplicate short_keys.
+          - URI for at least one known short_key matches the live entity.uri,
+            so the index can drive module-context-aware reverse resolution.
+        """
+        with tempfile.TemporaryDirectory() as tmp:
+            result = export_datastore(p.ds, tmp)
+            self.assertIn("uri_index", result["paths"])
+            idx_path = result["paths"]["uri_index"]
+            self.assertTrue(
+                os.path.exists(idx_path),
+                f"uri_index.csv should exist at {idx_path}",
+            )
+            with open(idx_path) as fh:
+                rows = list(csv.reader(fh))
+
+        self.assertGreater(len(rows), 0, "uri_index.csv should not be empty")
+        # Each row is (short_key, uri)
+        for row in rows:
+            self.assertEqual(len(row), 2, f"Expected 2 columns, got: {row}")
+
+        short_keys = [r[0] for r in rows]
+        self.assertEqual(
+            len(short_keys),
+            len(set(short_keys)),
+            "uri_index.csv must not contain duplicate short_keys",
+        )
+        # Sorted ascending
+        self.assertEqual(short_keys, sorted(short_keys),
+                         "uri_index.csv rows must be sorted by short_key")
+
+        index_map = dict(rows)
+
+        # R3 is a builtin relation that must appear in the export (used by the
+        # test-KB triples). Its index URI must match the live entity.uri.
+        self.assertIn("R3", index_map, "R3 should be in uri_index.csv")
+        self.assertEqual(
+            index_map["R3"],
+            p.R3.uri,
+            f"R3 uri mismatch: index={index_map['R3']!r}, live={p.R3.uri!r}",
+        )
+
+        # At least one test-KB item should appear and resolve to a uri under
+        # the test module — proves that index distinguishes builtin from
+        # non-builtin entities (module-context preserved).
+        test_item_keys = [k for k in self.entities if k.startswith("I")]
+        matched = 0
+        for k in test_item_keys:
+            if k in index_map:
+                self.assertEqual(
+                    index_map[k],
+                    self.entities[k].uri,
+                    f"{k} uri mismatch: index={index_map[k]!r}, "
+                    f"live={self.entities[k].uri!r}",
+                )
+                matched += 1
+        self.assertGreater(
+            matched, 0,
+            "Expected at least one test-KB item in uri_index.csv",
+        )
+
 
 class TestScopeFilter(unittest.TestCase):
     """Test is_scope_internal filter on entities from the live DataStore."""

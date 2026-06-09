@@ -166,6 +166,13 @@ def export_datastore(
     stmts.csv            — qualified triples (reification; see module docstring)
     quals_<R>.csv        — one file per qualifier-relation key for qualified stmts
     triples__<R>.csv     — per-predicate 2-column CSVs (only when per_predicate=True)
+    uri_index.csv        — (short_key, uri) sidecar index for every distinct
+                           short_key that appears anywhere in the exported triples
+                           (subject, predicate, object, qualifier-predicate,
+                           qualifier-object). One row per short_key, sorted
+                           ascending, no duplicates. Enables module-context-aware
+                           reverse resolution (V2): callers must look entities up
+                           by URI, not by short_key against the active module.
 
     Returns
     -------
@@ -176,7 +183,8 @@ def export_datastore(
       "total_qualified"   : int  — rows in stmts.csv
       "paths"             : {"triples": str, "stmts": str,
                              "quals": {rel_key: str},
-                             "per_predicate": {pred_key: str}}
+                             "per_predicate": {pred_key: str},
+                             "uri_index": str}
     """
     os.makedirs(out_dir, exist_ok=True)
 
@@ -185,6 +193,18 @@ def export_datastore(
     per_pred_rows: Dict[str, list] = defaultdict(list)  # pred_key → [(s, o)]
     stmt_rows: list = []             # (stmt_id, subj_key, pred_key, obj_key)
     qual_rows: Dict[str, list] = defaultdict(list)  # qual_rel_key → [(stmt_id, val)]
+    uri_index: Dict[str, str] = {}   # short_key → uri (V2)
+
+    def _record_uri(entity) -> None:
+        # entity.uri is set for every Item/Relation; skip silently otherwise
+        uri = getattr(entity, "uri", None)
+        if uri is None:
+            return
+        sk = entity.short_key
+        # first occurrence wins; later entries with the same short_key would
+        # only differ if two modules collided on a key, which the DataStore
+        # already disallows. Keep stable for deterministic output.
+        uri_index.setdefault(sk, uri)
 
     for stm in _iter_subject_role_statements(ds):
         s = stm.subject
@@ -204,15 +224,21 @@ def export_datastore(
         pk = pred.short_key
         ok = o.short_key
 
+        _record_uri(s)
+        _record_uri(pred)
+        _record_uri(o)
+
         if stm.qualifiers:
             stmt_rows.append((stm.short_key, sk, pk, ok))
             for qf_stm in stm.qualifiers:
                 qrel = qf_stm.predicate
                 if not hasattr(qrel, "short_key"):
                     continue
+                _record_uri(qrel)
                 qval = qf_stm.object
                 if hasattr(qval, "short_key"):
                     val_str = qval.short_key
+                    _record_uri(qval)
                 else:
                     val_str = repr(qval)
                 qual_rows[qrel.short_key].append((stm.short_key, val_str))
@@ -252,6 +278,11 @@ def export_datastore(
                 csv.writer(f).writerows(rows)
             per_pred_paths[pk] = path
 
+    # --- write uri_index.csv (V2 — module-context-aware reverse resolution) --
+    uri_index_path = os.path.join(out_dir, "uri_index.csv")
+    with open(uri_index_path, "w", newline="") as f:
+        csv.writer(f).writerows(sorted(uri_index.items()))
+
     # --- build audit counts --------------------------------------------------
     predicate_counts: Dict[str, int] = defaultdict(int)
     for _sid, sk, pk, ok in stmt_rows:
@@ -271,6 +302,7 @@ def export_datastore(
             "stmts": stmts_path,
             "quals": qual_paths,
             "per_predicate": per_pred_paths,
+            "uri_index": uri_index_path,
         },
     }
 

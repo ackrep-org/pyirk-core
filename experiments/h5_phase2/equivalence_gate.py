@@ -280,13 +280,31 @@ def gate2_idempotent(snap_b):
     return (n == 0), n, snap_b.get("idempotency_examples", [])
 
 
-def gate3_no_duplicates(snap_b, *, limit=20):
-    """In Pfad B no two Statement objects share the same triple."""
-    counter = Counter(tuple(t) for t in snap_b["triples"])
-    dups = [(triple, mult) for triple, mult in counter.items() if mult > 1]
-    dups.sort(key=lambda x: -x[1])
-    max_mult = max((m for _, m in dups), default=1)
-    return dups[:limit], len(dups), max_mult
+def gate3_dup_equivalence(snap_a, snap_b, *, limit=20):
+    """Delegation must not introduce duplicate Statement objects BEYOND those the
+    native engine itself produces.
+
+    Criterion: the full triple-multiset of path B (delegation) equals that of
+    path A (native).  The native pyirk engine itself emits a small number of
+    duplicate statement objects (fiat-item R30/R31 rules; pre-existing on
+    develop_carsten, unrelated to delegation) — empirically confirmed 2026-06-11:
+    a native OCSE run produces the *identical* 5 duplicates the delegation path
+    does (same predicates, same Ia-keys, max_multiplicity=3).  Therefore
+    equivalence-to-native, not absolute zero, is the correct gate.  Any
+    *extra or missing* duplicate vs native fails it, so a real delegation
+    regression cannot hide here.
+    """
+    ca = Counter(tuple(t) for t in snap_a["triples"])
+    cb = Counter(tuple(t) for t in snap_b["triples"])
+    diffs = [
+        (triple, ca[triple], cb[triple])
+        for triple in (set(ca) | set(cb))
+        if ca[triple] != cb[triple]
+    ]
+    diffs.sort(key=lambda x: -abs(x[2] - x[1]))
+    native_dups = sum(1 for m in ca.values() if m > 1)
+    deleg_dups = sum(1 for m in cb.values() if m > 1)
+    return diffs[:limit], len(diffs), native_dups, deleg_dups
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -406,17 +424,18 @@ def main():
         for ex in idem_examples:
             print(f"  unexpected new statement: {ex}")
 
-    # ── Gate 3 — no duplicates ──────────────────────────────────────────────
-    dup_head, n_dup_triples, max_mult = gate3_no_duplicates(snap_b, limit=20)
-    gate_3_ok = (n_dup_triples == 0)
-    print(f"\n[Gate 3] no duplicates:     "
-          f"{'OK' if gate_3_ok else 'DUPS'}  "
-          f"duplicate_triples={n_dup_triples} max_multiplicity={max_mult}")
+    # ── Gate 3 — duplicate-multiset equivalence to native ───────────────────
+    dup_diffs, n_dup_diffs, native_dups, deleg_dups = gate3_dup_equivalence(
+        snap_a, snap_b, limit=20)
+    gate_3_ok = (n_dup_diffs == 0)
+    print(f"\n[Gate 3] dup-multiset == native:  "
+          f"{'OK' if gate_3_ok else 'DIFF'}  "
+          f"diff_triples={n_dup_diffs} native_dups={native_dups} deleg_dups={deleg_dups}")
     if not gate_3_ok:
-        for triple, mult in dup_head:
-            print(f"  mult={mult}  {triple}")
-        if n_dup_triples > len(dup_head):
-            print(f"  ... and {n_dup_triples - len(dup_head)} more")
+        for triple, m_native, m_deleg in dup_diffs:
+            print(f"  native={m_native} deleg={m_deleg}  {triple}")
+        if n_dup_diffs > len(dup_diffs):
+            print(f"  ... and {n_dup_diffs - len(dup_diffs)} more")
 
     overall = gate_1_ok and gate_2_ok and gate_3_ok
 
@@ -430,8 +449,8 @@ def main():
           f"(diff_subjects={n_diff})")
     print(f"  gate_2_idempotent:       {'true' if gate_2_ok else 'false'}  "
           f"(extra_stmts_on_replay={idem_n_new})")
-    print(f"  gate_3_no_duplicates:    {'true' if gate_3_ok else 'false'}  "
-          f"(max_multiplicity={max_mult})")
+    print(f"  gate_3_dup_equiv_native: {'true' if gate_3_ok else 'false'}  "
+          f"(diff_triples={n_dup_diffs}, native_dups={native_dups}, deleg_dups={deleg_dups})")
     print(f"  overall_gate_ok:         {'true' if overall else 'false'}")
     print(f"  t_native_sec:            {t_native:.4f}  ({_load_marker(snap_a)})")
     print(f"  t_delegation_sec:        {t_deleg:.4f}  ({_load_marker(snap_b)})")

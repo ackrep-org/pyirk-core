@@ -4,18 +4,24 @@ pyirk.nemobridge.delegation — Hilfsfunktionen für den PYIRK_NEMO_DELEGATION-P
 Wird von ruleengine.apply_semantic_rules() aufgerufen, wenn das Feature-Flag
 PYIRK_NEMO_DELEGATION gesetzt ist.
 
-Aktueller Stand (Phase 1):
-  - _nemo_available(), _split_rules_by_nemo_delegation() sind vollständig.
-  - _apply_via_nemo() führt Export → RLS-Codegen → nmo-Run aus, aber das
-    Mapping CSV → core.Statement ist NICHT implementiert (Phase-2-TODO).
-    Es wird NotImplementedError geworfen, der im aufrufenden try/except
-    den stillen Python-Fallback auslöst.
+Stand (Phase 2.1 — Gate-1/Gate-3-Fix):
+  - _nemo_available(), _split_rules_by_nemo_delegation() unverändert.
+  - _apply_via_nemo() führt Export → RLS-Codegen → nmo-Run → CSV→Statement-
+    Mapping aus. Rückgabewert: Anzahl neu eingefügter Statements.
+  - Ternäres ``output_fact.csv`` (subj_uri, pred_uri, obj_uri) — Auflösung
+    jeder Spalte direkt per ``ds.get_entity_by_uri``. Kein short_key-Pfad
+    mehr → kollisionsfest (Gate 1).
+  - V3: Vor ``set_relation`` ``omit_if_existing``-Check gegen DataStore.
+  - Gate-3-Fix (Phase 2.1): zusätzlich lokales ``inserted``-Set in
+    ``_materialize_tuples``; fängt Intra-Call-Duplikate, die Nemo bei
+    Mehrfach-Ableitung desselben Tupels liefert und die der Stand-zu-
+    Loop-Beginn-Check nicht sieht.
+  - mod_context_uri über ``core.uri_context(...)`` (V5).
+  - V1 (Qualifier-Delegation) weiterhin vertagt — ``_apply_qualifiers`` no-op.
 
 Bekannte Limitation:
-  Rückkopplung zwischen Nemo-Block und Python-Block ist nicht umgesetzt.
-  Nemo läuft einmal bis Fixpunkt seiner Teilmenge; python_only-Ergebnisse,
-  die delegierbare Regeln erneut triggern würden, werden ignoriert.
-  → offen für Phase 2.
+  Rückkopplung Nemo↔Python erfolgt über den V4-Loop in
+  ``ruleengine.apply_semantic_rules`` (nicht hier).
 """
 
 import csv
@@ -65,19 +71,44 @@ def _split_rules_by_nemo_delegation(rules):
     return delegated, remaining
 
 
-def _apply_via_nemo(delegated_rules, mod_context_uri):
+def _apply_via_nemo(
+    delegated_rules, mod_context_uri, *, out_stms=None, inserted_uris=None,
+):
     """Führt den Nemo-Delegationspfad aus.
 
-    Pipeline: export_datastore → generate_rls → nmo → parse CSVs
-    → create_statement für jeden neuen Tupel.
+    Pipeline: ``export_datastore`` → ``generate_rls`` → ``nmo`` →
+    ``output_fact.csv`` (ternäres ``fact(subj_uri, pred_uri, obj_uri)``) →
+    Auflösung jeder Spalte per ``ds.get_entity_by_uri`` →
+    ``subj.set_relation(rel, obj)`` (V2.1 + V3 + V5).
 
-    Phase-1-Status: Export, RLS-Codegen und nmo-Aufruf sind implementiert.
-    Das Mapping CSV-Tupel → core.Statement ist als Phase-2-TODO markiert
-    (raise NotImplementedError), der den stillen Fallback im Aufrufer auslöst.
+    Designvorgaben:
+      * V2.1 (Phase 2.1) — Datenterme sind volle URIs. Alle drei Spalten
+        von ``output_fact.csv`` werden direkt per URI aufgelöst; kein
+        short_key-Pfad mehr → kollisionsfest über Module hinweg (Gate 1).
+      * V3 — ``omit_if_existing``-Spiegel des nativen Konklusions-Pfads
+        (ruleengine.py): Tupel, die bereits Statements sind, werden nicht
+        erneut eingefügt.
+      * Gate-3-Fix (Phase 2.1) — zusätzliches ``inserted``-Set in
+        ``_materialize_tuples`` deduplifiziert Nemo-Mehrfachausgaben
+        desselben Tupels innerhalb eines Aufrufs.
+      * V5 — Kontextwrap via ``core.uri_context(mod_context_uri)``.
 
     :param delegated_rules:   Liste delegierbarer Regelobjekte (nur für Log)
-    :param mod_context_uri:   Kontext-URI für neue Statements
-    :raises NotImplementedError: immer (Phase-2-TODO für CSV→Statement-Mapping)
+    :param mod_context_uri:   Kontext-URI für neue Statements; None ⇒ es muss
+                              bereits ein aktiver Modul-Kontext gesetzt sein
+                              (Aufrufer-Verantwortung, wie im nativen Pfad).
+    :param out_stms:          Optionale Liste, die — wenn übergeben — pro neu
+                              erzeugtem Statement um genau jenes Statement-Objekt
+                              ergänzt wird. Plumbing-Hook für
+                              ``ruleengine.apply_semantic_rules``.
+    :param inserted_uris:     Optionales ``set`` von ``(subj_uri, pred_uri,
+                              obj_uri)``-Tripeln, das Cross-V4-Iteration
+                              durchgereicht werden kann, damit der Gate-3-
+                              Dedup über mehrere ``_apply_via_nemo``-Calls
+                              innerhalb derselben Fixpoint-Schleife hinweg
+                              wirkt. Default ``None`` → lokaler Set in
+                              ``_materialize_tuples`` (Backward-Compat).
+    :return int:              Anzahl tatsächlich eingefügter neuer Statements.
     """
     from pyirk import core
     from pyirk.nemobridge import export_datastore, generate_rls
@@ -114,43 +145,134 @@ def _apply_via_nemo(delegated_rules, mod_context_uri):
                 f"nmo exit {proc.returncode}: {proc.stderr[:500]}"
             )
 
-        # 4) Output-CSVs parsen — Tupel sammeln
+        # 4) Output-CSV parsen — ternäres (subj_uri, pred_uri, obj_uri)
         nemo_tuples = _parse_nemo_outputs(out_dir)
         logger.debug(
             "Nemo lieferte %d Tupel für %d delegierte Regeln",
             len(nemo_tuples), len(delegated_rules),
         )
 
-        # 5) CSV → core.Statement mapping
-        # TODO Phase 2: Für jeden Tupel (s_key, p_key, o_key) aus nemo_tuples:
-        #   - Entitäten per core.ds.get_entity_by_key_str() auflösen
-        #   - Duplikat-Check per p.qf_prevent_duplicate_stms()
-        #   - Statement per subj.set_relation(rel, obj, ...) erzeugen
-        # Qualifier-Reifikation, Prädikat-Auflösung und Kontext-URI-Handling
-        # erfordern tiefergehende Kenntnis der Statement-Erzeugungslogik.
-        raise NotImplementedError(
-            "P4 mapping deferred to Phase 2: CSV→core.Statement conversion not yet implemented"
+        # 5) Tupel → Statements (V2.1 + V3 + Gate-3-Fix + V5)
+        return _materialize_tuples(
+            core.ds, nemo_tuples, mod_context_uri,
+            out_stms=out_stms, inserted=inserted_uris,
         )
 
 
+def _materialize_tuples(
+    ds, nemo_tuples, mod_context_uri, *, out_stms=None, inserted=None,
+):
+    """Schreibt Nemo-Output-Tupel als neue Statements zurück in *ds*.
+
+    Erwartet Tupel der Form ``(subj_uri, pred_uri, obj_uri)``. Jede Spalte
+    wird direkt per ``ds.get_entity_by_uri`` aufgelöst.
+
+    V3 (DataStore-Stand zu Loop-Beginn): vor ``set_relation`` denselben
+    Check wie im nativen Konklusions-Pfad (ruleengine.py): ``if obj not in
+    subj.get_relations(rel.uri, return_obj=True): subj.set_relation(...)``.
+
+    Gate-3-Fix (Intra-Call-Dedup, Phase 2.1): ein ``inserted``-Set fängt
+    Tupel ab, die Nemo innerhalb desselben Laufs mehrfach ableitet; der
+    V3-Check sieht sie sonst nicht (DataStore-Stand wurde erst durch
+    ``set_relation`` aktualisiert, aber Iteration läuft weiter über die
+    nicht-dedupifizierte Liste — und ``nemo_tuples`` ist u. U. auch eine
+    Liste, kein Set). Wird ``inserted`` vom Aufrufer übergeben, lebt der
+    Dedup-State über mehrere ``_apply_via_nemo``-Calls hinweg (z. B.
+    Cross-V4-Iteration im Fixpoint-Loop von ``apply_semantic_rules``);
+    Default ``None`` legt einen lokalen Set für Backward-Compat an.
+
+    V5: ``uri_context(mod_context_uri)``-Wrapper spiegelt
+    ``RuleApplicator.apply`` (ruleengine.py) 1:1.
+
+    :return int: Anzahl tatsächlich neu eingefügter Statements.
+    """
+    from pyirk import core
+
+    if inserted is None:
+        inserted = set()  # Gate-3-Fix: (subj_uri, pred_uri, obj_uri)
+
+    def _do() -> int:
+        n_new = 0
+        for triple in nemo_tuples:
+            if len(triple) != 3:
+                continue
+            subj_uri, pred_uri, obj_uri = triple
+
+            # Gate-3-Fix: Intra-Call-Dedup vor jeder Auflösung
+            key = (subj_uri, pred_uri, obj_uri)
+            if key in inserted:
+                continue
+
+            try:
+                subj = ds.get_entity_by_uri(subj_uri)
+                rel = ds.get_entity_by_uri(pred_uri)
+                obj = ds.get_entity_by_uri(obj_uri)
+            except Exception as ex:
+                logger.debug(
+                    "skip nemo tuple (%s,%s,%s): URI resolution failed: %s",
+                    subj_uri, pred_uri, obj_uri, ex,
+                )
+                continue
+
+            # V3 — omit_if_existing-Spiegel des nativen Pfads
+            if obj in subj.get_relations(rel.uri, return_obj=True):
+                continue
+
+            new_stm = subj.set_relation(rel, obj)
+            inserted.add(key)
+            # V1 (Phase-2 vertagt): Qualifier-Reifikation kommt später hier rein.
+            _apply_qualifiers(new_stm)
+            if out_stms is not None:
+                out_stms.append(new_stm)
+            n_new += 1
+        return n_new
+
+    if mod_context_uri is None:
+        return _do()
+    core.aux.ensure_valid_baseuri(mod_context_uri)
+    with core.uri_context(mod_context_uri):
+        return _do()
+
+
+def _apply_qualifiers(new_stm):
+    """V1-Hook (Phase-2 vertagt): Qualifier an *new_stm* hängen.
+
+    Aktuell no-op — spiegelt das native ``# TODO: add qualifiers`` in
+    ``ruleengine.py`` (~Z. 716) wider. Eine spätere Phase ergänzt hier die
+    Qualifier-Reifikation gegen ``stmts.csv`` / ``quals_<R>.csv``. Bis dahin
+    bleibt die Funktion bewusst leer; das Vorhalten als eigene Funktion sorgt
+    dafür, dass die spätere Aktivierung eine isolierte Ergänzung ist (kein
+    Umbau des Mapping-Schritts).
+    """
+    return None
+
+
 def _parse_nemo_outputs(export_dir):
-    """Liest alle output_*.csv aus *export_dir* → Set kanonischer 3-Tupel."""
+    """Liest ``output_fact.csv`` aus *export_dir* → Set ternärer URI-Tupel.
+
+    Erwartet das ternäre ``fact``-Modell (Phase 2.1): genau eine
+    Output-Datei, drei Spalten ``(subj_uri, pred_uri, obj_uri)``.
+
+    Nemo serialisiert String-Werte mit umschließenden Anführungszeichen, die
+    NACH CSV-Entescaping als literale doppelte Anführungszeichen am Anfang/
+    Ende jeder Zelle stehen bleiben (Nemo schreibt die Zelle z. B. als
+    `\"\"\"value\"\"\"`, nach csv.reader steht `"value"` mit echten ``"`` als
+    erstem und letztem Zeichen). Diese werden hier entfernt, damit die Werte
+    in ``ds.get_entity_by_uri`` passen.
+    """
+    def _strip_q(cell: str) -> str:
+        if len(cell) >= 2 and cell[0] == '"' and cell[-1] == '"':
+            return cell[1:-1]
+        return cell
+
     nemo_set = set()
     if not os.path.isdir(export_dir):
         return nemo_set
-    for fname in sorted(os.listdir(export_dir)):
-        if not (fname.startswith("output_") and fname.endswith(".csv")):
-            continue
-        fpath = os.path.join(export_dir, fname)
-        if fname == "output_trans.csv":
-            with open(fpath, newline="", encoding="utf-8") as fh:
-                for row in csv.reader(fh):
-                    if len(row) >= 3:
-                        nemo_set.add((row[0], row[1], row[2]))
-        else:
-            pred_key = fname[len("output_"):-len(".csv")]
-            with open(fpath, newline="", encoding="utf-8") as fh:
-                for row in csv.reader(fh):
-                    if len(row) >= 2:
-                        nemo_set.add((row[0], pred_key, row[1]))
+    fpath = os.path.join(export_dir, "output_fact.csv")
+    if not os.path.isfile(fpath):
+        return nemo_set
+    with open(fpath, newline="", encoding="utf-8") as fh:
+        for row in csv.reader(fh):
+            if len(row) >= 3:
+                nemo_set.add((_strip_q(row[0]), _strip_q(row[1]), _strip_q(row[2])))
     return nemo_set

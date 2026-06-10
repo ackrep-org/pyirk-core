@@ -98,16 +98,26 @@ class TestClassifyRules:
 
     def test_i64_snippet_contains_r3_and_r83(self, classifications):
         i64 = next(c for c in classifications if c.rule_short_key == "I64")
-        assert "R83" in i64.rls_snippet
-        assert "R3" in i64.rls_snippet
+        # Phase 2.1: ternary fact-model with full-URI predicate constants
+        assert p.R83.uri in i64.rls_snippet, (
+            f"I64 snippet should reference {p.R83.uri}, got: {i64.rls_snippet!r}"
+        )
+        assert p.R3.uri in i64.rls_snippet, (
+            f"I64 snippet should reference {p.R3.uri}, got: {i64.rls_snippet!r}"
+        )
 
-    def test_i65_snippet_uses_derived_r83_not_triples(self, classifications):
-        """I65's premise uses R83 (a derived predicate), so the body must use R83(...)
-        directly, NOT triples(..., R83, ...)."""
+    def test_i65_uses_ternary_fact_form(self, classifications):
+        """Phase 2.1: I65 body must be ternary ``fact(?s, "<uri>", ?o)``,
+        no auxiliary IDB predicates (R83(...) etc.) and no triples() in the body."""
         i65 = next(c for c in classifications if c.rule_short_key == "I65")
-        assert "R83(" in i65.rls_snippet, "Expected R83(...) pattern in I65 body"
-        assert "triples(" not in i65.rls_snippet.split(":-")[1], (
-            "I65 body should use R83(...) directly, not triples(..., R83, ...)"
+        assert "fact(" in i65.rls_snippet, "Expected fact(...) ternary pattern in I65"
+        body = i65.rls_snippet.split(":-")[1]
+        assert "triples(" not in body, (
+            "I65 body must read from fact/3, not raw triples/3"
+        )
+        # The R83 URI appears as a quoted string constant, not as a predicate name
+        assert f'"{p.R83.uri}"' in i65.rls_snippet, (
+            f"R83 URI {p.R83.uri!r} should appear quoted in I65 snippet"
         )
 
     def test_all_types_are_dataclass_instances(self, classifications):
@@ -125,16 +135,19 @@ class TestGenerateTransitivityFacts:
         assert isinstance(result, str)
 
     def test_contains_r1001(self, test_kb):
-        """R1001 is the transitive relation defined in the spike test KB."""
+        """R1001 is the transitive relation defined in the spike test KB.
+
+        Phase 2.1: facts carry the full URI as a quoted string."""
         result = generate_transitivity_facts(test_kb)
-        assert "is_transitive(R1001)" in result, (
+        r1001_uri = p.ds.get_entity_by_uri("irk:/h5_spike/test_kb#R1001").uri
+        assert f'is_transitive("{r1001_uri}")' in result, (
             "R1001 (spike_transitive_rel) must appear in transitivity facts"
         )
 
     def test_contains_r17(self, test_kb):
         """R17 (is_subproperty_of) is R60-transitive in pyirk builtins."""
         result = generate_transitivity_facts(test_kb)
-        assert "is_transitive(R17)" in result, (
+        assert f'is_transitive("{p.R17.uri}")' in result, (
             "R17 (is subproperty of) must appear; it has R60__is_transitive=True"
         )
 
@@ -142,7 +155,7 @@ class TestGenerateTransitivityFacts:
         """Facts should only mention relations that actually have R60=True."""
         result = generate_transitivity_facts(test_kb)
         # R3 (is_subclass_of) is NOT transitive in pyirk
-        assert "is_transitive(R3)" not in result
+        assert f'is_transitive("{p.R3.uri}")' not in result
 
     def test_each_fact_ends_with_period(self, test_kb):
         result = generate_transitivity_facts(test_kb)
@@ -161,59 +174,59 @@ class TestGenerateRls:
         result = generate_rls(test_kb)
         assert isinstance(result, str)
 
-    def test_contains_import_triples(self, test_kb):
+    def test_contains_import_triples_with_string_format(self, test_kb):
+        """Phase 2.1: every @import MUST declare format=(string,...)."""
         result = generate_rls(test_kb)
         assert '@import triples' in result
+        assert 'format=(string,string,string)' in result, (
+            "triples import must use format=(string,...) — otherwise CSV cells "
+            "won't unify with string constants in rule heads"
+        )
 
-    def test_contains_r83_rule(self, test_kb):
-        """R83(?i2, ?i1) :- triples(?i2, R3, ?i1) — from spike rules_r1.rls."""
+    def test_seeds_ternary_fact_from_triples(self, test_kb):
+        """Phase 2.1: fact IDB is seeded from triples EDB."""
         result = generate_rls(test_kb)
-        assert "R83(" in result
-        assert "triples(" in result
+        assert "fact(?s, ?p, ?o) :- triples(?s, ?p, ?o)" in result
+
+    def test_contains_r83_rule_in_fact_form(self, test_kb):
+        """Phase 2.1: R83-rule appears in ternary fact form with URI constants."""
+        result = generate_rls(test_kb)
+        assert "fact(" in result
+        # R3 and R83 must appear as quoted URI strings somewhere in the body
+        assert f'"{p.R3.uri}"' in result
+        assert f'"{p.R83.uri}"' in result
 
     def test_contains_trans_rule(self, test_kb):
-        """Transitive closure rule should be present."""
+        """Phase 2.1: transitive closure uses ternary fact-recursion."""
         result = generate_rls(test_kb)
-        assert "trans(" in result
         assert "is_transitive(" in result
+        # ternary recursion: fact(?s, ?p, ?o) :- is_transitive(?p), fact(?s, ?p, ?x), fact(?x, ?p, ?o)
+        assert "is_transitive(?p)" in result and "fact(?s, ?p, ?x)" in result
 
     def test_contains_is_transitive_r1001(self, test_kb):
-        """The R1001 is_transitive fact must appear in the combined RLS."""
+        """R1001 transitive fact must appear with full URI."""
         result = generate_rls(test_kb)
-        assert "is_transitive(R1001)" in result
+        r1001_uri = p.ds.get_entity_by_uri("irk:/h5_spike/test_kb#R1001").uri
+        assert f'is_transitive("{r1001_uri}")' in result
 
     def test_no_transitivity_when_disabled(self, test_kb):
         result = generate_rls(test_kb, include_transitivity=False)
         assert "is_transitive(" not in result
-        assert "trans(" not in result
 
-    def test_has_export_r83(self, test_kb):
+    def test_has_export_fact(self, test_kb):
+        """Phase 2.1: exactly one @export — the ternary fact relation."""
         result = generate_rls(test_kb)
-        assert "@export R83" in result
+        assert '@export fact :- csv{resource="output_fact.csv"} .' in result
+        # No per-relation output files
+        assert "@export R83" not in result
+        assert "@export trans" not in result
 
-    def test_has_export_trans(self, test_kb):
+    def test_variable_and_uri_naming(self, test_kb):
+        """Generated rules use ?i1/?i2 variables and full-URI predicate constants."""
         result = generate_rls(test_kb)
-        assert "@export trans" in result
-
-    def test_loosely_matches_spike_r1_rls(self, test_kb):
-        """The generated RLS should loosely match spike rules_r1.rls patterns.
-        Spike rule: is_generalized_subclass(?i2, ?i1) :- is_subclass_of(?i2, ?i1)
-        Our rule:   R83(?i2, ?i1) :- triples(?i2, R3, ?i1)
-        Both express the same R3→R83 mapping, just with different predicate names.
-        """
-        result = generate_rls(test_kb)
-        # Variable names i1 and i2 should appear
+        # Variable names i1 and i2 should appear (R83 chain rule pattern)
         assert "?i1" in result
         assert "?i2" in result
-        # R83 and R3 should appear
-        assert "R83" in result
-        assert "R3" in result
-
-    def test_loosely_matches_spike_r2_rls(self, test_kb):
-        """Transitivity rule pattern should match the spike rules_r2.rls structure."""
-        result = generate_rls(test_kb)
-        # Recursive trans rule should be present
-        assert "trans(?i1" in result or ("trans(" in result and "is_transitive" in result)
 
 
 # ─────────────────────────────────────────────────────────────────────────────

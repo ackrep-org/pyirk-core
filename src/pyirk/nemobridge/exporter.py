@@ -1,51 +1,82 @@
 """
 pyirk.nemobridge.exporter — Generalized DataStore → Nemo-compatible CSV EDB exporter.
 
-## CSV output convention
+## CSV output convention (Phase 2.1: full-URI data columns)
 
-All statements from `ds.statements` are partitioned into two categories:
+Subject, predicate and object columns carry the FULL entity URI
+(e.g. ``irk:/builtins#R3``, ``irk:/ocse/0.2/math#I4122``) — never the bare
+short_key. This is the only way to avoid short_key collisions across modules
+(Gate-1 fix). Nemo imports these as quoted strings via ``format=(string, ...)``;
+see ``pyirk.nemobridge.translator``.
 
-1. **Unqualified triples** → `triples.csv`
-   Columns: (subject_key, predicate_key, object_key)
-   One row per statement where *both* endpoints are Items/Relations (i.e., have a
-   `short_key`) and neither endpoint is scope-internal (see `is_scope_internal`).
-   Statements whose object is a literal are omitted from this file (Nemo facts must
-   be grounded term-only; literals may be added in a separate export if needed).
+1. **Unqualified triples** → ``triples.csv``
+   Columns: (subject_uri, predicate_uri, object_uri).
+   One row per statement where *both* endpoints are Items/Relations (i.e. have
+   an URI) and neither endpoint is scope-internal (see ``is_scope_internal``).
+   Statements whose object is a literal are omitted.
 
-2. **Qualified triples** → `stmts.csv` + `quals_<rel_key>.csv`
-   Columns of stmts.csv: (stmt_id, subject_key, predicate_key, object_key)
-   One row per statement that has at least one qualifier.
-   For each distinct qualifier-relation key encountered, a separate file
-   `quals_<rel_key>.csv` is written with columns (stmt_id, value) where
-   `value` is the short_key of the qualifier object if it is an entity, or its
-   string representation if it is a literal.
+2. **Qualified triples** → ``stmts.csv`` + ``quals_<rel_key>.csv``
+   stmts.csv columns: (stmt_id, subject_uri, predicate_uri, object_uri).
+   ``quals_<rel_key>.csv`` rows are (stmt_id, value); ``value`` is the qualifier
+   object's full URI for entities, or repr() for literals. Filenames continue
+   to use the qualifier-relation's short_key for human-readable lookup.
 
-   **Rationale for reification over n-ary predicates**:
-   Reification (stmt_id + separate qualifier tables) was chosen over encoding
-   qualifiers directly as extra columns in a wide predicate because:
-   (a) different statements may have different subsets of qualifiers, so a fixed
-       n-ary predicate would require many NULLs or separate rules per combination;
-   (b) Nemo supports heterogeneous fact tables well; separate tables per qualifier
-       relation map cleanly to Nemo predicates;
-   (c) future integration (Part B) can join stmts.csv with quals_*.csv inline in
-       .rls files without reshaping the export.
+3. **Per-predicate files** (optional, ``per_predicate=True``)
+   ``triples__<pred_key>.csv`` with (subject_uri, object_uri) columns. Filename
+   keeps the short_key for human-readable lookup; cells are URIs.
 
-   **Efficiency**: statements WITHOUT qualifiers produce no row in stmts.csv.
-
-3. **Per-predicate files** (optional, `per_predicate=True`)
-   `triples__<pred_key>.csv` with columns (subject_key, object_key) — 2-column
-   format suitable for Nemo when only one predicate's triples are needed.
-   This mirrors the 2-column input format used in the spike (facts_for_r1.csv).
+4. **uri_index.csv** — audit sidecar only.
+   Still written so existing audit / debugging tooling keeps working, but no
+   longer the mapping path on the delegation side (V2.1: delegation resolves
+   each cell directly via ``ds.get_entity_by_uri``).
 
 ## Scope-internal filter
 
-See `is_scope_internal` for the precise definition and correctness conditions.
+See ``is_scope_internal`` for the precise definition and correctness conditions.
 """
 
 import csv
 import os
 from collections import defaultdict
 from typing import Any, Dict, Optional
+
+
+def load_uri_index(out_dir) -> Dict[str, str]:
+    """Read ``uri_index.csv`` from *out_dir* and return ``{short_key: uri}``.
+
+    Audit sidecar from :func:`export_datastore`. Phase-2.1+ delegation no
+    longer needs this for mapping (the data columns now carry full URIs);
+    the file is kept for human-readable debugging and round-trip tests.
+
+    Parameters
+    ----------
+    out_dir:
+        Directory that contains ``uri_index.csv`` (typically the directory
+        passed to :func:`export_datastore`). Accepts ``str`` or ``pathlib.Path``.
+
+    Returns
+    -------
+    dict[str, str]
+        Mapping ``short_key -> uri``. Empty file → empty dict.
+
+    Raises
+    ------
+    FileNotFoundError
+        Bubbled up by design — :func:`pyirk.nemobridge.delegation._apply_via_nemo`
+        wraps the call in the silent-fallback ``try/except``.
+    """
+    path = os.path.join(str(out_dir), "uri_index.csv")
+    result: Dict[str, str] = {}
+    with open(path, newline="", encoding="utf-8") as fh:
+        for row in csv.reader(fh):
+            if len(row) < 2:
+                continue
+            short_key, uri = row[0], row[1]
+            # exporter writes no header, but tolerate one if a future variant adds it
+            if short_key == "short_key" and uri == "uri":
+                continue
+            result[short_key] = uri
+    return result
 
 
 def is_scope_internal(entity) -> bool:
@@ -112,8 +143,8 @@ def export_relation_facts(ds, rel_uri: str, out_path: str, *, arity: int = 2) ->
     ds:       pyirk DataStore
     rel_uri:  URI of the relation to export (e.g., p.R3.uri)
     out_path: output file path
-    arity:    2 → (subject_key, object_key)  [default, matches spike format]
-              3 → (subject_key, predicate_key, object_key)
+    arity:    2 → (subject_uri, object_uri)
+              3 → (subject_uri, predicate_uri, object_uri)
 
     Returns the number of exported rows.
 
@@ -133,16 +164,16 @@ def export_relation_facts(ds, rel_uri: str, out_path: str, *, arity: int = 2) ->
             s = stm.subject
             o = stm.object
             pred = stm.predicate
-            if not hasattr(s, "short_key") or not hasattr(pred, "short_key"):
+            if not hasattr(s, "uri") or not hasattr(pred, "uri"):
                 continue
-            if not hasattr(o, "short_key"):
+            if not hasattr(o, "uri"):
                 continue  # literal — skip for entity-only export
             if is_scope_internal(s) or is_scope_internal(o):
                 continue
             if arity == 2:
-                rows.append((s.short_key, o.short_key))
+                rows.append((s.uri, o.uri))
             else:
-                rows.append((s.short_key, pred.short_key, o.short_key))
+                rows.append((s.uri, pred.uri, o.uri))
 
     rows.sort()
     os.makedirs(os.path.dirname(out_path) or ".", exist_ok=True)
@@ -162,10 +193,17 @@ def export_datastore(
 
     Files written
     -------------
-    triples.csv          — all unqualified item-item triples
-    stmts.csv            — qualified triples (reification; see module docstring)
-    quals_<R>.csv        — one file per qualifier-relation key for qualified stmts
+    triples.csv          — all unqualified item-item triples; cells are full URIs
+    stmts.csv            — qualified triples (reification; URIs in data cells)
+    quals_<R>.csv        — one file per qualifier-relation (filename uses short_key
+                           for human-readable lookup); rows are (stmt_id, value),
+                           value=full URI for entities, repr() for literals.
     triples__<R>.csv     — per-predicate 2-column CSVs (only when per_predicate=True)
+    uri_index.csv        — audit sidecar: (short_key, uri) for every short_key seen
+                           in the exported triples. Phase-2.1+ delegation maps by
+                           URI directly from the data columns; this file is no
+                           longer the resolution path. Kept for human-readable
+                           debugging and round-trip tests.
 
     Returns
     -------
@@ -176,50 +214,73 @@ def export_datastore(
       "total_qualified"   : int  — rows in stmts.csv
       "paths"             : {"triples": str, "stmts": str,
                              "quals": {rel_key: str},
-                             "per_predicate": {pred_key: str}}
+                             "per_predicate": {pred_key: str},
+                             "uri_index": str}
     """
     os.makedirs(out_dir, exist_ok=True)
 
     # --- partition statements -----------------------------------------------
-    triple_rows: list = []           # (subj_key, pred_key, obj_key)
-    per_pred_rows: Dict[str, list] = defaultdict(list)  # pred_key → [(s, o)]
-    stmt_rows: list = []             # (stmt_id, subj_key, pred_key, obj_key)
+    triple_rows: list = []           # (subj_uri, pred_uri, obj_uri)
+    per_pred_rows: Dict[str, list] = defaultdict(list)  # pred_key → [(s_uri, o_uri)]
+    stmt_rows: list = []             # (stmt_id, subj_uri, pred_uri, obj_uri)
     qual_rows: Dict[str, list] = defaultdict(list)  # qual_rel_key → [(stmt_id, val)]
+    # predicate_counts is keyed by short_key for audit readability — the
+    # CSV cells carry URIs, but humans inspect counts by short_key.
+    predicate_counts: Dict[str, int] = defaultdict(int)
+    # uri_index is now audit-only: maps short_key → uri for every entity that
+    # appears in the export. The delegation path no longer consults this file.
+    uri_index: Dict[str, str] = {}
+
+    def _record_uri(entity) -> None:
+        uri = getattr(entity, "uri", None)
+        if uri is None:
+            return
+        sk = entity.short_key
+        uri_index.setdefault(sk, uri)
 
     for stm in _iter_subject_role_statements(ds):
         s = stm.subject
         pred = stm.predicate
         o = stm.object
 
-        # require entity endpoints with short_key
-        if not hasattr(s, "short_key") or not hasattr(pred, "short_key"):
+        # require entity endpoints with a URI (Items/Relations always have one)
+        if not hasattr(s, "uri") or not hasattr(pred, "uri"):
             continue
-        if not hasattr(o, "short_key"):
+        if not hasattr(o, "uri"):
             continue  # literal object — excluded from entity-triple export
 
         if is_scope_internal(s) or is_scope_internal(o):
             continue
 
-        sk = s.short_key
-        pk = pred.short_key
-        ok = o.short_key
+        s_uri = s.uri
+        p_uri = pred.uri
+        o_uri = o.uri
+        pk = pred.short_key  # only used for per_predicate filename + counts
+
+        _record_uri(s)
+        _record_uri(pred)
+        _record_uri(o)
+
+        predicate_counts[pk] += 1
 
         if stm.qualifiers:
-            stmt_rows.append((stm.short_key, sk, pk, ok))
+            stmt_rows.append((stm.short_key, s_uri, p_uri, o_uri))
             for qf_stm in stm.qualifiers:
                 qrel = qf_stm.predicate
                 if not hasattr(qrel, "short_key"):
                     continue
+                _record_uri(qrel)
                 qval = qf_stm.object
-                if hasattr(qval, "short_key"):
-                    val_str = qval.short_key
+                if hasattr(qval, "uri"):
+                    val_str = qval.uri
+                    _record_uri(qval)
                 else:
                     val_str = repr(qval)
                 qual_rows[qrel.short_key].append((stm.short_key, val_str))
         else:
-            triple_rows.append((sk, pk, ok))
+            triple_rows.append((s_uri, p_uri, o_uri))
             if per_predicate:
-                per_pred_rows[pk].append((sk, ok))
+                per_pred_rows[pk].append((s_uri, o_uri))
 
     # --- write triples.csv ---------------------------------------------------
     triple_rows.sort()
@@ -252,13 +313,12 @@ def export_datastore(
                 csv.writer(f).writerows(rows)
             per_pred_paths[pk] = path
 
-    # --- build audit counts --------------------------------------------------
-    predicate_counts: Dict[str, int] = defaultdict(int)
-    for _sid, sk, pk, ok in stmt_rows:
-        predicate_counts[pk] += 1
-    for sk, pk, ok in triple_rows:
-        predicate_counts[pk] += 1
+    # --- write uri_index.csv (V2 — module-context-aware reverse resolution) --
+    uri_index_path = os.path.join(out_dir, "uri_index.csv")
+    with open(uri_index_path, "w", newline="") as f:
+        csv.writer(f).writerows(sorted(uri_index.items()))
 
+    # --- build audit counts --------------------------------------------------
     qualifier_counts = {k: len(v) for k, v in qual_rows.items()}
 
     return {
@@ -271,6 +331,7 @@ def export_datastore(
             "stmts": stmts_path,
             "quals": qual_paths,
             "per_predicate": per_pred_paths,
+            "uri_index": uri_index_path,
         },
     }
 

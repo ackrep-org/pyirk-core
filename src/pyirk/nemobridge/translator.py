@@ -1,46 +1,37 @@
 """
 pyirk.nemobridge.translator — Rule classifier and .rls code generator for Nemo.
 
-## Translation schema
+## Translation schema (Phase 2.1: ternary ``fact``-model with full URIs)
 
-All Nemo facts are read from triples.csv (3-column: subject_key, predicate_key, object_key)
-as exported by nemobridge.exporter.export_datastore().
+The EDB is ``triples.csv`` whose cells carry FULL entity URIs as strings
+(e.g. ``"irk:/builtins#R3"``); the exporter writes them that way (Gate-1 fix).
+Every ``@import`` MUST declare ``format=(string, ...)`` — otherwise an unquoted
+CSV cell does not unify with a ``"..."`` constant in a rule head and the join
+silently fails (transitive closure does not fire).
 
-  @import triples :- csv{resource="triples.csv"} .
+All derived knowledge is represented by ONE ternary IDB predicate ``fact/3``;
+predicates are NEVER Nemo predicate names but always full-URI data terms.
+
+  @import triples :- csv{resource="triples.csv", format=(string,string,string)} .
+  fact(?s, ?p, ?o) :- triples(?s, ?p, ?o) .
 
 ### Direct (R1-type) rules
 
-Pure triple-premise rules translate to Nemo binary predicates:
+Pure triple-premise rules translate to ternary ``fact`` rules. The premise
+predicate(s) and the assertion predicate appear as URI-string constants:
 
-  Premise body:
-    - If the predicate appears as an assertion predicate of some rule:
-        use derived_pred(?s, ?o)  (derived IDB predicate)
-    - Otherwise:
-        use triples(?s, PredKey, ?o)  (raw EDB from triples.csv)
-  Head: derived_pred(?s, ?o)
-
-Example — I64 (R3 → R83, direct mapping):
-  R83(?i2, ?i1) :- triples(?i2, R3, ?i1) .
-
-Example — I65 (R83 transitive propagation; R83 is derived by I64, so no triples() wrapper):
-  R83(?i3, ?i1) :- R83(?i2, ?i1), R83(?i3, ?i2) .
-
-Because Nemo evaluates all rules in a joint fixpoint, I64 and I65 together compute the
-full transitive closure of R83 automatically.
+  fact(?s, "irk:/builtins#R83", ?o) :- fact(?s, "irk:/builtins#R3", ?o) .
 
 ### Transitive (R2-type) rules
 
-Rules of the I66-type detect the pattern: premise contains both
-  (rel_var, R60__is_transitive, True)   and   wildcard-relation statements.
-They are translated using a standard trans/3 Datalog predicate:
-  is_transitive(RelKey) .          (one fact per R60-marked relation, from generate_transitivity_facts)
-  trans(?s, ?p, ?o) :- triples(?s, ?p, ?o), is_transitive(?p) .
-  trans(?i1, ?r, ?i3) :- is_transitive(?r), trans(?i1, ?r, ?i2), trans(?i2, ?r, ?i3) .
+  is_transitive("irk:/builtins#R17") .          (one fact per R60-marked relation)
+  fact(?s, ?p, ?o) :- is_transitive(?p), fact(?s, ?p, ?x), fact(?x, ?p, ?o) .
 
-### Nemo v0.10.0 note
+### Export
 
-CSV values are imported as IRIs (not string literals). Constants like R3, R83 in RLS
-patterns match CSV values directly — no quoting needed.
+A single ``@export fact :- csv{resource="output_fact.csv"} .`` directive.
+Mapping (see ``delegation._materialize_tuples``) resolves all three columns
+via ``ds.get_entity_by_uri`` — no short_key path.
 """
 
 import json
@@ -122,54 +113,11 @@ def _iter_assert_stms(assert_stms):
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Derived-predicate collection (two-pass helper)
-# ─────────────────────────────────────────────────────────────────────────────
-
-def _collect_derived_predicates(rules) -> set:
-    """
-    First-pass scan: collect short_keys of predicates that appear as heads of
-    candidate-direct rules.  These become IDB predicates in the RLS and are
-    referenced directly (not via triples/3) in premise bodies of later rules.
-    """
-    import pyirk as p
-
-    derived: set = set()
-    for rule in rules:
-        if _has_sparql_premise(rule) or _has_or_subscope(rule) or _has_cheat(rule):
-            continue
-        try:
-            prem_stms, prem_items = _filter_stms(rule.scp__premise)
-        except Exception:
-            continue
-        if prem_items:
-            continue
-        # Skip I66-type (transitive) and other non-direct patterns
-        has_r60 = any(s.relation_tuple[1] == p.R60 for s in prem_stms if not _is_literal(s.relation_tuple[2]) or s.relation_tuple[1] == p.R60)
-        has_wildcard = any(s.relation_tuple[1] == p.R58 for s in prem_stms)
-        has_literal = any(_is_literal(s.relation_tuple[2]) for s in prem_stms)
-        if has_r60 and has_wildcard:
-            continue  # transitive-type
-        if has_literal or has_wildcard:
-            continue  # python_only
-        try:
-            assert_stms, assert_items = _filter_stms(rule.scp__assertion)
-        except Exception:
-            continue
-        if assert_items:
-            continue
-        for stm in _iter_assert_stms(assert_stms):
-            _, pred, _ = stm.relation_tuple
-            if hasattr(pred, "short_key") and pred != p.R58:
-                derived.add(pred.short_key)
-    return derived
-
-
-# ─────────────────────────────────────────────────────────────────────────────
 # Single-rule classification
 # ─────────────────────────────────────────────────────────────────────────────
 
-def _classify_single_rule(rule, derived_predicates: set) -> RuleClassification:
-    """Classify one rule.  derived_predicates must be pre-computed."""
+def _classify_single_rule(rule) -> RuleClassification:
+    """Classify one rule using the ternary ``fact``-model."""
     import pyirk as p
 
     uri = rule.uri
@@ -250,40 +198,38 @@ def _classify_single_rule(rule, derived_predicates: set) -> RuleClassification:
 
     # 10) Generate RLS snippet
     try:
-        snippet = _build_direct_snippet(rule, prem_stms, list(_iter_assert_stms(assert_stms)),
-                                        derived_predicates)
+        snippet = _build_direct_snippet(rule, prem_stms, list(_iter_assert_stms(assert_stms)))
         return result("direct", snippet, "Pure triple-pattern premise and assertion — translatable to Datalog")
     except Exception as e:
         return result("python_only", None, f"RLS snippet generation failed: {e}")
 
 
-def _build_direct_snippet(rule, prem_stms, assert_stms_filtered, derived_predicates: set) -> str:
-    """Build the Datalog rule lines for one direct rule."""
-    # Body from premise statements
+def _build_direct_snippet(rule, prem_stms, assert_stms_filtered) -> str:
+    """Build ternary ``fact``-rule lines for one direct rule.
+
+    Every premise/assertion triple becomes a ``fact(?s, "<pred-uri>", ?o)``
+    pattern; the predicate URI appears as a quoted string constant, never as
+    a Nemo predicate name. No derived-predicate handling needed: all rules
+    target the single ``fact`` IDB, the joint fixpoint handles propagation.
+    """
     body_parts = []
     for stm in prem_stms:
         subj, pred, obj = stm.relation_tuple
         s_var = _var_name(subj)
-        p_key = pred.short_key
         o_var = _var_name(obj)
-        if p_key in derived_predicates:
-            body_parts.append(f"{p_key}({s_var}, {o_var})")
-        else:
-            body_parts.append(f"triples({s_var}, {p_key}, {o_var})")
+        body_parts.append(f'fact({s_var}, "{pred.uri}", {o_var})')
 
     if not body_parts:
         raise ValueError(f"Rule {rule.short_key} has no premise statements to translate")
 
     body = ", ".join(body_parts)
 
-    # Head from assertion statements
     head_lines = []
     for stm in assert_stms_filtered:
         subj, pred, obj = stm.relation_tuple
         s_var = _var_name(subj)
-        p_key = pred.short_key
         o_var = _var_name(obj)
-        head_lines.append(f"{p_key}({s_var}, {o_var}) :- {body} .")
+        head_lines.append(f'fact({s_var}, "{pred.uri}", {o_var}) :- {body} .')
 
     if not head_lines:
         raise ValueError(f"Rule {rule.short_key} produced no assertion head lines")
@@ -304,8 +250,6 @@ def classify_rules(ds) -> list:
     """Classify all semantic rules in *ds*.
 
     Returns a list of RuleClassification instances (one per rule).
-    Uses a two-pass approach: first collects derived predicate keys, then
-    classifies each rule using that context.
 
     Categories:
       'direct'      — pure triple-pattern premise/assertion; rls_snippet filled.
@@ -313,19 +257,16 @@ def classify_rules(ds) -> list:
       'python_only' — requires Python callbacks, SPARQL, OR-scopes, or fiat items.
     """
     rules = _get_all_rules(ds)
-    derived = _collect_derived_predicates(rules)
-    logger.debug("Derived predicates: %s", derived)
-    return [_classify_single_rule(rule, derived) for rule in rules]
+    return [_classify_single_rule(rule) for rule in rules]
 
 
 def generate_transitivity_facts(ds) -> str:
-    """Return a .rls snippet with is_transitive(RelKey) facts for all R60-transitive relations.
+    """Return a ``.rls`` snippet of ``is_transitive("<rel-uri>")`` facts.
 
-    Iterates all relations in ds.relations and emits one Datalog fact per relation
-    with R60__is_transitive == True:
-        is_transitive(RelKey) .
-
-    Nemo v0.10.0: constants in facts are IRIs (no quotes), consistent with CSV imports.
+    One quoted-URI string per relation with R60__is_transitive=True. The
+    quoting is mandatory: ``fact``'s predicate column carries quoted URI
+    strings (format=(string,...)) and a join only unifies when both sides
+    are string-typed.
     """
     lines = ["% is_transitive facts — auto-generated from R60__is_transitive=True"]
     count = 0
@@ -335,7 +276,7 @@ def generate_transitivity_facts(ds) -> str:
         except Exception:
             val = None
         if val:
-            lines.append(f"is_transitive({rel.short_key}) .")
+            lines.append(f'is_transitive("{rel.uri}") .')
             count += 1
     if count == 0:
         lines.append("% (no transitive relations found)")
@@ -344,44 +285,31 @@ def generate_transitivity_facts(ds) -> str:
 
 _TRANS_BODY = """\
 % Transitive closure — standard Datalog pattern for R2-type rules
-% Base: include all triples whose predicate is marked as transitive
-trans(?s, ?p, ?o) :- triples(?s, ?p, ?o), is_transitive(?p) .
-% Recursive step: apply transitivity until fixpoint
-trans(?i1, ?r, ?i3) :- is_transitive(?r), trans(?i1, ?r, ?i2), trans(?i2, ?r, ?i3) ."""
+fact(?s, ?p, ?o) :- is_transitive(?p), fact(?s, ?p, ?x), fact(?x, ?p, ?o) ."""
 
 
 def generate_rls(ds, *, include_transitivity: bool = True) -> str:
-    """Compile all direct and transitive rules into a single Nemo .rls text.
+    """Compile all direct and transitive rules into a single Nemo ``.rls`` text.
 
     Structure:
-      @import triples (once)
-      Direct rule bodies (Datalog rules derived from classify_rules)
-      Transitivity facts + trans/3 recursion (if include_transitivity=True and any R2-rules exist)
-      @export directives for all derived head predicates and trans
-
-    Returns the complete .rls string ready to write to a file.
+      ``@import triples :- csv{resource="triples.csv", format=(string,string,string)} .``
+      ``fact(?s, ?p, ?o) :- triples(?s, ?p, ?o) .``       (seed the IDB)
+      Direct rules (ternary ``fact``-form, URI-string constants)
+      Transitivity facts + ternary recursion (if ``include_transitivity``)
+      ``@export fact :- csv{resource="output_fact.csv"} .``
     """
     classifications = classify_rules(ds)
 
     direct_clfs = [c for c in classifications if c.category == "direct"]
     has_transitive = any(c.category == "transitive" for c in classifications)
 
-    # Collect head predicates for @export
-    head_preds: set = set()
-    for clf in direct_clfs:
-        if clf.rls_snippet:
-            for line in clf.rls_snippet.splitlines():
-                line = line.strip()
-                if line and not line.startswith("%") and ":-" in line:
-                    head = line.split(":-")[0].strip()
-                    pred = head.split("(")[0].strip()
-                    if pred:
-                        head_preds.add(pred)
-
     out = []
     out.append("% nemobridge auto-generated rules — do not edit manually")
     out.append("")
-    out.append('@import triples :- csv{resource="triples.csv"} .')
+    out.append('@import triples :- csv{resource="triples.csv", format=(string,string,string)} .')
+    out.append("")
+    out.append("% Seed the ternary fact IDB from the EDB triples")
+    out.append("fact(?s, ?p, ?o) :- triples(?s, ?p, ?o) .")
 
     if direct_clfs:
         out.append("")
@@ -398,13 +326,9 @@ def generate_rls(ds, *, include_transitivity: bool = True) -> str:
         out.append("")
         out.append(_TRANS_BODY)
 
-    if head_preds or (include_transitivity and has_transitive):
-        out.append("")
-        out.append("% ── Exports ──────────────────────────────────────────────")
-        for pred in sorted(head_preds):
-            out.append(f'@export {pred} :- csv{{resource="output_{pred}.csv"}} .')
-        if include_transitivity and has_transitive:
-            out.append('@export trans :- csv{resource="output_trans.csv"} .')
+    out.append("")
+    out.append("% ── Exports ──────────────────────────────────────────────")
+    out.append('@export fact :- csv{resource="output_fact.csv"} .')
 
     return "\n".join(out)
 

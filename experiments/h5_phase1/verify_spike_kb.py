@@ -144,51 +144,34 @@ def main():
     for c in clfs:
         print(f"    {c.rule_short_key}: {c.category} — {c.reason[:60]}")
 
-    # R1 rules: only I64 (direct, no I65 transitive propagation)
-    # The R1 baseline was built from direct I64 mapping only (49 R3->R83 facts)
+    # Phase 2.1: ternary fact-model. The R1 baseline was built from I64 ALONE
+    # (no I65 transitive R83 propagation), so we emit two RLS files:
+    #  - rules_r1.rls (I64 only)  → reproduces the 49-row R83 baseline
+    #  - rules_combined.rls (all)  → reproduces R2 (R1001 closure) as well
     i64_clf = next((c for c in clfs if c.rule_short_key == "I64"), None)
     if i64_clf is None or i64_clf.category != "direct":
         print("ERROR: I64 not classified as 'direct'. Cannot generate R1 rules.", file=sys.stderr)
         p.unload_mod(TEST_MOD_URI, strict=False)
         sys.exit(1)
-
     r1_rls_content = "\n".join([
-        "% R1 verification rules — I64 only (R3 -> R83)",
-        '@import triples :- csv{resource="triples.csv"} .',
+        "% R1 verification rules — I64 only (R3 -> R83), ternary fact-model",
+        '@import triples :- csv{resource="triples.csv", format=(string,string,string)} .',
+        "fact(?s, ?p, ?o) :- triples(?s, ?p, ?o) .",
         "",
         i64_clf.rls_snippet,
         "",
-        '@export R83 :- csv{resource="output_R83.csv"} .',
+        '@export fact :- csv{resource="output_fact.csv"} .',
     ])
     r1_rls_path = os.path.join(tmp_dir, "rules_r1.rls")
     _write_rls(r1_rls_path, r1_rls_content)
 
-    # R2 rules: transitivity facts + trans/3 rule
-    trans_facts = generate_transitivity_facts(p.ds)
-    r2_rls_content = "\n".join([
-        "% R2 verification rules — transitive closure",
-        '@import triples :- csv{resource="triples.csv"} .',
-        "",
-        trans_facts,
-        "",
-        "% Base case: all triples of transitive relations",
-        "trans(?s, ?p, ?o) :- triples(?s, ?p, ?o), is_transitive(?p) .",
-        "% Recursive step: transitive closure",
-        "trans(?i1, ?r, ?i3) :- is_transitive(?r), trans(?i1, ?r, ?i2), trans(?i2, ?r, ?i3) .",
-        "",
-        '@export trans :- csv{resource="output_trans.csv"} .',
-    ])
-    r2_rls_path = os.path.join(tmp_dir, "rules_r2.rls")
-    _write_rls(r2_rls_path, r2_rls_content)
-
-    # Also write the combined rules for reference
     from pyirk.nemobridge import generate_rls
     combined_rls = generate_rls(p.ds)
     combined_path = os.path.join(tmp_dir, "rules_combined.rls")
     _write_rls(combined_path, combined_rls)
 
-    # Step 4: Run Nemo R1
-    print("\n=== Step 4: Run Nemo — R1 (I64, R3 -> R83) ===")
+    # Step 4a: Run Nemo with the R1-only RLS (I64 alone)
+    print("\n=== Step 4a: Run Nemo — R1 (I64 alone, R3 -> R83) ===")
     r1_out_dir = os.path.join(tmp_dir, "nemo_out_r1")
     r1_proc = _run_nemo(r1_rls_path, tmp_dir, r1_out_dir)
     if r1_proc.returncode != 0:
@@ -196,22 +179,59 @@ def main():
         print(r1_proc.stderr[:2000], file=sys.stderr)
         p.unload_mod(TEST_MOD_URI, strict=False)
         sys.exit(1)
-    r83_csv = os.path.join(r1_out_dir, "output_R83.csv")
-    nemo_r83 = _load_csv_as_set(r83_csv)
-    print(f"  Nemo R83 output: {len(nemo_r83)} rows")
 
-    # R1 baseline: {(subj, obj) pairs} — the baseline stores (subj, "R83", obj)
-    # We normalize both to 2-tuples for comparison
+    # Step 4b: Run Nemo with the combined RLS (for R2 verification)
+    print("\n=== Step 4b: Run Nemo — combined (I64/I65 direct + I66 transitive) ===")
+    out_dir = os.path.join(tmp_dir, "nemo_out")
+    proc = _run_nemo(combined_path, tmp_dir, out_dir)
+    if proc.returncode != 0:
+        print(f"ERROR: Nemo failed (exit {proc.returncode}):", file=sys.stderr)
+        print(proc.stderr[:2000], file=sys.stderr)
+        p.unload_mod(TEST_MOD_URI, strict=False)
+        sys.exit(1)
+
+    # Output cells are quoted strings: csv.reader returns each cell as
+    # "<uri>" (with literal surrounding double quotes). Strip them.
+    def _strip_q(s: str) -> str:
+        if len(s) >= 2 and s[0] == '"' and s[-1] == '"':
+            return s[1:-1]
+        return s
+
+    def _read_fact_csv(path):
+        rows = set()
+        if not os.path.exists(path):
+            return rows
+        with open(path, newline="") as fh:
+            for row in csv.reader(fh):
+                if len(row) >= 3:
+                    rows.add(tuple(_strip_q(c) for c in row[:3]))
+        return rows
+
+    nemo_r1_rows = _read_fact_csv(os.path.join(r1_out_dir, "output_fact.csv"))
+    nemo_fact_rows = _read_fact_csv(os.path.join(out_dir, "output_fact.csv"))
+    print(f"  R1 output_fact.csv rows: {len(nemo_r1_rows)}")
+    print(f"  combined output_fact.csv rows: {len(nemo_fact_rows)}")
+
+    # R1 verification — filter R1-only output for predicate == R83.uri
+    r83_uri = p.R83.uri
+    r3_uri = p.R3.uri
+    nemo_r83_pairs = {(s, o) for (s, pred, o) in nemo_r1_rows if pred == r83_uri}
+    # Map back to short_keys for comparison with the baseline (which uses short_keys)
+    def _sk(uri: str) -> str:
+        try:
+            return p.ds.get_entity_by_uri(uri).short_key
+        except Exception:
+            return uri.split("#", 1)[-1]
+    nemo_r83_pairs_sk = {(_sk(s), _sk(o)) for s, o in nemo_r83_pairs}
     baseline_r1_pairs = {(row[0], row[2]) for row in baseline_r1}
-    nemo_r83_pairs = {(row[0], row[1]) for row in nemo_r83}  # Nemo outputs 2-col CSV
-    ok_r1 = (nemo_r83_pairs == baseline_r1_pairs)
+    ok_r1 = (nemo_r83_pairs_sk == baseline_r1_pairs)
 
     if ok_r1:
-        print(f"  R1: OK — {len(nemo_r83_pairs)}/{expected_r1} R83 facts match baseline")
+        print(f"  R1: OK — {len(nemo_r83_pairs_sk)}/{expected_r1} R83 facts match baseline")
     else:
-        only_baseline = baseline_r1_pairs - nemo_r83_pairs
-        only_nemo = nemo_r83_pairs - baseline_r1_pairs
-        print(f"  R1: FAIL — expected {expected_r1}, got {len(nemo_r83_pairs)}", file=sys.stderr)
+        only_baseline = baseline_r1_pairs - nemo_r83_pairs_sk
+        only_nemo = nemo_r83_pairs_sk - baseline_r1_pairs
+        print(f"  R1: FAIL — expected {expected_r1}, got {len(nemo_r83_pairs_sk)}", file=sys.stderr)
         if only_baseline:
             print(f"    In baseline but not Nemo ({len(only_baseline)}):", file=sys.stderr)
             for t in sorted(only_baseline)[:5]:
@@ -221,24 +241,19 @@ def main():
             for t in sorted(only_nemo)[:5]:
                 print(f"      {t}", file=sys.stderr)
 
-    # Step 5: Run Nemo R2
-    print("\n=== Step 5: Run Nemo — R2 (I66, transitive closure) ===")
-    r2_out_dir = os.path.join(tmp_dir, "nemo_out_r2")
-    r2_proc = _run_nemo(r2_rls_path, tmp_dir, r2_out_dir)
-    if r2_proc.returncode != 0:
-        print(f"ERROR: Nemo R2 failed (exit {r2_proc.returncode}):", file=sys.stderr)
-        print(r2_proc.stderr[:2000], file=sys.stderr)
-        p.unload_mod(TEST_MOD_URI, strict=False)
-        sys.exit(1)
-    trans_csv = os.path.join(r2_out_dir, "output_trans.csv")
-    nemo_trans = _load_csv_as_set(trans_csv)
-    print(f"  Nemo trans output: {len(nemo_trans)} rows (includes all transitive relations)")
-
-    # R2 baseline: 6 entries for R1001 specifically
+    # Step 5: R2 verification — filter on R1001 URI
+    print("\n=== Step 5: R2 (I66, transitive closure over R1001) ===")
+    r1001 = p.ds.get_entity_by_uri("irk:/h5_spike/test_kb#R1001")
+    r1001_uri = r1001.uri
+    nemo_r2_r1001 = {
+        (_sk(s), "R1001", _sk(o))
+        for (s, pred, o) in nemo_fact_rows
+        if pred == r1001_uri
+    }
     baseline_r2 = _load_json_baseline(BASELINE_R2)
-    # Filter trans output for R1001 only (matches spike approach)
-    nemo_r2_r1001 = {t for t in nemo_trans if len(t) >= 2 and t[1] == "R1001"}
     expected_r2 = len(baseline_r2)
+    # baseline includes the input base chain too (Nemo's fact also includes them
+    # since fact is seeded from triples); compare directly.
     ok_r2 = (nemo_r2_r1001 == baseline_r2)
 
     if ok_r2:
@@ -258,10 +273,10 @@ def main():
 
     # Summary
     print("\n=== VERIFICATION SUMMARY ===")
-    print(f"  R1 (I64, R3→R83): {'OK' if ok_r1 else 'FAIL'} ({len(nemo_r83_pairs)}/{expected_r1})")
+    print(f"  R1 (I64, R3→R83): {'OK' if ok_r1 else 'FAIL'} ({len(nemo_r83_pairs_sk)}/{expected_r1})")
     print(f"  R2 (I66, trans):  {'OK' if ok_r2 else 'FAIL'} ({len(nemo_r2_r1001)}/{expected_r2})")
     print(f"  Temp dir: {tmp_dir}")
-    print(f"  RLS files: {r1_rls_path}, {r2_rls_path}")
+    print(f"  RLS file: {combined_path}")
 
     p.unload_mod(TEST_MOD_URI, strict=False)
 

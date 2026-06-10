@@ -249,4 +249,104 @@ Stelle:
 
 ---
 
-PHASE2-VERDICT: gate_ok=nein speedup_fullrun=315x
+## 7. Phase 2.1 — Nachfolge-Iteration: Gate-1-Fix + Gate-3-Versuche
+
+### 7.1 Implementierte Aenderungen
+
+- **Exporter** (`src/pyirk/nemobridge/exporter.py`): `triples.csv` und
+  `stmts.csv` fuehren pro Spalte die volle URI (`irk:/<mod>#<short_key>`)
+  statt eines short_key-Pfads. Das `uri_index.csv`-Sidecar bleibt als
+  Audit erhalten, ist aber kein Aufloesungsweg mehr.
+- **Translator** (`src/pyirk/nemobridge/translator.py`): Umstellung auf
+  ein ternaeres Datalog-Modell `fact(?s, ?p, ?o)`. Jeder `@import`
+  deklariert `format=(string, ...)`, Praedikate sind String-Konstanten
+  mit voller URI (z. B. `"irk:/builtins#R83"`), ein einziger
+  `@export fact :- csv{resource="output_fact.csv"} .` ersetzt die
+  bisherigen `output_<REL>.csv`-Dateien.
+- **Delegation** (`src/pyirk/nemobridge/delegation.py`): `_materialize_tuples`
+  liest `output_fact.csv` und loest Subjekt, Praedikat und Objekt direkt
+  per `ds.get_entity_by_uri(<uri-string>)` auf. Intra-Call-Dedup-Set
+  `(subj_uri, pred_uri, obj_uri)` faengt Nemo-Mehrfachausgaben.
+- **Ruleengine** (`src/pyirk/ruleengine.py`): die V4-Fixpoint-Loop legt
+  vor der `while`-Schleife ein `nemo_inserted: set` an und reicht es als
+  Keyword `inserted_uris=...` an `_apply_via_nemo` durch, sodass das
+  Dedup-Set ueber alle V4-Iterationen lebt. Default `None` legt einen
+  lokalen Set fuer Backward-Compat an.
+- **Tests** (`tests/test_nemobridge_{exporter,translator,fixpoint}.py`):
+  Erwartungen auf das neue URI-/`fact`-Encoding nachgezogen;
+  V4-Loop-Stubs in `test_nemobridge_fixpoint.py` um Keyword
+  `inserted_uris=None` erweitert (Signaturanpassung).
+
+### 7.2 Aequivalenz-Gate (gleiches Skript, gleiche Schwellen)
+
+Gate-Skript `experiments/h5_phase2/equivalence_gate.py` unveraendert,
+Log konsolidiert in `experiments/h5_phase2/equivalence_gate.log`:
+
+```
+GATE-RESULT:
+  gate_1_state_equivalent: true  (diff_subjects=0)
+  gate_2_idempotent:       true  (extra_stmts_on_replay=0)
+  gate_3_no_duplicates:    false  (max_multiplicity=3)
+  overall_gate_ok:         false
+  t_native_sec:            331.8048  (load=0.58,(load-belastet))
+  t_delegation_sec:        1.0496  (load=1.01,(load-belastet))
+  speedup_fullrun:         316.12x
+```
+
+- **Gate 1 (Zustands-Aequivalenz)**: gefixt. Volle URIs in den
+  Fakten-CSVs eliminieren die short_key-Kollision ueber Module hinweg,
+  die in Phase 2 zu `diff_subjects > 0` gefuehrt hat.
+- **Gate 2 (Idempotenz)**: weiterhin erfuellt, Wiederlauf liefert
+  `extra_stmts_on_replay=0`.
+- **Gate 3 (keine Duplikate)**: weiterhin verletzt. 5 Tripel mit
+  Vielfachheit 2 bzw. 3 (max_multiplicity=3), alle mit Praedikat
+  `irk:/builtins#R30` oder `irk:/builtins#R31`:
+
+  - mult=3 `(control_theory#Ia26808, builtins#R31, math#I5000)`
+  - mult=2 `(math#Ia86475, builtins#R31, math#Ia79736)`
+  - mult=2 `(math#Ia92990, builtins#R31, math#Ia38008)`
+  - mult=2 `(math#Ia90004, builtins#R31, math#I5000)`
+  - mult=2 `(control_theory#Ia75577, builtins#R30, control_theory#I9199)`
+
+### 7.3 Diagnose des Gate-3-Restbefundes
+
+- Der Dedup-Schluessel in `_materialize_tuples` ist nachweislich das
+  Tripel `(subj_uri, pred_uri, obj_uri)` — kein Schluessel-Bug.
+- Sowohl das Intra-Call- als auch das Cross-V4-Iter-Set decken
+  ausschliesslich den Nemo-Pfad ab. Im V4-Loop laeuft jede Iteration
+  zusaetzlich der surviving-Python-Block (native `apply_semantic_rule`
+  ueber die nicht-delegierten Regeln); dieser Pfad kennt das
+  `inserted_uris`-Set nicht.
+- Die Konzentration auf `R30`/`R31` (in pyirk-builtins zentrale
+  Relationen, von mehreren Regelketten produziert) ist konsistent damit,
+  dass dieselbe `(s, p, o)`-Faktenbasis sowohl ueber den Nemo-Block
+  (via `fact()`-Materialisierung) als auch ueber den Python-Block
+  abgeleitet wird, ohne dass die beiden Pfade ihren Insertions-Status
+  miteinander teilen.
+- Ein Cross-Pfad-Dedup wuerde erfordern, dass auch der Python-Pfad
+  seine `subj.set_relation`-Aufrufe in `apply_semantic_rule` ueber
+  dasselbe Set leitet. Das ist ein Eingriff in den nativen
+  Mutationsweg und damit eine andere Stelle als der bisherige
+  Phase-2.1-Scope (`nemobridge/*`).
+
+### 7.4 Verdict-Aktualisierung — ehrlich
+
+Nach den zwei in Phase 2.1 unternommenen Loesungsversuchen fuer Gate 3
+(Intra-Call-Dedup, Cross-V4-Iter-Dedup) ist das Gate weiterhin
+verletzt. Per `goal.md`-Stopp-Kriterium (Zitat: "Falls nach ~2
+Iterationen ein Befund nicht loesbar ist: ehrlich gate_ok=nein +
+Diagnose, nicht erzwingen") wird KEIN dritter Versuch unternommen und
+KEINE Schwelle aufgeweicht.
+
+Phase-2.1-Bilanz:
+- Gate 1: gefixt (vormals DIFF, jetzt OK).
+- Gate 2: erhalten (war in Phase 2 OK, bleibt OK).
+- Gate 3: partiell offen; 5/6555 (~0,076 %) der erzeugten Tripel
+  duplizieren sich auf R30/R31; Cross-Pfad-Dedup waere die noetige,
+  aber hier bewusst NICHT durchgefuehrte Folge-Iteration.
+- Speedup-Groessenordnung: ~316x (load-belastet) — konsistent mit
+  Phase-2-Befund.
+
+---
+
+PHASE2-VERDICT: gate_ok=nein speedup_fullrun=316x phase=2.1 gate1=ja gate2=ja gate3=nein dups=5/6555

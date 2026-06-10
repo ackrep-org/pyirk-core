@@ -3,41 +3,24 @@ H5 Phase 2 — Equivalence Gate (native vs nemo-delegation)
 ======================================================================
 
 === Pre-flight ===
-uptime load (1-min): 0.07
+uptime load (1-min): 0.55
+  WARNUNG: load=0.55>=0.5
+  → measurements proceed, but get a '(load-belastet)' marker.
 Nemo: nemo-cli 0.10.0
 
 === Pfad A — native (subprocess) ===
-subprocess native done: elapsed=323.568s n_new_first=339 n_subj=1442 n_triples=6555 idem_n_new=None
-native subprocess wall: 329.229s
+subprocess native done: elapsed=331.805s n_new_first=339 n_subj=1442 n_triples=6555 idem_n_new=None
+native subprocess wall: 337.528s
 
 === Pfad B — delegation (subprocess) ===
-subprocess delegation done: elapsed=1.025s n_new_first=339 n_subj=1442 n_triples=6555 idem_n_new=0
-delegation subprocess wall: 6.389s
+subprocess delegation done: elapsed=1.050s n_new_first=339 n_subj=1442 n_triples=6555 idem_n_new=0
+delegation subprocess wall: 6.488s
 
 === Gate evaluation ===
-native:    n_subj=1442, n_triples=6555, new_statements=339, elapsed=323.568s
-delegation:n_subj=1442, n_triples=6555, new_statements=339, elapsed=1.025s
+native:    n_subj=1442, n_triples=6555, new_statements=339, elapsed=331.805s
+delegation:n_subj=1442, n_triples=6555, new_statements=339, elapsed=1.050s
 
-[Gate 1] state equivalence: DIFF  diff_subjects=5
-  subject=irk:/ocse/0.2/agents#I4122
-    only_in_B (2):
-      ('irk:/builtins#R83', 'irk:/builtins#I12')
-      ('irk:/builtins#R83', 'irk:/builtins#I18')
-  subject=irk:/ocse/0.2/control_theory#I6873
-    only_in_A (1):
-      ('irk:/builtins#R83', 'irk:/ocse/0.2/control_theory#I9152')
-    only_in_B (1):
-      ('irk:/builtins#R83', 'irk:/ocse/0.2/agents#I9152')
-  subject=irk:/ocse/0.2/control_theory#I9223
-    only_in_A (1):
-      ('irk:/builtins#R83', 'irk:/ocse/0.2/control_theory#I1696')
-  subject=irk:/ocse/0.2/math#I4122
-    only_in_A (2):
-      ('irk:/builtins#R83', 'irk:/builtins#I12')
-      ('irk:/builtins#R83', 'irk:/builtins#I18')
-  subject=irk:/ocse/0.2/math#I9223
-    only_in_B (1):
-      ('irk:/builtins#R83', 'irk:/ocse/0.2/control_theory#I1696')
+[Gate 1] state equivalence: OK  diff_subjects=0
 
 [Gate 2] idempotency:       OK  extra_stmts_on_replay=0
 
@@ -50,11 +33,11 @@ delegation:n_subj=1442, n_triples=6555, new_statements=339, elapsed=1.025s
 
 ======================================================================
 GATE-RESULT:
-  gate_1_state_equivalent: false  (diff_subjects=5)
+  gate_1_state_equivalent: true  (diff_subjects=0)
   gate_2_idempotent:       true  (extra_stmts_on_replay=0)
   gate_3_no_duplicates:    false  (max_multiplicity=3)
   overall_gate_ok:         false
-  t_native_sec:            323.5683  (load=0.07,ok)
-  t_delegation_sec:        1.0252  (load=1.08,(load-belastet))
-  speedup_fullrun:         315.62x
+  t_native_sec:            331.8048  (load=0.58,(load-belastet))
+  t_delegation_sec:        1.0496  (load=1.01,(load-belastet))
+  speedup_fullrun:         316.12x
 ======================================================================

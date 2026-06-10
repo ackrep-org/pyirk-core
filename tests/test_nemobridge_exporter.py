@@ -50,7 +50,7 @@ class TestSmokeExport(unittest.TestCase):
                 self.assertEqual(len(row), 2, f"Expected 2 columns, got: {row}")
 
     def test_export_relation_facts_arity3(self):
-        """arity=3 export includes the predicate column."""
+        """arity=3 export includes the predicate column as a full URI."""
         with tempfile.TemporaryDirectory() as tmp:
             csv_path = os.path.join(tmp, "r3_3col.csv")
             count = export_relation_facts(p.ds, p.R3.uri, csv_path, arity=3)
@@ -59,7 +59,10 @@ class TestSmokeExport(unittest.TestCase):
                 rows = list(csv.reader(fh))
             for row in rows:
                 self.assertEqual(len(row), 3, f"Expected 3 columns, got: {row}")
-                self.assertEqual(row[1], "R3", f"Column 1 should be 'R3', got: {row}")
+                self.assertEqual(
+                    row[1], p.R3.uri,
+                    f"Column 1 should be the full R3 URI, got: {row}",
+                )
 
     def test_export_datastore_smoke(self):
         """export_datastore returns a dict with expected keys and non-empty triples."""

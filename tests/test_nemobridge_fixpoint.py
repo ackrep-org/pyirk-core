@@ -101,7 +101,7 @@ class TestV4FixpointLoop(unittest.TestCase):
         # _apply_via_nemo: iter 1 → 1 new (append to out_stms), iter 2+ → 0.
         nemo_call_count = {"n": 0}
 
-        def nemo_stub(delegated, mod_uri, *, out_stms=None):
+        def nemo_stub(delegated, mod_uri, *, out_stms=None, inserted_uris=None):
             nemo_call_count["n"] += 1
             if nemo_call_count["n"] == 1:
                 if out_stms is not None:
@@ -150,7 +150,7 @@ class TestV4FixpointLoop(unittest.TestCase):
 
         # Both blocks would happily produce in every iteration — but exhaust=False
         # must terminate the loop after the very first iteration anyway.
-        def nemo_stub(delegated, mod_uri, *, out_stms=None):
+        def nemo_stub(delegated, mod_uri, *, out_stms=None, inserted_uris=None):
             if out_stms is not None:
                 out_stms.append(_make_fake_statement(idx=3000 + len(out_stms)))
             return 1
@@ -193,7 +193,7 @@ class TestV4FixpointLoop(unittest.TestCase):
 
         nemo_idx = {"n": 0}
 
-        def nemo_stub(delegated, mod_uri, *, out_stms=None):
+        def nemo_stub(delegated, mod_uri, *, out_stms=None, inserted_uris=None):
             nemo_idx["n"] += 1
             if out_stms is not None:
                 out_stms.append(_make_fake_statement(idx=5000 + nemo_idx["n"]))

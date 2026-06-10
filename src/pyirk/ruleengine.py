@@ -112,6 +112,10 @@ def apply_semantic_rules(*rules: List, mod_context_uri: str = None, exhaust=Fals
         # fixpoint over the delegable subset) followed by exactly one pass over
         # the remaining python rules. The loop terminates when both blocks
         # report 0 new statements; for ``exhaust=False`` it runs exactly once.
+        # Gate-3-Fix (Phase 2.1): ``nemo_inserted`` lives across V4 iterations
+        # so that Nemo-derived tuples re-emitted in a later iteration are
+        # deduped even when the DataStore-state check misses them.
+        nemo_inserted: set = set()
         nemo_failed = False
         iters = 0
         while True:
@@ -119,7 +123,10 @@ def apply_semantic_rules(*rules: List, mod_context_uri: str = None, exhaust=Fals
             if not nemo_failed:
                 nemo_buf: list = []
                 try:
-                    n_new = _apply_via_nemo(delegated, mod_context_uri, out_stms=nemo_buf)
+                    n_new = _apply_via_nemo(
+                        delegated, mod_context_uri,
+                        out_stms=nemo_buf, inserted_uris=nemo_inserted,
+                    )
                 except Exception as ex:
                     logger.warning("Nemo delegation failed, falling back to Python: %s", ex)
                     nemo_failed = True

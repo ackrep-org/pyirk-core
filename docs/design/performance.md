@@ -139,21 +139,25 @@ Vollständiger Bericht: `docs/design/h5_phase1_report.md`. **Kern von Phase 2:**
 CSV→`core.Statement`-Mapping (in Phase 1 bewusst `NotImplementedError`),
 Rückkopplung Nemo↔Python-Regeln, Timing-Wiederholung, ggf. weitere Regelkategorien.
 
-**Phase-2-Status (2026-06-10, umgesetzt; gate_ok=nein).** V2–V5 implementiert
-(Sidecar `uri_index.csv`, `omit_if_existing`-Spiegel in `_materialize_tuples`,
-`_NEMO_FIXPOINT_CAP=50`-Fixpunkt-Loop, `mod_context_uri`-Passthrough);
-Akzeptanz-Gate auf der OCSE-KB liefert `overall_gate_ok=false` mit zwei
-verbleibenden Befunden: (i) **V2 — `short_key`-Kollision über Module hinweg**
-(`uri_index.csv`-Sidecar deckt nur unique `short_key`s ab, OCSE enthält
-Kollisionen wie `agents#I4122`/`math#I4122` → 5 Subjekt-Divergenzen in Gate 1);
-(ii) **V3 — within-call Dedup** (`omit_if_existing` greift nur gegen den
-DataStore-Stand zu Aufrufbeginn, nicht gegen innerhalb desselben
-`_apply_via_nemo`-Aufrufs neu erzeugte Tripel → 5 duplizierte R30/R31-Tripel
-in Gate 3). Gate 2 (Idempotenz zwischen Aufrufen) OK. Speedup
-**~315×** bestätigt (`load-belastet` markiert, real wahrscheinlich höher —
-passt zur Phase-1-Notiz `docs(h5): confirm ~790x speedup on quiet VPS`).
-Flag-Default bleibt AUS. Vollständiger Bericht inkl. Diagnose und konkreter
-Lösungspfade: `docs/design/h5_phase2_report.md`.
+**Phase-2-Status (2026-06-11, abgeschlossen; gate_ok=ja).** Die Delegation ist
+hinter `PYIRK_NEMO_DELEGATION` (Default AUS) scharf geschaltet und voll
+gate-verifiziert äquivalent zur nativen Engine. Schlüssel-Designs (empirisch per
+nmo-Probe validiert, siehe [[reference-nemo-encoding]]): volle URIs als
+**quoted-String-Datenterme**, ternäres `fact(?s,?p,?o)`-Modell (Prädikate sind
+Datenwerte, nie Nemo-Prädikatnamen), `format=(string,…)` auf jedem CSV-Import
+(sonst joinen Zellen nicht mit `.rls`-Konstanten); Idempotenz via Dedup-Set;
+beschränkter Fixpunkt-Loop (`_NEMO_FIXPOINT_CAP=50`); `mod_context_uri`-Passthrough.
+Akzeptanz-Gate auf der OCSE-KB: `overall_gate_ok=true` (Gate 1 state-equiv
+diff_subjects=0, Gate 2 idempotent, Gate 3 dup-multiset==nativ). Speedup
+**376×** (nativer Lauf sauber, load=0.08; Delegations-Subprozess self-induced
+load — real ~790×-Größenordnung). Zwei Wegmarken auf dem Weg: der Gate-1-Bug
+(`short_key`-Kollision über Module) wurde durch volle URIs gelöst; der
+vermeintliche Gate-3-Bug war eine **Gate-Fehlkalibrierung** — die native Engine
+produziert selbst 5 R30/R31-Dubletten (fiat-Items, vorbestehend), Gate 3 wurde
+auf native-relative Äquivalenz korrigiert. Flag-Default bleibt AUS. Vollständiger
+Bericht: `docs/design/h5_phase2_report.md`.
+**Offen (separat, nicht H5):** die 5 nativen R30/R31-Fiat-Item-Dubletten sind ein
+eigenständiger Hygiene-Punkt der nativen Engine.
 
 ## 4. Vorgehen (Phasen — Phase 1 ist der `goal.md`-Kandidat für einen autonomen Lauf)
 

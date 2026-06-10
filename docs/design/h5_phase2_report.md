@@ -329,24 +329,49 @@ GATE-RESULT:
   Mutationsweg und damit eine andere Stelle als der bisherige
   Phase-2.1-Scope (`nemobridge/*`).
 
-### 7.4 Verdict-Aktualisierung — ehrlich
+### 7.4 Auflösung (2026-06-11): Gate 3 war fehlkalibriert, nicht die Delegation
 
-Nach den zwei in Phase 2.1 unternommenen Loesungsversuchen fuer Gate 3
-(Intra-Call-Dedup, Cross-V4-Iter-Dedup) ist das Gate weiterhin
-verletzt. Per `goal.md`-Stopp-Kriterium (Zitat: "Falls nach ~2
-Iterationen ein Befund nicht loesbar ist: ehrlich gate_ok=nein +
-Diagnose, nicht erzwingen") wird KEIN dritter Versuch unternommen und
-KEINE Schwelle aufgeweicht.
+Der Gate-3-Restbefund (5/6555) war **kein Delegationsbug.** Nachträgliche
+Diagnose (interaktiv, kein Agenten-Lauf): ein **nativer** OCSE-Lauf
+(`PYIRK_NEMO_DELEGATION` aus) auf `develop_carsten` mit derselben
+Tripel-Enumeration produziert die **identischen 5 Duplikate** — gleiche
+Prädikate (R31×4, R30×1), gleiche `Ia`-Keys (Ia26808, Ia86475, Ia92990,
+Ia90004, Ia75577), `max_multiplicity=3`, `triples gesamt=6555`. Die
+Dubletten stammen aus den nativen fiat-Item-R30/R31-Regeln und existieren
+unabhängig von der ganzen H5-Arbeit (vorbestehendes, separates Thema).
 
-Phase-2.1-Bilanz:
-- Gate 1: gefixt (vormals DIFF, jetzt OK).
-- Gate 2: erhalten (war in Phase 2 OK, bleibt OK).
-- Gate 3: partiell offen; 5/6555 (~0,076 %) der erzeugten Tripel
-  duplizieren sich auf R30/R31; Cross-Pfad-Dedup waere die noetige,
-  aber hier bewusst NICHT durchgefuehrte Folge-Iteration.
-- Speedup-Groessenordnung: ~316x (load-belastet) — konsistent mit
-  Phase-2-Befund.
+Das alte Gate-3-Kriterium „absolut 0 Duplikate" war damit **strenger als
+die native Referenz** — es maß nicht „äquivalent zu nativ", sondern etwas
+Strengeres-als-die-Wahrheit. Korrektur (Commit `6d6e5941`): Gate 3 prüft
+jetzt **Multiset-Äquivalenz des Tripel-Multisets gegen nativ**
+(`gate3_dup_equivalence`). Das ist im richtigen Sinn *strenger* — jede
+*zusätzliche oder fehlende* Dublette gegenüber nativ fällt durch, ein
+echter Delegationsregress kann sich nicht verstecken — aber nativs eigene
+5 Dubletten werden der Delegation nicht mehr angelastet.
+
+Gate-Lauf nach der Rekalibrierung (sauberer VPS, native load=0.08):
+
+```
+gate_1_state_equivalent: true  (diff_subjects=0)
+gate_2_idempotent:       true  (extra_stmts_on_replay=0)
+gate_3_dup_equiv_native: true  (diff_triples=0, native_dups=5, deleg_dups=5)
+overall_gate_ok:         true
+speedup_fullrun:         376.01x
+```
+
+Phase-2.1-Bilanz (final):
+- Gate 1: gefixt (volle URIs als Datenterme, ternäres `fact`-Modell,
+  `format=(string,…)`-Import — empirisch validiert).
+- Gate 2: erhalten.
+- Gate 3: **OK** nach Rekalibrierung auf das korrekte (native-relative)
+  Kriterium; Delegation reproduziert nativs Multiset exakt.
+- Speedup: **376x** (native load=0.08 sauber; Delegations-Subprozess
+  load-belastet/self-induced, real ~790×-Größenordnung wie Phase 1).
+
+**Vorbestehendes Folgethema (NICHT H5):** die 5 nativen R30/R31-Dubletten
+auf fiat-Items sind ein eigenständiger Hygiene-Punkt der nativen Engine,
+unabhängig von der Delegation behebbar.
 
 ---
 
-PHASE2-VERDICT: gate_ok=nein speedup_fullrun=316x phase=2.1 gate1=ja gate2=ja gate3=nein dups=5/6555
+PHASE2-VERDICT: gate_ok=ja speedup_fullrun=376x phase=2.1 gate1=ja gate2=ja gate3=ja(dup-equiv-native)

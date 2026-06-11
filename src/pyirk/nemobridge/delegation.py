@@ -24,6 +24,7 @@ Bekannte Limitation:
   ``ruleengine.apply_semantic_rules`` (nicht hier).
 """
 
+import ast
 import csv
 import logging
 import os
@@ -31,6 +32,35 @@ import subprocess
 import tempfile
 
 logger = logging.getLogger(__name__)
+
+
+# Mirror of ``exporter.LITERAL_PREFIX``. Imported lazily inside the helper to
+# avoid a hard import-time dependency between the two modules.
+_LITERAL_PREFIX = "LIT:"
+
+
+def _decode_object_cell(ds, obj_cell):
+    """Return the Python object the Nemo cell ``obj_cell`` refers to.
+
+    Two branches:
+      * URI cell → ``ds.get_entity_by_uri`` (Item or Relation).
+      * ``LIT:<repr>`` cell → decode via :func:`ast.literal_eval` so a
+        delegated rule can produce literal-objects (e.g. ``True``, ``1``,
+        ``"hello"``).  The prefix matches :func:`exporter.encode_literal`.
+
+    Raises ``UnknownURIError`` (entity branch) or ``ValueError`` (literal
+    branch) on failure — both are caught by the caller, which skips the
+    triple and logs at DEBUG.
+    """
+    if isinstance(obj_cell, str) and obj_cell.startswith(_LITERAL_PREFIX):
+        payload = obj_cell[len(_LITERAL_PREFIX):]
+        try:
+            return ast.literal_eval(payload)
+        except (ValueError, SyntaxError) as ex:
+            raise ValueError(
+                f"Cannot decode literal token {obj_cell!r}: {ex}"
+            ) from ex
+    return ds.get_entity_by_uri(obj_cell)
 
 
 def _nemo_available() -> bool:
@@ -125,8 +155,16 @@ def _apply_via_nemo(
         except Exception as ex:
             raise RuntimeError(f"export_datastore fehlgeschlagen: {ex}") from ex
 
-        # 2) RLS-Datei erzeugen
-        rls_content = generate_rls(core.ds)
+        # 2) RLS-Datei erzeugen — beschraenkt auf die tatsaechlich vom Aufrufer
+        # angeforderten delegierbaren Regeln; sonst wuerde Nemo auch alle
+        # anderen direct/transitive-Regeln auswerten, deren Konklusionen der
+        # native Pfad in diesem Aufruf NICHT erzeugen wuerde (verfaelschte
+        # Aequivalenz im Einzelregel-Test, siehe H5-Extension Phase 1).
+        delegated_keys = {
+            getattr(r, "short_key", None) for r in delegated_rules
+        }
+        delegated_keys.discard(None)
+        rls_content = generate_rls(core.ds, restrict_to=delegated_keys)
         rls_path = os.path.join(tmp_dir, "rules.rls")
         with open(rls_path, "w", encoding="utf-8") as fh:
             fh.write(rls_content)
@@ -206,10 +244,10 @@ def _materialize_tuples(
             try:
                 subj = ds.get_entity_by_uri(subj_uri)
                 rel = ds.get_entity_by_uri(pred_uri)
-                obj = ds.get_entity_by_uri(obj_uri)
+                obj = _decode_object_cell(ds, obj_uri)
             except Exception as ex:
                 logger.debug(
-                    "skip nemo tuple (%s,%s,%s): URI resolution failed: %s",
+                    "skip nemo tuple (%s,%s,%s): URI/literal resolution failed: %s",
                     subj_uri, pred_uri, obj_uri, ex,
                 )
                 continue

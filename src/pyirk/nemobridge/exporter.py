@@ -30,6 +30,17 @@ see ``pyirk.nemobridge.translator``.
    longer the mapping path on the delegation side (V2.1: delegation resolves
    each cell directly via ``ds.get_entity_by_uri``).
 
+5. **Literal-object triples** → ``literal_triples.csv`` (H5 Extension Phase 1)
+   Columns: (subject_uri, predicate_uri, literal_token).
+   ``literal_token`` carries the ``LIT:`` prefix followed by ``repr(value)`` so
+   bool/int/float/str values become unambiguous string constants (e.g.
+   ``LIT:True``, ``LIT:1``, ``LIT:'hello'``). Schema stays
+   ``format=(string,string,string)`` — Nemo joins are pure string equality on
+   the value. The same prefix lets ``delegation._materialize_tuples`` decode
+   the literal back into a Python value when the resolution falls through.
+   File is always written (possibly empty) so the ``@import`` directive in the
+   generated ``.rls`` never fails on missing-file.
+
 ## Scope-internal filter
 
 See ``is_scope_internal`` for the precise definition and correctness conditions.
@@ -39,6 +50,48 @@ import csv
 import os
 from collections import defaultdict
 from typing import Any, Dict, Optional
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Literal-token encoding (H5 Extension Phase 1)
+# ─────────────────────────────────────────────────────────────────────────────
+
+LITERAL_PREFIX = "LIT:"
+
+# Types whose ``repr()`` round-trips losslessly through the
+# CSV → Nemo → CSV pipeline. Nemo 0.10 doubles backslashes when writing
+# string-typed cells back to its output CSV, so any literal whose ``repr``
+# contains a backslash (multi-line strings, rdflib Literals, etc.) cannot
+# survive the round-trip and must NOT be exported as a literal-triple row.
+# Bool/int/float are safe: their ``repr`` is backslash-free and parses back
+# via :func:`ast.literal_eval`. This restriction is what the H5 Extension
+# Phase 1 rule set actually needs (I705/I790/I800/I820 only ever match
+# bool or int literal values); strings stay handled by the native engine.
+_NEMO_SAFE_LITERAL_TYPES = (bool, int, float)
+
+
+def encode_literal(value) -> str:
+    """Render a Python literal as a Nemo string token (``LIT:<repr>``).
+
+    The ``LIT:`` prefix distinguishes a literal cell from a URI cell, so
+    ``delegation._materialize_tuples`` can decide whether to call
+    ``ds.get_entity_by_uri`` or ``ast.literal_eval`` on it.
+
+    ``repr(value)`` is unambiguous for the H5-Phase-1 supported types:
+      - bool : ``True`` / ``False``
+      - int  : ``1``
+      - float: ``1.5``
+    """
+    return f"{LITERAL_PREFIX}{value!r}"
+
+
+def _is_nemo_safe_literal(value) -> bool:
+    """True iff *value* is one of the literal types the Phase-1 H5 Extension
+    round-trips through Nemo without escape corruption.
+
+    See :data:`_NEMO_SAFE_LITERAL_TYPES`.
+    """
+    return isinstance(value, _NEMO_SAFE_LITERAL_TYPES)
 
 
 def load_uri_index(out_dir) -> Dict[str, str]:
@@ -221,6 +274,9 @@ def export_datastore(
 
     # --- partition statements -----------------------------------------------
     triple_rows: list = []           # (subj_uri, pred_uri, obj_uri)
+    # (subj_uri, pred_uri, LIT:<repr(value)>) — Phase-1 H5 Extension; literal
+    # objects routed here instead of dropped, so Nemo can match them.
+    literal_triple_rows: list = []
     per_pred_rows: Dict[str, list] = defaultdict(list)  # pred_key → [(s_uri, o_uri)]
     stmt_rows: list = []             # (stmt_id, subj_uri, pred_uri, obj_uri)
     qual_rows: Dict[str, list] = defaultdict(list)  # qual_rel_key → [(stmt_id, val)]
@@ -246,21 +302,37 @@ def export_datastore(
         # require entity endpoints with a URI (Items/Relations always have one)
         if not hasattr(s, "uri") or not hasattr(pred, "uri"):
             continue
-        if not hasattr(o, "uri"):
-            continue  # literal object — excluded from entity-triple export
 
-        if is_scope_internal(s) or is_scope_internal(o):
+        # Scope-internal subject/predicate ⇒ skip in BOTH the entity and the
+        # literal branch (prototype variables are never data-level facts).
+        if is_scope_internal(s):
             continue
 
         s_uri = s.uri
         p_uri = pred.uri
-        o_uri = o.uri
         pk = pred.short_key  # only used for per_predicate filename + counts
-
         _record_uri(s)
         _record_uri(pred)
-        _record_uri(o)
 
+        if not hasattr(o, "uri"):
+            # H5 Extension Phase 1: literal-object branch.
+            # Keep only unqualified literal triples (Nemo currently does not
+            # see literal-qualified statements anyway; matches the existing
+            # qualifier-export gap on entity rows). Restrict to bool/int/float
+            # to avoid Nemo's backslash-doubling on string-cell round-trip.
+            if stm.qualifiers:
+                continue
+            if not _is_nemo_safe_literal(o):
+                continue
+            literal_triple_rows.append((s_uri, p_uri, encode_literal(o)))
+            predicate_counts[pk] += 1
+            continue
+
+        if is_scope_internal(o):
+            continue
+
+        o_uri = o.uri
+        _record_uri(o)
         predicate_counts[pk] += 1
 
         if stm.qualifiers:
@@ -287,6 +359,14 @@ def export_datastore(
     triples_path = os.path.join(out_dir, "triples.csv")
     with open(triples_path, "w", newline="") as f:
         csv.writer(f).writerows(triple_rows)
+
+    # --- write literal_triples.csv (always; possibly empty) ------------------
+    # Empty-file write keeps the ``@import literal_triples`` directive in the
+    # auto-generated .rls valid even on KBs without any literal-object fact.
+    literal_triple_rows.sort()
+    literal_triples_path = os.path.join(out_dir, "literal_triples.csv")
+    with open(literal_triples_path, "w", newline="") as f:
+        csv.writer(f).writerows(literal_triple_rows)
 
     # --- write stmts.csv -----------------------------------------------------
     stmt_rows.sort()
@@ -326,8 +406,10 @@ def export_datastore(
         "qualifier_counts": qualifier_counts,
         "total_triples": len(triple_rows),
         "total_qualified": len(stmt_rows),
+        "total_literal_triples": len(literal_triple_rows),
         "paths": {
             "triples": triples_path,
+            "literal_triples": literal_triples_path,
             "stmts": stmts_path,
             "quals": qual_paths,
             "per_predicate": per_pred_paths,

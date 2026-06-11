@@ -368,9 +368,14 @@ Phase-2.1-Bilanz (final):
 - Speedup: **376x** (native load=0.08 sauber; Delegations-Subprozess
   load-belastet/self-induced, real ~790×-Größenordnung wie Phase 1).
 
-**Vorbestehendes Folgethema (NICHT H5):** die 5 nativen R30/R31-Dubletten
-auf fiat-Items sind ein eigenständiger Hygiene-Punkt der nativen Engine,
-unabhängig von der Delegation behebbar.
+**Korrektur 2026-06-11:** Die 5 nativen R30/R31-„Dubletten" sind KEIN Hygiene-Bug.
+Untersuchung (Branch `dead_end_native_dup_hygiene`, verworfen): 4/5 unterscheiden sich
+durch **Qualifier** (drei R31 mit `proxy_item`-Qualifier `<`/`==`/`>`) oder **Scope**
+(Regel-Prämissen-Wrapper) — das Gate enumeriert nur `(s,p,o)` und überzählt sie. Statement-
+Vielfachheit ist in pyirk absichtlich (`R54__is_matched_by_rule` zählt Matches per Instanz).
+Ein „defensive dedup" in `DataStore.set_statement` zerstörte die R54-Multiplizität und wurde
+verworfen. Bestätigt rückwirkend die Gate-3-Wahl (dup-multiset == nativ als Grundwahrheit).
+Siehe Memory `reference-statement-multiplicity`.
 
 ---
 

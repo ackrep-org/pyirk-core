@@ -156,8 +156,13 @@ vermeintliche Gate-3-Bug war eine **Gate-Fehlkalibrierung** — die native Engin
 produziert selbst 5 R30/R31-Dubletten (fiat-Items, vorbestehend), Gate 3 wurde
 auf native-relative Äquivalenz korrigiert. Flag-Default bleibt AUS. Vollständiger
 Bericht: `docs/design/h5_phase2_report.md`.
-**Offen (separat, nicht H5):** die 5 nativen R30/R31-Fiat-Item-Dubletten sind ein
-eigenständiger Hygiene-Punkt der nativen Engine.
+**Nachtrag 2026-06-11 (Korrektur):** Die 5 nativen R30/R31-„Dubletten" sind KEIN
+Hygiene-Bug. Untersuchung ergab: 4/5 sind durch **Qualifier** (z. B. drei R31 mit
+`proxy_item` `<`/`==`/`>`) oder **Scope** unterschiedene legitime Statements — das Gate
+enumeriert nur `(s,p,o)` und überzählt sie; Vielfachheit ist in pyirk absichtlich
+(`R54__is_matched_by_rule` als Match-Zähler). Ein „defensive dedup"-Versuch zerstörte
+R54-Multiplizität → verworfen (Branch `dead_end_native_dup_hygiene`). Bestätigt rückwirkend
+die Gate-3-Wahl (dup-multiset == nativ). Siehe [[reference-statement-multiplicity]].
 
 ## 4. Vorgehen (Phasen — Phase 1 ist der `goal.md`-Kandidat für einen autonomen Lauf)
 

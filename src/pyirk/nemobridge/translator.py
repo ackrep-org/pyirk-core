@@ -52,6 +52,16 @@ class RuleClassification:
     reason: str                 # why this category was assigned
 
 
+# Curated SPARQL-premise rules that must NOT be delegated, even when their
+# algebra would technically pass the pure-BGP check. The native engine is the
+# reference oracle, and on the zebra-only KB I725 crashes with an
+# AssertionError in ``ruleengine.py::_process_result_map`` (object positions
+# bind to literals — see ``experiments/h5_sparql/recon.md`` §"I725 — Native
+# Verhalten"). Without a well-defined equivalence target we keep the rule
+# ``python_only`` rather than silently delegate to a divergent semantics.
+_SPARQL_PYTHON_ONLY_RULE_KEYS = {"I725"}
+
+
 # ─────────────────────────────────────────────────────────────────────────────
 # Internal helpers
 # ─────────────────────────────────────────────────────────────────────────────
@@ -268,7 +278,13 @@ def _sparql_extract_pure_bgp(rule):
         ):
             _walk(node.p)
         elif name == "Filter":
+            # Filter is a "soft" rejection — Stage 4 supports ``!=``. Recurse
+            # into the subpattern so harder rejections inside (Minus, Union,
+            # …) get detected too; the post-walk step drops "Filter" when a
+            # harder reason is present, so I741 reports ``Minus`` rather than
+            # the ``Filter`` that happens to wrap it.
             rejected_reason.append("Filter")
+            _walk(node.p)
         elif name == "Minus":
             rejected_reason.append("Minus")
         elif name == "Union":
@@ -288,7 +304,10 @@ def _sparql_extract_pure_bgp(rule):
     _walk(algebra.algebra)
 
     if rejected_reason:
-        return None, "; ".join(sorted(set(rejected_reason)))
+        reasons = sorted(set(rejected_reason))
+        if len(reasons) > 1 and "Filter" in reasons:
+            reasons = [r for r in reasons if r != "Filter"]
+        return None, "; ".join(reasons)
 
     if not bgp_triples:
         return None, "no BGP triples found"
@@ -363,6 +382,11 @@ def _classify_single_rule(rule) -> RuleClassification:
     # anything richer than pure BGP stays ``python_only`` for now (Stages 2/4/5
     # extend the accepted fragment).
     if _has_sparql_premise(rule):
+        if key in _SPARQL_PYTHON_ONLY_RULE_KEYS:
+            return result(
+                "python_only", None,
+                "SPARQL: rule excluded by curation (native undefined on zebra KB)"
+            )
         try:
             bgp_triples, rejection = _sparql_extract_pure_bgp(rule)
         except Exception as ex:

@@ -1,26 +1,39 @@
 """
-H5 SPARQL Stage 1 — Aequivalenz pro neu delegierter SPARQL-BGP-Praemissen-Regel.
+H5 SPARQL Stage 1+2 — Aequivalenz pro neu delegierter SPARQL-BGP-Praemissen-Regel.
 
 Stage 1 deckt das pure-BGP-Fragment der SPARQL-Praemissen ab (siehe
 ``experiments/h5_sparql/recon.md``):
 
   * I798 — kleinstes BGP (4 Tripel, 1 Boolean-Literal-Konstante).
 
-Spaetere Stufen (2/4/5) erweitern das Akzeptanzfragment um BGP+Literal-only
-Regeln (I730/I792), den Sonderfall I725, Inequality-Filter (I710/I740/I803)
+Stage 2 erweitert das Akzeptanzfragment um BGP-Regeln mit mehreren
+Literal-Konstanten:
+
+  * I730 — 4 Tripel, 1 Boolean-Literal-Konstante (R2850=True).
+  * I792 — 7 Tripel, 2 Boolean-Literal-Konstanten (R57=False, R2850=True).
+
+Spaetere Stufen (3/4/5) decken den Sonderfall I725 (Stufe 3 — translator
+gibt explizit ``python_only`` zurueck), Inequality-Filter (I710/I740/I803)
 und stratifizierte Negation (I741). Jede neu delegierte Regel bekommt hier
 einen eigenen Test, gleicher Stil wie ``test_h5_extension_literal_premises``:
 zweimal apply_semantic_rules — einmal nativ (Flag aus), einmal delegiert
 (``PYIRK_NEMO_DELEGATION=1``) — und Multiset-Vergleich der neu erzeugten
 Statements (Dup-Multiset-Aequivalenz wie Gate 3 in Phase 2.1).
 
-Fixture-Hinweis I798: Auf der zebra-only-KB allein erzeugt I798 NULL neue
-Statements (kein ?p1 R50 ?p2 vorhanden) — ein Vergleich waere trivial. Das
-``zebra02``-Puzzle-Modul liefert die benoetigten Personen-Tripel; zwei
+Fixture-Hinweis (Stages 1+2): Auf der zebra-only-KB allein feuern die
+SPARQL-BGP-Regeln nicht (es fehlen R50-, R3606- und negative-fact-Tripel).
+Das ``zebra02``-Puzzle-Modul liefert die benoetigten Personen-Tripel; zwei
 Prerequisite-Regeln (I702 reverse-statements und I705 different-from)
-populieren die R50-Facts. Beide Regeln laufen *vor* der Messung — in nativem
-wie in delegierten Subprozess identisch, sodass der Ausgangszustand gleich
-ist. Die Messung gilt dann ausschliesslich I798.
+populieren die R50-Facts. Auf dieser Fixture feuern alle drei Stage-1/2-
+Regeln nicht-trivial:
+
+  * I798 ~ 20 neue Statements (R50-Pfad gegen funktionale Aktivitaet).
+  * I730 ~ 6  neue Statements (R3606-lebt-neben + funktionale Aktivitaet).
+  * I792 ~ 8  neue Statements (negative Fakten + Mensch-Sein).
+
+Beide Prerequisite-Regeln laufen *vor* der Messung — in nativem wie in
+delegierten Subprozess identisch, sodass der Ausgangszustand gleich ist.
+Die Messung gilt dann ausschliesslich der jeweiligen Regel.
 
 Isolation: jeder Lauf erfolgt in einem eigenen Subprozess (saubere
 ``pyirk.ds``-State-Trennung zwischen nativ und delegated).
@@ -157,15 +170,16 @@ def _nemo_available() -> bool:
 
 @unittest.skipUnless(_nemo_available(), "no nmo binary found (PYIRK_NEMO_BIN, PATH, legacy default)")
 class Test_H5_SPARQL_Premises(unittest.TestCase):
-    """One test per SPARQL-BGP rule that the Stage-1 H5 SPARQL extension
+    """One test per SPARQL-BGP rule that the Stage-1/2 H5 SPARQL extension
     moves from ``python_only`` to ``direct``.
 
-    Stage-1 verdict (see ``experiments/h5_sparql/recon.md``):
-      * I798 is the smallest pure BGP (4 triples, one Boolean-literal
-        constant) and is the only rule covered by this stage.
-      * I725/I730/I792 are also pure BGP and are translated by the same code
-        path, but their tests come in Stage 2 (with I725 honest-stopped due
-        to a native AssertionError on object positions binding to literals).
+    Stage-1/2 verdict (see ``experiments/h5_sparql/recon.md``):
+      * I798 — smallest pure BGP (4 triples, one Boolean literal). Stage 1.
+      * I730, I792 — pure BGP with multiple Boolean literal constants
+        (4/7 triples). Stage 2.
+      * I725 — also pure BGP, but excluded by translator curation
+        (native crash on zebra-only KB; see translator
+        ``_SPARQL_PYTHON_ONLY_RULE_KEYS``). No test here — by Honest-Stop.
       * I710/I740/I803 carry ``FILTER(?x != ?y)`` and stay ``python_only``
         until Stage 4 (inequality-constraint translation).
       * I741 carries ``MINUS`` and stays ``python_only`` until Stage 5
@@ -184,10 +198,11 @@ class Test_H5_SPARQL_Premises(unittest.TestCase):
         )
 
         # Honest-stop guard: a trivially-empty multiset comparison would
-        # pass without proving anything. The Stage-1 fixture is sized so
-        # that I798 actually fires (~20 new statements on zebra02 after
-        # I702/I705 prereqs); if it ever returns empty we fail fast rather
-        # than silently green.
+        # pass without proving anything. The Stage-1/2 fixture is sized so
+        # that each tested rule fires non-trivially (I798 ~ 20, I730 ~ 6,
+        # I792 ~ 8 new statements on zebra02 after I702/I705 prereqs); if
+        # the count ever drops to zero we fail fast rather than silently
+        # green.
         self.assertGreater(
             len(native), 0,
             f"{rule_key}: native run produced 0 new statements — fixture "
@@ -227,6 +242,39 @@ class Test_H5_SPARQL_Premises(unittest.TestCase):
         times — covered by the honest-stop guard above.
         """
         self._assert_equivalent("I798", prereq_rule_keys=("I702", "I705"))
+
+    def test_I730_sparql_bgp_native_vs_delegated_multiset_equiv(self):
+        """rule: deduce negative facts for neighbors (SPARQL BGP, 4 triples, bool=True)
+
+        BGP-Inhalt:
+          ``?rel1 R2850 true . ?rel1 R43 ?rel2 . ?h1 ?rel1 ?itm1 . ?h1 R3606 ?h2``
+
+        Fixture identisch zu I798 (zebra02-Personen + I702/I705-Prereqs).
+        Die R3606-Tripel (``lives next to``) liefert zebra02 selbst; die
+        funktionalen-Aktivitaet- und Opposite-Tripel (R2850 / R43) stammen
+        aus zebra_base_data. Auf dieser Fixture feuert I730 ~6-mal — Honest-
+        Stop-Guard prueft das.
+        """
+        self._assert_equivalent("I730", prereq_rule_keys=("I702", "I705"))
+
+    def test_I792_sparql_bgp_native_vs_delegated_multiset_equiv(self):
+        """rule: deduce different-from-facts from negative facts (SPARQL BGP, 7 triples, bool=False/True)
+
+        BGP-Inhalt:
+          ``?itm1a R57 false . ?h1 ?rel1 ?itm1a . ?rel1 R2850 true .
+            ?h1 R4 I7435 . ?h2 R4 I7435 . ?h2 ?rel1_not ?itm1a .
+            ?rel1 R43 ?rel1_not``
+
+        Erweiterte Prereq-Kette ggue. I730: I792 bindet ``?h2 ?rel1_not
+        ?itm1a`` und braucht damit *negative* Fakten (z. B. ``person7
+        owns_not fox``). Die zebra-only-KB + zebra02 enthalten keine
+        expliziten not-owns/-smokes/-lives-Statements; diese werden erst
+        von I730 derived. Deshalb laeuft I730 hier *als Prereq* — beide
+        Modi natuerlich symmetrisch (I730-Aequivalenz wird vom separaten
+        I730-Test verifiziert, das schliesst den Zyklus). Auf dieser
+        Fixture feuert I792 ~8-mal — Honest-Stop-Guard prueft das.
+        """
+        self._assert_equivalent("I792", prereq_rule_keys=("I702", "I705", "I730"))
 
 
 if __name__ == "__main__":

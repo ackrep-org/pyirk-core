@@ -24,19 +24,223 @@ Bekannte Limitation:
   ``ruleengine.apply_semantic_rules`` (nicht hier).
 """
 
+import ast
 import csv
+import functools
 import logging
 import os
+import re
+import shutil
 import subprocess
 import tempfile
 
 logger = logging.getLogger(__name__)
 
 
+# Mirror of ``exporter.LITERAL_PREFIX``. Imported lazily inside the helper to
+# avoid a hard import-time dependency between the two modules.
+_LITERAL_PREFIX = "LIT:"
+
+# ── Deployment-Robustheit (H5 Deployment) ────────────────────────────────────
+# Modul-State für idempotente Logs/Warnings — pro Prozess genau einmal.
+# Tests setzen diese Flags via monkeypatch zurück.
+# Generic per-user last-resort location (resolves to /home/user/bin/nmo on the
+# VPS where the H5 gates were validated).
+_LEGACY_DEFAULT_NMO_BIN = os.path.expanduser("~/bin/nmo")
+_resolver_logged: bool = False
+_warned_no_binary: bool = False
+_warned_nmo_failed: bool = False
+_warned_version_mismatch: bool = False
+
+# Validierte Nemo-Version: 0.10.x. Politik (vgl. Bericht):
+#   patch (0.10.y) → ok, kein Warning
+#   minor (0.11.z) → ein Warning, Delegation trotzdem versuchen
+#   major (1.x)    → ein Warning, Fallback
+#   unparseable    → ein Warning, Fallback
+_EXPECTED_NMO_MAJOR = 0
+_EXPECTED_NMO_MINOR = 10
+_NMO_VERSION_RE = re.compile(r"(\d+)\.(\d+)\.(\d+)")
+
+
+def _resolve_nmo_bin() -> "str | None":
+    """Resolve the path of the ``nmo`` binary.
+
+    Order:
+      1. ``PYIRK_NEMO_BIN`` env var, if set AND the path exists.
+      2. ``shutil.which("nmo")`` — first hit on PATH.
+      3. ``~/bin/nmo`` (expanded per user) — legacy default, if it exists.
+      4. ``None`` — no binary available.
+
+    Logs the chosen source on ``logger.info`` exactly once per process
+    (or until the module-level ``_resolver_logged`` flag is reset, which
+    is intended for tests only).
+    """
+    global _resolver_logged
+
+    env_val = os.environ.get("PYIRK_NEMO_BIN")
+    if env_val and os.path.exists(env_val):
+        bin_path, source = env_val, "PYIRK_NEMO_BIN"
+    else:
+        which_val = shutil.which("nmo")
+        if which_val:
+            bin_path, source = which_val, "shutil.which"
+        elif os.path.exists(_LEGACY_DEFAULT_NMO_BIN):
+            bin_path, source = _LEGACY_DEFAULT_NMO_BIN, "default"
+        else:
+            bin_path, source = None, "none"
+
+    if not _resolver_logged:
+        if bin_path is None:
+            logger.info(
+                "nmo binary resolution: no candidate found "
+                "(PYIRK_NEMO_BIN, PATH, %s all empty)",
+                _LEGACY_DEFAULT_NMO_BIN,
+            )
+        else:
+            logger.info("nmo binary resolved via %s: %s", source, bin_path)
+        _resolver_logged = True
+
+    return bin_path
+
+
+def _warn_no_binary_once() -> None:
+    """Emit the ``no nmo binary`` warning at most once per process."""
+    global _warned_no_binary
+    if not _warned_no_binary:
+        logger.warning(
+            "PYIRK_NEMO_DELEGATION is set but no nmo binary could be located "
+            "(checked PYIRK_NEMO_BIN, shutil.which('nmo'), %s). "
+            "Falling back to the native Python engine.",
+            _LEGACY_DEFAULT_NMO_BIN,
+        )
+        _warned_no_binary = True
+
+
+def mark_nmo_failed_warned(exc: "BaseException | None" = None) -> None:
+    """Emit the ``Nemo delegation failed at runtime`` warning at most once per
+    process. Exported for the ruleengine hook so the ``_apply_via_nemo``
+    exception path stays idempotent across calls."""
+    global _warned_nmo_failed
+    if not _warned_nmo_failed:
+        if exc is not None:
+            logger.warning(
+                "Nemo delegation failed at runtime (%s); falling back to the "
+                "native Python engine. Further occurrences are suppressed.",
+                exc,
+            )
+        else:
+            logger.warning(
+                "Nemo delegation failed at runtime; falling back to the "
+                "native Python engine. Further occurrences are suppressed."
+            )
+        _warned_nmo_failed = True
+
+
+@functools.lru_cache(maxsize=1)
+def _check_nmo_version(nmo_bin: str) -> bool:
+    """Validate the installed nmo binary's version against the supported range.
+
+    Cached (``functools.lru_cache(maxsize=1)``) per ``nmo_bin`` path — the
+    subprocess only runs once per process unless tests clear the cache.
+
+    Policy:
+      * Matches the expected ``0.10.y`` series → return ``True``, no warning.
+      * Minor mismatch (e.g. ``0.11.z``) → emit one warning, return ``True``
+        (delegation is attempted; protocol differences may still cause a
+        runtime failure, which is caught by the hook).
+      * Major mismatch (e.g. ``1.x.y``) → emit one warning, return ``False``
+        (fall back to the native engine — major bumps reliably break the RLS
+        codegen/CLI contract).
+      * Unparseable / subprocess failure → emit one warning, return ``False``.
+    """
+    global _warned_version_mismatch
+
+    try:
+        proc = subprocess.run(
+            [nmo_bin, "--version"],
+            capture_output=True, text=True, timeout=10,
+        )
+    except Exception as ex:  # noqa: BLE001 — subprocess can raise many things
+        if not _warned_version_mismatch:
+            logger.warning(
+                "Could not invoke `%s --version` (%s); falling back to the "
+                "native Python engine.", nmo_bin, ex,
+            )
+            _warned_version_mismatch = True
+        return False
+
+    blob = (proc.stdout or "") + "\n" + (proc.stderr or "")
+    m = _NMO_VERSION_RE.search(blob)
+    if not m or proc.returncode != 0:
+        if not _warned_version_mismatch:
+            logger.warning(
+                "Could not parse nmo version from `%s --version` (rc=%s, "
+                "output=%r); falling back to the native Python engine.",
+                nmo_bin, proc.returncode, blob[:200],
+            )
+            _warned_version_mismatch = True
+        return False
+
+    major, minor, patch = (int(x) for x in m.groups())
+    if major != _EXPECTED_NMO_MAJOR:
+        if not _warned_version_mismatch:
+            logger.warning(
+                "nmo version %d.%d.%d differs from the validated %d.%d.x "
+                "series by MAJOR; falling back to the native Python engine.",
+                major, minor, patch,
+                _EXPECTED_NMO_MAJOR, _EXPECTED_NMO_MINOR,
+            )
+            _warned_version_mismatch = True
+        return False
+    if minor != _EXPECTED_NMO_MINOR:
+        if not _warned_version_mismatch:
+            logger.warning(
+                "nmo version %d.%d.%d differs from the validated %d.%d.x "
+                "series by MINOR; attempting delegation anyway.",
+                major, minor, patch,
+                _EXPECTED_NMO_MAJOR, _EXPECTED_NMO_MINOR,
+            )
+            _warned_version_mismatch = True
+        return True
+    return True
+
+
+def _decode_object_cell(ds, obj_cell):
+    """Return the Python object the Nemo cell ``obj_cell`` refers to.
+
+    Two branches:
+      * URI cell → ``ds.get_entity_by_uri`` (Item or Relation).
+      * ``LIT:<repr>`` cell → decode via :func:`ast.literal_eval` so a
+        delegated rule can produce literal-objects (e.g. ``True``, ``1``,
+        ``"hello"``).  The prefix matches :func:`exporter.encode_literal`.
+
+    Raises ``UnknownURIError`` (entity branch) or ``ValueError`` (literal
+    branch) on failure — both are caught by the caller, which skips the
+    triple and logs at DEBUG.
+    """
+    if isinstance(obj_cell, str) and obj_cell.startswith(_LITERAL_PREFIX):
+        payload = obj_cell[len(_LITERAL_PREFIX):]
+        try:
+            return ast.literal_eval(payload)
+        except (ValueError, SyntaxError) as ex:
+            raise ValueError(
+                f"Cannot decode literal token {obj_cell!r}: {ex}"
+            ) from ex
+    return ds.get_entity_by_uri(obj_cell)
+
+
 def _nemo_available() -> bool:
-    """True wenn das Nemo-Binary (PYIRK_NEMO_BIN oder /home/user/bin/nmo) existiert."""
-    bin_path = os.environ.get("PYIRK_NEMO_BIN", "/home/user/bin/nmo")
-    return os.path.exists(bin_path)
+    """True wenn ein Nemo-Binary via :func:`_resolve_nmo_bin` gefunden wird.
+
+    Wenn keines vorhanden ist, wird **einmal pro Prozess** eine Warnung
+    emittiert; der Caller (Ruleengine-Hook) fällt anschließend still auf den
+    nativen Python-Pfad zurück.
+    """
+    bin_path = _resolve_nmo_bin()
+    if bin_path is None:
+        _warn_no_binary_once()
+        return False
+    return True
 
 
 def _split_rules_by_nemo_delegation(rules):
@@ -113,7 +317,9 @@ def _apply_via_nemo(
     from pyirk import core
     from pyirk.nemobridge import export_datastore, generate_rls
 
-    nmo_bin = os.environ.get("PYIRK_NEMO_BIN", "/home/user/bin/nmo")
+    nmo_bin = _resolve_nmo_bin()
+    if nmo_bin is None:
+        raise RuntimeError("nmo binary not available — caller must check first")
 
     with tempfile.TemporaryDirectory(prefix="pyirk_nemo_p4_") as tmp_dir:
         # 1) EDB exportieren
@@ -125,8 +331,16 @@ def _apply_via_nemo(
         except Exception as ex:
             raise RuntimeError(f"export_datastore fehlgeschlagen: {ex}") from ex
 
-        # 2) RLS-Datei erzeugen
-        rls_content = generate_rls(core.ds)
+        # 2) RLS-Datei erzeugen — beschraenkt auf die tatsaechlich vom Aufrufer
+        # angeforderten delegierbaren Regeln; sonst wuerde Nemo auch alle
+        # anderen direct/transitive-Regeln auswerten, deren Konklusionen der
+        # native Pfad in diesem Aufruf NICHT erzeugen wuerde (verfaelschte
+        # Aequivalenz im Einzelregel-Test, siehe H5-Extension Phase 1).
+        delegated_keys = {
+            getattr(r, "short_key", None) for r in delegated_rules
+        }
+        delegated_keys.discard(None)
+        rls_content = generate_rls(core.ds, restrict_to=delegated_keys)
         rls_path = os.path.join(tmp_dir, "rules.rls")
         with open(rls_path, "w", encoding="utf-8") as fh:
             fh.write(rls_content)
@@ -206,10 +420,10 @@ def _materialize_tuples(
             try:
                 subj = ds.get_entity_by_uri(subj_uri)
                 rel = ds.get_entity_by_uri(pred_uri)
-                obj = ds.get_entity_by_uri(obj_uri)
+                obj = _decode_object_cell(ds, obj_uri)
             except Exception as ex:
                 logger.debug(
-                    "skip nemo tuple (%s,%s,%s): URI resolution failed: %s",
+                    "skip nemo tuple (%s,%s,%s): URI/literal resolution failed: %s",
                     subj_uri, pred_uri, obj_uri, ex,
                 )
                 continue

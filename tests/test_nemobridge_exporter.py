@@ -92,11 +92,16 @@ class TestSmokeExport(unittest.TestCase):
                 self.assertEqual(len(row), 2)
 
     def test_audit_return_counts_are_consistent(self):
-        """predicate_counts total should equal total_triples + total_qualified."""
+        """predicate_counts total should equal total_triples + total_qualified
+        + total_literal_triples (the third bucket added by H5 Extension P1)."""
         with tempfile.TemporaryDirectory() as tmp:
             result = export_datastore(p.ds, tmp)
         total_from_preds = sum(result["predicate_counts"].values())
-        expected = result["total_triples"] + result["total_qualified"]
+        expected = (
+            result["total_triples"]
+            + result["total_qualified"]
+            + result.get("total_literal_triples", 0)
+        )
         self.assertEqual(total_from_preds, expected)
 
     def test_export_datastore_uri_index(self):

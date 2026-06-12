@@ -100,6 +100,39 @@ def _var_name(entity) -> str:
     return f"?{entity.short_key}"
 
 
+def _is_scope_internal(entity) -> bool:
+    """Mirror of :func:`exporter.is_scope_internal` — kept inline to avoid an
+    exporter→translator coupling cycle."""
+    try:
+        return bool(entity.get_relations("R20__has_defining_scope"))
+    except Exception:
+        return False
+
+
+def _obj_term(obj) -> str:
+    """Render a premise/assertion object as a Nemo term.
+
+    Three branches:
+      * Literal (bool/int/float/str/…) → quoted ``LIT:<repr>`` string constant,
+        matching the encoding used by :func:`exporter.encode_literal`. This is
+        what lets a literal premise pattern unify with rows in
+        ``literal_triples.csv`` (H5 Extension Phase 1).
+      * Scope-internal entity (variable of THIS rule's setting scope) →
+        ``?<name>`` variable reference via :func:`_var_name`.
+      * Real external entity (e.g. ``zb.I7435["human"]``) → quoted full-URI
+        constant. Pre-Phase-1 the translator emitted these as variables too
+        (``?I7435``), which left a free head-variable in some snippets — a
+        latent bug that surfaces as soon as those rules are actually evaluated
+        by Nemo (e.g. on the Zebra dataset, where I763/I796 hit it).
+    """
+    from .exporter import encode_literal
+    if _is_literal(obj):
+        return f'"{encode_literal(obj)}"'
+    if _is_scope_internal(obj):
+        return _var_name(obj)
+    return f'"{obj.uri}"'
+
+
 def _iter_assert_stms(assert_stms):
     """Yield assertion statements, skipping mode-4 auxiliary statements."""
     for stm in assert_stms:
@@ -177,10 +210,12 @@ def _classify_single_rule(rule) -> RuleClassification:
             " — covered by generate_transitivity_facts()"
         )
 
-    # 7) Other literals in premise → python_only
-    if literal_stmts:
-        desc = [(s.relation_tuple[1].short_key, repr(s.relation_tuple[2])) for s in literal_stmts]
-        return result("python_only", None, f"Literal value(s) in premise (not triple-pattern): {desc}")
+    # 7) Other literals in premise → handled by literal-fact pattern (Phase 1 H5
+    # Extension). The literal value enters the ternary fact() body as a quoted
+    # ``LIT:<repr>`` constant; the exporter writes those rows into
+    # ``literal_triples.csv`` and the @import in ``generate_rls`` makes them
+    # match. This branch deliberately does NOT return — the rule continues
+    # through the assertion-scope checks and snippet generation below.
 
     # 8) Wildcard without R60 → python_only
     if wildcard_stmts:
@@ -204,32 +239,76 @@ def _classify_single_rule(rule) -> RuleClassification:
         return result("python_only", None, f"RLS snippet generation failed: {e}")
 
 
+def _collect_scope_vars(prem_stms) -> list:
+    """Return scope-internal variable terms used in *prem_stms*, sorted.
+
+    Used to add pairwise inequality constraints so the Datalog rule matches
+    the native engine's subgraph-MONOMORPHISM semantics — distinct rule
+    variables must bind to distinct data nodes. Without this, Datalog would
+    over-derive (e.g. I705 produces (p, R50, p) self-loops because Datalog
+    happily matches ``p1 = p2`` when no equality forbids it).
+    """
+    seen = []
+    seen_set = set()
+    for stm in prem_stms:
+        subj, _pred, obj = stm.relation_tuple
+        for e in (subj, obj):
+            if not _is_scope_internal(e):
+                continue
+            term = _var_name(e)
+            if term not in seen_set:
+                seen_set.add(term)
+                seen.append(term)
+    return sorted(seen)
+
+
 def _build_direct_snippet(rule, prem_stms, assert_stms_filtered) -> str:
     """Build ternary ``fact``-rule lines for one direct rule.
 
     Every premise/assertion triple becomes a ``fact(?s, "<pred-uri>", ?o)``
     pattern; the predicate URI appears as a quoted string constant, never as
-    a Nemo predicate name. No derived-predicate handling needed: all rules
-    target the single ``fact`` IDB, the joint fixpoint handles propagation.
+    a Nemo predicate name. Literal objects become quoted ``LIT:<repr>``
+    constants — matched against the literal-fact rows the exporter writes
+    into ``literal_triples.csv`` (Phase 1 H5 Extension). No derived-predicate
+    handling needed: all rules target the single ``fact`` IDB, the joint
+    fixpoint handles propagation.
+
+    The body is augmented with pairwise ``?x != ?y`` constraints between the
+    scope-internal variables; see :func:`_collect_scope_vars` for the why.
     """
     body_parts = []
     for stm in prem_stms:
         subj, pred, obj = stm.relation_tuple
-        s_var = _var_name(subj)
-        o_var = _var_name(obj)
-        body_parts.append(f'fact({s_var}, "{pred.uri}", {o_var})')
+        if _is_literal(subj):
+            raise ValueError(
+                f"Rule {rule.short_key}: literal value at subject position"
+                " is not translatable to Datalog"
+            )
+        s_term = _obj_term(subj)
+        o_term = _obj_term(obj)
+        body_parts.append(f'fact({s_term}, "{pred.uri}", {o_term})')
 
     if not body_parts:
         raise ValueError(f"Rule {rule.short_key} has no premise statements to translate")
+
+    scope_vars = _collect_scope_vars(prem_stms)
+    for i, vi in enumerate(scope_vars):
+        for vj in scope_vars[i + 1:]:
+            body_parts.append(f"{vi} != {vj}")
 
     body = ", ".join(body_parts)
 
     head_lines = []
     for stm in assert_stms_filtered:
         subj, pred, obj = stm.relation_tuple
-        s_var = _var_name(subj)
-        o_var = _var_name(obj)
-        head_lines.append(f'fact({s_var}, "{pred.uri}", {o_var}) :- {body} .')
+        if _is_literal(subj):
+            raise ValueError(
+                f"Rule {rule.short_key}: literal value at assertion subject position"
+                " is not translatable to Datalog"
+            )
+        s_term = _obj_term(subj)
+        o_term = _obj_term(obj)
+        head_lines.append(f'fact({s_term}, "{pred.uri}", {o_term}) :- {body} .')
 
     if not head_lines:
         raise ValueError(f"Rule {rule.short_key} produced no assertion head lines")
@@ -288,17 +367,35 @@ _TRANS_BODY = """\
 fact(?s, ?p, ?o) :- is_transitive(?p), fact(?s, ?p, ?x), fact(?x, ?p, ?o) ."""
 
 
-def generate_rls(ds, *, include_transitivity: bool = True) -> str:
-    """Compile all direct and transitive rules into a single Nemo ``.rls`` text.
+def generate_rls(ds, *, include_transitivity: bool = True, restrict_to=None) -> str:
+    """Compile direct and transitive rules into a single Nemo ``.rls`` text.
 
     Structure:
       ``@import triples :- csv{resource="triples.csv", format=(string,string,string)} .``
+      ``@import literal_triples :- csv{resource="literal_triples.csv", ...} .``
       ``fact(?s, ?p, ?o) :- triples(?s, ?p, ?o) .``       (seed the IDB)
+      ``fact(?s, ?p, ?o) :- literal_triples(?s, ?p, ?o) .``
       Direct rules (ternary ``fact``-form, URI-string constants)
-      Transitivity facts + ternary recursion (if ``include_transitivity``)
+      Transitivity facts + ternary recursion (if ``include_transitivity`` AND
+      at least one rule in ``restrict_to`` is classified as transitive)
       ``@export fact :- csv{resource="output_fact.csv"} .``
+
+    Parameters
+    ----------
+    restrict_to : Optional[Iterable[str]]
+        If given, only emit snippets for rules whose ``short_key`` is in
+        this set. ``None`` (default) keeps the prior behaviour and includes
+        every direct/transitive rule found in ``ds`` — relied upon by the
+        Phase-2 OCSE workload where all rules are requested at once. The
+        single-rule delegation path (e.g. ``apply_semantic_rules(I800)``)
+        sets this to the requested rule keys so Nemo does not over-derive
+        from rules the caller did not ask for. Mixed mode possible.
     """
     classifications = classify_rules(ds)
+
+    if restrict_to is not None:
+        restrict_keys = set(restrict_to)
+        classifications = [c for c in classifications if c.rule_short_key in restrict_keys]
 
     direct_clfs = [c for c in classifications if c.category == "direct"]
     has_transitive = any(c.category == "transitive" for c in classifications)
@@ -307,9 +404,14 @@ def generate_rls(ds, *, include_transitivity: bool = True) -> str:
     out.append("% nemobridge auto-generated rules — do not edit manually")
     out.append("")
     out.append('@import triples :- csv{resource="triples.csv", format=(string,string,string)} .')
+    out.append(
+        '@import literal_triples :- '
+        'csv{resource="literal_triples.csv", format=(string,string,string)} .'
+    )
     out.append("")
-    out.append("% Seed the ternary fact IDB from the EDB triples")
+    out.append("% Seed the ternary fact IDB from the EDB triples (entity + literal facts)")
     out.append("fact(?s, ?p, ?o) :- triples(?s, ?p, ?o) .")
+    out.append("fact(?s, ?p, ?o) :- literal_triples(?s, ?p, ?o) .")
 
     if direct_clfs:
         out.append("")

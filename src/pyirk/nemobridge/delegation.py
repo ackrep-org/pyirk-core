@@ -44,7 +44,9 @@ _LITERAL_PREFIX = "LIT:"
 # ── Deployment-Robustheit (H5 Deployment) ────────────────────────────────────
 # Modul-State für idempotente Logs/Warnings — pro Prozess genau einmal.
 # Tests setzen diese Flags via monkeypatch zurück.
-_LEGACY_DEFAULT_NMO_BIN = "/home/user/bin/nmo"
+# Generic per-user last-resort location (resolves to /home/user/bin/nmo on the
+# VPS where the H5 gates were validated).
+_LEGACY_DEFAULT_NMO_BIN = os.path.expanduser("~/bin/nmo")
 _resolver_logged: bool = False
 _warned_no_binary: bool = False
 _warned_nmo_failed: bool = False
@@ -66,7 +68,7 @@ def _resolve_nmo_bin() -> "str | None":
     Order:
       1. ``PYIRK_NEMO_BIN`` env var, if set AND the path exists.
       2. ``shutil.which("nmo")`` — first hit on PATH.
-      3. ``/home/user/bin/nmo`` — legacy host default, if it exists.
+      3. ``~/bin/nmo`` (expanded per user) — legacy default, if it exists.
       4. ``None`` — no binary available.
 
     Logs the chosen source on ``logger.info`` exactly once per process

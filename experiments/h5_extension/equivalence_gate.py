@@ -25,18 +25,14 @@ The two evaluation passes run in dedicated subprocesses so the in-process
 dumps a JSON snapshot of its DataStore, the main process compares the
 snapshots in memory.
 
-Reproducible runs:
-  # native baseline
-  /home/user/venvs/pyirk-core-venv/bin/python \\
-      experiments/h5_extension/equivalence_gate.py \\
+Reproducible runs (with a python that has pyirk + test deps importable;
+override the subprocess interpreter via PYIRK_VENV_PYTHON if needed):
+  python experiments/h5_extension/equivalence_gate.py \\
       > experiments/h5_extension/equivalence_gate.log 2>&1
 
-  # with delegation flag set (only affects the *delegation* subprocess —
-  # the gate script always runs the *native* path with the flag cleared
-  # and the *delegation* path with the flag set, regardless of the env)
-  PYIRK_NEMO_DELEGATION=1 /home/user/venvs/pyirk-core-venv/bin/python \\
-      experiments/h5_extension/equivalence_gate.py \\
-      > experiments/h5_extension/equivalence_gate.log 2>&1
+  # The PYIRK_NEMO_DELEGATION env var does not need to be set: the gate
+  # always runs the *native* subprocess with the flag cleared and the
+  # *delegation* subprocess with the flag set, regardless of the env.
 
 Exit-Codes:
   0  — overall_gate_ok = true  (all three gates pass)
@@ -59,11 +55,16 @@ from collections import Counter
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO_ROOT = os.path.normpath(os.path.join(HERE, "..", ".."))
-NEMO_BIN = os.environ.get("PYIRK_NEMO_BIN", "/home/user/bin/nmo")
-# sympy is not in pyirk-venv; neo-rag-venv has it (same Python 3.13.5).
-SYMPY_EXTRA = "/home/user/venvs/neo-rag-venv/lib/python3.13/site-packages"
-VENV_PYTHON = "/home/user/venvs/pyirk-core-venv/bin/python"
 SRC_DIR = os.path.join(REPO_ROOT, "src")
+sys.path.insert(0, SRC_DIR)
+from pyirk.nemobridge.delegation import _resolve_nmo_bin  # noqa: E402
+
+NEMO_BIN = _resolve_nmo_bin()
+# Optional sys.path overlay for environments where the interpreter lacks a
+# dependency (historical VPS case: sympy lived in a sibling venv). Pure
+# opt-in via env var; only inserted if the directory actually exists.
+SYMPY_EXTRA = os.environ.get("PYIRK_GATE_SYMPY_EXTRA", "")
+VENV_PYTHON = os.environ.get("PYIRK_VENV_PYTHON", sys.executable)
 ZEBRA_BASE_DATA_PATH = os.path.join(
     REPO_ROOT, "tests", "test_data", "zebra_base_data.py",
 )
@@ -126,7 +127,8 @@ def load_guard():
 _SUBPROCESS_SCRIPT = r'''
 import sys, os, json, time, warnings
 warnings.filterwarnings("ignore")
-sys.path.insert(0, %(sympy_extra)r)
+if os.path.isdir(%(sympy_extra)r):
+    sys.path.insert(0, %(sympy_extra)r)
 sys.path.insert(0, %(src_dir)r)
 
 MODE = %(mode)r            # 'native' or 'delegation'
@@ -348,8 +350,11 @@ def main():
             print(f"  WARNUNG: {w}")
         print("  → measurements proceed, but get a '(load-belastet)' marker.")
 
-    if not os.path.isfile(NEMO_BIN):
-        print(f"FEHLER: Nemo binary missing: {NEMO_BIN}", file=sys.stderr)
+    if NEMO_BIN is None or not os.path.isfile(NEMO_BIN):
+        print(
+            "FEHLER: no nmo binary found (PYIRK_NEMO_BIN, PATH, ~/bin/nmo)",
+            file=sys.stderr,
+        )
         sys.exit(2)
     proc = subprocess.run([NEMO_BIN, "--version"], capture_output=True, text=True)
     nemo_version = (proc.stdout + proc.stderr).strip().split("\n")[0]

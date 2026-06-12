@@ -3,7 +3,7 @@ Unit tests for pyirk.nemobridge.delegation — deployment-robustness layer
 (H5 Deployment, task_001):
 
   * ``_resolve_nmo_bin()`` — precedence ``PYIRK_NEMO_BIN`` → ``shutil.which``
-    → legacy default ``/home/user/bin/nmo`` → ``None``; logs the chosen
+    → legacy default ``~/bin/nmo`` (expanded) → ``None``; logs the chosen
     source exactly once per process.
   * Idempotent warnings: ``_warned_no_binary``, ``_warned_nmo_failed``,
     ``_warned_version_mismatch`` — each fires at most one log record per

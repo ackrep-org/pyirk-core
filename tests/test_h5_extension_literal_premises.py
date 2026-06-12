@@ -27,19 +27,13 @@ SRC_DIR = os.path.join(REPO_ROOT, "src")
 ZEBRA_BASE_DATA_PATH = os.path.join(HERE, "test_data", "zebra_base_data.py")
 ZEBRA_RULES_PATH = os.path.join(HERE, "test_data", "zebra_puzzle_rules.py")
 
-# Same path-overlay the equivalence_gate uses to pick up sympy for OCSE; harmless
-# for zebra (zebra does not need sympy, but pyirk imports may pull it).
-SYMPY_EXTRA = "/home/user/venvs/neo-rag-venv/lib/python3.13/site-packages"
-
-VENV_PYTHON = os.environ.get(
-    "PYIRK_VENV_PYTHON", "/home/user/venvs/pyirk-core-venv/bin/python",
-)
-NEMO_BIN = os.environ.get("PYIRK_NEMO_BIN", "/home/user/bin/nmo")
+# Default to the interpreter running the test session; the subprocess only
+# needs the same environment as the parent (pyirk + test deps).
+VENV_PYTHON = os.environ.get("PYIRK_VENV_PYTHON", sys.executable)
 
 
 _SUBPROCESS_SCRIPT = r"""
 import sys, os, json
-sys.path.insert(0, %(sympy_extra)r)
 sys.path.insert(0, %(src_dir)r)
 
 MODE = %(mode)r
@@ -95,7 +89,6 @@ def _run_rule_subprocess(rule_key: str, *, mode: str) -> list:
     with tempfile.TemporaryDirectory(prefix="h5ext_lit_") as tmp_dir:
         out_json = os.path.join(tmp_dir, f"snap_{mode}.json")
         script = _SUBPROCESS_SCRIPT % dict(
-            sympy_extra=SYMPY_EXTRA,
             src_dir=SRC_DIR,
             mode=mode,
             rule_key=rule_key,
@@ -123,10 +116,14 @@ def _run_rule_subprocess(rule_key: str, *, mode: str) -> list:
 
 
 def _nemo_available() -> bool:
-    return os.path.isfile(NEMO_BIN)
+    # Use the production resolver (PYIRK_NEMO_BIN → PATH → legacy default) so
+    # the skip condition matches what the delegation subprocess will see.
+    from pyirk.nemobridge.delegation import _resolve_nmo_bin
+
+    return _resolve_nmo_bin() is not None
 
 
-@unittest.skipUnless(_nemo_available(), f"Nemo binary missing at {NEMO_BIN}")
+@unittest.skipUnless(_nemo_available(), "no nmo binary found (PYIRK_NEMO_BIN, PATH, legacy default)")
 class Test_H5_Extension_LiteralPremises(unittest.TestCase):
     """One test per literal-premise rule that the Phase-1 H5 Extension moves
     from ``python_only`` to ``direct``.

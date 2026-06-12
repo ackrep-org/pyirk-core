@@ -47,7 +47,7 @@ deterministic order. The first existing candidate wins.
 
 1. `PYIRK_NEMO_BIN` — if set *and* the path exists.
 2. `shutil.which("nmo")` — first hit on `PATH`.
-3. `/home/user/bin/nmo` — legacy host default, if it exists.
+3. `~/bin/nmo` (expanded per user) — legacy default, if it exists.
 4. None — no binary available; delegation falls back to the native engine.
 
 Exactly one `logger.info` line per process documents which source was

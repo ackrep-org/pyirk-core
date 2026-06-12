@@ -1,0 +1,345 @@
+==============================================================================
+Rule I710 — projected vars: ['p1', 'p2', 'some_itm', 'rel1']
+------------------------------------------------------------------------------
+PREFIX : <irk:/builtins#>
+PREFIX zb: <irk:/ocse/0.2/zebra_base_data#>
+PREFIX zr: <irk:/ocse/0.2/zebra_puzzle_rules#>
+SELECT ?p1 ?p2 ?some_itm ?rel1
+
+WHERE {
+?p1 ?rel1 ?some_itm.
+?p2 ?rel1 ?some_itm.
+
+?rel1 zb:R2850 true.      # R2850__is_functional_activity
+FILTER (?p1 != ?p2)
+}
+
+------------------------------------------------------------------------------
+SelectQuery(
+    p = Project(
+        p = Filter(
+            expr = RelationalExpression(
+                expr = p1
+                op = !=
+                other = p2
+                _vars = set()
+                )
+            p = BGP(
+                triples = [(rdflib.term.Variable('rel1'), rdflib.term.URIRef('irk:/ocse/0.2/zebra_base_data#R2850'), rdflib.term.Literal('true', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#boolean'))), (rdflib.term.Variable('p1'), rdflib.term.Variable('rel1'), rdflib.term.Variable('some_itm')), (rdflib.term.Variable('p2'), rdflib.term.Variable('rel1'), rdflib.term.Variable('some_itm'))]
+                _vars = {rdflib.term.Variable('p1'), rdflib.term.Variable('p2'), rdflib.term.Variable('rel1'), rdflib.term.Variable('some_itm')}
+                )
+            _vars = {rdflib.term.Variable('p1'), rdflib.term.Variable('p2'), rdflib.term.Variable('rel1'), rdflib.term.Variable('some_itm')}
+            )
+        PV = [rdflib.term.Variable('p1'), rdflib.term.Variable('p2'), rdflib.term.Variable('some_itm'), rdflib.term.Variable('rel1')]
+        _vars = {rdflib.term.Variable('some_itm'), rdflib.term.Variable('p2'), rdflib.term.Variable('rel1'), rdflib.term.Variable('p1')}
+        )
+    datasetClause = None
+    PV = [rdflib.term.Variable('p1'), rdflib.term.Variable('p2'), rdflib.term.Variable('some_itm'), rdflib.term.Variable('rel1')]
+    _vars = {rdflib.term.Variable('p1'), rdflib.term.Variable('p2'), rdflib.term.Variable('rel1'), rdflib.term.Variable('some_itm')}
+    )
+
+==============================================================================
+Rule I725 — projected vars: ['itm1', 'itm2', 'rel1', 'rel2']
+------------------------------------------------------------------------------
+PREFIX : <irk:/builtins#>
+PREFIX zb: <irk:/ocse/0.2/zebra_base_data#>
+PREFIX zr: <irk:/ocse/0.2/zebra_puzzle_rules#>
+SELECT ?itm1 ?itm2 ?rel1 ?rel2
+
+WHERE {
+    ?itm1 ?rel1 ?itm2.        # R3606["lives next to"]
+
+    # ?rel1 zb:R2850 true.     # R2850__is_functional_activity
+    ?rel1 :R68 ?rel2.        # R68__is_inverse_of
+}
+
+------------------------------------------------------------------------------
+SelectQuery(
+    p = Project(
+        p = BGP(
+            triples = [(rdflib.term.Variable('rel1'), rdflib.term.URIRef('irk:/builtins#R68'), rdflib.term.Variable('rel2')), (rdflib.term.Variable('itm1'), rdflib.term.Variable('rel1'), rdflib.term.Variable('itm2'))]
+            _vars = {rdflib.term.Variable('rel2'), rdflib.term.Variable('rel1'), rdflib.term.Variable('itm1'), rdflib.term.Variable('itm2')}
+            )
+        PV = [rdflib.term.Variable('itm1'), rdflib.term.Variable('itm2'), rdflib.term.Variable('rel1'), rdflib.term.Variable('rel2')]
+        _vars = {rdflib.term.Variable('itm1'), rdflib.term.Variable('rel2'), rdflib.term.Variable('rel1'), rdflib.term.Variable('itm2')}
+        )
+    datasetClause = None
+    PV = [rdflib.term.Variable('itm1'), rdflib.term.Variable('itm2'), rdflib.term.Variable('rel1'), rdflib.term.Variable('rel2')]
+    _vars = {rdflib.term.Variable('itm1'), rdflib.term.Variable('rel2'), rdflib.term.Variable('rel1'), rdflib.term.Variable('itm2')}
+    )
+
+==============================================================================
+Rule I730 — projected vars: ['h1', 'h2', 'itm1', 'rel1', 'rel2']
+------------------------------------------------------------------------------
+PREFIX : <irk:/builtins#>
+PREFIX zb: <irk:/ocse/0.2/zebra_base_data#>
+PREFIX zr: <irk:/ocse/0.2/zebra_puzzle_rules#>
+SELECT ?h1 ?h2 ?itm1 ?rel1 ?rel2
+
+WHERE {
+    ?h1 zb:R3606 ?h2.        # R3606["lives next to"]
+
+    ?rel1 zb:R2850 true.     # R2850__is_functional_activity
+    ?rel1 :R43 ?rel2.        # R43__is_opposite_of
+
+    ?h1 ?rel1 ?itm1.
+}
+
+------------------------------------------------------------------------------
+SelectQuery(
+    p = Project(
+        p = BGP(
+            triples = [(rdflib.term.Variable('rel1'), rdflib.term.URIRef('irk:/ocse/0.2/zebra_base_data#R2850'), rdflib.term.Literal('true', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#boolean'))), (rdflib.term.Variable('rel1'), rdflib.term.URIRef('irk:/builtins#R43'), rdflib.term.Variable('rel2')), (rdflib.term.Variable('h1'), rdflib.term.Variable('rel1'), rdflib.term.Variable('itm1')), (rdflib.term.Variable('h1'), rdflib.term.URIRef('irk:/ocse/0.2/zebra_base_data#R3606'), rdflib.term.Variable('h2'))]
+            _vars = {rdflib.term.Variable('h2'), rdflib.term.Variable('rel2'), rdflib.term.Variable('h1'), rdflib.term.Variable('rel1'), rdflib.term.Variable('itm1')}
+            )
+        PV = [rdflib.term.Variable('h1'), rdflib.term.Variable('h2'), rdflib.term.Variable('itm1'), rdflib.term.Variable('rel1'), rdflib.term.Variable('rel2')]
+        _vars = {rdflib.term.Variable('h2'), rdflib.term.Variable('rel2'), rdflib.term.Variable('h1'), rdflib.term.Variable('rel1'), rdflib.term.Variable('itm1')}
+        )
+    datasetClause = None
+    PV = [rdflib.term.Variable('h1'), rdflib.term.Variable('h2'), rdflib.term.Variable('itm1'), rdflib.term.Variable('rel1'), rdflib.term.Variable('rel2')]
+    _vars = {rdflib.term.Variable('h2'), rdflib.term.Variable('rel2'), rdflib.term.Variable('h1'), rdflib.term.Variable('rel1'), rdflib.term.Variable('itm1')}
+    )
+
+==============================================================================
+Rule I740 — projected vars: ['h1', 'h2', 'itm1', 'itm2', 'itm3', 'rel1', 'rel2', 'rel1_not', 'rel2_not']
+------------------------------------------------------------------------------
+PREFIX : <irk:/builtins#>
+PREFIX zb: <irk:/ocse/0.2/zebra_base_data#>
+PREFIX zr: <irk:/ocse/0.2/zebra_puzzle_rules#>
+SELECT ?h1 ?h2 ?itm1 ?itm2 ?itm3 ?rel1 ?rel2 ?rel1_not ?rel2_not
+
+WHERE {
+    ?h1 ?rel1 ?itm1.          # e.g. h1 owns dog
+    ?h1 ?rel2 ?itm2.          # e.g. h1 drinks milk
+    ?h2 ?rel1 ?itm3.          # e.g. h2 owns zebra
+
+    FILTER (?rel1 != ?rel2)
+    FILTER (?itm1 != ?itm2)
+    FILTER (?itm1 != ?itm3)
+    FILTER (?h1 != ?h2)
+    FILTER (?itm2 != ?itm3)
+
+    ?rel1 zb:R2850 true.     # R2850__is_functional_activity
+    ?rel2 zb:R2850 true.     # R2850__is_functional_activity
+
+    ?rel1 :R43 ?rel1_not.        # R43__is_opposite_of
+    ?rel2 :R43 ?rel2_not.        # R43__is_opposite_of
+
+    ?h2 ?rel2_not ?itm2.
+
+    # prevent the addition of already known relations
+    # MINUS { ?h2 ?rel1_not ?itm1.}
+}
+
+------------------------------------------------------------------------------
+SelectQuery(
+    p = Project(
+        p = Filter(
+            expr = ConditionalAndExpression(
+                expr = RelationalExpression(
+                    expr = rel1
+                    op = !=
+                    other = rel2
+                    _vars = set()
+                    )
+                other = [RelationalExpression_{'expr': rdflib.term.Variable('itm1'), 'op': '!=', 'other': rdflib.term.Variable('itm2'), '_vars': set()}, RelationalExpression_{'expr': rdflib.term.Variable('itm1'), 'op': '!=', 'other': rdflib.term.Variable('itm3'), '_vars': set()}, RelationalExpression_{'expr': rdflib.term.Variable('h1'), 'op': '!=', 'other': rdflib.term.Variable('h2'), '_vars': set()}, RelationalExpression_{'expr': rdflib.term.Variable('itm2'), 'op': '!=', 'other': rdflib.term.Variable('itm3'), '_vars': set()}]
+                _vars = set()
+                )
+            p = BGP(
+                triples = [(rdflib.term.Variable('rel1'), rdflib.term.URIRef('irk:/ocse/0.2/zebra_base_data#R2850'), rdflib.term.Literal('true', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#boolean'))), (rdflib.term.Variable('rel2'), rdflib.term.URIRef('irk:/ocse/0.2/zebra_base_data#R2850'), rdflib.term.Literal('true', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#boolean'))), (rdflib.term.Variable('rel1'), rdflib.term.URIRef('irk:/builtins#R43'), rdflib.term.Variable('rel1_not')), (rdflib.term.Variable('rel2'), rdflib.term.URIRef('irk:/builtins#R43'), rdflib.term.Variable('rel2_not')), (rdflib.term.Variable('h1'), rdflib.term.Variable('rel1'), rdflib.term.Variable('itm1')), (rdflib.term.Variable('h1'), rdflib.term.Variable('rel2'), rdflib.term.Variable('itm2')), (rdflib.term.Variable('h2'), rdflib.term.Variable('rel1'), rdflib.term.Variable('itm3')), (rdflib.term.Variable('h2'), rdflib.term.Variable('rel2_not'), rdflib.term.Variable('itm2'))]
+                _vars = {rdflib.term.Variable('rel2'), rdflib.term.Variable('rel2_not'), rdflib.term.Variable('h1'), rdflib.term.Variable('rel1'), rdflib.term.Variable('itm2'), rdflib.term.Variable('itm3'), rdflib.term.Variable('h2'), rdflib.term.Variable('rel1_not'), rdflib.term.Variable('itm1')}
+                )
+            _vars = {rdflib.term.Variable('rel2'), rdflib.term.Variable('rel2_not'), rdflib.term.Variable('h1'), rdflib.term.Variable('rel1'), rdflib.term.Variable('itm2'), rdflib.term.Variable('itm3'), rdflib.term.Variable('h2'), rdflib.term.Variable('rel1_not'), rdflib.term.Variable('itm1')}
+            )
+        PV = [rdflib.term.Variable('h1'), rdflib.term.Variable('h2'), rdflib.term.Variable('itm1'), rdflib.term.Variable('itm2'), rdflib.term.Variable('itm3'), rdflib.term.Variable('rel1'), rdflib.term.Variable('rel2'), rdflib.term.Variable('rel1_not'), rdflib.term.Variable('rel2_not')]
+        _vars = {rdflib.term.Variable('rel2'), rdflib.term.Variable('rel2_not'), rdflib.term.Variable('h1'), rdflib.term.Variable('rel1'), rdflib.term.Variable('itm2'), rdflib.term.Variable('itm3'), rdflib.term.Variable('h2'), rdflib.term.Variable('rel1_not'), rdflib.term.Variable('itm1')}
+        )
+    datasetClause = None
+    PV = [rdflib.term.Variable('h1'), rdflib.term.Variable('h2'), rdflib.term.Variable('itm1'), rdflib.term.Variable('itm2'), rdflib.term.Variable('itm3'), rdflib.term.Variable('rel1'), rdflib.term.Variable('rel2'), rdflib.term.Variable('rel1_not'), rdflib.term.Variable('rel2_not')]
+    _vars = {rdflib.term.Variable('rel2'), rdflib.term.Variable('rel2_not'), rdflib.term.Variable('h1'), rdflib.term.Variable('rel1'), rdflib.term.Variable('itm2'), rdflib.term.Variable('itm3'), rdflib.term.Variable('h2'), rdflib.term.Variable('rel1_not'), rdflib.term.Variable('itm1')}
+    )
+
+==============================================================================
+Rule I741 — projected vars: ['h1', 'h2', 'itm1a', 'itm1b', 'itm2', 'rel1', 'rel2', 'rel2_not']
+------------------------------------------------------------------------------
+PREFIX : <irk:/builtins#>
+PREFIX zb: <irk:/ocse/0.2/zebra_base_data#>
+PREFIX zr: <irk:/ocse/0.2/zebra_puzzle_rules#>
+SELECT ?h1 ?h2 ?itm1a ?itm1b ?itm2 ?rel1 ?rel2 ?rel2_not
+
+WHERE {
+    ?h1 ?rel1 ?itm1a.          # e.g. h1 owns dog
+    ?h1 ?rel2 ?itm1b.          # e.g. h1 drinks milk
+    ?h2 ?rel1 ?itm2.          # e.g. h2 owns zebra
+
+    ?itm1a :R57 false.        # itm1 is no placeholder
+    ?itm1b :R57 false.        # itm1 is no placeholder
+    # ?itm2 :R57 false.        # itm1 is no placeholder
+
+    FILTER (?rel1 != ?rel2)
+    FILTER (?itm1a != ?itm1b)
+    FILTER (?itm1a != ?itm2)
+    FILTER (?h1 != ?h2)
+    FILTER (?itm1b != ?itm2)
+
+    ?rel1 zb:R2850 true.     # R2850__is_functional_activity
+    ?rel2 zb:R2850 true.     # R2850__is_functional_activity
+
+    # ?rel1 :R43 ?rel1_not.        # R43__is_opposite_of
+    ?rel2 :R43 ?rel2_not.        # R43__is_opposite_of
+
+    # prevent the addition of statements on placeholder persons (not sure yet)
+
+    # MINUS { ?h1 :R57 true.}
+    MINUS { ?itm2 :R57 true.}
+}
+
+------------------------------------------------------------------------------
+SelectQuery(
+    p = Project(
+        p = Filter(
+            expr = ConditionalAndExpression(
+                expr = RelationalExpression(
+                    expr = rel1
+                    op = !=
+                    other = rel2
+                    _vars = set()
+                    )
+                other = [RelationalExpression_{'expr': rdflib.term.Variable('itm1a'), 'op': '!=', 'other': rdflib.term.Variable('itm1b'), '_vars': set()}, RelationalExpression_{'expr': rdflib.term.Variable('itm1a'), 'op': '!=', 'other': rdflib.term.Variable('itm2'), '_vars': set()}, RelationalExpression_{'expr': rdflib.term.Variable('h1'), 'op': '!=', 'other': rdflib.term.Variable('h2'), '_vars': set()}, RelationalExpression_{'expr': rdflib.term.Variable('itm1b'), 'op': '!=', 'other': rdflib.term.Variable('itm2'), '_vars': set()}]
+                _vars = set()
+                )
+            p = Minus(
+                p1 = BGP(
+                    triples = [(rdflib.term.Variable('rel1'), rdflib.term.URIRef('irk:/ocse/0.2/zebra_base_data#R2850'), rdflib.term.Literal('true', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#boolean'))), (rdflib.term.Variable('rel2'), rdflib.term.URIRef('irk:/ocse/0.2/zebra_base_data#R2850'), rdflib.term.Literal('true', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#boolean'))), (rdflib.term.Variable('itm1a'), rdflib.term.URIRef('irk:/builtins#R57'), rdflib.term.Literal('false', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#boolean'))), (rdflib.term.Variable('itm1b'), rdflib.term.URIRef('irk:/builtins#R57'), rdflib.term.Literal('false', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#boolean'))), (rdflib.term.Variable('h1'), rdflib.term.Variable('rel1'), rdflib.term.Variable('itm1a')), (rdflib.term.Variable('h1'), rdflib.term.Variable('rel2'), rdflib.term.Variable('itm1b')), (rdflib.term.Variable('rel2'), rdflib.term.URIRef('irk:/builtins#R43'), rdflib.term.Variable('rel2_not')), (rdflib.term.Variable('h2'), rdflib.term.Variable('rel1'), rdflib.term.Variable('itm2'))]
+                    _vars = {rdflib.term.Variable('rel2'), rdflib.term.Variable('rel2_not'), rdflib.term.Variable('h1'), rdflib.term.Variable('rel1'), rdflib.term.Variable('itm2'), rdflib.term.Variable('itm1a'), rdflib.term.Variable('h2'), rdflib.term.Variable('itm1b')}
+                    )
+                p2 = BGP(
+                    triples = [(rdflib.term.Variable('itm2'), rdflib.term.URIRef('irk:/builtins#R57'), rdflib.term.Literal('true', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#boolean')))]
+                    _vars = {rdflib.term.Variable('itm2')}
+                    )
+                _vars = {rdflib.term.Variable('rel2'), rdflib.term.Variable('rel2_not'), rdflib.term.Variable('h1'), rdflib.term.Variable('rel1'), rdflib.term.Variable('itm2'), rdflib.term.Variable('itm1a'), rdflib.term.Variable('h2'), rdflib.term.Variable('itm1b')}
+                )
+            _vars = {rdflib.term.Variable('rel2'), rdflib.term.Variable('rel2_not'), rdflib.term.Variable('h1'), rdflib.term.Variable('rel1'), rdflib.term.Variable('itm2'), rdflib.term.Variable('itm1a'), rdflib.term.Variable('h2'), rdflib.term.Variable('itm1b')}
+            )
+        PV = [rdflib.term.Variable('h1'), rdflib.term.Variable('h2'), rdflib.term.Variable('itm1a'), rdflib.term.Variable('itm1b'), rdflib.term.Variable('itm2'), rdflib.term.Variable('rel1'), rdflib.term.Variable('rel2'), rdflib.term.Variable('rel2_not')]
+        _vars = {rdflib.term.Variable('rel2'), rdflib.term.Variable('rel2_not'), rdflib.term.Variable('h1'), rdflib.term.Variable('rel1'), rdflib.term.Variable('itm2'), rdflib.term.Variable('itm1a'), rdflib.term.Variable('h2'), rdflib.term.Variable('itm1b')}
+        )
+    datasetClause = None
+    PV = [rdflib.term.Variable('h1'), rdflib.term.Variable('h2'), rdflib.term.Variable('itm1a'), rdflib.term.Variable('itm1b'), rdflib.term.Variable('itm2'), rdflib.term.Variable('rel1'), rdflib.term.Variable('rel2'), rdflib.term.Variable('rel2_not')]
+    _vars = {rdflib.term.Variable('rel2'), rdflib.term.Variable('rel2_not'), rdflib.term.Variable('h1'), rdflib.term.Variable('rel1'), rdflib.term.Variable('itm2'), rdflib.term.Variable('itm1a'), rdflib.term.Variable('h2'), rdflib.term.Variable('itm1b')}
+    )
+
+==============================================================================
+Rule I792 — projected vars: ['h1', 'h2', 'itm1a', 'rel1', 'rel1_not']
+------------------------------------------------------------------------------
+PREFIX : <irk:/builtins#>
+PREFIX zb: <irk:/ocse/0.2/zebra_base_data#>
+PREFIX zr: <irk:/ocse/0.2/zebra_puzzle_rules#>
+SELECT ?h1 ?h2 ?itm1a ?rel1 ?rel1_not
+
+WHERE {
+    ?h1 ?rel1 ?itm1a.          # e.g. h1 owns dog
+    ?h2 ?rel1_not ?itm1a.      # e.g. h2 not_owns dog
+
+    ?h1 :R4 zb:I7435.          # h1 is human
+    ?h2 :R4 zb:I7435.          # h2 is human
+
+    ?itm1a :R57 false.        # itm1 is no placeholder
+    ?rel1 zb:R2850 true.      # R2850__is_functional_activity
+    ?rel1 :R43 ?rel1_not.        # R43__is_opposite_of
+
+}
+
+------------------------------------------------------------------------------
+SelectQuery(
+    p = Project(
+        p = BGP(
+            triples = [(rdflib.term.Variable('itm1a'), rdflib.term.URIRef('irk:/builtins#R57'), rdflib.term.Literal('false', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#boolean'))), (rdflib.term.Variable('h1'), rdflib.term.Variable('rel1'), rdflib.term.Variable('itm1a')), (rdflib.term.Variable('rel1'), rdflib.term.URIRef('irk:/ocse/0.2/zebra_base_data#R2850'), rdflib.term.Literal('true', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#boolean'))), (rdflib.term.Variable('h1'), rdflib.term.URIRef('irk:/builtins#R4'), rdflib.term.URIRef('irk:/ocse/0.2/zebra_base_data#I7435')), (rdflib.term.Variable('h2'), rdflib.term.URIRef('irk:/builtins#R4'), rdflib.term.URIRef('irk:/ocse/0.2/zebra_base_data#I7435')), (rdflib.term.Variable('h2'), rdflib.term.Variable('rel1_not'), rdflib.term.Variable('itm1a')), (rdflib.term.Variable('rel1'), rdflib.term.URIRef('irk:/builtins#R43'), rdflib.term.Variable('rel1_not'))]
+            _vars = {rdflib.term.Variable('h2'), rdflib.term.Variable('rel1_not'), rdflib.term.Variable('h1'), rdflib.term.Variable('rel1'), rdflib.term.Variable('itm1a')}
+            )
+        PV = [rdflib.term.Variable('h1'), rdflib.term.Variable('h2'), rdflib.term.Variable('itm1a'), rdflib.term.Variable('rel1'), rdflib.term.Variable('rel1_not')]
+        _vars = {rdflib.term.Variable('h2'), rdflib.term.Variable('rel1_not'), rdflib.term.Variable('h1'), rdflib.term.Variable('rel1'), rdflib.term.Variable('itm1a')}
+        )
+    datasetClause = None
+    PV = [rdflib.term.Variable('h1'), rdflib.term.Variable('h2'), rdflib.term.Variable('itm1a'), rdflib.term.Variable('rel1'), rdflib.term.Variable('rel1_not')]
+    _vars = {rdflib.term.Variable('h2'), rdflib.term.Variable('rel1_not'), rdflib.term.Variable('h1'), rdflib.term.Variable('rel1'), rdflib.term.Variable('itm1a')}
+    )
+
+==============================================================================
+Rule I798 — projected vars: ['p1', 'p2', 'itm1', 'rel1', 'rel2']
+------------------------------------------------------------------------------
+PREFIX : <irk:/builtins#>
+PREFIX zb: <irk:/ocse/0.2/zebra_base_data#>
+PREFIX zr: <irk:/ocse/0.2/zebra_puzzle_rules#>
+SELECT ?p1 ?p2 ?itm1 ?rel1 ?rel2
+
+WHERE {
+    ?p1 :R50 ?p2.        # R50["is different from"]
+
+    ?rel1 zb:R2850 true.     # R2850__is_functional_activity
+    ?rel1 :R43 ?rel2.        # R43__is_opposite_of
+
+    ?p1 ?rel1 ?itm1.
+}
+
+------------------------------------------------------------------------------
+SelectQuery(
+    p = Project(
+        p = BGP(
+            triples = [(rdflib.term.Variable('rel1'), rdflib.term.URIRef('irk:/ocse/0.2/zebra_base_data#R2850'), rdflib.term.Literal('true', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#boolean'))), (rdflib.term.Variable('rel1'), rdflib.term.URIRef('irk:/builtins#R43'), rdflib.term.Variable('rel2')), (rdflib.term.Variable('p1'), rdflib.term.Variable('rel1'), rdflib.term.Variable('itm1')), (rdflib.term.Variable('p1'), rdflib.term.URIRef('irk:/builtins#R50'), rdflib.term.Variable('p2'))]
+            _vars = {rdflib.term.Variable('p1'), rdflib.term.Variable('rel2'), rdflib.term.Variable('p2'), rdflib.term.Variable('rel1'), rdflib.term.Variable('itm1')}
+            )
+        PV = [rdflib.term.Variable('p1'), rdflib.term.Variable('p2'), rdflib.term.Variable('itm1'), rdflib.term.Variable('rel1'), rdflib.term.Variable('rel2')]
+        _vars = {rdflib.term.Variable('p1'), rdflib.term.Variable('rel2'), rdflib.term.Variable('p2'), rdflib.term.Variable('rel1'), rdflib.term.Variable('itm1')}
+        )
+    datasetClause = None
+    PV = [rdflib.term.Variable('p1'), rdflib.term.Variable('p2'), rdflib.term.Variable('itm1'), rdflib.term.Variable('rel1'), rdflib.term.Variable('rel2')]
+    _vars = {rdflib.term.Variable('p1'), rdflib.term.Variable('rel2'), rdflib.term.Variable('p2'), rdflib.term.Variable('rel1'), rdflib.term.Variable('itm1')}
+    )
+
+==============================================================================
+Rule I803 — projected vars: ['p1', 'itm1', 'itm2', 'type_of_itm1', 'rel1', 'rel1_not']
+------------------------------------------------------------------------------
+PREFIX : <irk:/builtins#>
+PREFIX zb: <irk:/ocse/0.2/zebra_base_data#>
+PREFIX zr: <irk:/ocse/0.2/zebra_puzzle_rules#>
+SELECT ?p1 ?itm1 ?itm2 ?type_of_itm1 ?rel1 ?rel1_not
+
+WHERE {
+    ?rel1 zb:R2850 true.     # R2850__is_functional_activity
+    ?rel1_not :R43 ?rel1.        # R43__is_opposite_of
+    ?p1 ?rel1 ?itm1.
+    ?itm1 :R4 ?type_of_itm1.   # R4__is_instance_of
+    ?type_of_itm1 :R51 ?tuple.  # R51__instances_are_from
+    ?tuple :R39 ?itm2.           # R39__has_element
+    ?itm1 :R57 false.          # R57__is_placeholder
+    ?itm2 :R57 false.
+
+    FILTER (?itm1 != ?itm2)
+
+}
+
+------------------------------------------------------------------------------
+SelectQuery(
+    p = Project(
+        p = Filter(
+            expr = RelationalExpression(
+                expr = itm1
+                op = !=
+                other = itm2
+                _vars = set()
+                )
+            p = BGP(
+                triples = [(rdflib.term.Variable('itm1'), rdflib.term.URIRef('irk:/builtins#R57'), rdflib.term.Literal('false', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#boolean'))), (rdflib.term.Variable('rel1'), rdflib.term.URIRef('irk:/ocse/0.2/zebra_base_data#R2850'), rdflib.term.Literal('true', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#boolean'))), (rdflib.term.Variable('itm2'), rdflib.term.URIRef('irk:/builtins#R57'), rdflib.term.Literal('false', datatype=rdflib.term.URIRef('http://www.w3.org/2001/XMLSchema#boolean'))), (rdflib.term.Variable('p1'), rdflib.term.Variable('rel1'), rdflib.term.Variable('itm1')), (rdflib.term.Variable('itm1'), rdflib.term.URIRef('irk:/builtins#R4'), rdflib.term.Variable('type_of_itm1')), (rdflib.term.Variable('rel1_not'), rdflib.term.URIRef('irk:/builtins#R43'), rdflib.term.Variable('rel1')), (rdflib.term.Variable('tuple'), rdflib.term.URIRef('irk:/builtins#R39'), rdflib.term.Variable('itm2')), (rdflib.term.Variable('type_of_itm1'), rdflib.term.URIRef('irk:/builtins#R51'), rdflib.term.Variable('tuple'))]
+                _vars = {rdflib.term.Variable('p1'), rdflib.term.Variable('itm1'), rdflib.term.Variable('tuple'), rdflib.term.Variable('rel1_not'), rdflib.term.Variable('type_of_itm1'), rdflib.term.Variable('rel1'), rdflib.term.Variable('itm2')}
+                )
+            _vars = {rdflib.term.Variable('p1'), rdflib.term.Variable('itm1'), rdflib.term.Variable('tuple'), rdflib.term.Variable('rel1_not'), rdflib.term.Variable('type_of_itm1'), rdflib.term.Variable('rel1'), rdflib.term.Variable('itm2')}
+            )
+        PV = [rdflib.term.Variable('p1'), rdflib.term.Variable('itm1'), rdflib.term.Variable('itm2'), rdflib.term.Variable('type_of_itm1'), rdflib.term.Variable('rel1'), rdflib.term.Variable('rel1_not')]
+        _vars = {rdflib.term.Variable('p1'), rdflib.term.Variable('itm1'), rdflib.term.Variable('tuple'), rdflib.term.Variable('rel1_not'), rdflib.term.Variable('type_of_itm1'), rdflib.term.Variable('rel1'), rdflib.term.Variable('itm2')}
+        )
+    datasetClause = None
+    PV = [rdflib.term.Variable('p1'), rdflib.term.Variable('itm1'), rdflib.term.Variable('itm2'), rdflib.term.Variable('type_of_itm1'), rdflib.term.Variable('rel1'), rdflib.term.Variable('rel1_not')]
+    _vars = {rdflib.term.Variable('p1'), rdflib.term.Variable('itm1'), rdflib.term.Variable('tuple'), rdflib.term.Variable('rel1_not'), rdflib.term.Variable('type_of_itm1'), rdflib.term.Variable('rel1'), rdflib.term.Variable('itm2')}
+    )
+

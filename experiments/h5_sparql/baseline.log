@@ -1,0 +1,15 @@
+..x...........................x......................................... [ 36%]
+........................................................................ [ 73%]
+...............................................ssss                      [100%]
+=============================== warnings summary ===============================
+tests/test_core.py::Test_01_Core::test_c15__visualization2
+tests/test_core.py::Test_01_Core::test_c15__visualization2
+tests/test_core.py::Test_01_Core::test_c16__visualize_entity_with_radius
+  /home/user/venvs/pyirk-core-venv/lib/python3.13/site-packages/nxv/_util.py:184: DeprecationWarning: OrderedMultiDiGraph is deprecated and will be removed in version 3.0.
+  Use `MultiDiGraph` instead, which guarantees order is preserved for
+  Python >= 3.7
+  
+    return GRAPH_TYPES[directed, multi, ordered]()
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+189 passed, 4 skipped, 2 xfailed, 3 warnings in 73.63s (0:01:13)

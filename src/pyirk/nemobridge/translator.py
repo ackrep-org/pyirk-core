@@ -133,6 +133,30 @@ def _obj_term(obj) -> str:
     return f'"{obj.uri}"'
 
 
+def _pred_term(stm) -> str:
+    """Render a statement's predicate as a Nemo term.
+
+    Two branches:
+      * Wildcard rel-var statement (``pred == R58`` with an ``R34__has_proxy_item``
+        qualifier pointing at a scope-internal ``I40["general relation"]``
+        instance) → ``?<name>`` variable reference. This is how
+        ``ConditionManager.new_rel`` encodes a rel-var as the predicate of a
+        conclusion (see :func:`pyirk.builtin_entities.new_rel`): the visible
+        statement carries ``R58`` and the rel-var lives in a qualifier.
+      * Otherwise → quoted full-URI string constant, matching the column
+        encoding used by the EDB CSVs.
+    """
+    import pyirk as p
+    pred = stm.predicate
+    if pred == p.R58:
+        proxy = stm.get_first_qualifier_obj_with_rel(
+            "R34__has_proxy_item", tolerate_key_error=True,
+        )
+        if proxy is not None and _is_scope_internal(proxy):
+            return _var_name(proxy)
+    return f'"{pred.uri}"'
+
+
 def _iter_assert_stms(assert_stms):
     """Yield assertion statements, skipping mode-4 auxiliary statements."""
     for stm in assert_stms:
@@ -143,6 +167,171 @@ def _iter_assert_stms(assert_stms):
         except Exception:
             pass
         yield stm
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# SPARQL premise translation (H5 SPARQL Stage 1: pure BGP)
+# ─────────────────────────────────────────────────────────────────────────────
+#
+# The SPARQL premise of a rule (``R63__has_SPARQL_source``) is translated to a
+# conjunction of ``fact(...)`` atoms — same ternary model as the existing
+# triple-pattern rules — but ONLY for the strictly translatable fragment:
+#
+#   * Algebra contains ONLY a ``BGP`` node (possibly wrapped in
+#     ``Project``/``SelectQuery``/``Slice``/``Distinct``/``Reduced``/
+#     ``OrderBy``/``ToList``).
+#   * NO ``Filter`` (incl. ``!=``), ``Minus``, ``Union``, ``LeftJoin``
+#     (OPTIONAL), ``Extend`` (BIND), ``Group``/``AggregateJoin``, property
+#     paths, or any other unknown construct.
+#
+# Detection runs on the *rdflib SPARQL algebra* (``parseQuery`` +
+# ``translateQuery``); we deliberately do NOT regex the query source — that is
+# the recon script's job. Stages 2 / 4 / 5 (inequality, negation) extend the
+# accepted fragment; until then anything richer than pure BGP stays
+# ``python_only``.
+
+
+def _build_sparql_query_text(rule) -> str:
+    """Build the same prefixed SPARQL string the native engine wraps the
+    ``R63__has_SPARQL_source`` body with — :meth:`apply_sparql_premise`
+    prepends ``PREFIX`` lines and a ``SELECT`` clause before the user's
+    ``WHERE``-block. The actual projection list is irrelevant for algebra
+    classification (it only affects how the result is shaped); we pick the
+    setting-scope variables so the SELECT clause stays well-formed.
+    """
+    import textwrap
+    import pyirk as p
+
+    sparql_src = rule.scp__premise.get_relations(
+        "R63__has_SPARQL_source", return_obj=True,
+    )
+    where_clause = textwrap.dedent(sparql_src[0])
+
+    prefixes = []
+    for mod_uri, prefix in p.ds.uri_prefix_mapping.a.items():
+        if mod_uri == p.settings.BUILTINS_URI:
+            prefix = ""
+        prefixes.append(f"PREFIX {prefix}: <{mod_uri}#>")
+    prefix_block = "\n".join(prefixes)
+
+    setting = rule.scp__setting
+    items = setting.get_inv_relations("R20__has_defining_scope", return_subj=True)
+    names = []
+    seen = set()
+    for it in items:
+        lbl = getattr(it, "R23__has_name_in_scope", None)
+        if not isinstance(lbl, str):
+            continue
+        if lbl.startswith("?"):
+            lbl = lbl[1:]
+        if " " in lbl or not lbl:
+            continue
+        if lbl in seen:
+            continue
+        seen.add(lbl)
+        names.append(lbl)
+    select_clause = "SELECT " + " ".join("?" + v for v in names) if names else "SELECT *"
+
+    return f"{prefix_block}\n{select_clause}\n{where_clause}"
+
+
+def _sparql_extract_pure_bgp(rule):
+    """Parse the rule's SPARQL premise and return the BGP triple list iff
+    the algebra is a pure BGP (no Filter/Minus/Union/etc.). Otherwise
+    return ``None``.
+
+    Detection is purely structural on the rdflib algebra tree — no string
+    matching on the SPARQL source.
+    """
+    from rdflib.plugins.sparql.parser import parseQuery
+    from rdflib.plugins.sparql.algebra import translateQuery
+    from rdflib.plugins.sparql.parserutils import CompValue
+    from rdflib.paths import Path
+
+    qtext = _build_sparql_query_text(rule)
+    parsed = parseQuery(qtext)
+    algebra = translateQuery(parsed)
+
+    bgp_triples = []
+    rejected_reason = []
+
+    def _walk(node):
+        if not isinstance(node, CompValue):
+            return
+        name = node.name
+        if name in ("BGP", "Bgp"):
+            for triple in node.triples:
+                bgp_triples.append(triple)
+        elif name in (
+            "SelectQuery", "Project", "Slice", "Distinct", "Reduced",
+            "OrderBy", "ToList",
+        ):
+            _walk(node.p)
+        elif name == "Filter":
+            rejected_reason.append("Filter")
+        elif name == "Minus":
+            rejected_reason.append("Minus")
+        elif name == "Union":
+            rejected_reason.append("Union")
+        elif name == "LeftJoin":
+            rejected_reason.append("LeftJoin/OPTIONAL")
+        elif name == "Extend":
+            rejected_reason.append("Extend/BIND")
+        elif name in ("Group", "AggregateJoin"):
+            rejected_reason.append("Group/Aggregation")
+        elif name == "Join":
+            _walk(node.p1)
+            _walk(node.p2)
+        else:
+            rejected_reason.append(f"unsupported construct: {name}")
+
+    _walk(algebra.algebra)
+
+    if rejected_reason:
+        return None, "; ".join(sorted(set(rejected_reason)))
+
+    if not bgp_triples:
+        return None, "no BGP triples found"
+
+    # property-path predicate (e.g. ``foaf:knows+``) — reject
+    for s, pp, o in bgp_triples:
+        if isinstance(pp, Path):
+            return None, "property-path predicate in BGP"
+        if isinstance(pp, CompValue):
+            return None, "non-simple predicate in BGP"
+
+    return bgp_triples, None
+
+
+def _sparql_bgp_term(term) -> str:
+    """Render an rdflib BGP term as a Nemo term.
+
+    Three branches mirroring :func:`_obj_term`:
+      * ``Variable('p2')`` → ``?p2`` — same naming convention the conclusion
+        side uses for scope-internal entities via :func:`_var_name`, so the
+        variable ``p2`` introduced in the SPARQL premise binds to the same
+        position the assertion ``cm.new_rel(cm.p2, ..., ...)`` projects to.
+      * ``URIRef('irk:/.../R50')`` → ``"irk:/.../R50"`` — quoted full URI,
+        matching how the EDB CSV columns are encoded.
+      * ``Literal('true', xsd:boolean)`` → ``"LIT:True"`` — uses
+        ``encode_literal(literal.toPython())`` so the encoding is BIT-exact
+        to :func:`exporter.encode_literal`, which is what
+        ``literal_triples.csv`` rows carry. Mixing a hand-rolled encoding
+        here would silently produce non-matching tokens; reusing the
+        exporter's helper is the only correctness guarantee.
+    """
+    from rdflib.term import Variable, URIRef, Literal
+    from .exporter import encode_literal
+
+    if isinstance(term, Variable):
+        return f"?{str(term)}"
+    if isinstance(term, URIRef):
+        return f'"{str(term)}"'
+    if isinstance(term, Literal):
+        return f'"{encode_literal(term.toPython())}"'
+    raise ValueError(
+        f"unsupported rdflib BGP term {term!r} (type {type(term).__name__})"
+    )
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -170,9 +359,56 @@ def _classify_single_rule(rule) -> RuleClassification:
     if _has_cheat(rule):
         return result("python_only", None, "Algorithmic rule with hardcoded 'cheat' method")
 
-    # 2) SPARQL premise
+    # 2) SPARQL premise — try the pure-BGP branch first (H5 SPARQL Stage 1);
+    # anything richer than pure BGP stays ``python_only`` for now (Stages 2/4/5
+    # extend the accepted fragment).
     if _has_sparql_premise(rule):
-        return result("python_only", None, "SPARQL-based premise (R63__has_SPARQL_source)")
+        try:
+            bgp_triples, rejection = _sparql_extract_pure_bgp(rule)
+        except Exception as ex:
+            return result(
+                "python_only", None,
+                f"SPARQL-based premise: algebra parse failed ({type(ex).__name__}: {ex})"
+            )
+        if bgp_triples is None:
+            return result(
+                "python_only", None,
+                f"SPARQL-based premise: not a pure BGP ({rejection})"
+            )
+
+        # The assertion uses the SAME scope-internal variable names as the
+        # SPARQL premise (rule authors declare them in the setting scope via
+        # ``new_var`` / ``new_rel_var`` and reference them in both places).
+        # The conclusion side is handled by the existing assertion-snippet
+        # path; only the premise body is replaced with the BGP-derived atoms.
+        try:
+            assert_stms, assert_items = _filter_stms(rule.scp__assertion)
+        except Exception as ex:
+            return result(
+                "python_only", None,
+                f"SPARQL premise: assertion-stmts extraction failed ({ex})"
+            )
+
+        if assert_items:
+            descs = [str(getattr(it, "R1__has_label", str(it))) for it in assert_items]
+            return result(
+                "python_only", None,
+                f"SPARQL premise: assertion creates new entities (fiat prototypes): {descs}"
+            )
+
+        try:
+            snippet = _build_sparql_bgp_snippet(
+                rule, bgp_triples, list(_iter_assert_stms(assert_stms)),
+            )
+            return result(
+                "direct", snippet,
+                "SPARQL premise: pure BGP — translated to Datalog (H5 SPARQL Stage 1)"
+            )
+        except Exception as ex:
+            return result(
+                "python_only", None,
+                f"SPARQL premise: BGP snippet generation failed ({type(ex).__name__}: {ex})"
+            )
 
     # 3) OR subscope
     if _has_or_subscope(rule):
@@ -285,8 +521,9 @@ def _build_direct_snippet(rule, prem_stms, assert_stms_filtered) -> str:
                 " is not translatable to Datalog"
             )
         s_term = _obj_term(subj)
+        p_term = _pred_term(stm)
         o_term = _obj_term(obj)
-        body_parts.append(f'fact({s_term}, "{pred.uri}", {o_term})')
+        body_parts.append(f'fact({s_term}, {p_term}, {o_term})')
 
     if not body_parts:
         raise ValueError(f"Rule {rule.short_key} has no premise statements to translate")
@@ -307,8 +544,9 @@ def _build_direct_snippet(rule, prem_stms, assert_stms_filtered) -> str:
                 " is not translatable to Datalog"
             )
         s_term = _obj_term(subj)
+        p_term = _pred_term(stm)
         o_term = _obj_term(obj)
-        head_lines.append(f'fact({s_term}, "{pred.uri}", {o_term}) :- {body} .')
+        head_lines.append(f'fact({s_term}, {p_term}, {o_term}) :- {body} .')
 
     if not head_lines:
         raise ValueError(f"Rule {rule.short_key} produced no assertion head lines")
@@ -319,6 +557,67 @@ def _build_direct_snippet(rule, prem_stms, assert_stms_filtered) -> str:
         label = rule.short_key
 
     return "\n".join([f"% {rule.short_key}: {label}"] + head_lines)
+
+
+def _build_sparql_bgp_snippet(rule, bgp_triples, assert_stms_filtered) -> str:
+    """Build ternary ``fact``-rule lines for one SPARQL-premise rule whose
+    premise is a pure BGP (H5 SPARQL Stage 1).
+
+    Each BGP triple ``(s, p, o)`` becomes a ``fact(<s>, <p>, <o>)`` atom; the
+    assertion statements are rendered the same way the GRAPH-premise direct
+    snippet does (so a rel-var conclusion routed through ``R58`` + ``R34``
+    qualifier comes out as ``?<rel-var-name>`` via :func:`_pred_term`).
+
+    The SPARQL variable names line up with the scope-internal variable names
+    by construction: the rule author declares the variables in the setting
+    scope (``new_var(p1=...)`` / ``new_rel_var("rel1")``), which fixes their
+    ``R23__has_name_in_scope``; the same names then appear in the SPARQL
+    source. The Nemo body uses ``?<name>`` directly from the rdflib
+    ``Variable`` term; the conclusion uses ``?<name>`` from
+    :func:`_var_name`; both agree.
+
+    No inequality constraints are added here — Stage 1 is the pure-BGP
+    fragment without ``FILTER(?x != ?y)`` (recon flags those rules as
+    ``bgp_inequality``; they stay ``python_only`` until Stage 2).
+    """
+    body_parts = []
+    for triple in bgp_triples:
+        s, pp, o = triple
+        body_parts.append(
+            f'fact({_sparql_bgp_term(s)}, {_sparql_bgp_term(pp)}, {_sparql_bgp_term(o)})'
+        )
+
+    if not body_parts:
+        raise ValueError(
+            f"Rule {rule.short_key}: BGP yielded no atoms — premise is empty"
+        )
+
+    body = ", ".join(body_parts)
+
+    head_lines = []
+    for stm in assert_stms_filtered:
+        subj, pred, obj = stm.relation_tuple
+        if _is_literal(subj):
+            raise ValueError(
+                f"Rule {rule.short_key}: literal value at assertion subject position"
+                " is not translatable to Datalog"
+            )
+        s_term = _obj_term(subj)
+        p_term = _pred_term(stm)
+        o_term = _obj_term(obj)
+        head_lines.append(f'fact({s_term}, {p_term}, {o_term}) :- {body} .')
+
+    if not head_lines:
+        raise ValueError(
+            f"Rule {rule.short_key}: SPARQL premise produced no assertion head lines"
+        )
+
+    try:
+        label = str(rule.R1__has_label)
+    except Exception:
+        label = rule.short_key
+
+    return "\n".join([f"% {rule.short_key}: {label} (SPARQL-BGP)"] + head_lines)
 
 
 # ─────────────────────────────────────────────────────────────────────────────

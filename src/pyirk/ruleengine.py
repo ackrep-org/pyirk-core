@@ -91,10 +91,13 @@ def apply_semantic_rules(*rules: List, mod_context_uri: str = None, exhaust=Fals
     if os.environ.get("PYIRK_NEMO_DELEGATION"):
         from pyirk.nemobridge.delegation import (
             _nemo_available,
+            _resolve_nmo_bin,
+            _check_nmo_version,
             _split_rules_by_nemo_delegation,
             _apply_via_nemo,
+            mark_nmo_failed_warned,
         )
-        if _nemo_available():
+        if _nemo_available() and _check_nmo_version(_resolve_nmo_bin()):
             try:
                 delegated, remaining = _split_rules_by_nemo_delegation(rules)
             except Exception as ex:
@@ -128,7 +131,7 @@ def apply_semantic_rules(*rules: List, mod_context_uri: str = None, exhaust=Fals
                         out_stms=nemo_buf, inserted_uris=nemo_inserted,
                     )
                 except Exception as ex:
-                    logger.warning("Nemo delegation failed, falling back to Python: %s", ex)
+                    mark_nmo_failed_warned(ex)
                     nemo_failed = True
                     # From here on every rule is handled by the python block.
                     remaining = list(rules)

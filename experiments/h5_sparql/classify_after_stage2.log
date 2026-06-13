@@ -1,0 +1,11 @@
+# H5 SPARQL Stage 2 — Manual classification probe
+# (translator state after task_003: I725 exclusion + improved Filter-walk)
+
+I710 -> python_only  | SPARQL-based premise: not a pure BGP (Filter)
+I725 -> python_only  | SPARQL: rule excluded by curation (native undefined on zebra KB)
+I730 -> direct  | SPARQL premise: pure BGP — translated to Datalog (H5 SPARQL Stage 1)
+I740 -> python_only  | SPARQL-based premise: not a pure BGP (Filter)
+I741 -> python_only  | SPARQL-based premise: not a pure BGP (Minus)
+I792 -> direct  | SPARQL premise: pure BGP — translated to Datalog (H5 SPARQL Stage 1)
+I798 -> direct  | SPARQL premise: pure BGP — translated to Datalog (H5 SPARQL Stage 1)
+I803 -> python_only  | SPARQL-based premise: not a pure BGP (Filter)

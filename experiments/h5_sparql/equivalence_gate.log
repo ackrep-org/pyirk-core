@@ -1,0 +1,76 @@
+======================================================================
+H5 SPARQL — Zebra Equivalence Gate (native vs nemo-delegation)
+  Voll-KB: zb + zr + zebra02 ; rules: ['I702', 'I705', 'I790', 'I800', 'I820', 'I710', 'I730', 'I740', 'I792', 'I798']
+======================================================================
+
+=== Pre-flight ===
+uptime load (1-min): 0.43
+Nemo: nemo-cli 0.10.0
+
+=== Pfad A — native (subprocess) ===
+subprocess native done: elapsed=44.733s n_new_first=83 n_subj=686 n_triples=2819 idem_n_new=0
+native subprocess wall: 71.082s
+
+=== Pfad B — delegation (subprocess) ===
+subprocess delegation done: elapsed=2.592s n_new_first=83 n_subj=686 n_triples=2819 idem_n_new=0
+delegation subprocess wall: 6.105s
+
+=== Gate evaluation ===
+native:    n_subj=686, n_triples=2819, new_statements=83, elapsed=44.733s
+delegation:n_subj=686, n_triples=2819, new_statements=83, elapsed=2.592s
+
+[Gate 1] state equivalence: OK  diff_subjects=0
+
+[Gate 2] idempotency:       OK  extra_native=0 extra_delegation=0
+
+[Gate 3] dup-multiset == native:  OK  diff_triples=0 native_dups=0 deleg_dups=0
+
+=== Per-rule isolation (single rule on fresh KB after prereqs) ===
+per-rule native I702: elapsed=0.205s n_new=13
+per-rule delegation I702: elapsed=0.368s n_new=13
+per-rule native I705: elapsed=0.188s n_new=20
+per-rule delegation I705: elapsed=0.644s n_new=20
+per-rule native I790: elapsed=0.199s n_new=0
+per-rule delegation I790: elapsed=0.638s n_new=0
+per-rule native I800: elapsed=0.196s n_new=10
+per-rule delegation I800: elapsed=0.632s n_new=10
+per-rule native I820: elapsed=0.188s n_new=0
+per-rule delegation I820: elapsed=0.685s n_new=0
+per-rule native I710: elapsed=0.205s n_new=4
+per-rule delegation I710: elapsed=0.561s n_new=4
+per-rule native I730: elapsed=0.210s n_new=6
+per-rule delegation I730: elapsed=0.541s n_new=6
+per-rule native I740: elapsed=0.205s n_new=0
+per-rule delegation I740: elapsed=0.563s n_new=0
+per-rule native I792: elapsed=20.417s n_new=8
+per-rule delegation I792: elapsed=0.587s n_new=8
+per-rule native I798: elapsed=0.217s n_new=20
+per-rule delegation I798: elapsed=0.586s n_new=20
+
+  rule   | native_count | delegated_count | multiset_gleich
+  -------+--------------+-----------------+----------------
+  I702   |           13 |              13 |            true
+  I705   |           20 |              20 |            true
+  I790   |            0 |               0 |            true
+  I800   |           10 |              10 |            true
+  I820   |            0 |               0 |            true
+  I710   |            4 |               4 |            true
+  I730   |            6 |               6 |            true
+  I740   |            0 |               0 |            true
+  I792   |            8 |               8 |            true
+  I798   |           20 |              20 |            true
+
+======================================================================
+GATE-RESULT:
+  gate_1_state_equivalent: true  (diff_subjects=0)
+  gate_2_idempotent:       true  (extra_native=0, extra_delegation=0)
+  gate_3_dup_equiv_native: true  (diff_triples=0, native_dups=0, deleg_dups=0)
+  gate_1_ok: true
+  gate_2_ok: true
+  gate_3_ok: true
+  overall_gate_ok:         true
+  t_native_sec:            44.7329  (load=0.48,ok)
+  t_delegation_sec:        2.5916  (load=0.84,(load-belastet))
+  speedup_fullrun:         17.26x
+  per_rule_isolation:      I702:n=13/d=13=, I705:n=20/d=20=, I790:n=0/d=0=, I800:n=10/d=10=, I820:n=0/d=0=, I710:n=4/d=4=, I730:n=6/d=6=, I740:n=0/d=0=, I792:n=8/d=8=, I798:n=20/d=20=
+======================================================================

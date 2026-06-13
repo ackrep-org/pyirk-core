@@ -53,13 +53,44 @@ class RuleClassification:
 
 
 # Curated SPARQL-premise rules that must NOT be delegated, even when their
-# algebra would technically pass the pure-BGP check. The native engine is the
-# reference oracle, and on the zebra-only KB I725 crashes with an
-# AssertionError in ``ruleengine.py::_process_result_map`` (object positions
-# bind to literals — see ``experiments/h5_sparql/recon.md`` §"I725 — Native
-# Verhalten"). Without a well-defined equivalence target we keep the rule
-# ``python_only`` rather than silently delegate to a divergent semantics.
-_SPARQL_PYTHON_ONLY_RULE_KEYS = {"I725"}
+# algebra would technically pass the pure-BGP / BGP+!= check. The native
+# engine is the reference oracle, and either it has no well-defined
+# semantics on the zebra-only KB (I725), or the Nemo EDB by design does not
+# carry the facts the rule binds against (I803).
+#
+#   * I725 — native crashes with ``AssertionError`` in
+#     ``ruleengine.py::_process_result_map`` (object positions bind to
+#     literals — see ``experiments/h5_sparql/recon.md`` §"I725 — Native
+#     Verhalten").
+#
+#   * I803 — premise binds ``?tuple :R39 ?itm2`` (R39__has_element on the
+#     main R51-tuple). pyirk's ``new_tuple`` always attaches a
+#     ``has_index`` qualifier to that statement, so the exporter routes it
+#     to ``stmts.csv`` + ``quals_R40.csv``; only the (unqualified)
+#     reification-anchor R39 statements end up in ``triples.csv``. The
+#     Nemo EDB seed (``fact(?s,?p,?o) :- triples(?s,?p,?o)``) therefore
+#     never produces a fact where the main tuple is the R39 subject, and
+#     the SPARQL-BGP+!= translation fires zero times under delegation
+#     while native yields ~88 derivations on zebra02. Honest-Stop:
+#     classified ``python_only`` until the EDB seed admits qualified
+#     entity-entity statements (cross-cutting H5-extension concern, not a
+#     Stage-4 fix).
+_SPARQL_PYTHON_ONLY_RULE_KEYS = {"I725", "I803"}
+
+# Per-key python_only reason for the curated SPARQL-premise rules above.
+# Keys not listed here fall back to the generic "rule excluded by curation"
+# string in :func:`_classify_single_rule`.
+_SPARQL_PYTHON_ONLY_REASONS = {
+    "I725": (
+        "SPARQL: rule excluded by curation"
+        " (native undefined on zebra KB — AssertionError in ruleengine)"
+    ),
+    "I803": (
+        "SPARQL: rule excluded by curation"
+        " (BGP binds qualified-only R39 facts which the Nemo EDB seed does"
+        " not carry; native ≠ delegated multiset)"
+    ),
+}
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -322,6 +353,99 @@ def _sparql_extract_pure_bgp(rule):
     return bgp_triples, None
 
 
+def _sparql_extract_bgp_with_inequality(rule):
+    """Parse the rule's SPARQL premise and return ``(triples, ineq_pairs)``
+    iff the algebra is a BGP wrapped in a single ``Filter`` whose expression
+    is a (possibly AND-conjoined) collection of ``?var_a != ?var_b`` atoms
+    between TWO VARIABLES. Otherwise return ``None``.
+
+    Accepted shape (H5 SPARQL Stage 4):
+
+        Project/SelectQuery/Slice/... -> Filter(expr, BGP(triples))
+
+    where ``expr`` is either
+
+      * a single ``RelationalExpression(?a != ?b)``, OR
+      * a ``ConditionalAndExpression`` whose every atom is such an inequality.
+
+    Anything else (constants, equality, ordering, OR, NOT, function calls,
+    Minus/Union below the Filter) → ``None``. Honest-stop: the classifier
+    then falls through to ``python_only`` with the existing ``(Filter)``
+    rejection reason — no silent semantic drift.
+    """
+    from rdflib.plugins.sparql.parser import parseQuery
+    from rdflib.plugins.sparql.algebra import translateQuery
+    from rdflib.plugins.sparql.parserutils import CompValue
+    from rdflib.paths import Path
+    from rdflib.term import Variable
+
+    qtext = _build_sparql_query_text(rule)
+    parsed = parseQuery(qtext)
+    algebra = translateQuery(parsed)
+
+    node = algebra.algebra
+    while isinstance(node, CompValue) and node.name in (
+        "SelectQuery", "Project", "Slice", "Distinct", "Reduced",
+        "OrderBy", "ToList",
+    ):
+        node = node.p
+
+    if not isinstance(node, CompValue) or node.name != "Filter":
+        return None
+
+    bgp_node = node.p
+    if not isinstance(bgp_node, CompValue) or bgp_node.name not in ("BGP", "Bgp"):
+        return None
+
+    bgp_triples = list(bgp_node.triples)
+    for s, pp, o in bgp_triples:
+        if isinstance(pp, Path):
+            return None
+        if isinstance(pp, CompValue):
+            return None
+
+    def _flatten_and(expr):
+        """Return list of atoms iff *expr* is a (possibly nested) AND of
+        atoms, else ``None`` to signal honest-stop."""
+        if not isinstance(expr, CompValue):
+            return None
+        if expr.name == "RelationalExpression":
+            return [expr]
+        if expr.name == "ConditionalAndExpression":
+            atoms = []
+            head = _flatten_and(expr.expr)
+            if head is None:
+                return None
+            atoms.extend(head)
+            for sub in (expr.other or []):
+                tail = _flatten_and(sub)
+                if tail is None:
+                    return None
+                atoms.extend(tail)
+            return atoms
+        return None
+
+    atoms = _flatten_and(node.expr)
+    if atoms is None:
+        return None
+
+    ineq_pairs = []
+    for atom in atoms:
+        if atom.name != "RelationalExpression":
+            return None
+        if atom.op != "!=":
+            return None
+        a, b = atom.expr, atom.other
+        if not isinstance(a, Variable) or not isinstance(b, Variable):
+            return None
+        ineq_pairs.append((a, b))
+
+    if not bgp_triples:
+        return None
+
+    return bgp_triples, ineq_pairs
+
+
 def _sparql_bgp_term(term) -> str:
     """Render an rdflib BGP term as a Nemo term.
 
@@ -385,7 +509,10 @@ def _classify_single_rule(rule) -> RuleClassification:
         if key in _SPARQL_PYTHON_ONLY_RULE_KEYS:
             return result(
                 "python_only", None,
-                "SPARQL: rule excluded by curation (native undefined on zebra KB)"
+                _SPARQL_PYTHON_ONLY_REASONS.get(
+                    key,
+                    "SPARQL: rule excluded by curation",
+                ),
             )
         try:
             bgp_triples, rejection = _sparql_extract_pure_bgp(rule)
@@ -394,6 +521,25 @@ def _classify_single_rule(rule) -> RuleClassification:
                 "python_only", None,
                 f"SPARQL-based premise: algebra parse failed ({type(ex).__name__}: {ex})"
             )
+
+        # Stage 4: BGP + ``FILTER(?a != ?b [&& ...])``. Tried after the pure-BGP
+        # check and BEFORE the ``python_only (Filter)`` fallthrough, so any
+        # filter form richer than a conjunction of two-variable inequalities
+        # (constants, equality, OR, NOT, function calls, …) falls through to
+        # the existing ``(Filter)`` reason without semantic drift.
+        ineq_pairs = None
+        if bgp_triples is None and rejection == "Filter":
+            try:
+                extracted = _sparql_extract_bgp_with_inequality(rule)
+            except Exception as ex:
+                return result(
+                    "python_only", None,
+                    f"SPARQL-based premise: inequality algebra parse failed"
+                    f" ({type(ex).__name__}: {ex})"
+                )
+            if extracted is not None:
+                bgp_triples, ineq_pairs = extracted
+
         if bgp_triples is None:
             return result(
                 "python_only", None,
@@ -423,11 +569,19 @@ def _classify_single_rule(rule) -> RuleClassification:
         try:
             snippet = _build_sparql_bgp_snippet(
                 rule, bgp_triples, list(_iter_assert_stms(assert_stms)),
+                ineq_pairs=ineq_pairs,
             )
-            return result(
-                "direct", snippet,
-                "SPARQL premise: pure BGP — translated to Datalog (H5 SPARQL Stage 1)"
-            )
+            if ineq_pairs:
+                reason = (
+                    "SPARQL premise: BGP + inequality — translated to Datalog"
+                    " (H5 SPARQL Stage 4)"
+                )
+            else:
+                reason = (
+                    "SPARQL premise: pure BGP — translated to Datalog"
+                    " (H5 SPARQL Stage 1)"
+                )
+            return result("direct", snippet, reason)
         except Exception as ex:
             return result(
                 "python_only", None,
@@ -583,9 +737,10 @@ def _build_direct_snippet(rule, prem_stms, assert_stms_filtered) -> str:
     return "\n".join([f"% {rule.short_key}: {label}"] + head_lines)
 
 
-def _build_sparql_bgp_snippet(rule, bgp_triples, assert_stms_filtered) -> str:
+def _build_sparql_bgp_snippet(rule, bgp_triples, assert_stms_filtered, ineq_pairs=None) -> str:
     """Build ternary ``fact``-rule lines for one SPARQL-premise rule whose
-    premise is a pure BGP (H5 SPARQL Stage 1).
+    premise is a BGP (H5 SPARQL Stage 1) optionally augmented with a
+    conjunction of ``?a != ?b`` inequality constraints (H5 SPARQL Stage 4).
 
     Each BGP triple ``(s, p, o)`` becomes a ``fact(<s>, <p>, <o>)`` atom; the
     assertion statements are rendered the same way the GRAPH-premise direct
@@ -600,9 +755,12 @@ def _build_sparql_bgp_snippet(rule, bgp_triples, assert_stms_filtered) -> str:
     ``Variable`` term; the conclusion uses ``?<name>`` from
     :func:`_var_name`; both agree.
 
-    No inequality constraints are added here — Stage 1 is the pure-BGP
-    fragment without ``FILTER(?x != ?y)`` (recon flags those rules as
-    ``bgp_inequality``; they stay ``python_only`` until Stage 2).
+    When *ineq_pairs* is given, each ``(a, b)`` rdflib ``Variable`` pair
+    becomes a Nemo ``?a != ?b`` body atom — same mechanic as the
+    monomorphism-default constraints in :func:`_build_direct_snippet`.
+    Set-dedup over ``frozenset({a, b})`` prevents the SPARQL ``FILTER`` from
+    re-emitting a pair that is already present via the (currently unused
+    here) default monomorphism path.
     """
     body_parts = []
     for triple in bgp_triples:
@@ -615,6 +773,19 @@ def _build_sparql_bgp_snippet(rule, bgp_triples, assert_stms_filtered) -> str:
         raise ValueError(
             f"Rule {rule.short_key}: BGP yielded no atoms — premise is empty"
         )
+
+    if ineq_pairs:
+        seen_pairs = set()
+        for a, b in ineq_pairs:
+            a_term = f"?{str(a)}"
+            b_term = f"?{str(b)}"
+            if a_term == b_term:
+                continue
+            key = frozenset({a_term, b_term})
+            if key in seen_pairs:
+                continue
+            seen_pairs.add(key)
+            body_parts.append(f"{a_term} != {b_term}")
 
     body = ", ".join(body_parts)
 
@@ -641,7 +812,8 @@ def _build_sparql_bgp_snippet(rule, bgp_triples, assert_stms_filtered) -> str:
     except Exception:
         label = rule.short_key
 
-    return "\n".join([f"% {rule.short_key}: {label} (SPARQL-BGP)"] + head_lines)
+    tag = "SPARQL-BGP+!=" if ineq_pairs else "SPARQL-BGP"
+    return "\n".join([f"% {rule.short_key}: {label} ({tag})"] + head_lines)
 
 
 # ─────────────────────────────────────────────────────────────────────────────

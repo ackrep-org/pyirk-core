@@ -353,3 +353,47 @@ class TestMarkNmoFailedWarned:
             delegation.mark_nmo_failed_warned(RuntimeError(f"call {i}"))
         warns = _records_for(caplog, logging.WARNING, "Nemo delegation failed")
         assert len(warns) == 1
+
+
+class TestDelegationEnabled:
+    """``delegation_enabled()`` — env-var (both directions) over pyirk config
+    over a shipped default of off."""
+
+    def test_env_truthy_tokens_enable(self, monkeypatch):
+        for tok in ("1", "true", "TRUE", "yes", "on"):
+            monkeypatch.setenv("PYIRK_NEMO_DELEGATION", tok)
+            assert delegation.delegation_enabled() is True
+
+    def test_env_falsy_tokens_disable(self, monkeypatch):
+        # Regression: the old ``if os.environ.get(...)`` treated "0"/"false"
+        # as truthy and wrongly ENABLED delegation.
+        for tok in ("0", "false", "no", "off", ""):
+            monkeypatch.setenv("PYIRK_NEMO_DELEGATION", tok)
+            assert delegation.delegation_enabled() is False
+
+    def test_env_disable_overrides_config_enable(self, monkeypatch):
+        monkeypatch.setenv("PYIRK_NEMO_DELEGATION", "0")
+        monkeypatch.setattr(p, "CONF", {"nemo": {"delegation": True}}, raising=False)
+        assert delegation.delegation_enabled() is False
+
+    def test_config_enables_when_env_unset(self, monkeypatch):
+        monkeypatch.delenv("PYIRK_NEMO_DELEGATION", raising=False)
+        monkeypatch.setattr(p, "CONF", {"nemo": {"delegation": True}}, raising=False)
+        assert delegation.delegation_enabled() is True
+
+    def test_config_falsy_keeps_disabled(self, monkeypatch):
+        monkeypatch.delenv("PYIRK_NEMO_DELEGATION", raising=False)
+        monkeypatch.setattr(p, "CONF", {"nemo": {"delegation": False}}, raising=False)
+        assert delegation.delegation_enabled() is False
+
+    def test_default_off_when_nothing_set(self, monkeypatch):
+        monkeypatch.delenv("PYIRK_NEMO_DELEGATION", raising=False)
+        monkeypatch.setattr(p, "CONF", {}, raising=False)
+        assert delegation.delegation_enabled() is False
+
+    def test_unrecognised_env_falls_through_to_config(self, monkeypatch):
+        # An unrecognised env token is ignored, not treated as on; the config
+        # then decides.
+        monkeypatch.setenv("PYIRK_NEMO_DELEGATION", "maybe")
+        monkeypatch.setattr(p, "CONF", {"nemo": {"delegation": True}}, raising=False)
+        assert delegation.delegation_enabled() is True

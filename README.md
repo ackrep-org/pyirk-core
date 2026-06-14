@@ -47,7 +47,7 @@ Note that, originally pyirk (imperative representation of knowledge) was called 
 
 # Optional: Nemo rule-engine delegation
 
-For performance-critical rule sets, pyirk can optionally delegate evaluation of a curated subset of rules to the Nemo datalog engine via its `nmo` CLI (see the upstream Nemo project for installation instructions). The feature is **off by default**; set the environment variable `PYIRK_NEMO_DELEGATION=1` to enable it (and optionally `PYIRK_NEMO_BIN=/abs/path/to/nmo` to pin the binary). The native Python engine remains the authoritative reference and the automatic fallback path. See the how-to guide [`docs/source/howto/nemo_delegation.md`](docs/source/howto/nemo_delegation.md) for resolver order, version policy, and known limits.
+For performance-critical rule sets, pyirk can optionally delegate evaluation of a curated subset of rules to the Nemo datalog engine via its `nmo` CLI (see the upstream Nemo project for installation instructions). The feature is **off by default**; enable it either per-invocation via the environment variable `PYIRK_NEMO_DELEGATION=1` or persistently via `[nemo] delegation = true` in your pyirk config (optionally pin the binary with `PYIRK_NEMO_BIN=/abs/path/to/nmo`). The native Python engine remains the authoritative reference and the automatic fallback path. See the how-to guide [`docs/source/howto/nemo_delegation.md`](docs/source/howto/nemo_delegation.md) for resolver order, version policy, and known limits.
 
 # Documentation
 

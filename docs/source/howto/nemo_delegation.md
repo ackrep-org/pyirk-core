@@ -34,11 +34,35 @@ does **not** bundle or vendor the `nmo` binary.
 Two environment variables control the feature; both are read fresh at every
 rule-engine entry point.
 
-* `PYIRK_NEMO_DELEGATION=1` — enables the delegation path. Any other value
-  (or absence) keeps the native Python engine in charge.
+* `PYIRK_NEMO_DELEGATION=1` — enables the delegation path. Recognised truthy
+  tokens are `1`/`true`/`yes`/`on`; `0`/`false`/`no`/`off` explicitly
+  *disable* it (overriding the config below). An unset or unrecognised value
+  falls through to the config setting.
 * `PYIRK_NEMO_BIN=/abs/path/to/nmo` — optional override that pins the
   `nmo` binary used by pyirk. Useful for CI, container images, or when
   multiple Nemo versions co-exist on a developer machine.
+
+### Persistent opt-in via the pyirk config
+
+Setting the env var on every invocation is tedious for a developer who
+simply wants the speedup in all their own runs. The delegation flag is
+therefore *also* read from the pyirk config file (the same
+`config.toml` that already carries `[package.ocse]`):
+
+```toml
+[nemo]
+delegation = true
+```
+
+Precedence: the `PYIRK_NEMO_DELEGATION` env var wins in both directions when
+set to a recognised token; otherwise the config value decides; otherwise the
+shipped default is **off**. This keeps delegation strictly opt-in for the
+general user (no behaviour change unless they opt in) while letting an
+individual enable it persistently for their own environment.
+
+Note that even when enabled, the hook still checks that an `nmo` binary is
+present and version-compatible, and silently falls back to the native engine
+otherwise — so a config opt-in on a machine without `nmo` is harmless.
 
 ### Resolver order
 

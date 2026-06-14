@@ -41,6 +41,60 @@ logger = logging.getLogger(__name__)
 # avoid a hard import-time dependency between the two modules.
 _LITERAL_PREFIX = "LIT:"
 
+
+_TRUTHY_TOKENS = ("1", "true", "yes", "on")
+_FALSY_TOKENS = ("0", "false", "no", "off", "")
+
+
+def _coerce_flag(value) -> "bool | None":
+    """Interpret a config/env value as an on/off flag.
+
+    Returns ``True``/``False`` for a recognised token, or ``None`` if the
+    value is absent (``None``) or unrecognised (caller decides the default).
+    A genuine ``bool`` (e.g. from a TOML ``delegation = true``) passes through.
+    """
+    if value is None:
+        return None
+    if isinstance(value, bool):
+        return value
+    token = str(value).strip().lower()
+    if token in _TRUTHY_TOKENS:
+        return True
+    if token in _FALSY_TOKENS:
+        return False
+    return None
+
+
+def delegation_enabled() -> bool:
+    """Whether the Nemo-delegation path should be used.
+
+    Resolution order (first decisive wins):
+      1. ``PYIRK_NEMO_DELEGATION`` env var — an explicit truthy/falsy token
+         decides in BOTH directions (so ``=0`` disables even if the config
+         enables it). An unrecognised value is ignored, not treated as on.
+      2. pyirk config ``[nemo] delegation`` (``p.CONF``) — lets a user opt in
+         persistently without setting the env var on every invocation.
+      3. Default: ``False`` (delegation stays opt-in; the native Python engine
+         is the shipped default).
+
+    Note: this only expresses *intent*. The hook still verifies that an
+    ``nmo`` binary is available and version-compatible before delegating,
+    and falls back silently otherwise.
+    """
+    env_flag = _coerce_flag(os.environ.get("PYIRK_NEMO_DELEGATION"))
+    if env_flag is not None:
+        return env_flag
+
+    try:
+        import pyirk as p
+        cfg_flag = _coerce_flag(p.CONF.get("nemo", {}).get("delegation"))
+        if cfg_flag is not None:
+            return cfg_flag
+    except Exception:
+        pass
+
+    return False
+
 # ── Deployment-Robustheit (H5 Deployment) ────────────────────────────────────
 # Modul-State für idempotente Logs/Warnings — pro Prozess genau einmal.
 # Tests setzen diese Flags via monkeypatch zurück.

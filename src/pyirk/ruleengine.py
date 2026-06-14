@@ -70,7 +70,9 @@ def apply_semantic_rules(*rules: List, mod_context_uri: str = None, exhaust=Fals
 
     :param exhaust:     boolean flag; if True: repeat rule application until no new statements are created
 
-    Bei aktivem PYIRK_NEMO_DELEGATION, verfügbarem Nemo-Binary und nicht-leerer
+    Bei aktivierter Delegation (siehe ``delegation_enabled()``: Env-Variable
+    ``PYIRK_NEMO_DELEGATION`` ODER pyirk-Config ``[nemo] delegation``),
+    verfügbarem Nemo-Binary und nicht-leerer
     delegable-Teilmenge wird der V4-Pfad gewählt: ein beschränkter Fixpunkt-Loop
     nemo↔python, der pro Iteration zuerst die delegierbaren Regeln via Nemo bis
     zu deren Fixpunkt materialisiert und danach die remaining-Regeln genau
@@ -88,7 +90,8 @@ def apply_semantic_rules(*rules: List, mod_context_uri: str = None, exhaust=Fals
     delegated: list = []
     remaining: list = list(rules)
 
-    if os.environ.get("PYIRK_NEMO_DELEGATION"):
+    from pyirk.nemobridge.delegation import delegation_enabled
+    if delegation_enabled():
         from pyirk.nemobridge.delegation import (
             _nemo_available,
             _resolve_nmo_bin,

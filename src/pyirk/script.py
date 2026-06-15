@@ -24,6 +24,7 @@ import platformdirs
 
 
 from . import core, irkloader, rdfstack
+from . import settings
 from . import visualization
 from . import reportgenerator
 from . import auxiliary as aux
@@ -41,8 +42,16 @@ def create_parser():
     automatically generate the cli docs.
     """
 
+    if os.path.isfile(settings.config_file):
+        _cfg_status = "exists"
+    else:
+        _cfg_status = "not present — create it with --bootstrap-config"
+    config_epilog = f"config file: {settings.config_file}\n  ({_cfg_status})"
+
     parser = argparse.ArgumentParser(
-        description="command line interface to IRK (imperative representation of knowledge)"
+        description="command line interface to IRK (imperative representation of knowledge)",
+        epilog=config_epilog,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
     )
     parser.add_argument(
         "inputfile",

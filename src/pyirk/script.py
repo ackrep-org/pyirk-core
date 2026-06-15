@@ -625,6 +625,17 @@ def bootstrap_config(ci_mode: bool = False):
         # [package.ocse]
         # path = "/home/username/irk-data/ocse"
 
+        # Optional: delegate a curated subset of rules to the Nemo datalog
+        # engine for a large speedup on rule-heavy knowledge bases. This is
+        # OFF by default; uncomment the two lines below to enable it
+        # persistently for your installation. Requires the `nmo` binary on
+        # PATH (or via PYIRK_NEMO_BIN); the native engine stays the reference
+        # and the automatic fallback when nmo is absent.
+        # Background, requirements and limitations — see the documentation:
+        #   https://pyirk-core.readthedocs.io  ->  How-to  ->  Nemo delegation
+        # [nemo]
+        # delegation = true
+
         """)
 
     if os.path.exists(config_path):

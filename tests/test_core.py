@@ -183,6 +183,29 @@ class Test_00_Core(HousekeeperMixin, unittest.TestCase):
 
         os.environ.pop("PYIRK_TRIGGER_TEST_EXCEPTION")
 
+    def test_c03__reuse_loaded_false_forces_reload(self):
+        """
+        Regression guard for the ``sys.modules`` short-circuit in
+        ``_load_mod_from_path`` that silently ignored ``reuse_loaded=False``
+        (fixed in commit dd35721d).
+
+        This is the *root cause* and is reproducible in isolation -- it does not
+        depend on the interplay of several test modules (that was only how the
+        symptom happened to surface in the staged-math suite). With the bug
+        present, a second load with ``reuse_loaded=False`` returns the cached
+        module object instead of re-executing the file.
+        """
+        path = pjoin(TEST_DATA_DIR1, "tmod3.py")
+
+        mod_a = p.irkloader.load_mod_from_path(path, prefix="tm3", reuse_loaded=True)
+        mod_b = p.irkloader.load_mod_from_path(path, prefix="tm3", reuse_loaded=True)
+        # reuse_loaded=True must hand back the very same cached object
+        self.assertIs(mod_a, mod_b)
+
+        mod_c = p.irkloader.load_mod_from_path(path, prefix="tm3", reuse_loaded=False)
+        # reuse_loaded=False must force a genuine reload -> a fresh object
+        self.assertIsNot(mod_a, mod_c)
+
 
 @unittest.skipIf(os.environ.get("CI"), "Skipping directory structure tests on CI")
 class Test_01_Core(HousekeeperMixin, unittest.TestCase):

@@ -1,0 +1,5 @@
+- There is a class: 'vector space' @en
+- 'vector space' has the alternative german label 'Vektorraum'
+- 'vector space' is a subclass of 'set'
+- There is a class: 'vector' @en
+- 'vector' has the alternative german label 'Vektor'

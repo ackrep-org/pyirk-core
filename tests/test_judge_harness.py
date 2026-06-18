@@ -21,6 +21,9 @@ from experiments.fnl_vs_direct.judge_harness import (
     JudgeRequest,
     JudgeResult,
     build_prompt,
+    extract_fnl_snippet_block,
+    extract_latex_snippet_block,
+    extract_pyirk_snippet_block,
     judge_all,
 )
 
@@ -191,18 +194,14 @@ def test_judge_all_writes_jsonl_and_is_resumable(tmp_path: Path):
 # ---------------------------------------------------------------------------
 
 
-def test_opus_client_is_constructible_without_calling():
+def test_opus_client_is_constructible_without_calling(monkeypatch, tmp_path):
     client = OpusJudgeClient()
-    assert client.model == "claude-opus-4-7"
-    # Strip the key for the duration of the test.
-    saved = os.environ.pop("ANTHROPIC_API_KEY", None)
-    try:
-        req = _req_corpus_a(_read("direct_equivalent.py"))
-        with pytest.raises(RuntimeError, match="ANTHROPIC_API_KEY"):
-            client.judge(req)
-    finally:
-        if saved is not None:
-            os.environ["ANTHROPIC_API_KEY"] = saved
+    assert client.model == "opus"
+    # Force `claude` to look missing by stripping PATH so shutil.which fails.
+    monkeypatch.setenv("PATH", str(tmp_path))
+    req = _req_corpus_a(_read("direct_equivalent.py"))
+    with pytest.raises(RuntimeError, match="claude.*CLI"):
+        client.judge(req)
 
 
 # ---------------------------------------------------------------------------
@@ -266,3 +265,164 @@ def test_cli_mock_smoke(tmp_path: Path):
         rec = json.loads(line)
         assert rec["verdict"] in {"equivalent", "partial", "wrong"}
         assert rec["corpus"] == "nichtlinear"
+
+
+# ---------------------------------------------------------------------------
+# Multi-snippet module flags: extraction + CLI
+# ---------------------------------------------------------------------------
+
+
+_PYIRK_TWO_SNIPPETS = '''import pyirk as p
+
+I_marker_a = p.create_item(
+    R1__has_label="snippet(4)",
+)
+I_vec = p.create_item(
+    R1__has_label="vector space",
+    R2__has_description="a thing with addition",
+)
+
+I_marker_b = p.create_item(
+    R1__has_label="snippet(5)",
+)
+I_span = p.create_item(
+    R1__has_label="linear hull",
+)
+'''
+
+
+_FNL_TWO_SNIPPETS = """\
+- // snippet(4)
+- There is a class: 'vector space' @en
+- 'vector space' has the alternative german label 'Vektorraum'
+
+- // snippet(5)
+- There is a class: 'linear hull'
+"""
+
+
+_LATEX_TWO_SNIPPETS = r"""\snippet{4}
+\begin{definition}
+A vector space is...
+\end{definition}
+
+\snippet{5}
+\begin{definition}
+The linear hull is...
+\end{definition}
+"""
+
+
+def _selection_two(tmp_path: Path) -> Path:
+    selection = {
+        "version": 1,
+        "corpora": {
+            "nichtlinear": [
+                {"snippet_id": "4", "type": "definition_and", "fnl_excerpt": "vec"},
+                {"snippet_id": "5", "type": "definition_and", "fnl_excerpt": "span"},
+            ]
+        },
+    }
+    p = tmp_path / "selection.json"
+    p.write_text(json.dumps(selection), encoding="utf-8")
+    return p
+
+
+def test_direct_module_flag_extracts_per_snippet(tmp_path: Path):
+    sel = _selection_two(tmp_path)
+    direct_module = tmp_path / "direct_arm.py"
+    direct_module.write_text(_PYIRK_TWO_SNIPPETS, encoding="utf-8")
+    fnl_module = tmp_path / "fnl.md"
+    fnl_module.write_text(_FNL_TWO_SNIPPETS, encoding="utf-8")
+    out = tmp_path / "judge.jsonl"
+
+    from experiments.fnl_vs_direct.judge_harness import main as judge_main
+
+    rc = judge_main(
+        [
+            "--selection", str(sel),
+            "--direct-module", str(direct_module),
+            "--gold-fnl-multi", str(fnl_module),
+            "--client", "mock",
+            "--corpus", "nichtlinear",
+            "--out", str(out),
+        ]
+    )
+    assert rc == 0
+    records = [json.loads(l) for l in out.read_text(encoding="utf-8").splitlines()]
+    assert len(records) == 2
+    sids = sorted(r["snippet_id"] for r in records)
+    assert sids == ["4", "5"]
+
+    # Make sure each direct block was sliced correctly and reached the judge.
+    block_4 = extract_pyirk_snippet_block(_PYIRK_TWO_SNIPPETS, "4")
+    block_5 = extract_pyirk_snippet_block(_PYIRK_TWO_SNIPPETS, "5")
+    assert block_4 is not None and "vector space" in block_4
+    assert "linear hull" not in block_4
+    assert block_5 is not None and "linear hull" in block_5
+    assert "vector space" not in block_5
+
+
+def test_gold_fnl_multi_flag_extracts_per_snippet(tmp_path: Path):
+    block_4 = extract_fnl_snippet_block(_FNL_TWO_SNIPPETS, "4")
+    block_5 = extract_fnl_snippet_block(_FNL_TWO_SNIPPETS, "5")
+    assert block_4 is not None and "vector space" in block_4 and "linear hull" not in block_4
+    assert block_5 is not None and "linear hull" in block_5 and "vector space" not in block_5
+
+    sel = _selection_two(tmp_path)
+    direct_module = tmp_path / "direct.py"
+    direct_module.write_text(_PYIRK_TWO_SNIPPETS, encoding="utf-8")
+    fnl_module = tmp_path / "fnl.md"
+    fnl_module.write_text(_FNL_TWO_SNIPPETS, encoding="utf-8")
+    out = tmp_path / "judge.jsonl"
+
+    from experiments.fnl_vs_direct.judge_harness import (
+        _build_requests_for_corpus,
+    )
+
+    requests = _build_requests_for_corpus(
+        corpus="nichtlinear",
+        selection=json.loads(sel.read_text(encoding="utf-8")),
+        direct_module=direct_module,
+        gold_fnl_multi=fnl_module,
+        limit=0,
+    )
+    by_id = {r.snippet_id: r for r in requests}
+    assert "vector space" in by_id["4"].fnl_gold
+    assert "linear hull" not in by_id["4"].fnl_gold
+    assert "linear hull" in by_id["5"].fnl_gold
+    assert "vector space" not in by_id["5"].fnl_gold
+
+
+def test_latex_multi_flag_extracts_per_snippet(tmp_path: Path):
+    block_4 = extract_latex_snippet_block(_LATEX_TWO_SNIPPETS, "4")
+    block_5 = extract_latex_snippet_block(_LATEX_TWO_SNIPPETS, "5")
+    assert block_4 is not None and "vector space is" in block_4
+    assert "linear hull is" not in block_4
+    assert block_5 is not None and "linear hull is" in block_5
+    assert "vector space is" not in block_5
+
+    sel = _selection_two(tmp_path)
+    direct_module = tmp_path / "direct.py"
+    direct_module.write_text(_PYIRK_TWO_SNIPPETS, encoding="utf-8")
+    fnl_module = tmp_path / "fnl.md"
+    fnl_module.write_text(_FNL_TWO_SNIPPETS, encoding="utf-8")
+    latex_module = tmp_path / "src.tex"
+    latex_module.write_text(_LATEX_TWO_SNIPPETS, encoding="utf-8")
+
+    from experiments.fnl_vs_direct.judge_harness import (
+        _build_requests_for_corpus,
+    )
+
+    requests = _build_requests_for_corpus(
+        corpus="nichtlinear",
+        selection=json.loads(sel.read_text(encoding="utf-8")),
+        direct_module=direct_module,
+        gold_fnl_multi=fnl_module,
+        latex_multi=latex_module,
+        limit=0,
+    )
+    by_id = {r.snippet_id: r for r in requests}
+    assert "vector space is" in by_id["4"].latex_source
+    assert "linear hull is" not in by_id["4"].latex_source
+    assert "linear hull is" in by_id["5"].latex_source

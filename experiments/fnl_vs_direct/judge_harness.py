@@ -14,24 +14,35 @@ The harness ships two judge clients:
 
 * :class:`MockJudgeClient` -- deterministic, rule-based, tokenfree.  All
   tests run against this stand-in.
-* :class:`OpusJudgeClient` -- skeleton that wires up to ``anthropic`` /
-  ``claude-opus-4-7`` with ``response_format=json``.  Constructible in
-  every environment; ``.judge(req)`` raises a clear ``RuntimeError`` up
-  front when ``ANTHROPIC_API_KEY`` is missing or the SDK is not
-  installed, so a Phase-7 live run cannot crash halfway through.
+* :class:`OpusJudgeClient` -- live judge that invokes the ``claude`` CLI
+  via subprocess (``claude -p ... --output-format json --model opus``),
+  matching the exact substrate used by the direct-arm runner.  Raises a
+  clear ``RuntimeError`` if the ``claude`` binary is missing or returns
+  a non-zero status, so a Phase-7 live run cannot crash halfway through.
 
 Outputs are written as JSONL via :func:`judge_all`, append-resume-safe:
 existing ``(corpus, snippet_id)`` records are skipped on re-runs.
 
-CLI::
+CLI (two equivalent input shapes -- per-snippet directories or single
+multi-snippet modules)::
 
     python -m experiments.fnl_vs_direct.judge_harness \\
-        --selection PATH --direct-dir PATH --gold-fnl-dir PATH \\
-        [--gold-pyirk PATH] --latex-dir PATH \\
+        --selection PATH \\
+        (--direct-dir DIR | --direct-module FILE) \\
+        (--gold-fnl-dir DIR | --gold-fnl-multi FILE) \\
+        [--gold-pyirk PATH] \\
+        [--latex-dir DIR | --latex-multi FILE] \\
         --client mock|opus --out PATH \\
         [--limit N] [--corpus nichtlinear|bernstein|both]
 
-``--client mock`` is strictly tokenfree.
+``--client mock`` is strictly tokenfree.  The ``*-module``/``*-multi``
+flags expect a single file per corpus and slice it into per-snippet
+blocks using the marker conventions:
+
+* pyirk module: ``R1__has_label="snippet(<id>)"`` on a top-level
+  ``p.create_item`` call.
+* FNL markdown:  ``- // snippet(<id>)`` on its own line.
+* LaTeX source:  ``\\snippet{<id>}`` on its own line.
 """
 
 from __future__ import annotations
@@ -268,55 +279,71 @@ class MockJudgeClient:
         )
 
 
-OPUS_MODEL_ID = "claude-opus-4-7"
+OPUS_MODEL_ID = "opus"
 
 
 class OpusJudgeClient:
-    """Skeleton client for the live Opus judge.
+    """Live Opus judge via the ``claude`` CLI.
 
-    Construction is always safe (no network, no env access).  The actual
-    call inside :meth:`judge` checks ``ANTHROPIC_API_KEY`` and that the
-    ``anthropic`` SDK is importable **before** any network attempt, and
-    raises a clear :class:`RuntimeError` otherwise.  Phase 7 instantiates
-    this client and calls ``.judge``; this file does not call it.
+    Uses ``claude -p <prompt> --output-format json --model opus`` -- the
+    same substrate that the direct-arm runner uses to generate the
+    candidates being judged here, so the judge runs through the identical
+    auth and routing as the candidate generator.
+
+    Construction is side-effect free.  ``.judge(req)`` raises a clear
+    :class:`RuntimeError` if the ``claude`` binary is missing or returns
+    a non-zero status.
     """
 
-    def __init__(self, model: str = OPUS_MODEL_ID, max_tokens: int = 1024):
+    def __init__(self, model: str = OPUS_MODEL_ID, timeout: int = 540):
         self.model = model
-        self.max_tokens = max_tokens
+        self.timeout = timeout
 
     def judge(self, req: JudgeRequest) -> JudgeResult:
-        api_key = os.environ.get("ANTHROPIC_API_KEY", "").strip()
-        if not api_key:
+        import shutil
+        import subprocess
+
+        if shutil.which("claude") is None:
             raise RuntimeError(
-                "OpusJudgeClient.judge: ANTHROPIC_API_KEY is not set; "
-                "refusing to make an LLM call. Set the env var or run "
-                "with --client mock for tokenfree mode."
+                "OpusJudgeClient.judge: the `claude` CLI is not on PATH; "
+                "cannot reach the live judge."
+            )
+        prompt = build_prompt(req)
+        cmd = [
+            "claude",
+            "-p",
+            prompt,
+            "--output-format",
+            "json",
+            "--model",
+            self.model,
+        ]
+        try:
+            result = subprocess.run(
+                cmd, capture_output=True, text=True, timeout=self.timeout
+            )
+        except subprocess.TimeoutExpired as exc:
+            raise RuntimeError(
+                f"OpusJudgeClient.judge: `claude -p` timed out after {self.timeout}s"
+            ) from exc
+        if result.returncode != 0:
+            detail = (result.stderr or result.stdout)[:500]
+            raise RuntimeError(
+                f"OpusJudgeClient.judge: `claude -p` exited "
+                f"{result.returncode}: {detail}"
             )
         try:
-            import anthropic  # type: ignore
-        except ImportError as exc:
+            payload = json.loads(result.stdout)
+        except json.JSONDecodeError as exc:
             raise RuntimeError(
-                "OpusJudgeClient.judge: the `anthropic` SDK is not "
-                "installed in this environment; install it before running "
-                "the live judge."
-            ) from exc
-
-        client = anthropic.Anthropic(api_key=api_key)
-        prompt = build_prompt(req)
-        response = client.messages.create(
-            model=self.model,
-            max_tokens=self.max_tokens,
-            messages=[{"role": "user", "content": prompt}],
-        )
-        # anthropic SDK >= 0.21 returns a structured Message with .content
-        # as a list of TextBlock; we concatenate the text payloads.
-        text_parts = []
-        for block in getattr(response, "content", []) or []:
-            text = getattr(block, "text", None)
-            if text:
-                text_parts.append(text)
-        raw_text = "".join(text_parts).strip()
+                f"OpusJudgeClient.judge: `claude -p` returned non-JSON: {exc}"
+            )
+        if payload.get("is_error"):
+            raise RuntimeError(
+                f"OpusJudgeClient.judge: claude reported error: "
+                f"{str(payload.get('result'))[:500]}"
+            )
+        raw_text = str(payload.get("result", "")).strip()
         return _parse_judge_json(raw_text, req)
 
 
@@ -443,6 +470,96 @@ def _read_optional(path: Optional[Path]) -> str:
     return _read_text(path)
 
 
+_PYIRK_SNIPPET_RE = re.compile(r'R1__has_label\s*=\s*"snippet\(([^)]+)\)"')
+_FNL_SNIPPET_RE = re.compile(r'^\s*-\s*//\s*snippet\(([^)]+)\)\s*$', re.MULTILINE)
+_LATEX_SNIPPET_RE = re.compile(r'\\snippet\{([^}]+)\}')
+
+
+def _slice_by_pattern(source: str, snippet_id: str, pattern: re.Pattern) -> Optional[str]:
+    """Slice ``source`` from the line containing the snippet marker up to (but
+    not including) the next marker.  Returns ``None`` if no match.
+    """
+    matches = list(pattern.finditer(source))
+    starts: dict = {}
+    for m in matches:
+        starts.setdefault(m.group(1), []).append(m.start())
+    if snippet_id not in starts:
+        return None
+    start = starts[snippet_id][0]
+    next_starts = [m.start() for m in matches if m.start() > start]
+    end = next_starts[0] if next_starts else len(source)
+    line_start = source.rfind("\n", 0, start) + 1
+    return source[line_start:end].rstrip()
+
+
+def extract_pyirk_snippet_block(source: str, snippet_id: str) -> Optional[str]:
+    """Extract one snippet block from a pyirk-module source text.
+
+    Two marker conventions are recognised, in order:
+
+    1. ``R1__has_label="snippet(<id>)"`` -- gold convention from
+       ``corpus_gold__gitignore__/``: a marker item ``create_item`` call
+       introduces a snippet block; the block runs to the next marker.
+    2. ``R9999__has_source_reference="LaTeX: <id> ..."`` -- direct-arm
+       convention from ``run_out/.../direct_arm.py``: each generated
+       ``create_item`` carries its source snippet id; the block is the
+       concatenation of all such top-level statements that share the
+       same id.
+
+    Returns ``None`` if neither convention yields a block.
+    """
+    block = _slice_by_pattern(source, snippet_id, _PYIRK_SNIPPET_RE)
+    if block is not None:
+        return block
+    return _collect_by_source_reference(source, snippet_id)
+
+
+def _collect_by_source_reference(source: str, snippet_id: str) -> Optional[str]:
+    """Return the concatenated source of top-level statements whose
+    ``R9999__has_source_reference`` keyword carries ``LaTeX: <snippet_id>``.
+    """
+    try:
+        tree = ast.parse(source)
+    except SyntaxError:
+        return None
+    lines = source.splitlines(keepends=True)
+    chunks: list = []
+    target = f"LaTeX: {snippet_id} "
+    target_alt = f"LaTeX: {snippet_id}"
+    for stmt in tree.body:
+        if not isinstance(stmt, ast.Assign) or not isinstance(stmt.value, ast.Call):
+            continue
+        matched = False
+        for kw in stmt.value.keywords:
+            if kw.arg is None:
+                continue
+            if not kw.arg.startswith("R9999"):
+                continue
+            if isinstance(kw.value, ast.Constant) and isinstance(kw.value.value, str):
+                v = kw.value.value
+                if v.startswith(target) or v == target_alt.rstrip():
+                    matched = True
+                    break
+        if not matched:
+            continue
+        start_line = stmt.lineno - 1
+        end_line = (stmt.end_lineno or stmt.lineno)
+        chunks.append("".join(lines[start_line:end_line]))
+    if not chunks:
+        return None
+    return "\n".join(c.rstrip() for c in chunks)
+
+
+def extract_fnl_snippet_block(source: str, snippet_id: str) -> Optional[str]:
+    """Extract one snippet block from an FNL-markdown source text."""
+    return _slice_by_pattern(source, snippet_id, _FNL_SNIPPET_RE)
+
+
+def extract_latex_snippet_block(source: str, snippet_id: str) -> Optional[str]:
+    """Extract one snippet block from a LaTeX source text."""
+    return _slice_by_pattern(source, snippet_id, _LATEX_SNIPPET_RE)
+
+
 def _extract_pyirk_gold_block(gold_pyirk_path: Optional[Path], snippet_id: str) -> Optional[str]:
     """Return the substring of the gold pyirk module belonging to ``snippet_id``.
 
@@ -453,55 +570,68 @@ def _extract_pyirk_gold_block(gold_pyirk_path: Optional[Path], snippet_id: str) 
     """
     if gold_pyirk_path is None or not gold_pyirk_path.exists():
         return None
-    src = _read_text(gold_pyirk_path)
-    pattern = re.compile(
-        r'R1__has_label\s*=\s*"snippet\(([^)]+)\)"',
-    )
-    matches = list(pattern.finditer(src))
-    starts: dict = {}
-    for m in matches:
-        starts.setdefault(m.group(1), []).append(m.start())
-    if snippet_id not in starts:
-        return None
-    start = starts[snippet_id][0]
-    # find next snippet marker after `start`
-    next_starts = [m.start() for m in matches if m.start() > start]
-    end = next_starts[0] if next_starts else len(src)
-    line_start = src.rfind("\n", 0, start) + 1
-    return src[line_start:end].rstrip()
+    return extract_pyirk_snippet_block(_read_text(gold_pyirk_path), snippet_id)
 
 
 def _build_requests_for_corpus(
     *,
     corpus: str,
     selection: dict,
-    direct_dir: Path,
-    gold_fnl_dir: Path,
-    gold_pyirk_path: Optional[Path],
-    latex_dir: Optional[Path],
-    limit: int,
+    direct_dir: Optional[Path] = None,
+    direct_module: Optional[Path] = None,
+    gold_fnl_dir: Optional[Path] = None,
+    gold_fnl_multi: Optional[Path] = None,
+    gold_pyirk_path: Optional[Path] = None,
+    latex_dir: Optional[Path] = None,
+    latex_multi: Optional[Path] = None,
+    limit: int = 0,
 ) -> List[JudgeRequest]:
     entries = list(selection.get("corpora", {}).get(corpus, []))
     entries.sort(key=lambda e: _snippet_sort_key(str(e["snippet_id"])))
     if limit and limit > 0:
         entries = entries[:limit]
+
+    direct_module_src = _read_text(direct_module) if direct_module is not None else None
+    fnl_multi_src = _read_text(gold_fnl_multi) if gold_fnl_multi is not None else None
+    latex_multi_src = _read_text(latex_multi) if latex_multi is not None else None
+
     requests: List[JudgeRequest] = []
     for entry in entries:
         sid = str(entry["snippet_id"])
-        direct_path = direct_dir / f"{corpus}_{sid}.py"
-        if not direct_path.exists():
-            # missing direct -> empty source so judge can still see absence
-            direct_text = ""
+
+        if direct_module_src is not None:
+            # Prefer per-snippet extraction; fall back to the full module so
+            # the judge still has something to look at when the direct arm
+            # did not tag its items with snippet markers.
+            direct_text = (
+                extract_pyirk_snippet_block(direct_module_src, sid)
+                or direct_module_src
+            )
+        elif direct_dir is not None:
+            direct_path = direct_dir / f"{corpus}_{sid}.py"
+            direct_text = _read_text(direct_path) if direct_path.exists() else ""
         else:
-            direct_text = _read_text(direct_path)
-        fnl_path = gold_fnl_dir / f"{corpus}_{sid}.md"
-        fnl_text = _read_optional(fnl_path) if fnl_path.exists() else str(
-            entry.get("fnl_excerpt", "")
-        )
+            direct_text = ""
+
+        if fnl_multi_src is not None:
+            fnl_text = extract_fnl_snippet_block(fnl_multi_src, sid) or str(
+                entry.get("fnl_excerpt", "")
+            )
+        elif gold_fnl_dir is not None:
+            fnl_path = gold_fnl_dir / f"{corpus}_{sid}.md"
+            fnl_text = _read_optional(fnl_path) if fnl_path.exists() else str(
+                entry.get("fnl_excerpt", "")
+            )
+        else:
+            fnl_text = str(entry.get("fnl_excerpt", ""))
+
         latex_text = ""
-        if latex_dir is not None:
+        if latex_multi_src is not None:
+            latex_text = extract_latex_snippet_block(latex_multi_src, sid) or ""
+        elif latex_dir is not None:
             latex_path = latex_dir / f"{corpus}_{sid}.tex"
             latex_text = _read_optional(latex_path)
+
         pyirk_block = (
             _extract_pyirk_gold_block(gold_pyirk_path, sid)
             if corpus == "nichtlinear"
@@ -523,12 +653,20 @@ def _build_requests_for_corpus(
 def _parse_args(argv=None) -> argparse.Namespace:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--selection", required=True, type=Path)
-    ap.add_argument("--direct-dir", required=True, type=Path)
-    ap.add_argument("--gold-fnl-dir", required=True, type=Path)
+    ap.add_argument("--direct-dir", type=Path, default=None,
+                    help="directory with <corpus>_<id>.py files (one per snippet)")
+    ap.add_argument("--direct-module", type=Path, default=None,
+                    help="single pyirk module spanning all snippets (sliced by snippet markers)")
+    ap.add_argument("--gold-fnl-dir", type=Path, default=None,
+                    help="directory with <corpus>_<id>.md FNL files")
+    ap.add_argument("--gold-fnl-multi", type=Path, default=None,
+                    help="single FNL markdown spanning all snippets (sliced by '- // snippet(<id>)' markers)")
     ap.add_argument("--gold-pyirk", type=Path, default=None,
                     help="path to the corpus-A gold pyirk module (nichtlinear only)")
     ap.add_argument("--latex-dir", type=Path, default=None,
                     help="optional directory with <corpus>_<id>.tex sources")
+    ap.add_argument("--latex-multi", type=Path, default=None,
+                    help="single LaTeX source spanning all snippets (sliced by '\\snippet{<id>}' markers)")
     ap.add_argument("--client", choices=["mock", "opus"], default="mock")
     ap.add_argument("--out", required=True, type=Path)
     ap.add_argument("--limit", type=int, default=0)
@@ -537,7 +675,19 @@ def _parse_args(argv=None) -> argparse.Namespace:
         choices=["nichtlinear", "bernstein", "both"],
         default="both",
     )
-    return ap.parse_args(argv)
+    args = ap.parse_args(argv)
+
+    if args.direct_dir is None and args.direct_module is None:
+        ap.error("either --direct-dir or --direct-module must be given")
+    if args.direct_dir is not None and args.direct_module is not None:
+        ap.error("pass only one of --direct-dir / --direct-module")
+    if args.gold_fnl_dir is None and args.gold_fnl_multi is None:
+        ap.error("either --gold-fnl-dir or --gold-fnl-multi must be given")
+    if args.gold_fnl_dir is not None and args.gold_fnl_multi is not None:
+        ap.error("pass only one of --gold-fnl-dir / --gold-fnl-multi")
+    if args.latex_dir is not None and args.latex_multi is not None:
+        ap.error("pass only one of --latex-dir / --latex-multi")
+    return args
 
 
 def main(argv=None) -> int:
@@ -554,9 +704,12 @@ def main(argv=None) -> int:
                 corpus=corpus,
                 selection=selection,
                 direct_dir=cli.direct_dir,
+                direct_module=cli.direct_module,
                 gold_fnl_dir=cli.gold_fnl_dir,
+                gold_fnl_multi=cli.gold_fnl_multi,
                 gold_pyirk_path=cli.gold_pyirk,
                 latex_dir=cli.latex_dir,
+                latex_multi=cli.latex_multi,
                 limit=cli.limit,
             )
         )

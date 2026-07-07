@@ -486,6 +486,44 @@ class Test_01_Core(HousekeeperMixin, unittest.TestCase):
         elements = arg_tup.R39__has_element
         self.assertEqual(tuple(elements), (h, f, x))
 
+    def test_c05b__auto_applied_result_relation(self):
+        # an operator can declare (via R88) relations that are automatically set on the result of applying it
+
+        with p.uri_context(uri=TEST_BASE_URI):
+            # arity-2 operator instance (inherits _custom_call -> create_evaluated_mapping)
+            op = p.instance_of(p.I8["mathematical operation with arity 2"], r1="test operator")
+
+            # (a) target given as argument index: the result should be an element of argument 1
+            op.set_relation(
+                p.R88["auto-applies result relation"],
+                p.R15["is element of"],
+                qualifiers=[p.auto_result_relation_target(1)],
+            )
+
+            # (b) target given as a fixed item: the result should be a secondary instance of `concept`
+            concept = p.instance_of(p.I2["Metaclass"], r1="some concept")
+            op.set_relation(
+                p.R88["auto-applies result relation"],
+                p.R30["is secondary instance of"],
+                qualifiers=[p.auto_result_relation_target(concept)],
+            )
+
+            seq = p.instance_of(p.I1["general item"], r1="a sequence")
+            idx = p.instance_of(p.I37["integer number"], r1="an index")
+
+            result = op(seq, idx)
+
+        # (a) the argument-index target was resolved to the actual first argument
+        self.assertIn(seq, p.aux.ensure_list(result.R15__is_element_of))
+        # (b) the fixed-item target was set directly
+        self.assertIn(concept, p.aux.ensure_list(result.R30__is_secondary_instance_of))
+
+        # determinism: applying again returns the identical item without duplicating the edges
+        with p.uri_context(uri=TEST_BASE_URI):
+            result2 = op(seq, idx)
+        self.assertTrue(result2 is result)
+        self.assertEqual(p.aux.ensure_list(result.R15__is_element_of), [seq])
+
     def test_c06__tuple(self):
 
         data = (10, 11, 12, 13, p.I1, "some string")

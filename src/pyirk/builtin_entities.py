@@ -1699,6 +1699,35 @@ R29 = create_builtin_relation(
 )
 
 
+# --- auto-applied result relations -----------------------------------------------------------------------------
+# These let an operator declare an extra relation that should automatically be added to the result of applying it.
+# Example: on the operator `element of sequence` one declares (via R88) that its result should get the relation
+# R15__is_element_of pointing back to argument 1 (the sequence). Then `element of sequence(seq, i)` yields an item
+# that is automatically marked as an element of `seq`. The specs are honored in create_evaluated_mapping (below).
+R88 = create_builtin_relation(
+    key_str="R88",
+    R1__has_label="auto-applies result relation",
+    R2__has_description=(
+        "subject is an operator; object is a relation that should be set automatically on the result of every "
+        "application of that operator. The object (target) of that result relation is specified by the R89 qualifier."
+    ),
+    R8__has_domain_of_argument_1=I6["mathematical operation"],
+    R11__has_range_of_result=I40["general relation"],
+)
+
+R89 = create_builtin_relation(
+    key_str="R89",
+    R1__has_label="has result-relation target",
+    R2__has_description=(
+        "qualifier for R88; says what the auto-applied result relation should point to. An integer n means the "
+        "n-th argument of the application (counting from 1); an item means that item is used as a fixed target."
+    ),
+    R18__has_usage_hint="This relation should be used as a qualifier for R88__auto_applies_result_relation",
+)
+
+auto_result_relation_target = QualifierFactory(R89["has result-relation target"])
+
+
 # this function is added as a method to the results of `create_evaluated_mapping(...)` see below
 def get_arguments(self: Item) -> Tuple[Item]:
     """
@@ -1767,6 +1796,20 @@ def create_evaluated_mapping(mapping: Item, *args) -> Item:
 
     arg_tup = new_tuple(*args)
     ev_mapping.set_relation(R36["has argument tuple"], arg_tup)
+
+    # honor auto-applied result relations declared on the operator via R88 (see above)
+    for spec_stm in mapping.get_relations("R88"):
+        result_relation = spec_stm.object
+        target = None
+        for qstm in spec_stm.qualifiers:
+            if qstm.predicate == R89["has result-relation target"]:
+                target = qstm.object
+                break
+        if isinstance(target, int):
+            # an integer target refers to the n-th argument of the application (1-based)
+            target = args[target - 1]
+        if target is not None:
+            ev_mapping.set_relation(result_relation, target)
 
     # add convenience method
     ev_mapping.add_method(get_arguments, "get_arguments")

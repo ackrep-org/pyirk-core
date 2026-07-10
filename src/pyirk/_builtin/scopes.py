@@ -458,7 +458,7 @@ class AbstractMathRelatedScopeCM(ScopingCM):
 
     # TODO: this makes  self.new_equation obsolete, doesn't it?
     def new_math_relation(
-        self, lhs: Item, rsgn: str, rhs: Item, add_relations: dict = {}, force_key: str = None
+        self, lhs: Item, rsgn: str, rhs: Item, add_relations: dict = {}, force_key: str = None, name: str = None
     ) -> Item:
         """
         convenience method to create a math_relation-related StatementObject (aka "Statement")
@@ -476,6 +476,16 @@ class AbstractMathRelatedScopeCM(ScopingCM):
         rel = _be.new_mathematical_relation(
             lhs, rsgn, rhs, scope=self.scope, add_relations=add_relations, force_key=force_key
         )
+        if name:
+            # add name of equation to available names in context for explicit referencing
+            # TODO unsure if this is the cleanest way
+            msg = f"The name '{name}' is already occupied in the scope `{self.scope}` of item `{self.item}`."
+            assert name not in self.item.__dict__ and name not in self.__dict__, msg
+            self.item.__dict__[name] = rel
+
+            # keep track of added context vars
+            self.namespace[name] = rel
+
         return rel
 
     def AND(self) -> "ConditionSubScopeCM":

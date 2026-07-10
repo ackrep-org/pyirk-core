@@ -1,0 +1,10 @@
+============================= test session starts ==============================
+platform linux -- Python 3.13.5, pytest-9.0.3, pluggy-1.6.0
+rootdir: /home/user/projekte/pyirk-core
+configfile: pyproject.toml
+plugins: anyio-4.13.0
+collected 28 items
+
+tests/test_rulebased_reasoning.py ........................ssss           [100%]
+
+======================== 24 passed, 4 skipped in 15.65s ========================

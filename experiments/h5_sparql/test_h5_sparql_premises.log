@@ -1,0 +1,11 @@
+============================= test session starts ==============================
+platform linux -- Python 3.13.5, pytest-9.0.3, pluggy-1.6.0 -- /home/user/venvs/pyirk-core-venv/bin/python3
+cachedir: .pytest_cache
+rootdir: /home/user/projekte/pyirk-core
+configfile: pyproject.toml
+plugins: anyio-4.13.0
+collecting ... collected 1 item
+
+tests/test_h5_sparql_premises.py::Test_H5_SPARQL_Premises::test_I798_sparql_bgp_native_vs_delegated_multiset_equiv PASSED [100%]
+
+============================== 1 passed in 8.09s ===============================

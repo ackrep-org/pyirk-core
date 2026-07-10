@@ -8,6 +8,8 @@ tutorials/index
 howto/index
 background/index
 reference/index
+llm_complementarity
+authoring
 ```
 
 Pyirk is an experimental framework for *imperative* knowledge representation. It is
@@ -67,6 +69,13 @@ Pyirk also aims to allow for much
 greater [expressive power](https://en.wikipedia.org/wiki/Expressive_power_(computer_science)) (
 e.g. allowing higher order logic statements) than most other approaches, despite the
 computational consequences.
+
+
+A common follow-up question is why a formal knowledge representation is worth
+building when large language models exist and can already read most engineering
+material. The page [pyirk and LLMs: complementary roles](llm_complementarity)
+addresses this directly: where LLMs alone suffice, where they do not, and how
+pyirk and LLM-based tooling combine in practice.
 
 
 ## Status

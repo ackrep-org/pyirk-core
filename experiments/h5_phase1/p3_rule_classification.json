@@ -1,0 +1,34 @@
+[
+  {
+    "rule_uri": "irk:/builtins#I64",
+    "rule_short_key": "I64",
+    "label": "introduction of generalized subclass statements",
+    "category": "direct",
+    "rls_snippet": "% I64: introduction of generalized subclass statements\nR83(?i2, ?i1) :- triples(?i2, R3, ?i1) .",
+    "reason": "Pure triple-pattern premise and assertion — translatable to Datalog"
+  },
+  {
+    "rule_uri": "irk:/builtins#I65",
+    "rule_short_key": "I65",
+    "label": "propagation of generalized subclass",
+    "category": "direct",
+    "rls_snippet": "% I65: propagation of generalized subclass\nR83(?i3, ?i1) :- R83(?i2, ?i1), R83(?i3, ?i2) .",
+    "reason": "Pure triple-pattern premise and assertion — translatable to Datalog"
+  },
+  {
+    "rule_uri": "irk:/builtins#I66",
+    "rule_short_key": "I66",
+    "label": "propagation transitive relations",
+    "category": "transitive",
+    "rls_snippet": null,
+    "reason": "R2-type: R60__is_transitive marker + wildcard relation (R58) in premise — covered by generate_transitivity_facts()"
+  },
+  {
+    "rule_uri": "irk:/ocse/0.2/math#I4731",
+    "rule_short_key": "I4731",
+    "label": "element type rule",
+    "category": "direct",
+    "rls_snippet": "% I4731: element type rule\nR30(?el, ?t) :- triples(?el, R15, ?s), triples(?s, R7280, ?t) .",
+    "reason": "Pure triple-pattern premise and assertion — translatable to Datalog"
+  }
+]

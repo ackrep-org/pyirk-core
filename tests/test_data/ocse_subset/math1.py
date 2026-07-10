@@ -14,15 +14,6 @@ keymanager = p.KeyManager()
 p.register_mod(__URI__, keymanager)
 p.start_mod(__URI__)
 
-I4895 = p.create_item(
-    R1__has_label="mathematical operator",
-    R2__has_description="general (unspecified) mathematical operator",
-    R3__is_subclass_of=p.I12["mathematical object"],
-)
-
-I4895["mathematical operator"].add_method(p.create_evaluated_mapping, "_custom_call")
-
-
 R3326 = p.create_relation(
     R1__has_label="has dimension",
     R2__has_description="specifies the dimension of a (dimensional) mathematical object",
@@ -56,18 +47,24 @@ R5405 = p.create_relation(
     R22__is_functional=True,
 )
 
+I1169 = p.create_item(
+    R1__has_label="point in vector space",
+    R2__has_description="type for a point in a given vector space",
+    R3__is_subclass_of=p.I12["mathematical object"],
+)
+
 I1168 = p.create_item(
     R1__has_label="point in state space",
     R2__has_description="type for a point in a given state space",
-    R3__is_subclass_of=p.I12["mathematical object"],
+    R3__is_subclass_of=I1169["point in vector space"],
     R41__has_required_instance_relation=R5405["has associated state space"],
 )
 
 I9923 = p.create_item(
     R1__has_label="scalar field",
     R2__has_description="...",
-    R3__is_subclass_of=I4895["mathematical operator"],
-    R8__has_domain_of_argument_1=I1168["point in state space"],
+    R3__is_subclass_of=p.I7["mathematical operation with arity 1"],
+    R8__has_domain_of_argument_1=I1169["point in vector space"],
     R11__has_range_of_result=p.I35["real number"],
 )
 
@@ -80,22 +77,24 @@ I7151 = p.create_item(
 I9841 = p.create_item(
     R1__has_label="vector field",
     R2__has_description="...",
-    R3__is_subclass_of=I4895["mathematical operator"],
-    R8__has_domain_of_argument_1=I1168["point in state space"],
+    R3__is_subclass_of=p.I7["mathematical operation with arity 1"],
+    R8__has_domain_of_argument_1=I1169["point in vector space"],
     R11__has_range_of_result=I7151["vector"],
 )
 
 I1060 = p.create_item(
     R1__has_label="general function",
     R2__has_description="function that maps from some set (domain) into another (range);",
-    R3__is_subclass_of=p.I18["mathematical expression"], # todo should this be I6 mathematical operation
+    R3__is_subclass_of=p.I6["mathematical operation"],
     R18__has_usage_hint="this is the base class for more specific types of functions",
+    R46__is_secondary_subclass_of=p.I18["mathematical expression"],
 )
 
 I1063 = p.create_item(
     R1__has_label="scalar function",
     R2__has_description="function that has one (in general complex) number as result",
     R3__is_subclass_of=I1060["general function"],
+    R46__is_secondary_subclass_of=p.I42["scalar mathematical expression"],
 )
 
 I4237 = p.create_item(
@@ -106,13 +105,6 @@ I4237 = p.create_item(
 
 I4237["monovariate rational function"].add_method(p.create_evaluated_mapping, "_custom_call")
 
-I9999 = p.create_item(
-    R1__has_label="rational",
-    R2__has_description="can be displayed as a fraction of integers",
-    R4__is_instance_of=p.I11["general property"]
-)
-
-I4237["monovariate rational function"].set_relation(p.R16["has property"], I9999["rational"])
 
 I4239 = p.create_item(
     R1__has_label="abstract monovariate polynomial",
@@ -125,7 +117,7 @@ I4239 = p.create_item(
 I9904 = p.create_item(
     R1__has_label="matrix",
     R2__has_description="matrix of (in general) complex numbers, i.e. matrix over the field of complex numbers",
-    R3__is_subclass_of=p.I12["mathematical object"],
+    R3__is_subclass_of=p.I18["mathematical expression"],
 )
 
 I9905 = p.create_item(
@@ -153,7 +145,7 @@ R5938 = p.create_relation(
 I5177 = p.create_item(
     R1__has_label="matmul",
     R2__has_description=("matrix multiplication operator"),
-    R4__is_instance_of=I4895["mathematical operator"],
+    R4__is_instance_of=p.I61["abstract multiplication class"],
     R8__has_domain_of_argument_1=I9904["matrix"],
     R9__has_domain_of_argument_2=I9904["matrix"],
     R11__has_range_of_result=I9904["matrix"],
@@ -165,16 +157,6 @@ I5000 = p.create_item(
     R4__is_instance_of=p.I38["non-negative integer"],
     R24__has_LaTeX_string="$0$",
 )
-
-# R3033 = p.create_relation(
-#     R1__has_label="has type of elements",
-#     R2__has_description=(
-#         "specifies the item-type of the elements of a mathematical set; "
-#         "should be a subclass of I12['mathematical object']"
-#     ),
-#     R8__has_domain_of_argument_1=p.I13["mathematical set"],
-#     R11__has_range_of_result=p.I42["mathematical type (metaclass)"],
-# )
 
 I8133 = p.create_item(
     R1__has_label="field of numbers",
@@ -191,26 +173,10 @@ I2738 = p.create_item(
     # R3033__has_type_of_elements=p.I34["complex number"],
 )
 
-I5005 = p.create_item(
-    R1__has_label="real part",
-    R2__has_description="returns the real part of a complex number",
-    R4__is_instance_of=I4895["mathematical operator"],
-    R8__has_domain_of_argument_1=p.I34["complex number"],
-    R11__has_range_of_result=p.I35["real number"],
-)
-
-I5006 = p.create_item(
-    R1__has_label="imaginary part",
-    R2__has_description="returns the imaginary part of a complex number",
-    R4__is_instance_of=I4895["mathematical operator"],
-    R8__has_domain_of_argument_1=p.I34["complex number"],
-    R11__has_range_of_result=p.I35["real number"],
-)
-
 I5807 = p.create_item(
     R1__has_label="sign",
     R2__has_description="returns the sign of a real number, i.e. on element of {-1, 0, 1}",
-    R4__is_instance_of=I4895["mathematical operator"],
+    R4__is_instance_of=p.I7["mathematical operation with arity 1"],
     R8__has_domain_of_argument_1=p.I35["real number"],
     R11__has_range_of_result=p.I37["integer number"],
 )
@@ -277,7 +243,7 @@ R5940 = p.create_relation(
 I3058 = p.create_item(
     R1__has_label="coefficients of characteristic polynomial",
     R2__has_description="...",
-    R4__is_instance_of=I4895["mathematical operator"],
+    R4__is_instance_of=p.I7["mathematical operation with arity 1"],
     R8__has_domain_of_argument_1=I9906["square matrix"],
     R11__has_range_of_result=I9739["finite scalar sequence"],
 )
@@ -301,7 +267,7 @@ with I3749["Cayley-Hamilton theorem"].scope("setting") as cm:
     cm.new_rel(cm.A, R5940["has characteristic polynomial"], cm.P)
     cm.new_rel(cm.Z, R5938["has row number"], cm.n)
     cm.new_rel(cm.Z, R5939["has column number"], cm.n)
-    cm.new_rel(cm.Z, p.R24["has LaTeX string"], r"\mathbf{0}")
+    cm.new_rel(cm.Z, p.R24["has LaTeX string"], r"$\mathbf{0}$")
 
 with I3749["Cayley-Hamilton theorem"].scope("assertion") as cm:
     cm.new_equation(lhs=cm.P(cm.A), rhs=cm.Z)
@@ -317,7 +283,9 @@ R8736 = p.create_relation(
     R2__has_description="subject has a polynomial dependency object",
     R8__has_domain_of_argument_1=p.I12["mathematical object"],
     R11__has_range_of_result=I5030["variable"],
-    R18__has_usage_hint=("This relation is intentionally not functional to model multivariate polynomial dependency"),
+    R18__has_usage_hint=(
+        "This relation is intentionally not functional to model multivariate polynomial dependency"
+    ),
 )
 
 I1935 = p.create_item(
@@ -327,20 +295,28 @@ I1935 = p.create_item(
     R50__is_different_from=I4240["matrix polynomial"],
 )
 
-I7765 = p.create_item(
-    R1__has_label="scalar mathematical object",
-    R2__has_description="mathematical object which is or can be evaluated to a single (complex number)",
+# I4895 is intentionally defined here in the staged subset (unlike the real OCSE
+# math1, which uses p.I7 directly for operators). The staged subset uses a less
+# specific classification so that tests can assert is_true(I5359, R4, I4895)
+# without depending on cross-test datastore contamination. See
+# test_fragility_plan__gitignore__.md Phase 3 for rationale.
+I4895 = p.create_item(
+    R1__has_label="mathematical operator",
+    R2__has_description="general (unspecified) mathematical operator",
     R3__is_subclass_of=p.I12["mathematical object"],
 )
+
+# make instances callable (analogous to what p.I7 has in builtins; see
+# test_consistency_check.create_operators which does the same)
+I4895["mathematical operator"].add_method(p.create_evaluated_mapping, "_custom_call")
 
 I5359 = p.create_item(
     R1__has_label="determinant",
     R2__has_description="returns the determinant of a square matrix",
     R4__is_instance_of=I4895["mathematical operator"],
     R8__has_domain_of_argument_1=I9906["square matrix"],
-    R11__has_range_of_result=I7765["scalar mathematical object"],
+    R11__has_range_of_result=p.I42["scalar mathematical expression"],
 )
-
 
 def I5359_cc_pp(self, res, *args, **kwargs):
     """
@@ -364,19 +340,17 @@ def I5359_cc_pp(self, res, *args, **kwargs):
 
     return res
 
-
 I5359["determinant"].add_method(I5359_cc_pp, "_custom_call_post_process")
 
 
 I6324 = p.create_item(
     R1__has_label="canonical first order monic polynomial matrix",
     R2__has_description="for a given square matrix A returns the polynomial matrix (s·I - A)",
-    R4__is_instance_of=I4895["mathematical operator"],
+    R4__is_instance_of=p.I8["mathematical operation with arity 2"],
     R8__has_domain_of_argument_1=I9906["square matrix"],
     R9__has_domain_of_argument_2=I5030["variable"],
     R11__has_range_of_result=I1935["polynomial matrix"],
 )
-
 
 def I6324_cc_pp(self, res, *args, **kwargs):
     """
@@ -394,8 +368,9 @@ def I6324_cc_pp(self, res, *args, **kwargs):
 
     return res
 
-
-I6324["canonical first order monic polynomial matrix"].add_method(I6324_cc_pp, "_custom_call_post_process")
+I6324["canonical first order monic polynomial matrix"].add_method(
+        I6324_cc_pp, "_custom_call_post_process"
+    )
 
 
 I1195 = p.create_item(
@@ -437,7 +412,6 @@ I6012 = p.create_item(
         "should be created via the context manager IntegerRangeElement (see below)"
     ),
 )
-
 
 class IntegerRangeElement:
     """
@@ -514,22 +488,122 @@ class IntegerRangeElement:
         # this is the place to handle exceptions
         pass
 
-
 I3240 = p.create_item(
     R1__has_label="matrix element",
     R2__has_description=(
         "mathematical operation wich maps a Matrix A, and two integers i, j to the scalar matrix entry A[i, j]. "
         "Index counting starts at 1"
     ),
-    R4__is_instance_of=I4895["mathematical operator"],
+    R4__is_instance_of=p.I9["mathematical operation with arity 3"],
     R8__has_domain_of_argument_1=I9904["matrix"],
     R9__has_domain_of_argument_2=p.I39["positive integer"],
     R10__has_domain_of_argument_3=p.I39["positive integer"],
-    R11__has_range_of_result=p.I34["complex number"],
+    R11__has_range_of_result=p.I34["complex number"],  # scalar object? (because of polynomial matrices)
     R13__has_canonical_symbol=r"$\mathrm{elt}$",
     R18__has_usage_hint=(
         "This operator is assumed be used as callable , e.g. `A_3_6 = I3240['matrix element'](A, 3, 6)`"
     ),
+)
+
+I1913 = p.create_item(
+    R1__has_label="geometric object",
+    R2__has_description="general (unspecified) geometric object",
+    R3__is_subclass_of=p.I12["mathematical object"],
+)
+
+I7280 = p.create_item(
+    R1__has_label="planar polygon",
+    R2__has_description="base class for general planar polygons",
+    R3__is_subclass_of=I1913["geometric object"],
+)
+
+I2917 = p.create_item(
+    R1__has_label="planar triangle",
+    R2__has_description="base class for general planar triangles",
+    R3__is_subclass_of=I7280["planar polygon"],
+)
+
+I8172 = p.create_item(
+    R1__has_label="polygon side",
+    R2__has_description="base class for sides of a polygon",
+    R3__is_subclass_of=I1913["geometric object"],
+)
+
+R2495 = p.create_relation(
+    R1__has_label="has length",
+    R2__has_description="specifies the length of a geometric object",
+    R8__has_domain_of_argument_1=I1913["geometric object"],
+    R11__has_range_of_result=p.I35["real number"],
+    R22__is_functional=True,
+)
+
+I9148 = p.create_item(
+    R1__has_label="get polygon sides ordered by length",
+    R2__has_description="operator that returns a tuple of I8172__polygon_side instances",
+    R4__is_instance_of=p.I7["mathematical operation with arity 1"],
+    R8__has_domain_of_argument_1=I7280["planar polygon"],
+    # TODO: find a way to specify this further (e.g. with qualifiers), because we know the type of the result
+    # another idea: introduce a callable Item like I95["typed tuple"](I8172["polygon side"])
+    R11__has_range_of_result=p.I33["tuple"],
+)
+
+I9148["get polygon sides ordered by length"].add_method(p.create_evaluated_mapping, "_custom_call")
+
+
+def I9148_cc_pp(self, res, *args, **kwargs):
+    """
+    :param self:    mapping item (to which this function will be attached)
+    :param res:     instance of I33["tuple"] (determined by R11__has_range_of_result)
+    :param args:    arg tuple (<polygon>,) with which the mapping is called
+    """
+    assert len(args) == 1
+    polygon = args[0]
+    res.overwrite_statement("R1__has_label", f"sides-tuple of {polygon}")
+
+    if p.is_instance_of(polygon, I2917["planar triangle"]):
+
+        last_length = None
+        for i, name in zip(range(3), ["a", "b", "c"]):
+            # note: every assignment adds a new R39-statement
+            side = p.instance_of(I8172["polygon side"], r1=name)
+            side.R5__is_part_of = polygon
+
+            length = p.instance_of(p.I35["real number"], r1=f"l_{name}")
+            side.R2495__has_length = length
+            res.R39__has_element = side
+
+            if last_length is not None:
+                # state that this length not less then the last one
+                p.new_mathematical_relation(last_length, "<=", length)
+            last_length = last_length
+            p.core.Entity.set_relation
+    else:
+        raise p.aux.NotYetFinishedError("other types of polygons not yet supported")
+
+    return res
+
+I9148["get polygon sides ordered by length"].add_method(
+        I9148_cc_pp, "_custom_call_post_process"
+    )
+
+
+# real / imaginary part operators (added to remove staged-vs-real OCSE math1 fragility
+# that test_c07d__nested_boolean_scopes relied on via the sys.modules cache; see
+# test_fragility_plan__gitignore__.md Phase 1)
+I5005 = p.create_item(
+    R1__has_label="real part",
+    R2__has_description="returns the real part of a complex number",
+    R4__is_instance_of=p.I7["mathematical operation with arity 1"],
+    R8__has_domain_of_argument_1=p.I34["complex number"],
+    R11__has_range_of_result=p.I35["real number"],
+)
+
+I5006 = p.create_item(
+    R1__has_label="imaginary part",
+    R2__has_description="returns the imaginary part of a complex number",
+    R4__is_instance_of=p.I7["mathematical operation with arity 1"],
+    R8__has_domain_of_argument_1=p.I34["complex number"],
+    R11__has_range_of_result=p.I35["real number"],
 )
 
 

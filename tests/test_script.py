@@ -1,6 +1,7 @@
 import unittest
 import os
 import shutil
+import sys
 from os.path import join as pjoin
 from typing import Dict, List, Union
 
@@ -32,7 +33,7 @@ class Test_01_Script(HousekeeperMixin, unittest.TestCase):
 
         N = len(os.listdir(TEST_DATA_DIR1))
 
-        cmd = f'pyirk --insert-keys-for-placeholders "{modpath}"'
+        cmd = f'{sys.executable} -m pyirk --insert-keys-for-placeholders "{modpath}"'
         os.system(cmd)
 
         # ensure that temporary file is deleted correctly
@@ -56,7 +57,7 @@ class Test_01_Script(HousekeeperMixin, unittest.TestCase):
 
     @unittest.skipIf(os.environ.get("CI"), "Skipping visualization test on CI to prevent graphviz-dependency")
     def test_c01__visualization(self):
-        cmd = "pyirk -vis I12"
+        cmd = f"{sys.executable} -m pyirk -vis I12"
         res = os.system(cmd)
         self.assertEqual(res, 0)
 
@@ -66,10 +67,10 @@ class Test_01_Script(HousekeeperMixin, unittest.TestCase):
 
         self.files_to_delete.append("tmp_dot.txt")
         self.files_to_delete.append("tmp.svg")
-        cmd = "pyirk --load-mod control_theory1.py demo -vis __all__"
+        cmd = f"{sys.executable} -m pyirk --load-mod control_theory1.py demo -vis __all__"
         res = os.system(cmd)
         self.assertEqual(res, 0)
 
-        cmd = "pyirk --load-mod control_theory1.py demo -vis ma__I9904"
+        cmd = f"{sys.executable} -m pyirk --load-mod control_theory1.py demo -vis ma__I9904"
         res = os.system(cmd)
         self.assertEqual(res, 0)

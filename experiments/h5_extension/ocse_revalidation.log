@@ -1,0 +1,38 @@
+======================================================================
+H5 Phase 2 — Equivalence Gate (native vs nemo-delegation)
+======================================================================
+
+=== Pre-flight ===
+uptime load (1-min): 2.02
+  WARNUNG: load=2.02>=0.5
+  → measurements proceed, but get a '(load-belastet)' marker.
+Nemo: nemo-cli 0.10.0
+
+=== Pfad A — native (subprocess) ===
+subprocess native done: elapsed=351.842s n_new_first=339 n_subj=1442 n_triples=6555 idem_n_new=None
+native subprocess wall: 358.018s
+
+=== Pfad B — delegation (subprocess) ===
+subprocess delegation done: elapsed=1.654s n_new_first=339 n_subj=1442 n_triples=6555 idem_n_new=0
+delegation subprocess wall: 7.814s
+
+=== Gate evaluation ===
+native:    n_subj=1442, n_triples=6555, new_statements=339, elapsed=351.842s
+delegation:n_subj=1442, n_triples=6555, new_statements=339, elapsed=1.654s
+
+[Gate 1] state equivalence: OK  diff_subjects=0
+
+[Gate 2] idempotency:       OK  extra_stmts_on_replay=0
+
+[Gate 3] dup-multiset == native:  OK  diff_triples=0 native_dups=5 deleg_dups=5
+
+======================================================================
+GATE-RESULT:
+  gate_1_state_equivalent: true  (diff_subjects=0)
+  gate_2_idempotent:       true  (extra_stmts_on_replay=0)
+  gate_3_dup_equiv_native: true  (diff_triples=0, native_dups=5, deleg_dups=5)
+  overall_gate_ok:         true
+  t_native_sec:            351.8417  (load=2.02,(load-belastet))
+  t_delegation_sec:        1.6535  (load=3.05,(load-belastet))
+  speedup_fullrun:         212.78x
+======================================================================

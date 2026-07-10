@@ -1,0 +1,43 @@
+======================================================================
+H5 Phase 2 — Equivalence Gate (native vs nemo-delegation)
+======================================================================
+
+=== Pre-flight ===
+uptime load (1-min): 0.55
+  WARNUNG: load=0.55>=0.5
+  → measurements proceed, but get a '(load-belastet)' marker.
+Nemo: nemo-cli 0.10.0
+
+=== Pfad A — native (subprocess) ===
+subprocess native done: elapsed=331.805s n_new_first=339 n_subj=1442 n_triples=6555 idem_n_new=None
+native subprocess wall: 337.528s
+
+=== Pfad B — delegation (subprocess) ===
+subprocess delegation done: elapsed=1.050s n_new_first=339 n_subj=1442 n_triples=6555 idem_n_new=0
+delegation subprocess wall: 6.488s
+
+=== Gate evaluation ===
+native:    n_subj=1442, n_triples=6555, new_statements=339, elapsed=331.805s
+delegation:n_subj=1442, n_triples=6555, new_statements=339, elapsed=1.050s
+
+[Gate 1] state equivalence: OK  diff_subjects=0
+
+[Gate 2] idempotency:       OK  extra_stmts_on_replay=0
+
+[Gate 3] no duplicates:     DUPS  duplicate_triples=5 max_multiplicity=3
+  mult=3  ('irk:/ocse/0.2/control_theory#Ia26808', 'irk:/builtins#R31', 'irk:/ocse/0.2/math#I5000')
+  mult=2  ('irk:/ocse/0.2/math#Ia86475', 'irk:/builtins#R31', 'irk:/ocse/0.2/math#Ia79736')
+  mult=2  ('irk:/ocse/0.2/math#Ia92990', 'irk:/builtins#R31', 'irk:/ocse/0.2/math#Ia38008')
+  mult=2  ('irk:/ocse/0.2/math#Ia90004', 'irk:/builtins#R31', 'irk:/ocse/0.2/math#I5000')
+  mult=2  ('irk:/ocse/0.2/control_theory#Ia75577', 'irk:/builtins#R30', 'irk:/ocse/0.2/control_theory#I9199')
+
+======================================================================
+GATE-RESULT:
+  gate_1_state_equivalent: true  (diff_subjects=0)
+  gate_2_idempotent:       true  (extra_stmts_on_replay=0)
+  gate_3_no_duplicates:    false  (max_multiplicity=3)
+  overall_gate_ok:         false
+  t_native_sec:            331.8048  (load=0.58,(load-belastet))
+  t_delegation_sec:        1.0496  (load=1.01,(load-belastet))
+  speedup_fullrun:         316.12x
+======================================================================

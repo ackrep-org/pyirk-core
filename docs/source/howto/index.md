@@ -9,6 +9,7 @@ This section provides a collection of guides that solve you how to solve certain
 theorem
 build_docs
 generate_test_data
+nemo_delegation
 miscellaneous
 troubleshooting
 ```

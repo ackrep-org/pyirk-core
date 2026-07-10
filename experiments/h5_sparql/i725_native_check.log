@@ -1,0 +1,33 @@
+Traceback (most recent call last):
+  File "/home/user/projekte/pyirk-core/experiments/h5_sparql/i725_native_check.py", line 53, in main
+    result = p.ruleengine.apply_semantic_rules(rule, mod_context_uri=zr.__URI__)
+  File "/home/user/projekte/pyirk-core/src/pyirk/ruleengine.py", line 171, in apply_semantic_rules
+    res = apply_semantic_rule(rule, mod_context_uri)
+  File "/home/user/projekte/pyirk-core/src/pyirk/ruleengine.py", line 196, in apply_semantic_rule
+    raw_res: core.RuleResult = ra.apply()
+                               ~~~~~~~~^^
+  File "/home/user/projekte/pyirk-core/src/pyirk/ruleengine.py", line 371, in apply
+    res = self._apply()
+  File "/home/user/projekte/pyirk-core/src/pyirk/ruleengine.py", line 399, in _apply
+    return self.ra_workers[0].apply_sparql_premise()
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+  File "/home/user/projekte/pyirk-core/src/pyirk/ruleengine.py", line 600, in apply_sparql_premise
+    res = self._process_result_map(result_maps)
+  File "/home/user/projekte/pyirk-core/src/pyirk/ruleengine.py", line 771, in _process_result_map
+    assert isinstance(new_subj, core.Entity)
+           ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError
+loaded rule I725: rule: deduce facts from inverse relations
+premise SPARQL source:
+
+        WHERE {
+            ?itm1 ?rel1 ?itm2.        # R3606["lives next to"]
+
+            # ?rel1 zb:R2850 true.     # R2850__is_functional_activity
+            ?rel1 :R68 ?rel2.        # R68__is_inverse_of
+        }
+        
+======================================================================
+CRASHED:
+
+SUMMARY: outcome=crash exc=AssertionError file=ruleengine.py line=771 func=_process_result_map

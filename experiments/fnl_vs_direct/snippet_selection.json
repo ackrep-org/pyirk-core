@@ -1,0 +1,264 @@
+{
+  "version": 1,
+  "seed": 0,
+  "thresholds": {
+    "validity_min": 0.9,
+    "faithfulness": "structural_diff==0 OR judge+spotcheck confirmed"
+  },
+  "corpora": {
+    "bernstein": [
+      {
+        "snippet_id": "1",
+        "type": "declaration",
+        "fnl_excerpt": "- New capter: 'Sets, Logic, Numbers, Relations, Orderings, Graphs, and Functions'."
+      },
+      {
+        "snippet_id": "3",
+        "type": "declaration",
+        "fnl_excerpt": "- New section: 'Sets'."
+      },
+      {
+        "snippet_id": "4",
+        "type": "declaration",
+        "fnl_excerpt": "- There is a class: 'set'.\n- There is a property: 'finite'.\n- 'finite' is applicable to 'set'.\n- There is a property: 'infinite'.\n- 'infinite' is applicable to 'set'."
+      },
+      {
+        "snippet_id": "5",
+        "type": "definition_or",
+        "fnl_excerpt": "- There is a property: 'countably infinite'.\n- 'countably infinite' is applicable to 'set'.\n- 'countably infinite' is a subproperty of 'infinite'.\n- There is a relation: 'is in one-to-one corresponden"
+      },
+      {
+        "snippet_id": "6",
+        "type": "notation",
+        "fnl_excerpt": "- There is a class: 'element'.\n- There is a relation: 'is element of'.\n- 'is element of' has the associated LaTeX notation `$arg1 \\in arg2$`.\n- There is a relation: 'is not element of'.\n- 'is not elem"
+      },
+      {
+        "snippet_id": "7",
+        "type": "instance",
+        "fnl_excerpt": "- 'empty set' is an instance of 'set'.\n- 'empty set' has the associated LaTeX notation `$\\varnothing$`.\n- 'empty set' has the verbal description \"The set with no elements\"."
+      },
+      {
+        "snippet_id": "8",
+        "type": "notation",
+        "fnl_excerpt": "- There is a binary operator: 'intersection'.\n- The type of argument1 of 'intersection' is 'set'.\n- The type of argument2 of 'intersection' is 'set'.\n- The result type of 'intersection' is 'set'.\n- 'i"
+      },
+      {
+        "snippet_id": "9",
+        "type": "notation",
+        "fnl_excerpt": "- There is a binary operator: 'union'.\n- The type of argument1 of 'union' is 'set'.\n- The type of argument2 of 'union' is 'set'.\n- The result type of 'union' is 'set'.\n- 'union' has the associated LaT"
+      },
+      {
+        "snippet_id": "10",
+        "type": "notation",
+        "fnl_excerpt": "- There is a binary operator: 'binary complement'.\n- // explanation: In the LaTeX source this is only called 'complement' but we use the label 'binary complement' to prevent confusion with 'unary comp"
+      },
+      {
+        "snippet_id": "11",
+        "type": "notation",
+        "fnl_excerpt": "- There is a unary operator: 'unary complement'.\n- 'unary complement' has the alternative label \"complement\".\n- The type of argument1 of 'unary complement' is 'set'.\n- The result type of 'unary comple"
+      },
+      {
+        "snippet_id": "12",
+        "type": "notation",
+        "fnl_excerpt": "- There is a binary operator: 'symmetric difference'.\n- The type of argument1 of 'symmetric difference' is 'set'.\n- The type of argument2 of 'symmetric difference' is 'set'.\n- The result type of 'symm"
+      },
+      {
+        "snippet_id": "13",
+        "type": "notation",
+        "fnl_excerpt": "- There is a relation: 'is subset of'.\n- The type of argument1 of 'is subset of' is 'set'.\n- The type of argument2 of 'is subset of' is 'set'.\n- 'is subset of' has the associated LaTeX notation `$arg1"
+      },
+      {
+        "snippet_id": "14",
+        "type": "equivalence",
+        "fnl_excerpt": "- There is an equivalence-statement\n    - full source code: \"Note that $\\SX \\subseteq\\SY$ if and only if $\\SX\\backslash\\SY=\\varnothing.$\"\n    - // from the context can be taken that X and Y are sets\n "
+      },
+      {
+        "snippet_id": "15",
+        "type": "definition_and",
+        "fnl_excerpt": "- There is an equivalence-statement\n    - full source code: \"Furthermore, $\\SX =\\SY$ if and only if $\\SX \\subseteq \\SY $ and $\\SY \\subseteq \\SX $.\"\n    - // from the context can be taken that X and Y "
+      },
+      {
+        "snippet_id": "16",
+        "type": "notation",
+        "fnl_excerpt": "- There is a binary operator: 'proper subset'.\n- The type of argument1 of 'proper subset' is 'set'.\n- The type of argument2 of 'proper subset' is 'set'.\n- The result type of 'proper subset' is 'set'.\n"
+      },
+      {
+        "snippet_id": "17",
+        "type": "declaration",
+        "fnl_excerpt": "- There is a relation: 'is disjoint to'.\n- The type of argument1 of 'is disjoint to' is 'set'.\n- The type of argument2 of 'is disjoint to' is 'set'.\n- 'is disjoint to' has the verbal description \"The "
+      },
+      {
+        "snippet_id": "18",
+        "type": "subclass",
+        "fnl_excerpt": "- There is a class: 'partition'.\n- 'partition' is a subclass of 'set'.\n- 'partition' has the verbal description \"A partition of X is a set of pairwise-disjoint and nonempty subsets of X whose union is"
+      },
+      {
+        "snippet_id": "19",
+        "type": "instance",
+        "fnl_excerpt": "- 'nonnegative integers' is an instance of 'set'.\n- 'nonnegative integers' has the associated LaTeX notation `$\\BBN$`.\n- 'positive integers' is an instance of 'set'.\n- 'positive integers' has the asso"
+      },
+      {
+        "snippet_id": "20",
+        "type": "instance",
+        "fnl_excerpt": "- There is a general statement\n    - formalized setting:\n        - x is an instance of 'math object'\n    - formalized assertion:\n        - There is an equation:\n            - full source code: '$\\{x,x"
+      },
+      {
+        "snippet_id": "21",
+        "type": "notation",
+        "fnl_excerpt": "- There is a class: 'multiset'.\n- 'multiset' has the verbal description \"A multiset is a finite collection of elements that allows for repetition.\".\n- 'multiset' has the associated LaTeX notation `$\\{"
+      },
+      {
+        "snippet_id": "23",
+        "type": "subclass",
+        "fnl_excerpt": "- // This statement expresses that the operators 'intersection', 'union', 'binary complement', 'symmetric difference', 'Cartesian product' and the relations 'proper subset' and 'subset' can also be ap"
+      },
+      {
+        "snippet_id": "24",
+        "type": "declaration",
+        "fnl_excerpt": "- There is an equation:\n    - // this is used as example\n    - full source code: '$\\{x,x\\}_{\\rmms}\\cup\\{x\\}_{\\rmms} =\\{x,x,x\\}_{\\rmms}$'\n    - left hand side: '$\\{x,x\\}_{\\rmms}\\cup\\{x\\}_{\\rmms}$'\n    "
+      },
+      {
+        "snippet_id": "25",
+        "type": "subclass",
+        "fnl_excerpt": "- // The first sentence expresses that there is a mapping from the class 'multiset' to the class 'set'. However, this mapping is not defined explicitly.\n- // The second sentence expresses that there i"
+      },
+      {
+        "snippet_id": "26",
+        "type": "notation",
+        "fnl_excerpt": "- There is a binary operator: 'Cartesian product'.\n- 'Cartesian product' has the associated LaTeX notation `$arg1 \\times arg2$`.\n- 'Cartesian product' has the alternative associated LaTeX notation `$\\"
+      },
+      {
+        "snippet_id": "46",
+        "type": "definition_or",
+        "fnl_excerpt": "- There is a unary operator: 'truth'.\n- 'truth' has the associated LaTeX notation `$\\truth(arg1)$`.\n- The type of argument1 of 'truth' is 'statement'.\n- // In the next statement of the snippet we need"
+      }
+    ],
+    "nichtlinear": [
+      {
+        "snippet_id": "2",
+        "type": "declaration",
+        "fnl_excerpt": "- New section: \"Lineare Algebra\"."
+      },
+      {
+        "snippet_id": "4",
+        "type": "subclass",
+        "fnl_excerpt": "- There is a class: 'vector space' @en\n- 'vector space' has the alternative german label 'Vektorraum'\n- 'vector space' is a subclass of 'set'\n- There is a class: 'n-dimensional real vector space' @en\n"
+      },
+      {
+        "snippet_id": "6",
+        "type": "subclass",
+        "fnl_excerpt": "- There is a class: 'row vector' @en\n- 'row vector' has the alternative german label 'Zeilenvektor'\n- 'row vector' is a subclass of 'vector'\n- 'column vector' has the alternative german label 'kontrav"
+      },
+      {
+        "snippet_id": "8",
+        "type": "qualified",
+        "fnl_excerpt": "- There is a general statement:\n    - full source code: Jeder Vektor~(\\ref{eq:vektor-x}) lässt sich eindeutig als Linearkombination der Basisvektoren darstellen: $x=x_{1}e_{1}+\\cdots+x_{n}e_{n}$.\n    "
+      },
+      {
+        "snippet_id": "9",
+        "type": "qualified",
+        "fnl_excerpt": "- There is a class: 'linear hull' @en\n- 'linear hull' has the alternative german label 'lineare Hülle'\n- 'linear hull' has the alternative english label 'linear span'\n- 'linear hull' is a subclass of "
+      },
+      {
+        "snippet_id": "10",
+        "type": "subclass",
+        "fnl_excerpt": "- There is a class: 'subspace' @en\n- 'subspace' has the alternative german label 'Untervektorraum'\n- 'subspace' has the alternative german label 'Unterraum'\n- 'subspace' has the alternative german lab"
+      },
+      {
+        "snippet_id": "12",
+        "type": "equivalence",
+        "fnl_excerpt": "- There is a class 'orthogonality' @en.\n- 'orthogonality' has the alternative german label 'Orthogonalität'.\n- 'orthogonality' has the verbal description 'concept of orthogonality, perpendicular vecto"
+      },
+      {
+        "snippet_id": "13",
+        "type": "qualified",
+        "fnl_excerpt": "- There is a binary operator: 'sum of vector spaces' @en.\n- 'sum of vector spaces' has the associated LaTeX notation $\\mathbb{U} + \\mathbb{V}$.\n- The type of argument1 of 'sum of vector spaces' is 've"
+      },
+      {
+        "snippet_id": "14",
+        "type": "qualified",
+        "fnl_excerpt": "- There is a binary operator: 'intersection of sets' @en.\n- 'intersection of sets' has the associated LaTeX notation $\\mathbb{U} \\cap \\mathbb{V}$.\n- 'intersection of sets' has the alternative german l"
+      },
+      {
+        "snippet_id": "15",
+        "type": "instance",
+        "fnl_excerpt": "- There is a general statement:\n    - full source code: Die Zerlegung in direkte Summen bedeutet, dass es für jeden Vektor $x\\in{\\mathbb{R}}^{n}$ eine eindeutige Darstellung $x=u+v$ mit $u\\in\\mathbb{U"
+      },
+      {
+        "snippet_id": "16",
+        "type": "qualified",
+        "fnl_excerpt": "- There is a general statement:\n    - full source code: Die Ergänzung eines Unterraumes~$\\mathbb{U}$ um einen Komplmentärraum~$\\mathbb{V}$ ist nicht eindeutig.\n    - formalized setting:\n        - 'Rn'"
+      },
+      {
+        "snippet_id": "19",
+        "type": "subclass",
+        "fnl_excerpt": "- There is a class: 'square matrix' @en\n- 'square matrix' has the alternative german label 'quadratische Matrix'\n- 'square matrix' is a subclass of 'matrix'\n- There is an if-then-statement:\n    - full"
+      },
+      {
+        "snippet_id": "20",
+        "type": "definition_and",
+        "fnl_excerpt": "- There is a class: 'identity matrix' @en\n- 'identity matrix' has the alternative german label 'Einheitsmatrix'\n- 'identity matrix' is a subclass of 'square matrix' // inferred knowledge\n- 'identity m"
+      },
+      {
+        "snippet_id": "21",
+        "type": "qualified",
+        "fnl_excerpt": "- There is a class: 'image of matrix' @en\n- 'image of matrix' has the alternative german label 'Bild'\n- 'image of matrix' has the alternative english label 'range'\n- 'image of matrix' is a subclass of"
+      },
+      {
+        "snippet_id": "22",
+        "type": "qualified",
+        "fnl_excerpt": "- There is a general statement:\n    - full source code: Besteht die Matrix~$A$ spaltenweise aus den Vektoren $a_{1},\\ldots,a_{n}\\in{\\mathbb{R}}^{m}$, d.\\,h. \\[ A=\\left(a_{1},\\ldots,a_{n}\\right), \\] so"
+      },
+      {
+        "snippet_id": "24",
+        "type": "instance",
+        "fnl_excerpt": "- There is a class: 'rank of matrix' @en\n- 'rank of matrix' has the alternative german label 'Rang'\n- 'rank of matrix' has the alternative label 'rank'\n- There is a unary operator: 'rank op'\n- The typ"
+      },
+      {
+        "snippet_id": "26",
+        "type": "instance",
+        "fnl_excerpt": "- There is a general statement:\n    - full source code: Der Kern ist ein Untervektorraum des~${\\mathbb{R}}^{n}$.\n    - formalized setting:\n        - 'n' is an instance of 'integer number'.\n        - '"
+      },
+      {
+        "snippet_id": "28",
+        "type": "declaration",
+        "fnl_excerpt": "- 'defect of matrix' has the alternative german label 'Rangabfall'\n\n- // manually added (6)\n- There is a unary operator: 'transpose'\n\n- Concepts in this snippet:\n    - 'defect of matrix'\n    - 'transp"
+      },
+      {
+        "snippet_id": "30",
+        "type": "instance",
+        "fnl_excerpt": "- There is a general statement:\n    - full source code: Bei dieser Zerlegung wird der jeweilige Unterraum (${\\operatorname{im}}\\,A$ bzw. $\\ker\\,A$) um sein entsprechendes orthogonales Komplement erwei"
+      },
+      {
+        "snippet_id": "32",
+        "type": "instance",
+        "fnl_excerpt": "- There is a general statement:\n    - full source code: Die Dimensionsformel~(\\ref{eq:dimensionsformel-ortho-kompl}) nimmt in diesem Fall die Gestalt \\begin{equation} \\dim(\\ker\\,A)+\\dim({\\operatorname"
+      },
+      {
+        "snippet_id": "35",
+        "type": "subclass",
+        "fnl_excerpt": "- There is a class: 'linear mapping' @en\n- 'linear mapping' has the alternative german label 'lineare Abbildung'\n- 'linear mapping' has the alternative german label 'linearer Operator'\n- 'linear mappi"
+      },
+      {
+        "snippet_id": "37",
+        "type": "subclass",
+        "fnl_excerpt": "- There is a class: 'dual space' @en\n- 'dual space' has the alternative german label 'Dualraum'\n- 'dual space' is a subclass of 'vector space' // inferred knowledge\n- There is a unary operator: 'dual'"
+      },
+      {
+        "snippet_id": "39",
+        "type": "subclass",
+        "fnl_excerpt": "- There is a class: 'covector' @en\n- 'covector' has the alternative german label 'Kovektor'\n- 'covector' has the alternative german label 'kovarianter Vektor'\n- 'covector' has the alternative english "
+      },
+      {
+        "snippet_id": "41",
+        "type": "instance",
+        "fnl_excerpt": "- There is a general statement:\n    - full source code: Im Zusammenhang mit dem Dualraum nennt man den ursprünglichen Vektorraum manchmal auch \\textbf{\\em Primalraum}.\n    - formalized setting:\n      "
+      },
+      {
+        "snippet_id": "44",
+        "type": "instance",
+        "fnl_excerpt": "- There is a general statement:\n    - full source code: Bei der Darstellung der Vektoren und Kovektoren als Spalten- und Zeilenvektoren wird dieser Isomorphismus für beide Abbildungsrichtungen durch d"
+      }
+    ]
+  }
+}
